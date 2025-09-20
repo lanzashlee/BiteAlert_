@@ -3,7 +3,7 @@ services:
   - type: web
     name: bitealert-frontend
     env: static
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --legacy-peer-deps && npm run build
     staticPublishPath: ./build
     routes:
       - type: rewrite
@@ -20,7 +20,7 @@ services:
     name: bitealert-backend
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install --legacy-peer-deps
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
