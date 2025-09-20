@@ -1,0 +1,33 @@
+services:
+  # Single Web Service (Frontend + Backend)
+  - type: web
+    name: bitealert-app
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        fromDatabase:
+          name: bitealert-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: GOOGLE_AI_API_KEY
+        sync: false
+
+databases:
+  - name: bitealert-db
+    plan: free
+    databaseName: bitealert
+    user: bitealert_user
