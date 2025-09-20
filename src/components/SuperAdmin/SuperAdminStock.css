@@ -1,0 +1,706 @@
+/* SuperAdmin Stock Management Styles */
+@import '../GlobalResponsive.css';
+/* SuperAdmin Stock styles */
+@import './ResponsiveSidebar.css';
+
+
+
+/* SuperAdmin specific overrides and enhancements */
+.superadmin-stock-container .btn,
+.superadmin-stock-container .cancel-btn,
+.superadmin-stock-container .confirm-btn {
+  border-radius: 8px;
+}
+
+/* Use sidebar maroon for primary/action buttons */
+.superadmin-stock-container .btn-primary,
+.superadmin-stock-container .btn-success,
+.superadmin-stock-container .confirm-btn {
+  background: #800000 !important;
+  color: #ffffff !important;
+  border: 1px solid #800000 !important;
+  box-shadow: 0 4px 12px rgba(128, 0, 0, 0.15);
+}
+
+.superadmin-stock-container .btn-primary:hover,
+.superadmin-stock-container .btn-success:hover,
+.superadmin-stock-container .confirm-btn:hover {
+  background: #600000;
+  border-color: #600000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(128, 0, 0, 0.25);
+}
+
+/* Secondary buttons: white with maroon border/text */
+.superadmin-stock-container .btn-secondary,
+.superadmin-stock-container .cancel-btn {
+  background: #ffffff;
+  color: #800000;
+  border: 1px solid #e5e7eb;
+}
+
+.superadmin-stock-container .btn-secondary:hover,
+.superadmin-stock-container .cancel-btn:hover {
+  background: #fafafa;
+  border-color: #d1d5db;
+}
+.superadmin-stock-container {
+  transition: all var(--transition-normal);
+}
+
+.superadmin-stock-container .main-content {
+  margin-left: 280px;
+  width: calc(100% - 280px);
+  box-sizing: border-box;
+  transition: all var(--transition-normal);
+}
+
+
+
+/* Responsive adjustments for SuperAdmin */
+@media (max-width: 480px) {
+  .superadmin-stock-container .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 1rem;
+  }
+  
+  .superadmin-stock-container .quick-stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .superadmin-stock-container .stat-card {
+    min-width: unset;
+    flex: 1;
+    padding: 1rem;
+  }
+  
+  .superadmin-stock-container .search-filter-section {
+    gap: 12px;
+  }
+  
+  .superadmin-stock-container .filter-box {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .superadmin-stock-container .filter-box select {
+    width: 100%;
+  }
+  
+  .superadmin-stock-container .search-box input {
+    padding: 12px 40px 12px 15px;
+    font-size: 16px;
+  }
+  
+  .superadmin-stock-container .filter-box select {
+    padding: 12px;
+    font-size: 16px;
+  }
+  
+  .superadmin-stock-container .inventory-table-container {
+    font-size: 0.875rem;
+  }
+  
+  .superadmin-stock-container .inventory-table th,
+  .superadmin-stock-container .inventory-table td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .superadmin-stock-container .data-table {
+    min-width: 800px;
+  }
+  
+  .superadmin-stock-container .table-container {
+    overflow-x: auto;
+  }
+}
+
+/* Table styling improvements */
+.superadmin-stock-container .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.superadmin-stock-container .data-table th {
+  background: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  text-align: left;
+  padding: 1rem 0.75rem;
+  border-bottom: 2px solid #dee2e6;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.superadmin-stock-container .data-table th:hover {
+  background: #e9ecef;
+}
+
+.superadmin-stock-container .data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: middle;
+}
+
+.superadmin-stock-container .data-table tr:hover {
+  background: #f8f9fa;
+}
+
+.superadmin-stock-container .status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: white;
+  text-align: center;
+  display: inline-block;
+  min-width: 80px;
+}
+
+.superadmin-stock-container .center-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.superadmin-stock-container .vaccine-name {
+  font-weight: 500;
+  color: #34495e;
+}
+
+.superadmin-stock-container .vaccine-type {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.superadmin-stock-container .vaccine-brand {
+  color: #95a5a6;
+  font-size: 0.9rem;
+}
+
+.superadmin-stock-container .batch-number {
+  font-family: 'Courier New', monospace;
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.superadmin-stock-container .stock-level {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.superadmin-stock-container .expiry-date {
+  color: #e74c3c;
+  font-size: 0.9rem;
+}
+
+/* Expandable center rows */
+.superadmin-stock-container .center-row {
+  background: #f8f9fa;
+  border-left: 4px solid #007bff;
+  transition: all 0.2s ease;
+}
+
+.superadmin-stock-container .center-row:hover {
+  background: #e3f2fd;
+  transform: translateX(2px);
+}
+
+.superadmin-stock-container .center-info {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.superadmin-stock-container .total-vaccines,
+.superadmin-stock-container .total-stock,
+.superadmin-stock-container .low-stock-count {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.superadmin-stock-container .center-status-badge {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+  display: inline-block;
+  min-width: 80px;
+}
+
+/* Vaccine details container */
+.superadmin-stock-container .vaccine-details-row {
+  background: #fafbfc;
+  border-top: none;
+}
+
+.superadmin-stock-container .vaccine-details-container {
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  margin: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.superadmin-stock-container .vaccine-details-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.superadmin-stock-container .vaccine-details-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.superadmin-stock-container .vaccine-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.superadmin-stock-container .vaccine-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #28a745;
+  transition: all 0.2s ease;
+}
+
+.superadmin-stock-container .vaccine-item:hover {
+  background: #e9ecef;
+  transform: translateX(4px);
+}
+
+.superadmin-stock-container .vaccine-info {
+  flex: 1;
+}
+
+.superadmin-stock-container .vaccine-info .vaccine-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.superadmin-stock-container .vaccine-info .vaccine-type {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.superadmin-stock-container .vaccine-info .vaccine-brand {
+  color: #95a5a6;
+  font-size: 0.85rem;
+}
+
+.superadmin-stock-container .vaccine-stock-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.superadmin-stock-container .stock-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.superadmin-stock-container .stock-details .batch-number,
+.superadmin-stock-container .stock-details .expiry-date {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.superadmin-stock-container .stock-quantity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.superadmin-stock-container .stock-quantity .stock-level {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+/* Responsive adjustments for expandable rows */
+@media (max-width: 768px) {
+  .superadmin-stock-container .vaccine-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .superadmin-stock-container .vaccine-stock-info {
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .superadmin-stock-container .stock-details {
+    align-items: flex-start;
+  }
+  
+  .superadmin-stock-container .stock-quantity {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .superadmin-stock-container .main-content {
+    margin-left: 250px;
+    width: calc(100% - 250px);
+    padding: 1.5rem;
+  }
+  
+  .superadmin-stock-container .quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+    display: grid;
+  }
+  
+  .superadmin-stock-container .stat-card {
+    min-width: unset;
+  }
+  
+  .superadmin-stock-container .search-filter-section {
+    gap: 15px;
+  }
+  
+  .superadmin-stock-container .filter-box {
+    gap: 10px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .superadmin-stock-container .main-content {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    padding: 1.75rem;
+  }
+  
+  .superadmin-stock-container .quick-stats {
+    grid-template-columns: repeat(3, 1fr);
+    display: grid;
+  }
+}
+
+@media (min-width: 1025px) {
+  .superadmin-stock-container .main-content {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    padding: 2rem;
+  }
+  
+  .superadmin-stock-container .quick-stats {
+    grid-template-columns: repeat(4, 1fr);
+    display: grid;
+  }
+}
+
+
+
+/* Smooth Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation for screen size transitions */
+@media (prefers-reduced-motion: no-preference) {
+  .superadmin-stock-container,
+  .superadmin-stock-container .main-content,
+  .superadmin-stock-container .quick-stats,
+  .superadmin-stock-container .search-filter-section,
+  .superadmin-stock-container .inventory-table-container,
+  .superadmin-stock-container .stat-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .superadmin-stock-container .stat-card {
+    animation: fadeIn 0.5s ease-out;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .superadmin-stock-container .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .superadmin-stock-container .inventory-table tr {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .superadmin-stock-container .inventory-table tr:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .superadmin-stock-container .inventory-table tr:nth-child(1) { animation: fadeIn 0.3s ease-out 0.1s both; }
+  .superadmin-stock-container .inventory-table tr:nth-child(2) { animation: fadeIn 0.3s ease-out 0.2s both; }
+  .superadmin-stock-container .inventory-table tr:nth-child(3) { animation: fadeIn 0.3s ease-out 0.3s both; }
+  .superadmin-stock-container .inventory-table tr:nth-child(4) { animation: fadeIn 0.3s ease-out 0.4s both; }
+  .superadmin-stock-container .inventory-table tr:nth-child(5) { animation: fadeIn 0.3s ease-out 0.5s both; }
+}
+
+/* Add Vaccine Stock Modal Styles */
+.add-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.add-modal.active {
+  display: flex;
+  opacity: 1;
+  visibility: visible;
+}
+
+.add-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.add-modal-content {
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.add-modal.active .add-modal-content {
+  transform: scale(1);
+}
+
+.add-modal-header {
+  padding: 2rem 2rem 1rem 2rem;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.add-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+}
+
+.add-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.add-modal-body {
+  padding: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.form-group .form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+.form-group .form-control:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.form-group select.form-control {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  padding-right: 2.5rem;
+  appearance: none;
+}
+
+.add-modal-footer {
+  padding: 1rem 2rem 2rem 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  border-top: 1px solid #e9ecef;
+}
+
+.cancel-btn, .confirm-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cancel-btn {
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 2px solid #e9ecef;
+}
+
+.cancel-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #218838, #1ea085);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+  .add-modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .add-modal-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+  }
+  
+  .add-modal-body {
+    padding: 1.5rem;
+  }
+  
+  .add-modal-footer {
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    flex-direction: column;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  
+  .cancel-btn, .confirm-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .add-modal-header {
+    padding: 1rem 1rem 0.5rem 1rem;
+  }
+  
+  .add-modal-body {
+    padding: 1rem;
+  }
+  
+  .add-modal-footer {
+    padding: 0.5rem 1rem 1rem 1rem;
+  }
+  
+  .add-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .add-modal-header h3 {
+    font-size: 1.3rem;
+  }
+}

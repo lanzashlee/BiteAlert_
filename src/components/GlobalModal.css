@@ -1,0 +1,205 @@
+/* Global Modal Styles - Unified Design */
+.unified-modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.unified-modal.active {
+  display: flex;
+  opacity: 1;
+  visibility: visible;
+}
+
+.unified-modal-overlay {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  background: transparent;
+}
+
+.unified-modal-content {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.15);
+  padding: 2rem 2.5rem;
+  max-width: 400px;
+  width: 90vw;
+  z-index: 2;
+  text-align: center;
+  animation: modalPopIn 0.2s;
+}
+
+/* Wider modal for custom content */
+.unified-modal-content.has-custom-content {
+  max-width: 600px;
+  text-align: left;
+}
+
+@keyframes modalPopIn {
+  from { 
+    transform: scale(0.95); 
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}
+
+.unified-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.unified-modal-icon-wrapper {
+  background: #800000;
+  color: #fff;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.unified-modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #800000;
+  font-weight: 600;
+}
+
+.unified-modal-body {
+  margin-bottom: 1rem;
+}
+
+.unified-modal-body p {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.05rem;
+}
+
+.unified-modal-subtitle {
+  color: #888;
+  font-size: 0.95rem;
+}
+
+.unified-modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.unified-modal-footer .cancel-btn,
+.unified-modal-footer .confirm-btn {
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 80px;
+}
+
+.unified-modal-footer .cancel-btn {
+  background: #eee;
+  color: #333;
+}
+
+.unified-modal-footer .cancel-btn:hover {
+  background: #ddd;
+  transform: translateY(-1px);
+}
+
+.unified-modal-footer .confirm-btn {
+  background: #800000;
+  color: #fff;
+}
+
+.unified-modal-footer .confirm-btn:hover {
+  background: #a83232;
+  transform: translateY(-1px);
+}
+
+.unified-modal-footer .confirm-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.unified-modal-footer .confirm-btn:disabled:hover {
+  background: #ccc;
+  transform: none;
+}
+
+/* Icon variations for different modal types */
+.unified-modal-icon-wrapper.warning {
+  background: #ffc107;
+  color: #000;
+}
+
+.unified-modal-icon-wrapper.danger {
+  background: #dc3545;
+  color: #fff;
+}
+
+.unified-modal-icon-wrapper.success {
+  background: #28a745;
+  color: #fff;
+}
+
+.unified-modal-icon-wrapper.info {
+  background: #007bff;
+  color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .unified-modal-content {
+    padding: 1.5rem 2rem;
+    max-width: 95vw;
+  }
+  
+  .unified-modal-content.has-custom-content {
+    max-width: 95vw;
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .unified-modal-header h3 {
+    font-size: 1.2rem;
+  }
+  
+  .unified-modal-body p {
+    font-size: 1rem;
+  }
+  
+  .unified-modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .unified-modal-footer .cancel-btn,
+  .unified-modal-footer .confirm-btn {
+    width: 100%;
+  }
+}

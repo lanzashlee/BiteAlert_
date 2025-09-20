@@ -1,0 +1,377 @@
+@import './ResponsiveSidebar.css';
+@import '../GlobalResponsive.css';
+
+/* SuperAdmin Center Archive Styles */
+.barangay-section {
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
+}
+
+.barangay-header {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.barangay-description {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  margin: 0 0 var(--spacing-lg) 0;
+  line-height: 1.6;
+}
+
+.button-group {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.primary-btn {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  border: none;
+  background: var(--primary-color);
+  color: white;
+}
+
+.primary-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.accounts-table th {
+  background: var(--gray-50);
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.accounts-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--font-size-sm);
+}
+
+.accounts-table tr:hover {
+  background: var(--gray-50);
+}
+
+.table-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.restore-btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  border: 2px solid #16a34a;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: #16a34a;
+  color: white;
+  min-width: 110px;
+  justify-content: center;
+}
+
+.restore-btn:hover { background: #15803d; border-color: #15803d; transform: translateY(-1px); }
+
+.restore-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xxl);
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+}
+
+/* Modal Styles */
+.react-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-md);
+}
+
+.react-modal {
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.react-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.react-modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.react-modal-body {
+  padding: var(--spacing-lg);
+}
+
+.react-modal-body p {
+  margin: 0 0 var(--spacing-sm) 0;
+  line-height: 1.6;
+}
+
+.react-modal-body p:last-child {
+  margin-bottom: 0;
+}
+
+.react-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.secondary-btn {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  border: 1px solid var(--border-color);
+  background: var(--gray-100);
+  color: var(--text-primary);
+}
+
+.secondary-btn:hover {
+  background: var(--gray-200);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .barangay-section {
+    padding: var(--spacing-lg);
+  }
+  
+  .barangay-header {
+    font-size: var(--font-size-xl);
+  }
+  
+  .button-group {
+    flex-direction: column;
+  }
+  
+  .primary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .accounts-table th,
+  .accounts-table td {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+  
+  .table-actions {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+  
+  .restore-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .barangay-section {
+    padding: var(--spacing-md);
+  }
+  
+  .barangay-header {
+    font-size: var(--font-size-lg);
+  }
+  
+  .barangay-description {
+    font-size: var(--font-size-sm);
+  }
+  
+  .accounts-table {
+    font-size: var(--font-size-xs);
+  }
+  
+  .accounts-table th,
+  .accounts-table td {
+    padding: var(--spacing-xs);
+  }
+  
+  .react-modal {
+    margin: var(--spacing-sm);
+    max-height: 95vh;
+  }
+  
+  .react-modal-header,
+  .react-modal-body,
+  .react-modal-footer {
+    padding: var(--spacing-md);
+  }
+  
+  .react-modal-footer {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .barangay-section {
+    padding: var(--spacing-sm);
+  }
+  
+  .barangay-header {
+    font-size: var(--font-size-base);
+  }
+  
+  .barangay-description {
+    font-size: var(--font-size-xs);
+  }
+  
+  .primary-btn {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+  
+  .accounts-table {
+    border-radius: var(--border-radius-md);
+  }
+  
+  .loading-state {
+    padding: var(--spacing-xl);
+    font-size: var(--font-size-sm);
+  }
+  
+  .react-modal-backdrop {
+    padding: var(--spacing-xs);
+  }
+  
+  .react-modal-header,
+  .react-modal-body,
+  .react-modal-footer {
+    padding: var(--spacing-sm);
+  }
+  
+  .secondary-btn,
+  .restore-btn {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* Smooth Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .barangay-section {
+    animation: fadeIn 0.5s ease-out;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .barangay-section:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  
+  .accounts-table tr {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .accounts-table tr:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .primary-btn,
+  .restore-btn,
+  .secondary-btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .primary-btn:hover,
+  .restore-btn:hover,
+  .secondary-btn:hover {
+    transform: translateY(-2px);
+  }
+  
+  .react-modal {
+    animation: scaleIn 0.3s ease-out;
+  }
+}

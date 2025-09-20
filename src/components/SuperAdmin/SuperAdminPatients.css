@@ -1,0 +1,1758 @@
+/* SuperAdmin Patients Module Styles */
+@import './SuperAdminDashboard.css';
+@import '../GlobalResponsive.css';
+@import './ResponsiveSidebar.css';
+
+/* Main Content Styling */
+.main-content {
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.content-header h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Filters Section */
+.admin-dashboard-filters {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: center;
+}
+
+.admin-dashboard-filters input[type="text"],
+.admin-dashboard-filters input[type="date"] {
+  padding: 14px 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.9);
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.admin-dashboard-filters input[type="text"]:focus,
+.admin-dashboard-filters input[type="date"]:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1), 0 4px 16px rgba(220, 38, 38, 0.1);
+  transform: translateY(-1px);
+}
+
+.admin-dashboard-filters select {
+  padding: 14px 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.admin-dashboard-filters select:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1), 0 4px 16px rgba(220, 38, 38, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  font-size: 1.1rem;
+  color: #64748b;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.loading-state i {
+  margin-right: 0.75rem;
+  color: #dc2626;
+  font-size: 1.2rem;
+}
+
+/* Error State */
+.error-state {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.1);
+}
+
+/* Table Container */
+.table-responsive {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+  overflow-y: auto;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  width: 100%;
+  max-height: 600px;
+  min-height: 400px;
+  position: relative;
+  max-width: 100%;
+}
+
+/* Custom Scrollbar Styling */
+.table-responsive::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.8);
+  border-radius: 10px;
+  margin: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  transform: scale(1.05);
+}
+
+.table-responsive::-webkit-scrollbar-corner {
+  background: rgba(241, 245, 249, 0.8);
+  border-radius: 10px;
+}
+
+/* Firefox Scrollbar Styling */
+.table-responsive {
+  scrollbar-width: thin;
+  scrollbar-color: #dc2626 rgba(241, 245, 249, 0.8);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 1200px;
+  white-space: nowrap;
+}
+
+.table thead {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.table th {
+  padding: 16px 12px;
+  text-align: left;
+  background: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  border-bottom: 2px solid #e2e8f0 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table th:first-child {
+  border-top-left-radius: 20px;
+}
+
+.table th:last-child {
+  border-top-right-radius: 20px;
+}
+
+/* Column Width Controls - Fixed widths for horizontal scroll */
+.table th:nth-child(1), .table td:nth-child(1) { /* Patient ID */
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+.table th:nth-child(2), .table td:nth-child(2) { /* Full Name */
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+}
+
+.table th:nth-child(3), .table td:nth-child(3) { /* Gender */
+  width: 120px;
+  min-width: 120px;
+  max-width: 140px;
+}
+
+.table th:nth-child(4), .table td:nth-child(4) { /* Address */
+  width: 420px;
+  min-width: 380px;
+  max-width: 520px;
+}
+
+.table th:nth-child(5), .table td:nth-child(5) { /* Barangay */
+  width: 160px;
+  min-width: 140px;
+  max-width: 200px;
+}
+
+.table th:nth-child(6), .table td:nth-child(6) { /* Created At */
+  width: 220px;
+  min-width: 200px;
+  max-width: 260px;
+}
+
+/* Patient ID Styling */
+.patient-id {
+  font-weight: 600;
+  color: #dc2626;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.table tbody tr:hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 20px;
+}
+
+.table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 20px;
+}
+
+.table td {
+  padding: 14px 12px;
+  color: #374151;
+  font-size: 0.9rem;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 5rem 2rem;
+  color: #6b7280;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  display: block;
+  opacity: 0.6;
+  color: #9ca3af;
+  transition: all 0.3s ease;
+}
+
+.empty-state:hover i {
+  transform: scale(1.1);
+  opacity: 0.8;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.empty-state small {
+  margin-top: 0.75rem;
+  display: block;
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+/* Pagination */
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.pagination-container button {
+  padding: 12px 20px;
+  border: 2px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.9);
+  color: #374151;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 100px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.pagination-container button:hover:not(:disabled) {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.15);
+}
+
+.pagination-container button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  transform: none;
+  box-shadow: none;
+}
+
+.pagination-container span {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 1rem;
+  padding: 8px 16px;
+  background: rgba(241, 245, 249, 0.8);
+  border-radius: 12px;
+}
+
+/* Status Badge Styling */
+.status-badge {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.status-badge.active {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #166534;
+}
+
+.status-badge.inactive {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #dc2626;
+}
+
+.status-badge.day0 {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+}
+
+.status-badge.day3 {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+}
+
+.status-badge.day7 {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  color: #3730a3;
+}
+
+.status-badge.day14 {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  color: #be185d;
+}
+
+.status-badge.day28 {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #166534;
+}
+
+.status-badge.novaccination {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #6b7280;
+}
+
+.status-badge.nocasefound {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #dc2626;
+}
+
+.status-badge.loading {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  color: #0369a1;
+}
+
+.status-badge.deceased {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #374151;
+}
+
+/* Name Styling */
+.patient-name {
+  font-weight: 700;
+  color: #1e293b;
+  transition: all 0.3s ease;
+}
+
+/* Contact Info Styling */
+.contact-info {
+  color: #64748b;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+/* Address Styling */
+.address-info {
+  color: #64748b;
+  font-size: 0.85rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  display: block;
+  line-height: 1.3;
+  width: 100%;
+}
+
+/* Barangay Styling */
+.barangay-info {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+/* Birthdate Styling */
+.birthdate-info {
+  color: #64748b;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+/* Gender Styling */
+.gender-info {
+  text-transform: capitalize;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.3s ease;
+}
+
+/* Date Registered Styling */
+.date-registered {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+/* Vaccination Status Styling */
+.vaccination-status {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+/* Hover Effects */
+.table tbody tr:hover .patient-name {
+  color: #dc2626;
+  transform: scale(1.02);
+}
+
+.table tbody tr:hover .contact-info,
+.table tbody tr:hover .address-info,
+.table tbody tr:hover .barangay-info,
+.table tbody tr:hover .birthdate-info,
+.table tbody tr:hover .date-registered,
+.table tbody tr:hover .vaccination-status {
+  color: #374151;
+}
+
+.table tbody tr:hover .status-badge {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Design - Horizontal scroll approach */
+@media (max-width: 1200px) {
+  .table {
+    min-width: 1040px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
+  
+  .content-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .content-header h2 {
+    font-size: 1.8rem;
+  }
+  
+  .admin-dashboard-filters {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .table {
+    min-width: 1040px;
+  }
+  
+  .table th, .table td {
+    padding: 10px 8px;
+    font-size: 0.85rem;
+  }
+  
+  /* Keep fixed widths for horizontal scroll */
+  .table th:nth-child(1), .table td:nth-child(1) { /* Patient ID */
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+  }
+  
+  .table th:nth-child(2), .table td:nth-child(2) { /* Full Name */
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+  }
+  
+  .table th:nth-child(3), .table td:nth-child(3) { /* Address */
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+  }
+  
+  .table th:nth-child(4), .table td:nth-child(4) { /* Barangay */
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+  }
+  
+  .table th:nth-child(5), .table td:nth-child(5) { /* Next Vaccination */
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .table {
+    min-width: 1040px;
+  }
+  
+  .table th, .table td {
+    padding: 8px 6px;
+    font-size: 0.8rem;
+  }
+  
+  .patient-id {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+  }
+  
+  .address-info {
+    font-size: 0.8rem;
+  }
+}
+
+/* Patient Modal Styles */
+.patient-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Modal Scrollbar Styling */
+.patient-modal {
+  scrollbar-width: thin;
+  scrollbar-color: #dc2626 rgba(241, 245, 249, 0.8);
+}
+
+.patient-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+.patient-modal::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.8);
+  border-radius: 8px;
+  margin: 2px;
+}
+
+.patient-modal::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.patient-modal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+}
+
+.patient-modal {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 95vw;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  animation: scaleIn 0.3s ease-out;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.patient-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem 2.5rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+  border-radius: 24px 24px 0 0;
+}
+
+.patient-modal-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.patient-modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  font-size: 1.5rem;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.patient-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.patient-modal-body {
+  padding: 2.5rem;
+}
+
+.patient-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Patient Profile Section */
+.patient-profile-section {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.patient-profile-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  min-width: 200px;
+}
+
+.patient-avatar-large {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2.5rem;
+  box-shadow: 0 8px 32px rgba(220, 38, 38, 0.2);
+}
+
+.patient-profile-info {
+  text-align: center;
+}
+
+.patient-name-large {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.patient-email {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0 0 1rem 0;
+}
+
+
+.patient-profile-right {
+  flex: 1;
+}
+
+.patient-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-row .detail-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-row .detail-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #000000;
+}
+
+.verification-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.verification-badge.verified {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.verification-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Patient Details */
+.patient-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.details-section {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #dc2626;
+  border-radius: 2px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #000000;
+  padding: 0.5rem 0;
+}
+
+.address-display {
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 1rem;
+  color: #000000;
+  line-height: 1.5;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+
+/* Password Change Modal Styles */
+.password-change-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.admin-info-section {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+.admin-info-section h5 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #dc2626;
+}
+
+.admin-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #000000;
+  padding: 0.25rem 0;
+}
+
+.info-value.status-active {
+  color: #059669;
+  font-weight: 600;
+}
+
+.info-value.status-inactive {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.current-password-display {
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.current-password-display label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 0.5rem;
+}
+
+.password-display {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  cursor: not-allowed;
+  font-weight: 500;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #000000;
+}
+
+.password-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.password-input:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.password-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.password-requirements {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.password-requirements h6 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #000000;
+  margin: 0 0 0.5rem 0;
+}
+
+.password-requirements ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #000000;
+  font-size: 0.85rem;
+}
+
+.password-requirements li {
+  margin-bottom: 0.25rem;
+}
+
+.info-section {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 2rem;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.info-section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.info-section h5 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #dc2626;
+  border-radius: 2px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+  transition: all 0.3s ease;
+}
+
+.info-row:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem -1rem;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 700;
+  color: #374151;
+  min-width: 140px;
+  font-size: 0.95rem;
+}
+
+.info-value {
+  color: #64748b;
+  text-align: right;
+  flex: 1;
+  margin-left: 1.5rem;
+  font-size: 0.95rem;
+  word-break: break-word;
+  font-weight: 500;
+}
+
+.patient-modal-footer {
+  padding: 2rem 2.5rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  display: flex;
+  justify-content: flex-end;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 0 0 24px 24px;
+}
+
+.patient-modal-btn {
+  padding: 14px 28px;
+  border: 2px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.9);
+  color: #374151;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 120px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.patient-modal-btn:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.15);
+}
+
+/* Case History Table Scrollbar */
+.info-section .table-responsive {
+  scrollbar-width: thin;
+  scrollbar-color: #dc2626 rgba(241, 245, 249, 0.8);
+}
+
+.info-section .table-responsive::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.info-section .table-responsive::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.6);
+  border-radius: 6px;
+  margin: 2px;
+}
+
+.info-section .table-responsive::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.info-section .table-responsive::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+}
+
+/* Case History Table Responsive Styles */
+.info-section .table-responsive {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 400px;
+  min-height: 200px;
+}
+
+.info-section .table-responsive .table {
+  min-width: 800px;
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Case History Table Column Widths */
+.info-section .table th:nth-child(1), 
+.info-section .table td:nth-child(1) { /* Date */
+  width: 15%;
+  min-width: 80px;
+}
+
+.info-section .table th:nth-child(2), 
+.info-section .table td:nth-child(2) { /* Registration No */
+  width: 15%;
+  min-width: 100px;
+}
+
+.info-section .table th:nth-child(3), 
+.info-section .table td:nth-child(3) { /* Type */
+  width: 12%;
+  min-width: 70px;
+}
+
+.info-section .table th:nth-child(4), 
+.info-section .table td:nth-child(4) { /* Animal */
+  width: 12%;
+  min-width: 70px;
+}
+
+.info-section .table th:nth-child(5), 
+.info-section .table td:nth-child(5) { /* Category */
+  width: 15%;
+  min-width: 80px;
+}
+
+.info-section .table th:nth-child(6), 
+.info-section .table td:nth-child(6) { /* Diagnosis */
+  width: 16%;
+  min-width: 100px;
+}
+
+.info-section .table th:nth-child(7), 
+.info-section .table td:nth-child(7) { /* Status */
+  width: 15%;
+  min-width: 80px;
+}
+
+/* Case History Table Cell Styling */
+.info-section .table td {
+  padding: 8px 6px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.info-section .table th {
+  padding: 10px 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Case History Status Badge */
+.info-section .status-badge {
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.info-section .status-badge.active {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #166534;
+}
+
+.info-section .status-badge.inactive {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #dc2626;
+}
+
+/* Case History Expandable Row */
+.info-section .table tbody tr.expandable-row {
+  background: #f8fafc;
+}
+
+.info-section .table tbody tr.expandable-row td {
+  padding: 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.info-section .table tbody tr.expandable-row .case-details-container {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  margin: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+
+
+
+/* Case History Responsive Breakpoints */
+@media (max-width: 1200px) {
+  .info-section .table-responsive .table {
+    min-width: 700px;
+  }
+  
+  .info-section .table th,
+  .info-section .table td {
+    padding: 6px 4px;
+    font-size: 0.75rem;
+  }
+  
+  .info-section .table th {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .patient-profile-section {
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  
+  .patient-details-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  
+  .info-section .table-responsive .table {
+    min-width: 600px;
+  }
+  
+  .info-section .table th,
+  .info-section .table td {
+    padding: 5px 3px;
+    font-size: 0.7rem;
+  }
+  
+  .info-section .table th {
+    font-size: 0.65rem;
+  }
+  
+  .info-section .status-badge {
+    padding: 1px 4px;
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .patient-profile-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .patient-profile-left {
+    align-items: center;
+  }
+  
+  .patient-details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
+  
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .content-header h2 {
+    font-size: 1.8rem;
+  }
+  
+  .admin-dashboard-filters {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .admin-dashboard-filters input[type="text"],
+  .admin-dashboard-filters input[type="date"],
+  .admin-dashboard-filters select {
+    width: 100%;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+    max-height: calc(100vh - 250px);
+  }
+  
+  .table th,
+  .table td {
+    padding: 12px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .address-info {
+    max-width: 200px;
+  }
+  
+  /* Case History Mobile Styles */
+  .info-section .table-responsive {
+    max-height: 300px;
+    border-radius: 8px;
+  }
+  
+  .info-section .table-responsive .table {
+    min-width: 500px;
+  }
+  
+  .info-section .table th,
+  .info-section .table td {
+    padding: 4px 2px;
+    font-size: 0.65rem;
+  }
+  
+  .info-section .table th {
+    font-size: 0.6rem;
+  }
+  
+  .info-section .status-badge {
+    padding: 1px 3px;
+    font-size: 0.55rem;
+  }
+  
+  .pagination-container {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .patient-modal {
+    margin: 1rem;
+    max-height: 95vh;
+  }
+  
+  .patient-modal-header {
+    padding: 1.5rem 2rem;
+  }
+  
+  .patient-modal-title {
+    font-size: 1.5rem;
+  }
+  
+  .patient-modal-body {
+    padding: 2rem;
+  }
+  
+  .patient-info-container {
+    gap: 1.5rem;
+  }
+  
+  .patient-profile-section {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  
+  .patient-profile-left {
+    min-width: auto;
+    align-items: center;
+  }
+  
+  .patient-avatar-large {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+  }
+  
+  .patient-name-large {
+    font-size: 1.3rem;
+  }
+  
+  .patient-details-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .detail-row {
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .patient-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .patient-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  
+  .patient-name {
+    font-size: 1.3rem;
+  }
+  
+  .details-section {
+    padding: 1.25rem;
+  }
+  
+  .details-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .address-display {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+  
+  
+  .admin-info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .info-section {
+    padding: 1.5rem;
+  }
+  
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .info-label {
+    min-width: auto;
+  }
+  
+  .info-value {
+    text-align: left;
+    margin-left: 0;
+  }
+  
+  .patient-modal-footer {
+    padding: 1.5rem 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 0.75rem;
+  }
+  
+  .content-header h2 {
+    font-size: 1.6rem;
+  }
+  
+  .admin-dashboard-filters {
+    padding: 1.25rem;
+  }
+  
+  .table-responsive {
+    max-height: calc(100vh - 200px);
+  }
+  
+  .table th,
+  .table td {
+    padding: 10px 6px;
+    font-size: 0.8rem;
+  }
+  
+  .address-info {
+    max-width: 150px;
+  }
+  
+  /* Case History Extra Small Screens */
+  .info-section .table-responsive {
+    max-height: 250px;
+    border-radius: 6px;
+  }
+  
+  .info-section .table-responsive .table {
+    min-width: 400px;
+  }
+  
+  .info-section .table th,
+  .info-section .table td {
+    padding: 3px 1px;
+    font-size: 0.6rem;
+  }
+  
+  .info-section .table th {
+    font-size: 0.55rem;
+  }
+  
+  .info-section .status-badge {
+    padding: 1px 2px;
+    font-size: 0.5rem;
+  }
+  
+  /* Hide less important columns on very small screens */
+  .info-section .table th:nth-child(2), 
+  .info-section .table td:nth-child(2) { /* Registration No */
+    display: none;
+  }
+  
+  .info-section .table th:nth-child(6), 
+  .info-section .table td:nth-child(6) { /* Diagnosis */
+    display: none;
+  }
+  
+  
+  .patient-modal-backdrop {
+    padding: 0.5rem;
+  }
+  
+  .patient-modal {
+    margin: 0.5rem;
+  }
+  
+  .patient-modal-header {
+    padding: 1rem 1.5rem;
+  }
+  
+  .patient-modal-body {
+    padding: 1.5rem;
+  }
+  
+  .patient-profile-section {
+    padding: 1rem;
+  }
+  
+  .patient-avatar-large {
+    width: 70px;
+    height: 70px;
+    font-size: 1.75rem;
+  }
+  
+  .patient-name-large {
+    font-size: 1.2rem;
+  }
+  
+  .patient-details-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .detail-row {
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .detail-row .detail-label {
+    font-size: 0.75rem;
+  }
+  
+  .detail-row .detail-value {
+    font-size: 0.9rem;
+  }
+  
+  .patient-header {
+    padding: 1rem;
+  }
+  
+  .patient-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+  
+  .patient-name {
+    font-size: 1.1rem;
+  }
+  
+  .details-section {
+    padding: 1rem;
+  }
+  
+  .section-title {
+    font-size: 1rem;
+  }
+  
+  .detail-label {
+    font-size: 0.8rem;
+  }
+  
+  .detail-value {
+    font-size: 0.9rem;
+  }
+  
+  .address-display {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    min-height: 50px;
+  }
+  
+  
+  .info-section {
+    padding: 1.25rem;
+  }
+}
+
+/* Smooth Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation for screen size transitions */
+@media (prefers-reduced-motion: no-preference) {
+  .main-content,
+  .content-header,
+  .admin-dashboard-filters,
+  .table-responsive,
+  .patient-modal,
+  .patient-modal-backdrop {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .admin-dashboard-filters {
+    animation: fadeIn 0.6s ease-out;
+  }
+  
+  .table-responsive {
+    animation: fadeIn 0.6s ease-out;
+  }
+  
+  .patient-modal {
+    animation: scaleIn 0.4s ease-out;
+  }
+}

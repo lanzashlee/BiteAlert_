@@ -1,0 +1,700 @@
+/* Global Responsive Design System */
+
+/* CSS Custom Properties for Responsive Design */
+:root {
+  /* Breakpoints */
+  --mobile: 480px;
+  --tablet: 768px;
+  --laptop: 1024px;
+  --desktop: 1200px;
+  --large-desktop: 1440px;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+  
+  /* Font Sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-normal: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+  
+  /* Z-index layers */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* Responsive Container */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+  transition: all var(--transition-normal);
+}
+
+/* Responsive Grid System */
+.responsive-grid {
+  display: grid;
+  gap: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+.responsive-grid-1 { grid-template-columns: 1fr; }
+.responsive-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.responsive-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.responsive-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Responsive Flexbox */
+.responsive-flex {
+  display: flex;
+  gap: var(--spacing-md);
+  transition: all var(--transition-normal);
+}
+
+.responsive-flex-wrap {
+  flex-wrap: wrap;
+}
+
+.responsive-flex-column {
+  flex-direction: column;
+}
+
+/* Responsive Typography */
+.responsive-text {
+  transition: all var(--transition-normal);
+}
+
+.responsive-heading {
+  font-weight: 600;
+  line-height: 1.2;
+  transition: all var(--transition-normal);
+}
+
+/* Responsive Cards */
+.responsive-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+.responsive-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Tables */
+.responsive-table-container {
+  overflow-x: auto;
+  border-radius: 0;
+  transition: all var(--transition-normal);
+  width: 100%;
+  display: block;
+}
+
+/* Map existing table containers to responsive container */
+.table-container,
+.accounts-container .table-container,
+.content-body .table-container {
+  overflow-x: auto;
+  width: 100%;
+  display: block;
+}
+
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+  transition: all var(--transition-normal);
+  border-radius: 0;
+}
+
+/* Make existing tables responsive without renaming HTML */
+table.accounts-table,
+table.data-table,
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 0;
+}
+
+.responsive-table th,
+.responsive-table td {
+  padding: var(--spacing-md);
+  text-align: left;
+  transition: all var(--transition-normal);
+}
+
+table.accounts-table th,
+table.accounts-table td,
+table.data-table th,
+table.data-table td {
+  padding: var(--spacing-md);
+  text-align: left;
+}
+
+/* Zebra striping and sticky header helpers */
+table.accounts-table tbody tr:nth-child(odd),
+table.data-table tbody tr:nth-child(odd) {
+  background: rgba(0,0,0,0.015);
+}
+
+table.accounts-table thead th,
+table.data-table thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+/* Responsive Forms */
+.responsive-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+.responsive-input {
+  padding: var(--spacing-md);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: var(--text-base);
+  transition: all var(--transition-normal);
+}
+
+.responsive-input:focus {
+  outline: none;
+  border-color: #800000;
+  box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.responsive-button {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
+  border-radius: 8px;
+  font-size: var(--text-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.responsive-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Sidebar */
+.responsive-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 280px;
+  background: #800000;
+  color: white;
+  z-index: var(--z-fixed);
+  transition: all var(--transition-normal);
+  overflow-y: auto;
+}
+
+/* Responsive Main Content */
+.responsive-main-content {
+  margin-left: 280px;
+  padding: var(--spacing-xl);
+  min-height: 100vh;
+  transition: all var(--transition-normal);
+}
+
+/* Responsive Navigation */
+.responsive-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+.responsive-nav-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 8px;
+  transition: all var(--transition-normal);
+}
+
+.responsive-nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Responsive Modals */
+.responsive-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-normal);
+}
+
+.responsive-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.responsive-modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: var(--spacing-xl);
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: all var(--transition-normal);
+}
+
+.responsive-modal.active .responsive-modal-content {
+  transform: scale(1);
+}
+
+/* Responsive Filters */
+.responsive-filters {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  align-items: center;
+  transition: all var(--transition-normal);
+}
+
+.responsive-filter-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: all var(--transition-normal);
+}
+
+/* Responsive Stats Cards */
+.responsive-stats-grid {
+  display: grid;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  transition: all var(--transition-normal);
+}
+
+.responsive-stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: var(--spacing-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  transition: all var(--transition-normal);
+}
+
+.responsive-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Charts */
+.responsive-chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: var(--spacing-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-normal);
+}
+
+/* Responsive Loading States */
+.responsive-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  transition: all var(--transition-normal);
+}
+
+.responsive-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #800000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  transition: all var(--transition-normal);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.responsive-fade-in {
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+.responsive-slide-in {
+  animation: slideIn var(--transition-normal) ease-out;
+}
+
+.responsive-scale-in {
+  animation: scaleIn var(--transition-normal) ease-out;
+}
+
+/* Mobile First Responsive Design */
+/* Extra Small devices (phones, 480px and down) */
+@media (max-width: 480px) {
+  .responsive-container {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .responsive-grid-2,
+  .responsive-grid-3,
+  .responsive-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .responsive-flex {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .responsive-sidebar {
+    transform: translateX(-100%);
+    width: 100%;
+  }
+  
+  .responsive-sidebar.active {
+    transform: translateX(0);
+  }
+  
+  .responsive-main-content {
+    margin-left: 0;
+    padding: var(--spacing-md);
+  }
+  
+  .responsive-nav {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .responsive-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .responsive-filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .responsive-stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .responsive-stat-card {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--spacing-md);
+  }
+  
+  .responsive-table-container {
+    font-size: var(--text-sm);
+  }
+
+  /* Tighten table padding on mobile */
+  table.accounts-table th,
+  table.accounts-table td,
+  table.data-table th,
+  table.data-table td {
+    padding: var(--spacing-sm);
+  }
+
+/* Force square corners for all tables/wrappers */
+.table-container,
+.accounts-container .table-container,
+.content-body .table-container,
+table,
+table.data-table,
+table.accounts-table {
+  border-radius: 0 !important;
+  }
+  
+  .responsive-table th,
+  .responsive-table td {
+    padding: var(--spacing-sm);
+  }
+  
+  .responsive-modal-content {
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md);
+  }
+  
+  .responsive-heading {
+    font-size: var(--text-xl);
+  }
+  
+  .responsive-text {
+    font-size: var(--text-sm);
+  }
+}
+
+/* Small devices (tablets, 481px to 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .responsive-container {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .responsive-grid-3,
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .responsive-sidebar {
+    width: 250px;
+  }
+  
+  .responsive-main-content {
+    margin-left: 250px;
+    padding: var(--spacing-lg);
+  }
+  
+  .responsive-nav {
+    gap: var(--spacing-md);
+  }
+  
+  .responsive-filters {
+    gap: var(--spacing-sm);
+  }
+  
+  .responsive-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .responsive-heading {
+    font-size: var(--text-2xl);
+  }
+  
+  .responsive-text {
+    font-size: var(--text-base);
+  }
+}
+
+/* Medium devices (laptops, 769px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .responsive-container {
+    padding: 0 var(--spacing-lg);
+  }
+  
+  .responsive-grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .responsive-sidebar {
+    width: 260px;
+  }
+  
+  .responsive-main-content {
+    margin-left: 260px;
+    padding: var(--spacing-xl);
+  }
+  
+  .responsive-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .responsive-heading {
+    font-size: var(--text-3xl);
+  }
+}
+
+/* Large devices (desktops, 1025px to 1200px) */
+@media (min-width: 1025px) and (max-width: 1200px) {
+  .responsive-container {
+    max-width: 1140px;
+  }
+  
+  .responsive-sidebar {
+    width: 270px;
+  }
+  
+  .responsive-main-content {
+    margin-left: 270px;
+  }
+  
+  .responsive-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .responsive-heading {
+    font-size: var(--text-4xl);
+  }
+}
+
+/* Extra large devices (large desktops, 1201px and up) */
+@media (min-width: 1201px) {
+  .responsive-container {
+    max-width: 1320px;
+  }
+  
+  .responsive-sidebar {
+    width: 280px;
+  }
+  
+  .responsive-main-content {
+    margin-left: 280px;
+  }
+  
+  .responsive-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (orientation: landscape) and (max-height: 600px) {
+  .responsive-sidebar {
+    overflow-y: auto;
+  }
+  
+  .responsive-main-content {
+    padding: var(--spacing-md);
+  }
+  
+  .responsive-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md);
+  }
+  
+  .responsive-stat-card {
+    padding: var(--spacing-md);
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .responsive-card,
+  .responsive-stat-card,
+  .responsive-modal-content {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .responsive-fade-in,
+  .responsive-slide-in,
+  .responsive-scale-in {
+    animation: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .responsive-card,
+  .responsive-stat-card,
+  .responsive-modal-content,
+  .responsive-chart-container {
+    background: #1a1a1a;
+    color: #ffffff;
+  }
+  
+  .responsive-input {
+    background: #2a2a2a;
+    border-color: #404040;
+    color: #ffffff;
+  }
+  
+  .responsive-table th,
+  .responsive-table td {
+    border-color: #404040;
+  }
+}
+
+/* Print styles */
+@media print {
+  .responsive-sidebar,
+  .responsive-nav,
+  .responsive-filters,
+  .responsive-button {
+    display: none !important;
+  }
+  
+  .responsive-main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .responsive-card,
+  .responsive-stat-card {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+}
