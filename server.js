@@ -43,6 +43,13 @@ try {
 
 // MongoDB Configuration
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://lricamara6:Lanz0517@bitealert.febjlgm.mongodb.net/bitealert?retryWrites=true&w=majority";
+
+// Validate MongoDB URI
+if (!MONGODB_URI || (!MONGODB_URI.startsWith('mongodb://') && !MONGODB_URI.startsWith('mongodb+srv://'))) {
+    console.error('❌ Invalid MongoDB URI. Please check your MONGODB_URI environment variable.');
+    console.error('Current MONGODB_URI:', MONGODB_URI ? 'Set but invalid' : 'Not set');
+    process.exit(1);
+}
 const MONGODB_OPTIONS = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
