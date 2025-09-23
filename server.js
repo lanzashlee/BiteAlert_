@@ -17,7 +17,7 @@ const PORT = process.env.API_PORT || 4000;
 // Middleware Setup
 app.use(express.json());
 app.use(cors());
-app.use(express.static(path.join(__dirname)));
+// Remove static file serving - frontend will be served separately
 
 // Initialize Gemini client (server-side only)
 let genAI = null;
@@ -311,12 +311,17 @@ function broadcastUpdate(data) {
     });
 }
 
-// HTML Routes
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
-app.get('/dashboard(.html)?', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
-app.get('/admin_dashboard(.html)?', (req, res) => res.sendFile(path.join(__dirname, 'admin-management.html')));
-app.get('/create_account(.html)?', (req, res) => res.sendFile(path.join(__dirname, 'create_account.html')));
-app.get('/admin_profile(.html)?', (req, res) => res.sendFile(path.join(__dirname, 'admin_profile.html')));
+// Root route - API information
+app.get('/', (req, res) => {
+    res.json({
+        message: 'BiteAlert API Server',
+        version: '1.0.0',
+        endpoints: {
+            health: '/api/health',
+            docs: 'API endpoints are available under /api/'
+        }
+    });
+});
 
 // API Routes
 // Create Account
