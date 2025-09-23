@@ -2,8 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
-// Home & Auth
-import Home from './components/Home/Home.jsx';
+// Auth
 import Login from './components/Auth/Login';
 
 // Dashboards
@@ -39,7 +38,7 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
 
         {/* General dashboard */}
