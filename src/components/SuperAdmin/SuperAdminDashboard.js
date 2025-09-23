@@ -436,7 +436,7 @@ const SuperAdminDashboard = () => {
       const response = await fetch(summaryUrl);
       const result = await response.json();
       if (result.success && result.data) {
-        const { totalPatients, healthCenters } = result.data;
+        const { totalPatients, healthCenters, activeCases, adminCount } = result.data;
         
         // For center-based admins, adjust the counts to be center-specific
         let centerSpecificHealthCenters = healthCenters;
@@ -450,12 +450,14 @@ const SuperAdminDashboard = () => {
           totalPatients,
           vaccineStocks: totalStock,
           healthCenters: centerSpecificHealthCenters,
-          staffCount: staffCount // Use the center-specific staff count we calculated above
+          staffCount: staffCount, // Use the center-specific staff count we calculated above
+          activeCases: typeof activeCases === 'number' ? activeCases : 0,
+          adminCount: typeof adminCount === 'number' ? adminCount : 0
         });
       }
     } catch (error) {
       console.error('Error updating dashboard summary:', error);
-      setSummary({ totalPatients: 0, vaccineStocks: 0, healthCenters: 0, staffCount: 0 });
+      setSummary({ totalPatients: 0, vaccineStocks: 0, healthCenters: 0, staffCount: 0, activeCases: 0, adminCount: 0 });
       } finally {
         setLoading(false);
       }
@@ -723,6 +725,47 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
           </div>
+
+          {/* The following cards are visible only to superadmins */}
+          {((currentUser?.role || '').toLowerCase() === 'superadmin') && (
+            <>
+              <div className="card" data-tooltip="Total number of administrator accounts in the system">
+                <div className="card-icon" style={{ background: 'rgba(0, 123, 255, 0.1)' }}>
+                  <i className="fa-solid fa-user-shield" style={{ color: '#007bff' }} />
+                </div>
+                <div className="card-info">
+                  <div className="card-title">Administrator Accounts</div>
+                  <div className="card-value" id="adminCount">
+                    {loading ? (
+                      <SmallLoadingSpinner />
+                    ) : (
+                      <span className="value-text">
+                        {summary?.adminCount?.toLocaleString() || '0'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="card" data-tooltip="Total number of active bite cases (pending or in progress)">
+                <div className="card-icon" style={{ background: 'rgba(255, 71, 87, 0.1)' }}>
+                  <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ff4757' }} />
+                </div>
+                <div className="card-info">
+                  <div className="card-title">Active Cases</div>
+                  <div className="card-value" id="activeCases">
+                    {loading ? (
+                      <SmallLoadingSpinner />
+                    ) : (
+                      <span className="value-text">
+                        {summary?.activeCases?.toLocaleString() || '0'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Charts using react-chartjs-2 */}

@@ -2,6 +2,7 @@
 @import '../GlobalResponsive.css';
 
 /* SuperAdmin Create Account Styles */
+.content-header { margin: 0 5rem 1.25rem 3rem; padding: 1.5rem 2.5rem; background:#fff; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
 .create-account-container {
   max-width: 800px;
   margin: 0 auto;

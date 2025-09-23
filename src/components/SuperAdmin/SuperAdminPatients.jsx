@@ -380,6 +380,8 @@ const SuperAdminPatients = () => {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
   const [barangay, setBarangay] = useState('');
+  const [centerFilter, setCenterFilter] = useState('');
+  const [centerOptions, setCenterOptions] = useState([]);
   const [dateRegistered, setDateRegistered] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [vaccinationDate, setVaccinationDate] = useState('');
@@ -441,12 +443,33 @@ const SuperAdminPatients = () => {
     if (query) usp.set('q', query);
     if (status) usp.set('vaccinationDay', status);
     if (barangay) usp.set('barangay', barangay);
+    if (centerFilter) usp.set('center', centerFilter);
     if (dateFilter) usp.set('dateFilter', dateFilter);
     if (vaccinationDate) usp.set('vaccinationDate', vaccinationDate);
     usp.set('page', String(page));
     usp.set('limit', String(PAGE_SIZE));
     return usp.toString();
-  }, [query, status, barangay, dateFilter, vaccinationDate, page]);
+  }, [query, status, barangay, centerFilter, dateFilter, vaccinationDate, page]);
+
+  // Load centers for filter dropdown
+  useEffect(() => {
+    async function fetchCenters() {
+      try {
+        const res = await fetch('/api/centers');
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+        const names = Array.from(new Set((list || [])
+          .filter(c => !c.isArchived)
+          .map(c => String(c.centerName || c.name || '').trim())
+          .filter(Boolean)))
+          .sort((a,b)=>a.localeCompare(b));
+        setCenterOptions(names);
+      } catch (_) {
+        setCenterOptions([]);
+      }
+    }
+    fetchCenters();
+  }, []);
 
   // Fetch bite cases to get exposure dates
   useEffect(() => {
@@ -502,7 +525,17 @@ const SuperAdminPatients = () => {
         // Apply additional client-side filtering if needed
         const allPatients = data.data || [];
         const filteredPatients = filterByCenter(allPatients, 'center');
-        setPatients(filteredPatients);
+        // Apply explicit center filter if chosen
+        const norm = (v) => String(v || '')
+          .toLowerCase()
+          .replace(/\s*health\s*center$/i,'')
+          .replace(/\s*center$/i,'')
+          .replace(/-/g,' ')
+          .trim();
+        const byCenter = centerFilter 
+          ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
+          : filteredPatients;
+        setPatients(byCenter);
         setTotalPages(data.totalPages || 1);
       } catch (e) {
         if (e.name !== 'AbortError') setError(e.message);
@@ -1404,6 +1437,45 @@ const SuperAdminPatients = () => {
           
           <div style={{ position: 'relative' }}>
             <select 
+              value={centerFilter} 
+              onChange={(e) => { setCenterFilter(e.target.value); setPage(1); }}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="">All Centers</option>
+              {centerOptions.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            {centerFilter && (
+              <div style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                <i className="fa fa-hospital"></i>
+              </div>
+            )}
+          </div>
+          
+          <div style={{ position: 'relative' }}>
+            <select 
               value={status} 
               onChange={(e) => handleVaccinationDayChange(e.target.value)}
               style={{
@@ -1625,6 +1697,31 @@ const SuperAdminPatients = () => {
                 </button>
               </span>
             )}
+            {centerFilter && (
+              <span style={{
+                backgroundColor: '#dc2626',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '500'
+              }}>
+                Center: {centerFilter}
+                <button
+                  onClick={() => setCenterFilter('')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'white',
+                    marginLeft: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            )}
             {status && (
               <span style={{
                 backgroundColor: '#dc2626',
@@ -1708,6 +1805,7 @@ const SuperAdminPatients = () => {
               onClick={() => {
                 setQuery('');
                 setStatus('');
+                setCenterFilter('');
                 setBarangay('');
                 setDateFilter('');
                 setVaccinationDate('');
@@ -1746,6 +1844,7 @@ const SuperAdminPatients = () => {
                   <th>Gender</th>
                   <th>Address</th>
                   <th>Barangay</th>
+                  <th>Center</th>
                   <th>Created At</th>
                 </tr>
               </thead>
@@ -1831,6 +1930,9 @@ const SuperAdminPatients = () => {
                         </td>
                         <td>
                           <span className="barangay-info">{p.barangay || 'N/A'}</span>
+                        </td>
+                        <td>
+                          {p.center || p.centerName || 'N/A'}
                         </td>
                         <td>
                           {getPatientDateRegistered(p)}

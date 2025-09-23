@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import './SuperAdminAuditTrail.css';
 import LoadingSpinner from './DogLoadingSpinner.jsx';
+import { apiFetch, apiConfig } from '../../config/api';
 
 function formatDateTime(value) {
   try {
@@ -26,6 +27,8 @@ const SuperAdminAuditTrail = () => {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [role, setRole] = useState('');
+  const [center, setCenter] = useState('');
+  const [centerOptions, setCenterOptions] = useState([]);
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const location = useLocation();
 
@@ -72,9 +75,8 @@ const SuperAdminAuditTrail = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch(apiConfig.endpoints.logout, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
         });
       } catch (err) {
@@ -98,7 +100,7 @@ const SuperAdminAuditTrail = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/audit-trail');
+        const res = await apiFetch(apiConfig.endpoints.auditTrail);
         if (!res.ok) throw new Error('Failed to load audit trail');
         const json = await res.json();
         setData(Array.isArray(json) ? json : (json.data || []));
@@ -111,11 +113,40 @@ const SuperAdminAuditTrail = () => {
     load();
   }, []);
 
+  // fetch centers for filter options
+  useEffect(() => {
+    const fetchCenters = async () => {
+      try {
+        const res = await apiFetch(apiConfig.endpoints.centers);
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+        const names = Array.from(new Set((list || [])
+          .filter(c => !c.isArchived)
+          .map(c => String(c.centerName || c.name || '').trim())
+          .filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+        setCenterOptions(names);
+      } catch (_) {
+        setCenterOptions([]);
+      }
+    };
+    fetchCenters();
+  }, []);
+
   const filtered = useMemo(() => {
     let arr = [...data];
     if (from) arr = arr.filter(x => new Date(x.timestamp) >= new Date(from));
     if (to) arr = arr.filter(x => new Date(x.timestamp) <= new Date(to));
     if (role) arr = arr.filter(x => x.role && x.role.toLowerCase() === role.toLowerCase());
+    if (center) {
+      const norm = (v) => String(v || '')
+        .toLowerCase()
+        .replace(/\s*health\s*center$/i,'')
+        .replace(/\s*center$/i,'')
+        .replace(/-/g,' ')
+        .trim();
+      const want = norm(center);
+      arr = arr.filter(x => norm(x.centerName || x.center) === want);
+    }
     const s = search.trim().toLowerCase();
     if (s) {
       arr = arr.filter(entry => {
@@ -133,7 +164,7 @@ const SuperAdminAuditTrail = () => {
       });
     }
     return arr;
-  }, [data, from, to, role, search]);
+  }, [data, from, to, role, center, search]);
 
   return (
     <div className="dashboard-container">
@@ -184,6 +215,14 @@ const SuperAdminAuditTrail = () => {
                 <option value="patient">Patient</option>
               </select>
             </div>
+            <div className="filter-group">
+              <select value={center} onChange={e => setCenter(e.target.value)} className="form-control">
+                <option value="">All Centers</option>
+                {centerOptions.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="table-container">
@@ -194,6 +233,7 @@ const SuperAdminAuditTrail = () => {
                   <th>Role</th>
                   <th>Name</th>
                   <th>Action</th>
+                  <th>Center</th>
                   <th>Timestamp</th>
                 </tr>
               </thead>
@@ -240,6 +280,9 @@ const SuperAdminAuditTrail = () => {
                       </td>
                       <td>
                         <span className="action-text">{entry.action}</span>
+                      </td>
+                      <td>
+                        <span className="center-name">{entry.centerName || entry.center || 'N/A'}</span>
                       </td>
                       <td>
                         <span className="timestamp">{formatDateTime(entry.timestamp)}</span>

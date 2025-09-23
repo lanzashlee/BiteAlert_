@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedModal from '../UnifiedModal';
 import './SuperAdminCenter.css';
@@ -7,6 +7,7 @@ const SuperAdminCenter = () => {
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [centerFilter, setCenterFilter] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [showModal, setShowModal] = useState(false);
   const [modalTitle, setModalTitle] = useState('Add Center');
@@ -16,6 +17,12 @@ const SuperAdminCenter = () => {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [showSignoutModal, setShowSignoutModal] = useState(false);
+  const centerOptions = useMemo(() => {
+    const names = Array.from(
+      new Set((centers || []).map(c => String(c.centerName || '').trim()).filter(Boolean))
+    ).sort((a,b)=>a.localeCompare(b));
+    return names;
+  }, [centers]);
 
   // Handle sign out
   const handleSignOut = () => {
@@ -204,7 +211,16 @@ const SuperAdminCenter = () => {
             </select>
           </div>
           <div className="toolbar-right">
-            <button className="clear-btn" onClick={() => { setQuery(''); setSortBy('name'); }}>Clear Filters</button>
+            <select
+              className="filter-select"
+              value={centerFilter}
+              onChange={(e)=>setCenterFilter(e.target.value)}
+            >
+              <option value="">All Centers</option>
+              {centerOptions.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
             <button className="primary-btn" onClick={openAdd}>
               <i className="fa fa-plus" /> Add Center
             </button>
@@ -243,10 +259,17 @@ const SuperAdminCenter = () => {
                   centers
                     .filter((c) => {
                       const s = query.trim().toLowerCase();
-                      if (!s) return true;
-                      return [c.centerName, c.address, c.contactPerson, c.contactNumber]
+                      const cf = centerFilter.trim().toLowerCase();
+                      const matchesSearch = !s || [c.centerName, c.address, c.contactPerson, c.contactNumber]
                         .filter(Boolean)
                         .some(v => String(v).toLowerCase().includes(s));
+                      const matchesCenter = !cf || String(c.centerName || '')
+                        .toLowerCase()
+                        .replace(/\s*health\s*center$/, '')
+                        .replace(/\s*center$/, '')
+                        .replace(/-/g,' ')
+                        .includes(cf.replace(/-/g,' '));
+                      return matchesSearch && matchesCenter;
                     })
                     .sort((a, b) => {
                       const ax = (sortBy === 'address' ? a.address : sortBy === 'contact' ? a.contactPerson : a.centerName) || '';

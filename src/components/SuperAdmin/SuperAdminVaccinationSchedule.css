@@ -15,9 +15,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding: 0 0.5rem;
+  margin: 0 5rem 1.25rem 3rem;
+  padding: 1.5rem 2.5rem;
   gap: 12px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .header-actions {
@@ -144,6 +147,9 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+.filter-controls .filter-select:first-child {
+  min-width: 200px; /* Center dropdown wider */
 }
 .filter-select {
   padding: 10px 12px;

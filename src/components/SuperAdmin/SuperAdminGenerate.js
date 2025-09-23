@@ -142,9 +142,57 @@ const SuperAdminGenerate = () => {
       
       const response = await fetch(url);
       const result = await response.json();
+      let normalized = [];
       if (result.success) {
-        setAnimalBiteData(Array.isArray(result.data) ? result.data : (result.data?.table?.body || []));
+        const raw = Array.isArray(result.data) ? result.data : (result.data?.table?.body || []);
+        normalized = (raw || []).map((it) => ({
+          ...it,
+          caseNo: it.caseNo || it.case_no || it.case || '',
+          name: it.name || it.patientName || it.patient_name || '',
+          date: it.date || it.createdAt || it.created_at || it.dateReported || '',
+          animalType: it.animalType || it.animal || it.animal_type || it.type || '',
+          biteSite: it.biteSite || it.bite_site || it.biteLocation || it.bite_location || it.location || ''
+        }));
       }
+
+      // If animalType/biteSite are missing, enrich from bitecases collection
+      try {
+        const bitesRes = await fetch('/api/bitecases');
+        const bitesJson = await bitesRes.json();
+        const bites = Array.isArray(bitesJson) ? bitesJson : (bitesJson.data || bitesJson.cases || []);
+        const byCaseNo = new Map();
+        (bites || []).forEach((b) => {
+          const key = String(b.caseNo || b.case_no || '').trim();
+          if (key) byCaseNo.set(key, b);
+        });
+
+        normalized = (normalized || []).map((row) => {
+          let src = undefined;
+          if (row.caseNo && byCaseNo.has(String(row.caseNo))) src = byCaseNo.get(String(row.caseNo));
+          if (!src) {
+            // fallback: rough match by name and date
+            src = (bites || []).find((b) => {
+              const nm = String(b.patientName || b.name || '').toLowerCase().trim();
+              const rn = String(row.name || '').toLowerCase().trim();
+              if (!nm || !rn || nm !== rn) return false;
+              const bd = new Date(b.date || b.createdAt || '').toDateString();
+              const rd = new Date(row.date || '').toDateString();
+              return bd && rd && bd === rd;
+            });
+          }
+          if (src) {
+            const aType = src.animalType || src.animal || src.animal_type;
+            const bSite = src.biteSite || src.bite_site || src.biteLocation || src.bite_location;
+            return { ...row, animalType: row.animalType || aType || '', biteSite: row.biteSite || bSite || '' };
+          }
+          return row;
+        });
+      } catch (e) {
+        // non-fatal
+        console.warn('Failed to enrich animal bite data from bitecases:', e);
+      }
+
+      setAnimalBiteData(normalized);
     } catch (error) {
       console.error('Error loading animal bite data:', error);
     }
@@ -200,13 +248,42 @@ const SuperAdminGenerate = () => {
       const response = await fetch(url);
       const result = await response.json();
       console.log('Vaccination API response:', result);
+      const normalizeVaccinationDay = (val) => {
+        if (!val) return '0';
+        const s = String(val).toLowerCase();
+        // Try to extract digits (e.g., "day 0", "d0", "0")
+        const m = s.match(/(\d{1,2})/);
+        if (m) return String(parseInt(m[1], 10));
+        // Map common words
+        if (s.includes('zero')) return '0';
+        if (s.includes('three')) return '3';
+        if (s.includes('seven')) return '7';
+        if (s.includes('fourteen')) return '14';
+        if (s.includes('twenty-eight') || s.includes('twentyeight') || s.includes('28')) return '28';
+        return '0';
+      };
+
+      const prettyVaccinationDay = (val) => `Day ${normalizeVaccinationDay(val)}`;
+
+      const resolveName = (o) => {
+        const byParts = [o.firstName || o.firstname, o.middleName || o.middlename, o.lastName || o.lastname]
+          .filter(Boolean).join(' ').trim();
+        const byNested = o.patient ? [o.patient.firstName, o.patient.middleName, o.patient.lastName].filter(Boolean).join(' ').trim() : '';
+        return (
+          o.patientName || o.patient_name || o.fullName || o.fullname || o.name || byParts || byNested || ''
+        );
+      };
+      const resolveDay = (o) => prettyVaccinationDay(o.day || o.vaccinationDay || o.vaccination_day || o.scheduleDay || '0');
+      const resolveDate = (o) => o.date || o.scheduledDate || o.scheduled_date || o.day0Date || o.day0_date || o.d0Date || o.createdAt;
+      const resolveCenter = (o) => o.center || o.centerName || o.center_name || o.facility || '';
+
       if (Array.isArray(result)) {
         // Process bite cases to extract vaccination data
         const vaccinationData = result.map(case_ => ({
-          patientName: case_.patientName || case_.name || 'Unknown',
-          day: 'Day 0', // Default to Day 0, could be enhanced to determine actual day
-          date: case_.day0Date || case_.day0_date || case_.d0Date || case_.createdAt,
-          center: case_.center || 'Unknown',
+          patientName: resolveName(case_) || '—',
+          day: resolveDay(case_),
+          date: resolveDate(case_),
+          center: resolveCenter(case_) || '—',
           status: case_.status || 'Scheduled',
           notes: case_.notes || ''
         }));
@@ -214,10 +291,10 @@ const SuperAdminGenerate = () => {
         setVaccinationData(vaccinationData);
       } else if (result.success && Array.isArray(result.data)) {
         const vaccinationData = result.data.map(case_ => ({
-          patientName: case_.patientName || case_.name || 'Unknown',
-          day: 'Day 0',
-          date: case_.day0Date || case_.day0_date || case_.d0Date || case_.createdAt,
-          center: case_.center || 'Unknown',
+          patientName: resolveName(case_) || '—',
+          day: resolveDay(case_),
+          date: resolveDate(case_),
+          center: resolveCenter(case_) || '—',
           status: case_.status || 'Scheduled',
           notes: case_.notes || ''
         }));
@@ -538,7 +615,13 @@ const SuperAdminGenerate = () => {
     }
 
     if (day && day !== 'all') {
-      filtered = filtered.filter(row => row.day === day);
+      const key = (val) => {
+        const s = String(val || '').toLowerCase();
+        const m = s.match(/(\d{1,2})/);
+        return m ? String(parseInt(m[1], 10)) : '';
+      };
+      const wanted = key(day);
+      filtered = filtered.filter(row => key(row.day) === wanted);
     }
 
     if (center && center !== 'all') {
@@ -671,6 +754,81 @@ const SuperAdminGenerate = () => {
     return true;
   };
 
+  // ---- PDF Header Logos Helpers ----
+  const loadImage = (src) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+
+  const addHeaderLogos = async (doc) => {
+    try {
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      const logoW = 22;
+      const logoH = 22;
+      const y = 6;
+      const left1X = margin;
+      const left2X = margin + logoW + 6;
+      const right2X = pageWidth - margin - logoW; // far right
+      const right1X = right2X - logoW - 6;       // left of far right
+
+      // Order: prefer two left (sanjuan, sj1), two right (bp and optional extra)
+      const sources = [
+        '/img/sanjuan.png',
+        '/img/sj1.png',
+        '/img/bp.png'
+      ];
+
+      const loaded = (await Promise.all(sources.map((s)=>loadImage(s).catch(()=>null)))).filter(Boolean);
+
+      const add = (image, x) => {
+        const src = image.src.toLowerCase();
+        const fmt = src.endsWith('.jpg') || src.endsWith('.jpeg') ? 'JPEG' : 'PNG';
+        doc.addImage(image, fmt, x, y, logoW, logoH);
+      };
+
+      // Place up to two on the left
+      if (loaded[0]) add(loaded[0], left1X);
+      if (loaded[1]) add(loaded[1], left2X);
+      // Remaining go on the right (from rightmost inward)
+      const rightImages = loaded.slice(2);
+      if (rightImages.length === 1) {
+        add(rightImages[0], right2X);
+      } else if (rightImages.length >= 2) {
+        add(rightImages[0], right1X);
+        add(rightImages[1], right2X);
+      }
+    } catch (e) {
+      // Non-fatal; continue without logos
+      console.warn('PDF logos failed to load:', e);
+    }
+  };
+
+  const addCenteredHeading = (doc, heading, subLines = []) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 18; // under the logos
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(String(heading || ''), pageWidth / 2, y, { align: 'center' });
+    y += 6;
+    if (subLines && subLines.length) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      subLines.forEach((line) => {
+        doc.text(String(line || ''), pageWidth / 2, y, { align: 'center' });
+        y += 6;
+      });
+    }
+    // Date line
+    doc.setFontSize(10);
+    doc.text(new Date().toLocaleDateString(), pageWidth / 2, y, { align: 'center' });
+    y += 8;
+    return y; // return next Y for content
+  };
+
   // Handle sign out
   const handleSignOut = () => {
     setShowSignoutModal(true);
@@ -737,7 +895,7 @@ const SuperAdminGenerate = () => {
   };
 
   // Export functions
-  const exportRabiesUtilPDF = () => {
+  const exportRabiesUtilPDF = async () => {
     if (!checkPDFLibraries()) return;
     
     setLoading(true);
@@ -747,16 +905,8 @@ const SuperAdminGenerate = () => {
       // Create PDF using jsPDF
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
-      
-      // Header
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('NAME OF FACILITY: Animal Bite Treatment Center', 14, 16);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('CASES PER CENTER AND VACCINE USED', 14, 24);
-      doc.setFontSize(10);
-      doc.text(new Date().toLocaleDateString(), 14, 30);
+      await addHeaderLogos(doc);
+      const startY = addCenteredHeading(doc, 'CASES PER CENTER AND VACCINE USED', ['NAME OF FACILITY: Animal Bite Treatment Center']);
 
       // Table
       const columns = ['Date', 'Center', 'Patient Name', 'Vaccine Used'];
@@ -768,7 +918,7 @@ const SuperAdminGenerate = () => {
       ]);
 
       doc.autoTable({
-        startY: 36,
+        startY,
         head: [columns],
         body: rows,
         styles: { fontSize: 9, cellPadding: 2 },
@@ -788,7 +938,7 @@ const SuperAdminGenerate = () => {
     }
   };
 
-  const exportAnimalBitePDF = () => {
+  const exportAnimalBitePDF = async () => {
     if (!checkPDFLibraries()) return;
     
     setLoading(true);
@@ -797,15 +947,8 @@ const SuperAdminGenerate = () => {
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('NAME OF FACILITY: Animal Bite Treatment Center', 14, 16);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('ANIMAL BITE EXPOSURE REPORT', 14, 24);
-      doc.setFontSize(10);
-      doc.text(new Date().toLocaleDateString(), 14, 30);
+      await addHeaderLogos(doc);
+      const startY = addCenteredHeading(doc, 'ANIMAL BITE EXPOSURE REPORT', ['NAME OF FACILITY: Animal Bite Treatment Center']);
 
       const columns = ['Case No.', 'Date', 'Patient Name', 'Age', 'Sex', 'Address', 'Animal Type', 'Bite Site', 'Status'];
       const rows = filteredData.map(row => [
@@ -815,13 +958,13 @@ const SuperAdminGenerate = () => {
         String(row.age || ''),
         String(row.sex || ''),
         String(row.address || ''),
-        String(row.animalType || ''),
-        String(row.biteSite || ''),
+        String(row.animalType || row.animal || ''),
+        String(row.biteSite || row.bite_site || ''),
         String(row.status || '')
       ]);
 
       doc.autoTable({
-        startY: 36,
+        startY,
         head: [columns],
         body: rows,
         styles: { fontSize: 9, cellPadding: 2 },
@@ -841,7 +984,7 @@ const SuperAdminGenerate = () => {
     }
   };
 
-  const exportCustomDemoPDF = () => {
+  const exportCustomDemoPDF = async () => {
     if (!checkPDFLibraries()) return;
     
     setLoading(true);
@@ -850,16 +993,11 @@ const SuperAdminGenerate = () => {
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('NAME OF FACILITY: Animal Bite Treatment Center', 14, 16);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('CUSTOM DEMOGRAPHIC REPORT', 14, 24);
-      doc.setFontSize(10);
-      doc.text(`Filter: Sex = ${customDemoFilters.sex}, Age Group = ${customDemoFilters.ageGroup}`, 14, 30);
-      doc.text(new Date().toLocaleDateString(), 14, 36);
+      await addHeaderLogos(doc);
+      const startY = addCenteredHeading(doc, 'CUSTOM DEMOGRAPHIC REPORT', [
+        'NAME OF FACILITY: Animal Bite Treatment Center',
+        `Filter: Sex = ${customDemoFilters.sex}, Age Group = ${customDemoFilters.ageGroup}`
+      ]);
 
       const columns = ['Name', 'Age', 'Sex', 'Address', 'Contact', 'Registration Date'];
       const rows = filteredData.map(row => [
@@ -872,7 +1010,7 @@ const SuperAdminGenerate = () => {
       ]);
 
       doc.autoTable({
-        startY: 42,
+        startY,
         head: [columns],
         body: rows,
         styles: { fontSize: 9, cellPadding: 2 },
@@ -893,7 +1031,7 @@ const SuperAdminGenerate = () => {
   };
 
   // New export functions
-  const exportPatientsPDF = () => {
+  const exportPatientsPDF = async () => {
     if (!checkPDFLibraries()) return;
     
     setLoading(true);
@@ -902,15 +1040,11 @@ const SuperAdminGenerate = () => {
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('NAME OF FACILITY: Animal Bite Treatment Center', 14, 16);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('PATIENTS REGISTRATION REPORT', 14, 24);
-      doc.text(`Filter: Sex = ${patientsFilters.sex}, Age Group = ${patientsFilters.ageGroup}, Barangay = ${patientsFilters.barangay}`, 14, 30);
-      doc.text(new Date().toLocaleDateString(), 14, 36);
+      await addHeaderLogos(doc);
+      const startY = addCenteredHeading(doc, 'PATIENTS REGISTRATION REPORT', [
+        'NAME OF FACILITY: Animal Bite Treatment Center',
+        `Filter: Sex = ${patientsFilters.sex}, Age Group = ${patientsFilters.ageGroup}, Barangay = ${patientsFilters.barangay}`
+      ]);
 
       const columns = ['Patient ID', 'Name', 'Age', 'Sex', 'Barangay', 'Address', 'Contact', 'Status', 'Registration Date'];
       const rows = filteredData.map(row => [
@@ -926,7 +1060,7 @@ const SuperAdminGenerate = () => {
       ]);
 
       doc.autoTable({
-        startY: 42,
+        startY,
         head: [columns],
         body: rows,
         styles: { fontSize: 8, cellPadding: 2 },
@@ -946,7 +1080,7 @@ const SuperAdminGenerate = () => {
     }
   };
 
-  const exportVaccinationPDF = () => {
+  const exportVaccinationPDF = async () => {
     if (!checkPDFLibraries()) return;
     
     setLoading(true);
@@ -955,15 +1089,11 @@ const SuperAdminGenerate = () => {
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('NAME OF FACILITY: Animal Bite Treatment Center', 14, 16);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('VACCINATION SCHEDULE REPORT', 14, 24);
-      doc.text(`Filter: Day = ${vaccinationFilters.day}, Center = ${vaccinationFilters.center}, Status = ${vaccinationFilters.status}`, 14, 30);
-      doc.text(new Date().toLocaleDateString(), 14, 36);
+      await addHeaderLogos(doc);
+      const startY = addCenteredHeading(doc, 'VACCINATION SCHEDULE REPORT', [
+        'NAME OF FACILITY: Animal Bite Treatment Center',
+        `Filter: Day = ${vaccinationFilters.day}, Center = ${vaccinationFilters.center}, Status = ${vaccinationFilters.status}`
+      ]);
 
       const columns = ['Patient Name', 'Vaccination Day', 'Scheduled Date', 'Center', 'Status', 'Notes'];
       const rows = filteredData.map(row => [
@@ -976,7 +1106,7 @@ const SuperAdminGenerate = () => {
       ]);
 
       doc.autoTable({
-        startY: 42,
+        startY,
         head: [columns],
         body: rows,
         styles: { fontSize: 9, cellPadding: 2 },
@@ -996,7 +1126,7 @@ const SuperAdminGenerate = () => {
     }
   };
 
-  const exportBarangayPDF = () => {
+  const exportBarangayPDF = async () => {
     if (!checkPDFLibraries()) return;
     
     setLoading(true);
@@ -1005,15 +1135,11 @@ const SuperAdminGenerate = () => {
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('NAME OF FACILITY: Animal Bite Treatment Center', 14, 16);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('BARANGAY ANALYTICS REPORT', 14, 24);
-      doc.text(`Filter: Risk Level = ${barangayFilters.riskLevel}`, 14, 30);
-      doc.text(new Date().toLocaleDateString(), 14, 36);
+      await addHeaderLogos(doc);
+      const startY = addCenteredHeading(doc, 'BARANGAY ANALYTICS REPORT', [
+        'NAME OF FACILITY: Animal Bite Treatment Center',
+        `Filter: Risk Level = ${barangayFilters.riskLevel}`
+      ]);
 
       const columns = ['Barangay', 'Total Cases', 'Risk Level', 'Last Updated', 'Recommendations'];
       const rows = filteredData.map(row => [
@@ -1025,7 +1151,7 @@ const SuperAdminGenerate = () => {
       ]);
 
       doc.autoTable({
-        startY: 42,
+        startY,
         head: [columns],
         body: rows,
         styles: { fontSize: 9, cellPadding: 2 },
@@ -1045,7 +1171,7 @@ const SuperAdminGenerate = () => {
     }
   };
 
-  const exportStaffPDF = () => {
+  const exportStaffPDF = async () => {
     if (!checkPDFLibraries()) return;
     
     setLoading(true);
@@ -1054,15 +1180,11 @@ const SuperAdminGenerate = () => {
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('NAME OF FACILITY: Animal Bite Treatment Center', 14, 16);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('STAFF MANAGEMENT REPORT', 14, 24);
-      doc.text(`Filter: Role = ${staffFilters.role}, Status = ${staffFilters.status}, Center = ${staffFilters.center}`, 14, 30);
-      doc.text(new Date().toLocaleDateString(), 14, 36);
+      await addHeaderLogos(doc);
+      const startY = addCenteredHeading(doc, 'STAFF MANAGEMENT REPORT', [
+        'NAME OF FACILITY: Animal Bite Treatment Center',
+        `Filter: Role = ${staffFilters.role}, Status = ${staffFilters.status}, Center = ${staffFilters.center}`
+      ]);
 
       const columns = ['Name', 'Email', 'Role', 'Center', 'Status', 'Date Added'];
       const rows = filteredData.map(row => [
@@ -1075,7 +1197,7 @@ const SuperAdminGenerate = () => {
       ]);
 
       doc.autoTable({
-        startY: 42,
+        startY,
         head: [columns],
         body: rows,
         styles: { fontSize: 9, cellPadding: 2 },
@@ -1095,7 +1217,7 @@ const SuperAdminGenerate = () => {
     }
   };
 
-  const exportAdminPDF = () => {
+  const exportAdminPDF = async () => {
     if (!checkPDFLibraries()) return;
     
     setLoading(true);
@@ -1104,15 +1226,11 @@ const SuperAdminGenerate = () => {
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('NAME OF FACILITY: Animal Bite Treatment Center', 14, 16);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text('ADMINISTRATOR REPORT', 14, 24);
-      doc.text(`Filter: Role = ${adminFilters.role}, Status = ${adminFilters.status}`, 14, 30);
-      doc.text(new Date().toLocaleDateString(), 14, 36);
+      await addHeaderLogos(doc);
+      const startY = addCenteredHeading(doc, 'ADMINISTRATOR REPORT', [
+        'NAME OF FACILITY: Animal Bite Treatment Center',
+        `Filter: Role = ${adminFilters.role}, Status = ${adminFilters.status}`
+      ]);
 
       const columns = ['Name', 'Email', 'Role', 'Status', 'Date Added', 'Last Login'];
       const rows = filteredData.map(row => [
@@ -1125,7 +1243,7 @@ const SuperAdminGenerate = () => {
       ]);
 
       doc.autoTable({
-        startY: 42,
+        startY,
         head: [columns],
         body: rows,
         styles: { fontSize: 9, cellPadding: 2 },

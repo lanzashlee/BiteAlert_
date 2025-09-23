@@ -11,8 +11,8 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Initialize Express app
 const app = express();
-// Use API_PORT to avoid colliding with CRA's PORT env var, or PORT for production
-const PORT = process.env.PORT || process.env.API_PORT || 4000;
+// Use API_PORT to avoid colliding with CRA's PORT env var
+const PORT = process.env.API_PORT || 4000;
 
 // Middleware Setup
 app.use(express.json());
@@ -43,13 +43,6 @@ try {
 
 // MongoDB Configuration
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://lricamara6:Lanz0517@bitealert.febjlgm.mongodb.net/bitealert?retryWrites=true&w=majority";
-
-// Validate MongoDB URI
-if (!MONGODB_URI || (!MONGODB_URI.startsWith('mongodb://') && !MONGODB_URI.startsWith('mongodb+srv://'))) {
-    console.error('❌ Invalid MongoDB URI. Please check your MONGODB_URI environment variable.');
-    console.error('Current MONGODB_URI:', MONGODB_URI ? 'Set but invalid' : 'Not set');
-    process.exit(1);
-}
 const MONGODB_OPTIONS = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -2641,19 +2634,51 @@ app.post('/api/insert-sample-centers', async (req, res) => {
 // API Endpoints for Prescriptive Analytics
 app.get('/api/bitecases', async (req, res) => {
     try {
-        // Use the correct model for the 'bitecases' collection
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         
-        // Build filter for center-based access
-        let filter = {};
-        const { center } = req.query;
+        const { center, patientId, registrationNumber, name, firstName, lastName } = req.query;
+
+        const filter = {};
+
+        // Optional center filtering (role-based use on frontend)
         if (center) {
-            // Filter by center field (case-insensitive)
             filter.center = { $regex: center, $options: 'i' };
         }
-        
-        // Return all fields for each case
-        const cases = await BiteCase.find(filter).sort({ incidentDate: -1 });
+
+        // Patient-based filtering for history modal
+        const orConditions = [];
+        if (patientId) {
+            try {
+                const maybeId = String(patientId).trim();
+                if (mongoose.Types.ObjectId.isValid(maybeId)) {
+                    orConditions.push({ patientId: new mongoose.Types.ObjectId(maybeId) });
+                }
+                // Also try plain string matches for legacy fields
+                orConditions.push({ patientId: maybeId });
+                orConditions.push({ patientID: maybeId });
+            } catch (_) {
+                // ignore
+            }
+        }
+        if (registrationNumber) {
+            const reg = String(registrationNumber).trim();
+            orConditions.push({ registrationNumber: reg });
+        }
+        if (name) {
+            const n = String(name).trim();
+            orConditions.push({ patientName: { $regex: n, $options: 'i' } });
+        }
+        if (firstName && lastName) {
+            const f = String(firstName).trim();
+            const l = String(lastName).trim();
+            orConditions.push({ firstName: { $regex: `^${f}$`, $options: 'i' }, lastName: { $regex: `^${l}$`, $options: 'i' } });
+        }
+
+        if (orConditions.length > 0) {
+            filter.$or = orConditions;
+        }
+
+        const cases = await BiteCase.find(filter).sort({ createdAt: -1, incidentDate: -1 });
         res.json(cases);
     } catch (error) {
         console.error('Error fetching bite cases:', error);
@@ -3032,11 +3057,11 @@ app.get('/api/reports/rabies-utilization', async (req, res) => {
             }
             
             return {
-                dateRegistered: p.dateRegistered,
-                center: p.center || '',
-                firstName: p.firstName || '',
-                middleName: p.middleName || '',
-                lastName: p.lastName || '',
+            dateRegistered: p.dateRegistered,
+            center: p.center || '',
+            firstName: p.firstName || '',
+            middleName: p.middleName || '',
+            lastName: p.lastName || '',
                 brandName: vaccineUsed, // Use the extracted vaccine information
                 genericName: vaccineUsed // Use the same for both fields
             };
@@ -3358,7 +3383,7 @@ app.get('/api/vaccinestocks', async (req, res) => {
   } catch (err) {
     console.error('Error fetching vaccine stocks:', err);
     res.status(500).json({ success: false, message: 'Failed to fetch vaccine stocks', error: err.message });
-  }
+    }
 });
 
 // API: Add new vaccine stock
@@ -3778,12 +3803,11 @@ app.get('/api/check-name-exists', async (req, res) => {
     res.json({ exists: !!exists });
 });
 
-// Serve static files from React build directory in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'build')));
-    
-    // Handle React routing, return all requests to React app
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// Health check endpoint for Render
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
     });
-}
+});

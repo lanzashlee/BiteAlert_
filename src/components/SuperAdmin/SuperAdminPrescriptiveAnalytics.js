@@ -453,7 +453,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
         <div className="content-body">
           {/* Summary Cards */}
           <div className="summary-cards">
-            <div className="summary-card">
+            <div className="summary-card" title="Barangays with any recorded cases in the selected period">
               <div className="card-icon" style={{ background: 'rgba(0, 123, 255, 0.1)' }}>
                 <i className="fa-solid fa-chart-line" style={{ color: '#007bff' }} />
               </div>
@@ -462,7 +462,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
                 <div className="card-value">{summary.total}</div>
               </div>
             </div>
-            <div className="summary-card">
+            <div className="summary-card" title="Barangays assessed with HIGH priority risk based on recent/severe cases and totals">
               <div className="card-icon" style={{ background: 'rgba(255, 71, 87, 0.1)' }}>
                 <i className="fa-solid fa-exclamation-triangle" style={{ color: '#ff4757' }} />
               </div>
@@ -471,7 +471,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
                 <div className="card-value">{summary.highRisk}</div>
               </div>
             </div>
-            <div className="summary-card">
+            <div className="summary-card" title="Barangays with MEDIUM priority risk level">
               <div className="card-icon" style={{ background: 'rgba(255, 165, 2, 0.1)' }}>
                 <i className="fa-solid fa-clock" style={{ color: '#ffa502' }} />
               </div>
@@ -480,7 +480,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
                 <div className="card-value">{summary.mediumRisk}</div>
               </div>
             </div>
-            <div className="summary-card">
+            <div className="summary-card" title="Barangays with LOW priority risk level">
               <div className="card-icon" style={{ background: 'rgba(46, 213, 115, 0.1)' }}>
                 <i className="fa-solid fa-check-circle" style={{ color: '#2ed573' }} />
               </div>

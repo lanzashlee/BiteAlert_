@@ -32,11 +32,11 @@ body {
 }
 
 .content-header {
-    background: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-    padding: 0 0 1rem 0 !important;
+    background: #ffffff !important;
+    border-radius: 14px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    margin: 0 5rem 1.25rem 3rem !important;
+    padding: 1.5rem 2.5rem !important;
 }
 
 .content-header h2 {

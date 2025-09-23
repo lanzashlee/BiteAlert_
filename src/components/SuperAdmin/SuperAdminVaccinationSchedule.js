@@ -12,11 +12,14 @@ const SuperAdminVaccinationSchedule = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [vaccinationDayFilter, setVaccinationDayFilter] = useState('');
+  const [centerFilter, setCenterFilter] = useState('');
+  const [centerOptions, setCenterOptions] = useState([]);
   const clearFilters = () => {
     setSearchTerm('');
     setStatusFilter('');
     setDateFilter('');
     setVaccinationDayFilter('');
+    setCenterFilter('');
   };
   const [viewMode, setViewMode] = useState('card');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -879,6 +882,26 @@ const SuperAdminVaccinationSchedule = () => {
     fetchData();
   }, []);
 
+  // Load centers for Center filter
+  useEffect(() => {
+    const fetchCenters = async () => {
+      try {
+        const res = await fetch('/api/centers');
+        const json = await res.json();
+        const list = Array.isArray(json) ? json : (json?.data || json?.centers || []);
+        const names = Array.from(new Set((list || [])
+          .filter(c => !c.isArchived)
+          .map(c => String(c.centerName || c.name || '').trim())
+          .filter(Boolean)))
+          .sort((a, b) => a.localeCompare(b));
+        setCenterOptions(names);
+      } catch (_) {
+        setCenterOptions([]);
+      }
+    };
+    fetchCenters();
+  }, []);
+
   // Filtered vaccination data
   const filteredVaccinations = useMemo(() => {
     let filtered = vaccinations;
@@ -913,6 +936,21 @@ const SuperAdminVaccinationSchedule = () => {
       filtered = filtered.filter(v => v.vaccinationDay === vaccinationDayFilter);
     }
 
+    // Center filter
+    if (centerFilter) {
+      const norm = (v) => String(v || '')
+        .toLowerCase()
+        .replace(/\s*health\s*center$/i, '')
+        .replace(/\s*center$/i, '')
+        .replace(/-/g, ' ')
+        .trim();
+      const want = norm(centerFilter);
+      filtered = filtered.filter(v => {
+        const fromPatient = norm(v.patient?.center || v.patient?.centerName || v.patient?.facility || '');
+        return fromPatient === want;
+      });
+    }
+
     // Date filter
     if (dateFilter) {
       const today = new Date();
@@ -925,7 +963,7 @@ const SuperAdminVaccinationSchedule = () => {
     }
 
     return filtered.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
-  }, [searchTerm, statusFilter, vaccinationDayFilter, dateFilter, vaccinations]);
+  }, [searchTerm, statusFilter, vaccinationDayFilter, dateFilter, centerFilter, vaccinations]);
 
   // Vaccination actions
   const handleMarkCompleted = async (vaccinationId) => {
@@ -1779,6 +1817,18 @@ const SuperAdminVaccinationSchedule = () => {
             </div>
             
             <div className="filter-controls">
+              <select 
+                value={centerFilter}
+                onChange={(e) => setCenterFilter(e.target.value)}
+                className="filter-select"
+                title="Filter by health center"
+              >
+                <option value="">All Centers</option>
+                {centerOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+
               <select 
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}

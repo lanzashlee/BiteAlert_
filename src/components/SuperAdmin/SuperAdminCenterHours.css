@@ -2,6 +2,7 @@
 @import '../GlobalResponsive.css';
 
 /* SuperAdmin Center Hours Styles */
+.content-header { margin: 0 5rem 1.25rem 3rem; padding: 1.5rem 2.5rem; background:#fff; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
 .hours-section {
   background: white;
   border-radius: var(--border-radius-lg);
@@ -31,12 +32,13 @@
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  table-layout: fixed; /* ensure headers and cells align based on set widths */
 }
 
 /* Column sizing for horizontal weekday layout */
 .accounts-table th:nth-child(1),
 .accounts-table td:nth-child(1) { /* Center */
-  width: 24%;
+  width: 22%;
 }
 .accounts-table th:nth-child(2),
 .accounts-table td:nth-child(2),
@@ -53,12 +55,12 @@
 }
 .accounts-table th:nth-child(7),
 .accounts-table td:nth-child(7) { /* Contact */
-  width: 16%;
+  width: 14%;
   white-space: nowrap;
 }
 .accounts-table th:nth-child(8),
 .accounts-table td:nth-child(8) { /* Actions */
-  width: 14%;
+  width: 10%;
   text-align: right;
 }
 

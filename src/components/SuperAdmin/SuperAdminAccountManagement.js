@@ -11,6 +11,7 @@ const SuperAdminAccountManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [centerFilter, setCenterFilter] = useState('');
+  const [centers, setCenters] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -43,6 +44,23 @@ const SuperAdminAccountManagement = () => {
     }
   };
 
+  // Fetch centers for dropdown (from Center Data Management)
+  const fetchCenters = async () => {
+    try {
+      const res = await fetch('/api/centers');
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+      const activeOnly = (list || []).filter(c => !c.isArchived);
+      const names = activeOnly
+        .map(c => c.centerName)
+        .filter(Boolean)
+        .sort((a,b)=>String(a).localeCompare(String(b)));
+      setCenters(names);
+    } catch (e) {
+      setCenters([]);
+    }
+  };
+
   // Fetch admin accounts
   const fetchAdminAccounts = async () => {
     try {
@@ -51,7 +69,10 @@ const SuperAdminAccountManagement = () => {
       if (!response.ok) {
         throw new Error('Failed to fetch admin accounts');
       }
-      const accounts = await response.json();
+      const payload = await response.json();
+      const accounts = Array.isArray(payload)
+        ? payload
+        : (payload?.data || payload?.accounts || payload?.value || []);
       // Filter out superadmin accounts - only show regular admin accounts
       const adminOnlyAccounts = accounts.filter(account => 
         account.role.toLowerCase() !== 'superadmin'
@@ -116,11 +137,17 @@ const SuperAdminAccountManagement = () => {
       });
     }
 
-    // Apply center filter
+    // Apply center filter (normalize variations like "Balong-Bato Center")
     if (center !== '') {
-      filtered = filtered.filter(account => 
-        account.center && account.center.toLowerCase().includes(center.toLowerCase())
-      );
+      const normalizeCenter = (val) => String(val || '')
+        .toLowerCase()
+        .replace(/\s*health\s*center$/i, '')
+        .replace(/\s*center$/i, '')
+        .replace(/-/g, ' ')
+        .trim();
+
+      const want = normalizeCenter(center);
+      filtered = filtered.filter(account => normalizeCenter(account.centerName) === want);
     }
 
     setFilteredAccounts(filtered);
@@ -344,6 +371,7 @@ const SuperAdminAccountManagement = () => {
   };
 
   useEffect(() => {
+    fetchCenters();
     fetchAdminAccounts();
   }, []);
 
@@ -384,27 +412,9 @@ const SuperAdminAccountManagement = () => {
                 onChange={handleCenterFilter}
               >
                 <option value="">All Centers</option>
-                <option value="Addition Hills">Addition Hills</option>
-                <option value="Balong-Bato">Balong-Bato</option>
-                <option value="Batis">Batis</option>
-                <option value="Corazon De Jesus">Corazon De Jesus</option>
-                <option value="Ermitaño">Ermitaño</option>
-                <option value="Halo-halo">Halo-halo</option>
-                <option value="Isabelita">Isabelita</option>
-                <option value="Kabayanan">Kabayanan</option>
-                <option value="Little Baguio">Little Baguio</option>
-                <option value="Maytunas">Maytunas</option>
-                <option value="Onse">Onse</option>
-                <option value="Pasadeña">Pasadeña</option>
-                <option value="Pedro Cruz">Pedro Cruz</option>
-                <option value="Progreso">Progreso</option>
-                <option value="Rivera">Rivera</option>
-                <option value="Salapan">Salapan</option>
-                <option value="San Perfecto">San Perfecto</option>
-                <option value="Santa Lucia">Santa Lucia</option>
-                <option value="Tibagan">Tibagan</option>
-                <option value="West Crame">West Crame</option>
-                <option value="Greenhills">Greenhills</option>
+                {centers.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
               <select 
                 className="filter-select" 

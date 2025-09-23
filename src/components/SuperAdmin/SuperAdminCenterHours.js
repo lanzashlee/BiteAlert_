@@ -5,32 +5,53 @@ import './SuperAdminCenterHours.css';
 const SuperAdminCenterHours = () => {
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Holds persisted hours/contact from center_hours collection keyed by centerId
+  const [hoursByCenterId, setHoursByCenterId] = useState({});
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
-    const fetchCenters = async () => {
+    const fetchData = async () => {
       try {
-        // Fetch centers from Center Data Management
+        // Fetch base center list
         const res = await fetch('/api/centers');
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.data || data.centers || []);
         setCenters(list);
+
+        // Fetch persisted hours from dedicated collection
+        try {
+          const hrsRes = await fetch('/api/center_hours');
+          if (hrsRes.ok) {
+            const hrsJson = await hrsRes.json();
+            const arr = Array.isArray(hrsJson) ? hrsJson : (hrsJson.data || hrsJson.centers || hrsJson.centerHours || []);
+            const map = {};
+            (arr || []).forEach((it) => {
+              if (!it) return;
+              const key = it.centerId || it._id || it.id;
+              if (key) {
+                map[String(key)] = { hours: it.hours || {}, contactNumber: it.contactNumber || '' };
+              }
+            });
+            setHoursByCenterId(map);
+          }
+        } catch (_) {}
       } catch (e) {
       } finally {
         setLoading(false);
       }
     };
-    fetchCenters();
+    fetchData();
   }, []);
 
   const days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
 
   const getHoursForDay = (center, day) => {
     const key = day.toLowerCase();
-    const hours = center.hours || {};
+    const persisted = hoursByCenterId[String(center._id)] || {};
+    const hours = persisted.hours || center.hours || {};
     const slot = hours[key] || hours.weekday;
     if (slot && (slot.start || slot.end)) {
       const start = slot.start || '';
@@ -41,10 +62,12 @@ const SuperAdminCenterHours = () => {
   };
 
   const beginEdit = (center) => {
-    const values = { contact: center.contactNumber || '' };
+    const persisted = hoursByCenterId[String(center._id)] || {};
+    const values = { contact: (persisted.contactNumber || center.contactNumber || '') };
     days.forEach((d) => {
       const key = d.toLowerCase();
-      const src = (center.hours && (center.hours[key] || center.hours.weekday)) || {};
+      const baseHours = (persisted.hours || center.hours || {});
+      const src = baseHours[key] || baseHours.weekday || {};
       values[key] = { start: src.start || '', end: src.end || '' };
     });
     setEditingId(center._id);
@@ -80,11 +103,7 @@ const SuperAdminCenterHours = () => {
         if (start && end) cleanedHours[key] = { start, end };
       }
 
-      const payload = {
-        hours: cleanedHours,
-        contactNumber: (editValues.contact || '').trim(),
-      };
-      // Build center_hours document
+      // Build center_hours document for persistence
       const doc = {
         centerId: center._id,
         centerName: center.centerName || center.name,
@@ -93,36 +112,22 @@ const SuperAdminCenterHours = () => {
         updatedAt: new Date().toISOString(),
       };
 
-      // Try to upsert into center_hours collection
-      let ok = false, lastErr = '';
-      // Try common variations to match backend route shapes
-      const attempts = [
-        { url: `/api/center_hours/${encodeURIComponent(center._id)}`, method: 'PUT' },
-        { url: `/api/center_hours?centerId=${encodeURIComponent(center._id)}`, method: 'PUT' },
-        { url: '/api/center_hours', method: 'POST' },
-      ];
-      for (const a of attempts) {
-        try {
-          const res = await fetch(a.url, {
-            method: a.method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(doc),
-          });
-          if (res.ok) { ok = true; break; }
-          const t = await res.text();
-          lastErr = t || `HTTP ${res.status}`;
-        } catch (e) {
-          lastErr = e.message || 'network error';
-        }
+      // Upsert into center_hours collection (server supports this route)
+      const res = await fetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(doc),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `HTTP ${res.status}`);
       }
-      if (!ok) throw new Error(lastErr || 'Failed to save to center_hours');
 
-      // Update local list used for view
-      setCenters((prev) => prev.map((c) => (
-        c._id === center._id
-          ? { ...c, hours: { ...(c.hours||{}), ...(doc.hours||{}) }, contactNumber: doc.contactNumber }
-          : c
-      )));
+      // Update local persisted-hours map so UI reflects saved data and persists on refresh (since we refetch center_hours)
+      setHoursByCenterId((prev) => ({
+        ...prev,
+        [String(center._id)]: { hours: doc.hours, contactNumber: doc.contactNumber },
+      }));
       cancelEdit();
     } catch (err) {
       alert(err.message || 'Failed to save center hours');

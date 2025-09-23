@@ -2,10 +2,14 @@
   "name": "bitealert-client",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "@googlemaps/js-api-loader": "^1.16.10",
-    "@react-three/fiber": "^8.15.19",
+    "@react-three/fiber": "^9.3.0",
     "axios": "^1.6.0",
     "bcrypt": "5.0.1",
     "bootstrap": "^5.3.8",
@@ -26,8 +30,7 @@
     "react-scripts": "5.0.1",
     "three": "^0.179.1",
     "web-vitals": "^2.1.4",
-    "ws": "^8.18.1",
-    "concurrently": "^9.2.1"
+    "ws": "^8.18.1"
   },
   "scripts": {
     "start": "set PORT=3002 && react-scripts start",
@@ -36,8 +39,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "heroku-postbuild": "npm run build",
-    "render-postbuild": "npm run build"
+    "server:prod": "node server.js"
   },
   "proxy": "http://localhost:4000",
   "eslintConfig": {
@@ -59,6 +61,7 @@
     ]
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "nodemon": "^3.1.10"
   }
 }

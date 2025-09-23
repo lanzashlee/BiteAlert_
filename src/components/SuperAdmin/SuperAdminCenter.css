@@ -2,6 +2,7 @@
 @import '../GlobalResponsive.css';
 
 /* SuperAdmin Center Styles */
+.content-header { margin: 0 5rem 1.25rem 3rem; padding: 1.5rem 2.5rem; background:#fff; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
 .barangay-section {
   background: white;
   border-radius: var(--border-radius-lg);
@@ -65,16 +66,7 @@
   flex-wrap: wrap;
 }
 
-.clear-btn {
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 2px solid var(--border-color);
-  background: #ffffff;
-  color: var(--text-primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-.clear-btn:hover { background: var(--gray-50); border-color: #d1d5db; }
+/* clear button removed */
 
 .barangay-header {
   font-size: var(--font-size-2xl);
@@ -122,7 +114,7 @@
 
 .primary-btn {
   background: var(--primary-color);
-  color: #ffffff;
+  color: #e97474;
   border-color: var(--primary-dark);
 }
 
@@ -166,8 +158,8 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-.accounts-table th:nth-child(1) { width: 22%; } /* Center Name */
-.accounts-table th:nth-child(2) { width: 28%; } /* Address */
+.accounts-table th:nth-child(1) { width: 26%; } /* Center Name */
+.accounts-table th:nth-child(2) { width: 24%; } /* Address */
 .accounts-table th:nth-child(3) { width: 20%; } /* Contact Person */
 .accounts-table th:nth-child(4) { width: 14%; } /* Contact Number */
 .accounts-table th:nth-child(5) { width: 16%; } /* Actions */
@@ -437,8 +429,8 @@
     font-size: var(--font-size-xs);
   }
   
-  .accounts-table th:nth-child(1) { width: 30%; } /* Center Name */
-  .accounts-table th:nth-child(2) { width: 25%; } /* Address */
+  .accounts-table th:nth-child(1) { width: 32%; } /* Center Name */
+  .accounts-table th:nth-child(2) { width: 23%; } /* Address */
   .accounts-table th:nth-child(3) { width: 20%; } /* Contact Person */
   .accounts-table th:nth-child(4) { width: 15%; } /* Contact Number */
   .accounts-table th:nth-child(5) { width: 10%; } /* Actions */
@@ -479,8 +471,8 @@
     padding: var(--spacing-xs);
   }
   
-  .accounts-table th:nth-child(1) { width: 35%; } /* Center Name */
-  .accounts-table th:nth-child(2) { width: 30%; } /* Address */
+  .accounts-table th:nth-child(1) { width: 37%; } /* Center Name */
+  .accounts-table th:nth-child(2) { width: 28%; } /* Address */
   .accounts-table th:nth-child(3) { width: 20%; } /* Contact Person */
   .accounts-table th:nth-child(4) { width: 15%; } /* Contact Number */
   .accounts-table th:nth-child(5) { width: 10%; } /* Actions */
@@ -524,8 +516,8 @@
     border-radius: var(--border-radius-md);
   }
   
-  .accounts-table th:nth-child(1) { width: 40%; } /* Center Name */
-  .accounts-table th:nth-child(2) { width: 35%; } /* Address */
+  .accounts-table th:nth-child(1) { width: 42%; } /* Center Name */
+  .accounts-table th:nth-child(2) { width: 33%; } /* Address */
   .accounts-table th:nth-child(3) { width: 15%; } /* Contact Person */
   .accounts-table th:nth-child(4) { width: 10%; } /* Contact Number */
   .accounts-table th:nth-child(5) { width: 10%; } /* Actions */

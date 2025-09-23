@@ -12,6 +12,7 @@ const SuperAdminStaffManagement = () => {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [centerFilter, setCenterFilter] = useState('');
+  const [centerOptions, setCenterOptions] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [notification, setNotification] = useState(null);
@@ -310,6 +311,26 @@ const SuperAdminStaffManagement = () => {
     fetchStaff();
   }, []);
 
+  // Load centers from Center Data Management for the filter dropdown
+  useEffect(() => {
+    const fetchCenters = async () => {
+      try {
+        const res = await fetch('/api/centers');
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+        const names = Array.from(new Set((list || [])
+          .filter(c => !c.isArchived)
+          .map(c => String(c.centerName || c.name || '').trim())
+          .filter(Boolean))
+        ).sort((a,b)=>a.localeCompare(b));
+        setCenterOptions(names);
+      } catch (_) {
+        setCenterOptions([]);
+      }
+    };
+    fetchCenters();
+  }, []);
+
   // Get unique roles for filter dropdown
   const uniqueRoles = useMemo(() => {
     const roles = [...new Set(staff.map(s => s.role).filter(Boolean))];
@@ -448,27 +469,9 @@ const SuperAdminStaffManagement = () => {
                 className="filter-select"
               >
                 <option value="">All Centers</option>
-                <option value="Addition Hills">Addition Hills</option>
-                <option value="Balong-Bato">Balong-Bato</option>
-                <option value="Batis">Batis</option>
-                <option value="Corazon De Jesus">Corazon De Jesus</option>
-                <option value="Ermitaño">Ermitaño</option>
-                <option value="Halo-halo">Halo-halo</option>
-                <option value="Isabelita">Isabelita</option>
-                <option value="Kabayanan">Kabayanan</option>
-                <option value="Little Baguio">Little Baguio</option>
-                <option value="Maytunas">Maytunas</option>
-                <option value="Onse">Onse</option>
-                <option value="Pasadeña">Pasadeña</option>
-                <option value="Pedro Cruz">Pedro Cruz</option>
-                <option value="Progreso">Progreso</option>
-                <option value="Rivera">Rivera</option>
-                <option value="Salapan">Salapan</option>
-                <option value="San Perfecto">San Perfecto</option>
-                <option value="Santa Lucia">Santa Lucia</option>
-                <option value="Tibagan">Tibagan</option>
-                <option value="West Crame">West Crame</option>
-                <option value="Greenhills">Greenhills</option>
+                {centerOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
               </select>
                              <select 
                  value={roleFilter} 
@@ -505,6 +508,7 @@ const SuperAdminStaffManagement = () => {
                     <th>Staff ID</th>
                     <th>Name</th>
                     <th>Role</th>
+                    <th>Center</th>
                     <th>Phone</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -521,6 +525,7 @@ const SuperAdminStaffManagement = () => {
                         <td>{s.staffId || '-'}</td>
                         <td>{s.fullName || `${s.firstName || ''} ${s.middleName || ''} ${s.lastName || ''}`.trim()}</td>
                         <td>{s.role || '-'}</td>
+                        <td>{s.center || '-'}</td>
                         <td>{s.phone || '-'}</td>
                         <td>
                           <span className={`status-badge ${statusClass}`}>

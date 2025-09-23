@@ -19,6 +19,8 @@ const SuperAdminPatientManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [statusFilter, setStatusFilter] = useState('');
+  const [centerFilter, setCenterFilter] = useState('');
+  const [centerOptions, setCenterOptions] = useState([]);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -563,7 +565,39 @@ const SuperAdminPatientManagement = () => {
           // Apply additional client-side filtering if needed
           const allPatients = data.data || [];
           const filteredPatients = filterByCenter(allPatients, 'center');
-          setPatients(filteredPatients);
+
+          // Derive center directly from common fields
+          const withCenterDerived = filteredPatients.map(p => ({
+            ...p,
+            center: p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || p.clinic || p.hospital || p.locationCenter || p.centerID || p.centerId || p.center_id || ''
+          }));
+
+          // If some patients still lack center, try to enrich from bitecases
+          const needsEnrich = withCenterDerived.some(p => !p.center);
+          if (needsEnrich) {
+            try {
+              const bcRes = await fetch('/api/bitecases');
+              const bcJson = await bcRes.json();
+              const cases = Array.isArray(bcJson) ? bcJson : (Array.isArray(bcJson.data) ? bcJson.data : []);
+              const byPatientId = new Map();
+              (cases || []).forEach(c => {
+                const pid = String(c.patientId || c.patientID || c.pid || '').trim();
+                const centerName = c.center || c.centerName || c.healthCenter || c.facility || c.treatmentCenter || '';
+                if (pid && centerName && !byPatientId.has(pid)) byPatientId.set(pid, centerName);
+              });
+              const enriched = withCenterDerived.map(p => {
+                if (p.center) return p;
+                const pid = String(p._id || p.patientId || p.patientID || '').trim();
+                const fromCase = (pid && byPatientId.get(pid)) || '';
+                return { ...p, center: fromCase || '' };
+              });
+              setPatients(enriched);
+            } catch (_) {
+              setPatients(withCenterDerived);
+            }
+          } else {
+            setPatients(withCenterDerived);
+          }
 
         } else {
 
@@ -587,6 +621,26 @@ const SuperAdminPatientManagement = () => {
 
     fetchPatients();
 
+  }, []);
+
+  // Load centers for dropdown
+  useEffect(() => {
+    const fetchCenters = async () => {
+      try {
+        const res = await fetch('/api/centers');
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+        const names = Array.from(new Set((list || [])
+          .filter(c => !c.isArchived)
+          .map(c => String(c.centerName || c.name || '').trim())
+          .filter(Boolean)))
+          .sort((a,b)=>a.localeCompare(b));
+        setCenterOptions(names);
+      } catch (_) {
+        setCenterOptions([]);
+      }
+    };
+    fetchCenters();
   }, []);
 
 
@@ -637,11 +691,23 @@ const SuperAdminPatientManagement = () => {
 
     }
 
+    // Center filter
+    if (centerFilter) {
+      const norm = (v) => String(v || '')
+        .toLowerCase()
+        .replace(/\s*health\s*center$/i,'')
+        .replace(/\s*center$/i,'')
+        .replace(/-/g,' ')
+        .trim();
+      const want = norm(centerFilter);
+      filteredPatients = filteredPatients.filter(p => norm(p.center || p.centerName) === want);
+    }
+
 
 
     return filteredPatients;
 
-  }, [searchTerm, statusFilter, patients]);
+  }, [searchTerm, statusFilter, centerFilter, patients]);
 
 
 
@@ -770,27 +836,26 @@ const SuperAdminPatientManagement = () => {
             
 
             <div className="filter-controls">
-
               <select 
-
-                value={statusFilter} 
-
-                onChange={(e) => setStatusFilter(e.target.value)}
-
+                value={centerFilter} 
+                onChange={(e) => setCenterFilter(e.target.value)}
                 className="filter-select"
-
               >
-
-                <option value="">All Status</option>
-
-                <option value="pending">Pending</option>
-
-                <option value="active">Active</option>
-
-                <option value="inactive">Inactive</option>
-
+                <option value="">All Centers</option>
+                {centerOptions.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
-
+              <select 
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
             </div>
 
           </div>
@@ -822,6 +887,8 @@ const SuperAdminPatientManagement = () => {
                     <th>Email</th>
 
                     <th>Phone</th>
+
+                    <th>Center</th>
 
                     <th>Status</th>
 
@@ -856,6 +923,8 @@ const SuperAdminPatientManagement = () => {
                         <td>{p.email || '-'}</td>
 
                         <td>{p.phone || '-'}</td>
+
+                        <td>{p.center || p.centerName || '-'}</td>
 
                         <td>
 
