@@ -5,6 +5,7 @@ import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminPatients.css';
 import PatientDiagnosisManagement from './PatientDiagnosisManagement.jsx';
+import { apiFetch, apiConfig } from '../../config/api';
 
 const PAGE_SIZE = 20;
 
@@ -455,7 +456,7 @@ const SuperAdminPatients = () => {
   useEffect(() => {
     async function fetchCenters() {
       try {
-        const res = await fetch('/api/centers');
+        const res = await apiFetch(apiConfig.endpoints.centers);
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.data || data.centers || []);
         const names = Array.from(new Set((list || [])
@@ -887,7 +888,7 @@ const SuperAdminPatients = () => {
     setHistoryLoading(true);
     setHistoryError('');
     try {
-      const res = await fetch('/api/bitecases');
+      const res = await apiFetch(apiConfig.endpoints.bitecases);
       const data = await res.json();
       const pid = patient._id || patient.patientId || patient.patientID || patient.id;
       const reg = patient.registrationNumber || patient.regNo || '';
@@ -944,7 +945,7 @@ const SuperAdminPatients = () => {
     setHistoryLoading(true);
     setHistoryError('');
     try {
-      const res = await fetch('/api/bitecases');
+      const res = await apiFetch(apiConfig.endpoints.bitecases);
       const data = await res.json();
       const pid = selectedPatient._id || selectedPatient.patientId || selectedPatient.patientID || selectedPatient.id;
       const reg = selectedPatient.registrationNumber || selectedPatient.regNo || '';
@@ -1165,7 +1166,7 @@ const SuperAdminPatients = () => {
       }
 
       // Server-side check for safety
-      const checkRes = await fetch('/api/patients');
+      const checkRes = await apiFetch(apiConfig.endpoints.patients);
       if (checkRes.ok) {
         const checkJson = await checkRes.json();
         const list = Array.isArray(checkJson) ? checkJson : (Array.isArray(checkJson?.data) ? checkJson.data : []);
@@ -1202,7 +1203,7 @@ const SuperAdminPatients = () => {
     }
 
     try {
-      const response = await fetch('/api/patients', {
+      const response = await apiFetch(apiConfig.endpoints.patients, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1328,7 +1329,7 @@ const SuperAdminPatients = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch(apiConfig.endpoints.logout, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)

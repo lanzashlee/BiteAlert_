@@ -3,6 +3,7 @@ import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminVaccinationSchedule.css';
+import { apiFetch, apiConfig } from '../../config/api';
 
 const SuperAdminVaccinationSchedule = () => {
   const [vaccinations, setVaccinations] = useState([]);
@@ -161,7 +162,7 @@ const SuperAdminVaccinationSchedule = () => {
       const inv = mapVaccineToInventoryEntry(update.vaccine);
       const centerName = scheduleModalData?.centerName || scheduleModalData?.patient?.center || scheduleModalData?.patient?.centerName;
       try {
-        const stockRes = await fetch('/api/stock/update', {
+        const stockRes = await apiFetch('/api/stock/update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -627,7 +628,7 @@ const SuperAdminVaccinationSchedule = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch(apiConfig.endpoints.logout, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
@@ -886,7 +887,7 @@ const SuperAdminVaccinationSchedule = () => {
   useEffect(() => {
     const fetchCenters = async () => {
       try {
-        const res = await fetch('/api/centers');
+        const res = await apiFetch(apiConfig.endpoints.centers);
         const json = await res.json();
         const list = Array.isArray(json) ? json : (json?.data || json?.centers || []);
         const names = Array.from(new Set((list || [])
