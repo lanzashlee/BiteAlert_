@@ -17,7 +17,7 @@ services:
         sync: false
       - key: EMAIL_USER
         sync: false
-      - key: EMAIL_PASS
+      - key: EMAIL_PASSWORD
         sync: false
     healthCheckPath: /api/health
 
