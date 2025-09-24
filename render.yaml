@@ -29,4 +29,4 @@ services:
     staticPublishPath: ./build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://bitealert-backend.onrender.com
+        value: https://bitealert-backend-ppj8.onrender.com
