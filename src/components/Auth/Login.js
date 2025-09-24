@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
+import { apiFetch, apiConfig } from '../../config/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -54,10 +55,18 @@ const Login = () => {
     }
   };
 
+  const safeParseJson = async (response) => {
+    try {
+      return await response.json();
+    } catch (e) {
+      return null;
+    }
+  };
+
   const checkAccountStatus = async (checkEmail) => {
     try {
-      const res = await fetch(`/api/account-status/${encodeURIComponent(checkEmail)}`);
-      const data = await res.json();
+      const res = await apiFetch(`/api/account-status/${encodeURIComponent(checkEmail)}`);
+      const data = await safeParseJson(res);
       if (data?.success && data?.account) {
         if (data.account.isActive === false) {
           localStorage.removeItem('currentUser');
@@ -80,11 +89,11 @@ const Login = () => {
       if (!userDataRaw || !token) return;
       try {
         const userData = JSON.parse(userDataRaw);
-        const res = await fetch('/api/verify-session', {
+        const res = await apiFetch('/api/verify-session', {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await safeParseJson(res);
         if (data?.success) {
           if (await checkAccountStatus(userData.email)) {
             redirectBasedOnRole(userData.role);
@@ -112,12 +121,12 @@ const Login = () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     try {
-      const res = await fetch('/login', {
+      const res = await apiFetch(apiConfig.endpoints.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
+      const data = await safeParseJson(res);
       if (data.success) {
         localStorage.setItem('userData', JSON.stringify(data.user));
         if (data.token) localStorage.setItem('token', data.token);
@@ -139,12 +148,12 @@ const Login = () => {
           redirectBasedOnRole(role);
         }
       } else {
-        setError(data.message || 'Invalid email or password');
+        setError(data?.message || 'Invalid email or password');
         setLoading(false);
       }
     } catch (err) {
       console.log('Login error:', err);
-      setError('An error occurred during login. Please make sure MongoDB is running.');
+      setError('An error occurred during login. Please try again.');
       setLoading(false);
     }
   };

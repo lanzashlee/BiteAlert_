@@ -578,6 +578,69 @@ app.post('/login', async (req, res) => {
     }
 });
 
+// Alias route to support frontend calling /api/login
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        console.log(`Login attempt (alias) for email: ${email}`);
+
+        let user = await SuperAdmin.findOne({ email });
+        let userType = 'superadmin';
+
+        if (!user) {
+            user = await Admin.findOne({ email });
+            userType = user ? user.role : null;
+        }
+
+        if (!user) {
+            return res.json({ success: false, message: 'Invalid email or password' });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+            return res.json({ success: false, message: 'Invalid email or password' });
+        }
+
+        if (userType === 'admin' && user.isActive === false) {
+            return res.json({ success: false, message: 'Your account has been deactivated. Please contact a super admin.' });
+        }
+
+        const ids = {};
+        if (userType === 'admin') {
+            ids.adminID = user.adminID;
+        } else if (userType === 'superadmin') {
+            ids.superAdminID = user.superAdminID;
+        }
+
+        await logAuditTrail(
+            userType,
+            user.firstName,
+            user.middleName,
+            user.lastName,
+            'Signed in',
+            ids
+        );
+
+        return res.json({
+            success: true,
+            user: {
+                id: user._id,
+                firstName: user.firstName,
+                middleName: user.middleName,
+                lastName: user.lastName,
+                email: user.email,
+                role: userType,
+                adminID: user.adminID,
+                superAdminID: user.superAdminID,
+                centerName: user.centerName || null
+            }
+        });
+    } catch (error) {
+        console.error('Login error (alias):', error);
+        return res.json({ success: false, message: 'An error occurred during login. Please try again.' });
+    }
+});
+
 // Get Audit Trail API Endpoint
 app.get('/api/audit-trail', async (req, res) => {
     try {
