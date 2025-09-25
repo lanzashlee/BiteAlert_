@@ -17,25 +17,25 @@ const PORT = process.env.API_PORT || 4000;
 // Middleware Setup
 app.use(express.json());
 
-// CORS configuration: allow specific frontend origin with credentials
-const FRONTEND_ORIGIN = (process.env.FRONTEND_ORIGIN || '').replace(/\/$/, '');
+// CORS configuration to allow frontend origin and credentials
 const allowedOrigins = [
-    FRONTEND_ORIGIN,
+    process.env.FRONTEND_ORIGIN,
     'http://localhost:3000',
     'http://localhost:3002',
-    'http://localhost:5173',
-    'http://127.0.0.1:3000',
+    'https://bitealert-frontend.onrender.com',
+    'https://bitealert-frontend-ppj8.onrender.com'
 ].filter(Boolean);
 
 const corsOptions = {
     origin: function(origin, callback) {
-        if (!origin) return callback(null, true); // allow non-browser or same-origin
+        if (!origin) return callback(null, true); // allow same-origin or non-browser clients
         if (allowedOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error('Not allowed by CORS: ' + origin));
+        return callback(new Error('CORS not allowed for origin: ' + origin), false);
     },
-    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    maxAge: 86400
 };
 
 app.use(cors(corsOptions));
