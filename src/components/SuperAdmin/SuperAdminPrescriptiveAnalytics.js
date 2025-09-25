@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedModal from '../UnifiedModal';
+import { apiFetch, apiConfig } from '../../config/api';
 import './SuperAdminPrescriptiveAnalytics.css';
 import LoadingSpinner from './DogLoadingSpinner.jsx';
 
@@ -37,7 +38,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
     setAiLoading(true);
     setAiError('');
     try {
-      const casesRes = await fetch('/api/bitecases');
+      const casesRes = await apiFetch('/api/bitecases');
       const raw = await casesRes.json();
       const cases = Array.isArray(raw)
         ? raw
@@ -160,7 +161,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
     const retryDelay = 3000; // 3 seconds
     
     try {
-      const res = await fetch('/api/prescriptions', {
+      const res = await apiFetch('/api/prescriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ riskAnalysis: data.riskAnalysis, timeRange, selectedBarangay })
@@ -330,7 +331,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -361,7 +362,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)

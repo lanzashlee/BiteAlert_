@@ -41,6 +41,7 @@ export const getApiUrl = (endpoint) => {
 export const apiFetch = async (endpoint, options = {}) => {
   const url = getApiUrl(endpoint);
   return fetch(url, {
+    credentials: options.credentials ?? 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,

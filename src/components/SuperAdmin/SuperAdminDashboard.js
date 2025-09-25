@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
+import { apiFetch, apiConfig } from '../../config/api';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -126,7 +127,7 @@ const SuperAdminDashboard = () => {
       const fetchLatest = async () => {
         try {
           const qs = lastEventTime ? `?since=${encodeURIComponent(lastEventTime)}` : '';
-          const res = await fetch(`/api/notifications${qs}`);
+          const res = await apiFetch(`/api/notifications${qs}`);
           if (res.ok) {
             const data = await res.json();
             const list = Array.isArray(data) ? data : (data.notifications || []);
@@ -185,7 +186,7 @@ const SuperAdminDashboard = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -216,7 +217,7 @@ const SuperAdminDashboard = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)

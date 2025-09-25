@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import LoadingSpinner from './DogLoadingSpinner';
 import { getUserCenter } from '../../utils/userContext';
+import { apiFetch, apiConfig } from '../../config/api';
 import './SuperAdminGenerate.css';
 
 const SuperAdminGenerate = () => {
@@ -157,7 +158,7 @@ const SuperAdminGenerate = () => {
 
       // If animalType/biteSite are missing, enrich from bitecases collection
       try {
-        const bitesRes = await fetch('/api/bitecases');
+        const bitesRes = await apiFetch('/api/bitecases');
         const bitesJson = await bitesRes.json();
         const bites = Array.isArray(bitesJson) ? bitesJson : (bitesJson.data || bitesJson.cases || []);
         const byCaseNo = new Map();
@@ -841,7 +842,7 @@ const SuperAdminGenerate = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -872,7 +873,7 @@ const SuperAdminGenerate = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)

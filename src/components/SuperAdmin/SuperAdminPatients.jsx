@@ -518,7 +518,7 @@ const SuperAdminPatients = () => {
           apiParams += `&center=${encodeURIComponent(userCenter)}`;
         }
         
-        const res = await fetch(`/api/patients?${apiParams}`, { signal: controller.signal });
+        const res = await apiFetch(`/api/patients?${apiParams}`, { signal: controller.signal });
         const data = await res.json();
         
         if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load patients');
@@ -991,7 +991,7 @@ const SuperAdminPatients = () => {
     setActionLoading(true);
     try {
       const newStatus = patient.status === 'Active' ? 'Inactive' : 'Active';
-      const response = await fetch(`/api/patients/${patient._id}`, {
+      const response = await apiFetch(`/api/patients/${patient._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1044,7 +1044,7 @@ const SuperAdminPatients = () => {
       setShowAdminInfo(true);
       // Fetch current password for display
       try {
-        const response = await fetch(`/api/get-patient-password/${selectedPatient._id}`);
+        const response = await apiFetch(`/api/get-patient-password/${selectedPatient._id}`);
         if (response.ok) {
           const data = await response.json();
           setCurrentPassword(data.password || '******');
@@ -1083,7 +1083,7 @@ const SuperAdminPatients = () => {
     
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/change-patient-password`, {
+      const response = await apiFetch(`/api/change-patient-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1298,7 +1298,7 @@ const SuperAdminPatients = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
