@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedModal from '../UnifiedModal';
 import './SuperAdminCenter.css';
+import { apiFetch } from '../../config/api';
 
 const SuperAdminCenter = () => {
   const [centers, setCenters] = useState([]);
@@ -36,7 +37,7 @@ const SuperAdminCenter = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -67,7 +68,7 @@ const SuperAdminCenter = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
@@ -92,7 +93,7 @@ const SuperAdminCenter = () => {
   useEffect(() => {
     const fetchCenters = async () => {
       try {
-        const res = await fetch('/api/centers');
+        const res = await apiFetch('/api/centers');
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.data || data.centers || []);
         // Exclude archived centers from the main list
@@ -147,12 +148,12 @@ const SuperAdminCenter = () => {
         body: JSON.stringify({ centerName, address, contactPerson, contactNumber })
       };
       const url = editId ? `/api/centers/${editId}` : '/api/centers';
-      const res = await fetch(url, opts);
+      const res = await apiFetch(url, opts);
       const json = await res.json();
       if (!res.ok || json.success === false) throw new Error(json.message || 'Save failed');
       setShowModal(false);
       // refresh
-      const r = await fetch('/api/centers');
+      const r = await apiFetch('/api/centers');
       const d = await r.json();
       const list = Array.isArray(d) ? d : (d.data || d.centers || []);
       setCenters(list);
@@ -169,7 +170,7 @@ const SuperAdminCenter = () => {
   const confirmArchive = async () => {
     if (!archiveTarget?._id) return;
     try {
-      const res = await fetch(`/api/centers/${archiveTarget._id}/archive`, {
+      const res = await apiFetch(`/api/centers/${archiveTarget._id}/archive`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isArchived: true })

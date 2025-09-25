@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 // import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import { apiFetch } from '../../config/api';
 import LoadingSpinner from './DogLoadingSpinner';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminStock.css';
@@ -75,7 +76,7 @@ const SuperAdminStock = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -106,7 +107,7 @@ const SuperAdminStock = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
@@ -143,7 +144,7 @@ const SuperAdminStock = () => {
         apiUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(apiUrl);
+      const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
         // Apply additional client-side filtering if needed
@@ -201,7 +202,7 @@ const SuperAdminStock = () => {
 
   const loadCenters = async () => {
     try {
-      const response = await fetch('/api/centers');
+    const response = await apiFetch('/api/centers');
       const result = await response.json();
       if (result.success) {
         setCenters(result.data);
@@ -224,7 +225,7 @@ const SuperAdminStock = () => {
     setFormLoading(true);
     
     try {
-      const response = await fetch('/api/vaccinestocks', {
+      const response = await apiFetch('/api/vaccinestocks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -44,7 +44,7 @@ const SuperAdminAuditTrail = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {

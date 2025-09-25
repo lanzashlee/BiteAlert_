@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import { apiFetch } from '../../config/api';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminStaffManagement.css';
@@ -85,7 +86,7 @@ const SuperAdminStaffManagement = () => {
       
       try {
         // Fetch current password for display
-        const response = await fetch(`/api/get-staff-password/${selectedStaff._id}`);
+        const response = await apiFetch(`/api/get-staff-password/${selectedStaff._id}`);
         if (response.ok) {
           const data = await response.json();
           setCurrentPassword(data.currentPassword || '••••••••');
@@ -139,7 +140,7 @@ const SuperAdminStaffManagement = () => {
       setIsProcessing(true);
 
       // API call to change password
-      const response = await fetch('/api/change-staff-password', {
+      const response = await apiFetch('/api/change-staff-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -176,7 +177,7 @@ const SuperAdminStaffManagement = () => {
     try {
       const currentUser = JSON.parse(localStorage.getItem('currentUser'));
       
-      fetch('/api/audit-trail', {
+      apiFetch('/api/audit-trail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -219,7 +220,7 @@ const SuperAdminStaffManagement = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -250,7 +251,7 @@ const SuperAdminStaffManagement = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
@@ -284,7 +285,7 @@ const SuperAdminStaffManagement = () => {
           apiUrl += `?center=${encodeURIComponent(userCenter)}`;
         }
         
-        const res = await fetch(apiUrl);
+        const res = await apiFetch(apiUrl);
         const data = await res.json();
         if (data.success) {
           // Apply additional client-side filtering if needed
@@ -315,7 +316,7 @@ const SuperAdminStaffManagement = () => {
   useEffect(() => {
     const fetchCenters = async () => {
       try {
-        const res = await fetch('/api/centers');
+        const res = await apiFetch('/api/centers');
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.data || data.centers || []);
         const names = Array.from(new Set((list || [])
@@ -381,7 +382,7 @@ const SuperAdminStaffManagement = () => {
   // Staff actions
   const handleApprove = async (staffId) => {
     try {
-      const res = await fetch(`/api/staffs/${staffId}/approve`, { method: 'POST' });
+      const res = await apiFetch(`/api/staffs/${staffId}/approve`, { method: 'POST' });
       if (res.ok) {
         setStaff(staff.map(s => 
           s._id === staffId ? { ...s, isApproved: true } : s
@@ -397,7 +398,7 @@ const SuperAdminStaffManagement = () => {
 
   const handleReject = async (staffId) => {
     try {
-      const res = await fetch(`/api/staffs/${staffId}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/staffs/${staffId}`, { method: 'DELETE' });
       if (res.ok) {
         setStaff(staff.filter(s => s._id !== staffId));
         showNotification('Staff rejected successfully', 'success');
@@ -411,7 +412,7 @@ const SuperAdminStaffManagement = () => {
 
   const handleActivate = async (staffId) => {
     try {
-      const res = await fetch(`/api/staffs/${staffId}/activate`, { method: 'POST' });
+      const res = await apiFetch(`/api/staffs/${staffId}/activate`, { method: 'POST' });
       if (res.ok) {
         setStaff(staff.map(s => 
           s._id === staffId ? { ...s, isApproved: true } : s
@@ -427,7 +428,7 @@ const SuperAdminStaffManagement = () => {
 
   const handleDeactivate = async (staffId) => {
     try {
-      const res = await fetch(`/api/staffs/${staffId}/deactivate`, { method: 'POST' });
+      const res = await apiFetch(`/api/staffs/${staffId}/deactivate`, { method: 'POST' });
       if (res.ok) {
         setStaff(staff.map(s => 
           s._id === staffId ? { ...s, isApproved: false } : s

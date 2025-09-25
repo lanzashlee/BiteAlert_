@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '../../config/api';
 
 import ResponsiveSidebar from './ResponsiveSidebar';
 
@@ -165,8 +166,7 @@ const SuperAdminPatientManagement = () => {
       try {
 
         // Fetch current password for display
-
-        const response = await fetch(`/api/get-patient-password/${selectedPatient._id}`);
+        const response = await apiFetch(`/api/get-patient-password/${selectedPatient._id}`);
 
         if (response.ok) {
 

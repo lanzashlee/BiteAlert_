@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import { apiFetch } from '../../config/api';
 import './SuperAdminCreateAccount.css';
 
 const SuperAdminCreateAccount = () => {
@@ -33,7 +34,7 @@ const SuperAdminCreateAccount = () => {
     const fetchCenters = async () => {
       try {
         setCentersLoading(true);
-        const res = await fetch('/api/centers');
+        const res = await apiFetch('/api/centers');
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.data || data.centers || []);
         // Exclude archived centers from the list
@@ -60,7 +61,7 @@ const SuperAdminCreateAccount = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -91,7 +92,7 @@ const SuperAdminCreateAccount = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
@@ -183,7 +184,7 @@ const SuperAdminCreateAccount = () => {
 
     setNameCheckLoading(true);
     try {
-      const response = await fetch('/api/check-name-availability', {
+      const response = await apiFetch('/api/check-name-availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fullName })
@@ -222,7 +223,7 @@ const SuperAdminCreateAccount = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/create-account', {
+      const response = await apiFetch('/api/create-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

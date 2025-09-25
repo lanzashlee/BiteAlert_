@@ -3,6 +3,7 @@ import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedModal from '../UnifiedModal';
 import './SuperAdminAccountManagement.css';
 import LoadingSpinner from './DogLoadingSpinner.jsx';
+import { apiFetch } from '../../config/api';
 
 const SuperAdminAccountManagement = () => {
   const [adminAccounts, setAdminAccounts] = useState([]);
@@ -47,7 +48,7 @@ const SuperAdminAccountManagement = () => {
   // Fetch centers for dropdown (from Center Data Management)
   const fetchCenters = async () => {
     try {
-      const res = await fetch('/api/centers');
+      const res = await apiFetch('/api/centers');
       const data = await res.json();
       const list = Array.isArray(data) ? data : (data.data || data.centers || []);
       const activeOnly = (list || []).filter(c => !c.isArchived);
@@ -65,7 +66,7 @@ const SuperAdminAccountManagement = () => {
   const fetchAdminAccounts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin-accounts');
+      const response = await apiFetch('/api/admin-accounts');
       if (!response.ok) {
         throw new Error('Failed to fetch admin accounts');
       }
@@ -184,7 +185,7 @@ const SuperAdminAccountManagement = () => {
       
       try {
         // Fetch current password for display
-        const response = await fetch(`/api/get-admin-password/${selectedAccount.id}`);
+        const response = await apiFetch(`/api/get-admin-password/${selectedAccount.id}`);
         if (response.ok) {
           const data = await response.json();
           setCurrentPassword(data.currentPassword || '••••••••');
@@ -226,7 +227,7 @@ const SuperAdminAccountManagement = () => {
 
       // API call
       const [updateResponse, auditResponse] = await Promise.all([
-        fetch('/api/update-account-status', {
+        apiFetch('/api/update-account-status', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -259,7 +260,7 @@ const SuperAdminAccountManagement = () => {
     try {
       const currentUser = JSON.parse(localStorage.getItem('currentUser'));
       
-      fetch('/api/audit-trail', {
+      apiFetch('/api/audit-trail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -318,7 +319,7 @@ const SuperAdminAccountManagement = () => {
       setProcessing(true);
 
       // API call to change password
-      const response = await fetch('/api/change-admin-password', {
+      const response = await apiFetch('/api/change-admin-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

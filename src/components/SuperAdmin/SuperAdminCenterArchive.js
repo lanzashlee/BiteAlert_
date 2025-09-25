@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { apiFetch } from '../../config/api';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import './SuperAdminCenterArchive.css';
 
@@ -12,7 +13,7 @@ const SuperAdminCenterArchive = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/centers');
+      const res = await apiFetch('/api/centers');
       const data = await res.json();
       const list = Array.isArray(data) ? data : (data.data || data.centers || []);
       setCenters(list.filter((c) => c.isArchived));
@@ -27,7 +28,7 @@ const SuperAdminCenterArchive = () => {
     if (!target?._id) return;
     setRestoring(true);
     try {
-      const res = await fetch(`/api/centers/${target._id}/archive`, {
+      const res = await apiFetch(`/api/centers/${target._id}/archive`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isArchived: false })
@@ -55,7 +56,7 @@ const SuperAdminCenterArchive = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -86,7 +87,7 @@ const SuperAdminCenterArchive = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
