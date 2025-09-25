@@ -311,7 +311,7 @@ const Login = () => {
                 try {
                   setForgotMsg('Sending OTP...');
                   setForgotMsgColor('#800000');
-                  const res = await fetch('/api/send-otp', {
+                  const res = await apiFetch('/api/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: forgotEmail.trim() })
@@ -360,7 +360,7 @@ const Login = () => {
                 try {
                   setForgotMsg('Resetting password...');
                   setForgotMsgColor('#800000');
-                  const res = await fetch('/api/reset-password', {
+                  const res = await apiFetch('/api/reset-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: forgotEmail.trim(), otp: forgotOtp.trim(), newPassword: forgotNewPass })
