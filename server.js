@@ -16,7 +16,30 @@ const PORT = process.env.API_PORT || 4000;
 
 // Middleware Setup
 app.use(express.json());
-app.use(cors());
+
+// CORS configuration: allow specific frontend origin with credentials
+const FRONTEND_ORIGIN = (process.env.FRONTEND_ORIGIN || '').replace(/\/$/, '');
+const allowedOrigins = [
+    FRONTEND_ORIGIN,
+    'http://localhost:3000',
+    'http://localhost:3002',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+].filter(Boolean);
+
+const corsOptions = {
+    origin: function(origin, callback) {
+        if (!origin) return callback(null, true); // allow non-browser or same-origin
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('Not allowed by CORS: ' + origin));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 // Remove static file serving - frontend will be served separately
 
 // Initialize Gemini client (server-side only)
