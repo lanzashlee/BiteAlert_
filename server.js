@@ -70,11 +70,11 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://lricamara6:Lanz051
 const MONGODB_OPTIONS = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 60000,
-    socketTimeoutMS: 60000,
-    connectTimeoutMS: 60000,
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 30000,
+    connectTimeoutMS: 30000,
     family: 4,
-    maxPoolSize: 10
+    maxPoolSize: 5
 };
 
 // Schema Definitions
@@ -2371,15 +2371,22 @@ app.put('/api/centers/:id/archive', async (req, res) => {
 });
 
 // Connect to MongoDB with retry logic
-const connectWithRetry = async () => {
+const connectWithRetry = async (retryCount = 0, maxRetries = 3) => {
     try {
-        console.log('Attempting to connect to MongoDB...');
-        await mongoose.connect(MONGODB_URI, MONGODB_OPTIONS);
+        console.log(`Attempting to connect to MongoDB... (attempt ${retryCount + 1})`);
+        
+        // Set a timeout for the connection attempt
+        const connectionPromise = mongoose.connect(MONGODB_URI, MONGODB_OPTIONS);
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Connection timeout')), 25000);
+        });
+        
+        await Promise.race([connectionPromise, timeoutPromise]);
         console.log('Connected to MongoDB Atlas');
         
         // Create initial super admin after successful connection
         await createInitialSuperAdmins();
-        await patchAdminAndSuperAdminIDs(); // <-- Ensure all IDs are patched on startup
+        await patchAdminAndSuperAdminIDs();
         
         // Start the server only after successful database connection
         server.listen(PORT, () => {
@@ -2387,9 +2394,19 @@ const connectWithRetry = async () => {
             console.log(`API endpoints available at http://localhost:${PORT}/api`);
         });
     } catch (err) {
-        console.error('MongoDB connection error:', err);
-        console.log('Retrying connection in 5 seconds...');
-        setTimeout(connectWithRetry, 5000);
+        console.error('MongoDB connection error:', err.message);
+        
+        if (retryCount < maxRetries) {
+            const delay = Math.min(5000 * (retryCount + 1), 15000); // Progressive delay, max 15s
+            console.log(`Retrying connection in ${delay/1000} seconds... (${retryCount + 1}/${maxRetries})`);
+            setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), delay);
+        } else {
+            console.error('Max retry attempts reached. Starting server without database connection.');
+            // Start server anyway for health checks
+            server.listen(PORT, () => {
+                console.log(`Server running on port ${PORT} (without database connection)`);
+            });
+        }
     }
 };
 
