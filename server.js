@@ -3949,3 +3949,28 @@ app.get('/api/profile-picture', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Simple AI test endpoint
+app.post('/api/ai-test', async (req, res) => {
+    try {
+        if (!genAI) {
+            return res.status(500).json({ error: 'AI service not initialized' });
+        }
+
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const result = await model.generateContent('Hello, respond with just "AI is working"');
+        const text = result.response.text();
+
+        res.json({ 
+            success: true, 
+            response: text,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('AI test error:', error);
+        res.status(500).json({ 
+            error: 'AI test failed', 
+            details: error.message 
+        });
+    }
+});
