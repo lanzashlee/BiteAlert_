@@ -36,7 +36,7 @@
     "start": "set PORT=3002 && react-scripts start",
     "server": "set API_PORT=4000 && nodemon server.js",
     "dev": "concurrently \"npm run start\" \"npm run server\"",
-    "build": "react-scripts build",
+    "build": "react-scripts build && cp public/_redirects build/_redirects",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "server:prod": "node server.js"
