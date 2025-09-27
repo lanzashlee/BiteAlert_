@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { apiFetch } from '../../config/api';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import './SuperAdminCenterHours.css';
 
@@ -17,14 +16,14 @@ const SuperAdminCenterHours = () => {
     const fetchData = async () => {
       try {
         // Fetch base center list
-        const res = await apiFetch('/api/centers');
+        const res = await fetch('/api/centers');
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.data || data.centers || []);
         setCenters(list);
 
         // Fetch persisted hours from dedicated collection
         try {
-          const hrsRes = await apiFetch('/api/center_hours');
+          const hrsRes = await fetch('/api/center_hours');
           if (hrsRes.ok) {
             const hrsJson = await hrsRes.json();
             const arr = Array.isArray(hrsJson) ? hrsJson : (hrsJson.data || hrsJson.centers || hrsJson.centerHours || []);
@@ -114,7 +113,7 @@ const SuperAdminCenterHours = () => {
       };
 
       // Upsert into center_hours collection (server supports this route)
-      const res = await apiFetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
+      const res = await fetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(doc),
@@ -147,7 +146,7 @@ const SuperAdminCenterHours = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await fetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -178,7 +177,7 @@ const SuperAdminCenterHours = () => {
       }
 
       try {
-        await apiFetch('/api/logout', {
+        await fetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
