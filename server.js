@@ -3974,3 +3974,73 @@ app.post('/api/ai-test', async (req, res) => {
         });
     }
 });
+
+// Missing endpoints that frontend is calling
+
+// Get patient password endpoint
+app.get('/api/get-patient-password/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const patient = await Patient.findById(id).select('password');
+        if (!patient) {
+            return res.status(404).json({ error: 'Patient not found' });
+        }
+        res.json({ success: true, password: patient.password });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Change patient password endpoint
+app.post('/api/change-patient-password', async (req, res) => {
+    try {
+        const { patientId, newPassword } = req.body;
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const patient = await Patient.findByIdAndUpdate(patientId, { password: hashedPassword });
+        if (!patient) {
+            return res.status(404).json({ error: 'Patient not found' });
+        }
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get admin password endpoint
+app.get('/api/get-admin-password/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const admin = await Admin.findById(id).select('password');
+        if (!admin) {
+            return res.status(404).json({ error: 'Admin not found' });
+        }
+        res.json({ success: true, password: admin.password });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Change admin password endpoint
+app.post('/api/change-admin-password', async (req, res) => {
+    try {
+        const { adminId, newPassword } = req.body;
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const admin = await Admin.findByIdAndUpdate(adminId, { password: hashedPassword });
+        if (!admin) {
+            return res.status(404).json({ error: 'Admin not found' });
+        }
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Vaccination data endpoint
+app.get('/api/vaccination-data', async (req, res) => {
+    try {
+        const vaccinations = await VaccinationDate.find({}).populate('patientId', 'firstName lastName');
+        res.json({ success: true, data: vaccinations });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});

@@ -28,7 +28,47 @@ export const apiConfig = {
     auditTrail: '/api/audit-trail',
     
     // Health check
-    health: '/api/health'
+    health: '/api/health',
+    
+    // Admin endpoints
+    adminAccounts: '/api/admin-accounts',
+    updateAccountStatus: '/api/update-account-status',
+    accountStatus: '/api/account-status',
+    
+    // Patient management endpoints
+    getPatientPassword: '/api/get-patient-password',
+    changePatientPassword: '/api/change-patient-password',
+    
+    // Admin management endpoints
+    getAdminPassword: '/api/get-admin-password',
+    changeAdminPassword: '/api/change-admin-password',
+    
+    // Vaccination endpoints
+    vaccinationData: '/api/vaccination-data',
+    vaccinationDates: '/api/vaccinationdates',
+    
+    // Dashboard endpoints
+    dashboardSummary: '/api/dashboard-summary',
+    casesPerBarangay: '/api/cases-per-barangay',
+    patientGrowth: '/api/patient-growth',
+    vaccineStockTrends: '/api/vaccine-stock-trends',
+    severityDistribution: '/api/severity-distribution',
+    
+    // Staff endpoints
+    staffs: '/api/staffs',
+    
+    // Inventory endpoints
+    vaccinestocks: '/api/vaccinestocks',
+    
+    // Report endpoints
+    rabiesUtilization: '/api/reports/rabies-utilization',
+    animalBiteExposure: '/api/reports/animal-bite-exposure',
+    
+    // Notifications
+    notifications: '/api/notifications',
+    
+    // Profile picture
+    profilePicture: '/api/profile-picture'
   }
 };
 
