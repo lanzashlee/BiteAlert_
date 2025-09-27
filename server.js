@@ -11,8 +11,8 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Initialize Express app
 const app = express();
-// Use API_PORT to avoid colliding with CRA's PORT env var
-const PORT = process.env.API_PORT || 4000;
+// Use PORT for Render deployment, fallback to API_PORT for local development
+const PORT = process.env.PORT || process.env.API_PORT || 4000;
 
 // Middleware Setup
 app.use(express.json());
