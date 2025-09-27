@@ -1608,7 +1608,11 @@ app.post('/api/prescriptions', async (req, res) => {
         }));
 
         if (!genAI) {
-            return res.json({ interventions: [] });
+            console.error('Gemini AI not initialized - API key missing or invalid');
+            return res.status(500).json({ 
+                error: 'AI service unavailable - API key not configured or invalid',
+                details: 'Please check GOOGLE_API_KEY environment variable'
+            });
         }
 
         const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -3902,4 +3906,23 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
+});
+
+// AI Service diagnostic endpoint
+app.get('/api/ai-diagnostic', (req, res) => {
+    try {
+        const hasApiKey = !!process.env.GOOGLE_API_KEY || !!process.env.GEMINI_API_KEY || !!process.env.GOOGLEAI_API_KEY;
+        const genAIStatus = genAI ? 'Initialized' : 'Not Initialized';
+        
+        res.json({
+            hasApiKey,
+            genAIStatus,
+            apiKeyLength: process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.length : 0,
+            apiKeyPrefix: process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.substring(0, 10) + '...' : 'Not set',
+            environment: process.env.NODE_ENV,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
