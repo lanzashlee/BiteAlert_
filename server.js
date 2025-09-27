@@ -3926,3 +3926,26 @@ app.get('/api/ai-diagnostic', (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Notifications endpoint
+app.get('/api/notifications', async (req, res) => {
+    try {
+        // Return empty notifications for now
+        res.json({ notifications: [] });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Profile picture endpoint
+app.get('/api/profile-picture', async (req, res) => {
+    try {
+        // Return default profile picture info
+        res.json({ 
+            hasProfilePicture: false,
+            profilePictureUrl: null
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
