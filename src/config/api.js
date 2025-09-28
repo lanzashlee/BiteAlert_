@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://bitealert-backend.onrender.com';
 
 export const apiConfig = {
   baseURL: API_BASE_URL,
