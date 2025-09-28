@@ -3928,8 +3928,40 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+        mongodbState: mongoose.connection.readyState
     });
+});
+
+// Database connection test endpoint
+app.get('/api/db-test', async (req, res) => {
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Database not connected',
+                state: mongoose.connection.readyState 
+            });
+        }
+        
+        // Try to fetch a simple count
+        const Admin = mongoose.connection.model('Admin', adminSchema);
+        const count = await Admin.countDocuments();
+        
+        res.json({ 
+            success: true, 
+            message: 'Database connected successfully',
+            adminCount: count,
+            state: mongoose.connection.readyState
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            message: 'Database error: ' + error.message,
+            state: mongoose.connection.readyState
+        });
+    }
 });
 
 // AI Service diagnostic endpoint
