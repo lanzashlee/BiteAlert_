@@ -32,7 +32,11 @@ const allowedOrigins = [
 const corsOptions = {
     origin: function(origin, callback) {
         console.log('CORS request from origin:', origin);
-        if (!origin) return callback(null, true); // allow same-origin or non-browser clients
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+            console.log('CORS allowing request with no origin');
+            return callback(null, true);
+        }
         if (allowedOrigins.includes(origin)) {
             console.log('CORS allowed for origin:', origin);
             return callback(null, true);
@@ -41,13 +45,24 @@ const corsOptions = {
         return callback(new Error('CORS not allowed for origin: ' + origin), false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true,
     maxAge: 86400
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// Additional CORS middleware for requests with no origin
+app.use((req, res, next) => {
+    if (!req.headers.origin) {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+        res.header('Access-Control-Allow-Credentials', 'true');
+    }
+    next();
+});
 // Remove static file serving - frontend will be served separately
 
 // Initialize Gemini client (server-side only)
