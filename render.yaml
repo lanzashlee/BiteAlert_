@@ -26,7 +26,7 @@ services:
     name: bitealert-frontend
     env: node
     plan: free
-    buildCommand: npm install --legacy-peer-deps && npm run build && npm run copy-redirects
+    buildCommand: npm install --legacy-peer-deps && npm run build
     startCommand: npx serve -s build -l 3000
     envVars:
       - key: REACT_APP_API_URL
