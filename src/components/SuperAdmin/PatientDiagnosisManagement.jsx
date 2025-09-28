@@ -228,7 +228,7 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
     },
     
     // Additional fields from schema
-    animalStatus: '',
+    animalStatusString: '',
     remarks: '',
     
     // Follow-up
@@ -564,7 +564,6 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
           },
           
           // Additional fields from schema
-          animalStatus: latestCase.animalStatus || '',
           remarks: latestCase.remarks || ''
         }));
       } else {
@@ -1017,7 +1016,7 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
             medicineUsed: '', branchNo: ''
           },
           scheduleDates: { d0: '', d3: '', d7: '', d14: '', d28: '' },
-          animalStatus: '', remarks: '',
+          animalStatusString: '', remarks: '',
           followUp: [
             { date: '', findings: '', management: '', mdSignature: '' },
             { date: '', findings: '', management: '', mdSignature: '' },

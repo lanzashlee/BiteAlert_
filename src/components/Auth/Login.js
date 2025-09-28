@@ -276,7 +276,7 @@ const Login = () => {
                 </ul>
               </div>
             </div>
-            <a href="#" className="forgot-password" onClick={(e) => { e.preventDefault(); setForgotOpen(true); }}>Forgot Password?</a>
+            <button type="button" className="forgot-password" onClick={() => setForgotOpen(true)}>Forgot Password?</button>
             <button type="submit" className="sign-in-btn-modern" disabled={loading}>
               Sign In
             </button>

@@ -34,7 +34,8 @@ Make sure your repository is pushed to GitHub with all the changes from this gui
 
 4. **Environment Variables for Backend**
    Add these environment variables in Render dashboard:
-   ```
+
+   ```bash
    NODE_ENV=production
    API_PORT=10000
    MONGODB_URI=your_mongodb_connection_string
@@ -61,7 +62,8 @@ Make sure your repository is pushed to GitHub with all the changes from this gui
 
 3. **Environment Variables for Frontend**
    Add this environment variable:
-   ```
+
+   ```bash
    REACT_APP_API_URL=https://your-backend-url.onrender.com
    ```
    Replace `your-backend-url.onrender.com` with your actual backend URL from Step 2.
@@ -75,11 +77,13 @@ Make sure your repository is pushed to GitHub with all the changes from this gui
 If you want to update more components to use the centralized API configuration, you can:
 
 1. Import the API configuration in your components:
+
    ```javascript
    import { apiFetch, apiConfig } from '../config/api';
    ```
 
 2. Replace direct fetch calls:
+
    ```javascript
    // Before
    const res = await fetch('/api/endpoint');
