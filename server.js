@@ -24,17 +24,24 @@ const allowedOrigins = [
     'http://localhost:3002',
     'https://bitealert-frontend.onrender.com',
     'https://bitealert-frontend-ppj8.onrender.com',
+    'https://bitealert-frontend-xm3h.onrender.com',
+    'https://bitealert-frontend-ppj8.onrender.com',
     'https://bitealert-frontend-xm3h.onrender.com'
 ].filter(Boolean);
 
 const corsOptions = {
     origin: function(origin, callback) {
+        console.log('CORS request from origin:', origin);
         if (!origin) return callback(null, true); // allow same-origin or non-browser clients
-        if (allowedOrigins.includes(origin)) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            console.log('CORS allowed for origin:', origin);
+            return callback(null, true);
+        }
+        console.log('CORS blocked for origin:', origin);
         return callback(new Error('CORS not allowed for origin: ' + origin), false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
     maxAge: 86400
 };
