@@ -27,7 +27,7 @@
     "react-chartjs-2": "^5.3.0",
     "react-dom": "18.2.0",
     "react-router-dom": "^6.8.0",
-    "react-scripts": "5.0.1",
+    "react-scripts": "^0.0.0",
     "three": "^0.179.1",
     "web-vitals": "^2.1.4",
     "ws": "^8.18.1"
@@ -36,7 +36,7 @@
     "start": "set PORT=3002 && react-scripts start",
     "server": "set API_PORT=4000 && nodemon server.js",
     "dev": "concurrently \"npm run start\" \"npm run server\"",
-    "build": "npm audit fix --force && react-scripts build && npm run copy-redirects",
+    "build": "npm install --legacy-peer-deps && npm audit fix --force && react-scripts build && npm run copy-redirects",
     "copy-redirects": "node -e \"const fs=require('fs'); fs.copyFileSync('public/_redirects', 'build/_redirects')\"",
     "postinstall": "npm audit fix --force",
     "test": "react-scripts test",
