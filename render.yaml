@@ -21,12 +21,13 @@ services:
         sync: false
     healthCheckPath: /api/health
 
-  # Frontend Service
+  # Frontend Service (Web Service for React)
   - type: web
     name: bitealert-frontend
-    env: static
-    buildCommand: npm install --legacy-peer-deps && npm run build
-    staticPublishPath: ./build
+    env: node
+    plan: free
+    buildCommand: npm install --legacy-peer-deps && npm run build && npm run copy-redirects
+    startCommand: npx serve -s build -l 3000
     envVars:
       - key: REACT_APP_API_URL
         value: https://bitealert-backend.onrender.com
