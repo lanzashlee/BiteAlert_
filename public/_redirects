@@ -1,2 +1,8 @@
 # Handle client-side routing for React Router
+# This ensures all routes are served by index.html for React Router to handle
+
+# API routes should not be redirected
+/api/*  /api/:splat  200
+
+# All other routes should serve index.html
 /*    /index.html   200
