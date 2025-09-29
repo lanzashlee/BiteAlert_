@@ -1298,9 +1298,9 @@ const SuperAdminVaccinationSchedule = () => {
       let response;
       let responseData;
 
-      // First try the standard bite case update endpoint
+      // First try the standard bite case update endpoint (apiFetch ensures baseURL)
       try {
-        response = await fetch(`/api/bitecases/${vaccination.originalId}`, {
+        response = await apiFetch(`${apiConfig.endpoints.bitecases}/${vaccination.originalId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1311,7 +1311,7 @@ const SuperAdminVaccinationSchedule = () => {
       } catch (err) {
         console.warn('Primary endpoint failed, trying diagnosis endpoint:', err);
         // Fallback to diagnosis endpoint
-        response = await fetch(`/api/bitecases/${vaccination.originalId}/diagnosis`, {
+        response = await apiFetch(`${apiConfig.endpoints.bitecases}/${vaccination.originalId}/diagnosis`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
