@@ -97,7 +97,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
           barangay,
           riskScore: d.riskScore || 0,
           priority: d.priority || 'low',
-          reasoning: buildReasoningParagraph(barangay, d),
+          reasoning: buildAnalysisParagraph(barangay, d),
           intervention: ensureRecommendationLength('', d.priority || 'low', barangay, d.topCenter),
           totalCases: d.totalCases || 0,
           recentCases: d.recentCases || 0,
