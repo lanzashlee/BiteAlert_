@@ -1845,8 +1845,7 @@ const SuperAdminPatients = () => {
                   <th>Gender</th>
                   <th>Address</th>
                   <th>Barangay</th>
-                  <th>Center</th>
-                  <th>Created At</th>
+                  <th>Timestamp</th>
                 </tr>
               </thead>
               <tbody>
