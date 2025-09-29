@@ -44,6 +44,11 @@ const SuperAdminPrescriptiveAnalytics = () => {
         body: JSON.stringify({ timeRange, selectedBarangay })
       });
       if (!res.ok) {
+        if (res.status === 404) {
+          // Fallback: compute locally then call /api/prescriptions
+          await clientSideFallbackFlow();
+          return;
+        }
         const text = await res.text();
         throw new Error(`Server error ${res.status}: ${text}`);
       }
@@ -55,11 +60,91 @@ const SuperAdminPrescriptiveAnalytics = () => {
       setAiError('');
     } catch (error) {
       console.error('Error fetching prescriptive analytics:', error);
-      setAiError(error.message || 'Failed to fetch prescriptive analytics');
-      setAnalyticsData({ cases: [], riskAnalysis: {}, interventionRecommendations: [] });
+      // Network/CORS or other failure: try client-side fallback flow
+      try {
+        await clientSideFallbackFlow();
+        setAiError('');
+      } catch (fallbackErr) {
+        console.error('Fallback also failed:', fallbackErr);
+        setAiError(error.message || 'Failed to fetch prescriptive analytics');
+        setAnalyticsData({ cases: [], riskAnalysis: {}, interventionRecommendations: [] });
+      }
     } finally {
       setLoading(false);
       setAiLoading(false);
+    }
+  };
+
+  // Fallback path used when server doesn't have /api/prescriptive-analytics yet (404)
+  const clientSideFallbackFlow = async () => {
+    try {
+      const casesRes = await apiFetch(apiConfig.endpoints.bitecases);
+      const raw = await casesRes.json();
+      const cases = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw?.cases)
+            ? raw.cases
+            : [];
+
+      // Optional center filtering (mirrors previous client logic)
+      let validCentersSet = null;
+      try {
+        const centersRes = await apiFetch(apiConfig.endpoints.centers);
+        const centersJson = await centersRes.json();
+        const centers = Array.isArray(centersJson) ? centersJson : (centersJson?.data || centersJson?.centers || []);
+        const norm = (v) => String(v || '')
+          .toLowerCase()
+          .replace(/\s*health\s*center$/i, '')
+          .replace(/\s*center$/i, '')
+          .replace(/-/g, ' ')
+          .trim();
+        validCentersSet = new Set((centers || [])
+          .filter(c => !c.isArchived)
+          .map(c => norm(c.centerName || c.name))
+          .filter(Boolean));
+      } catch (_) {}
+
+      const normalized = normalizeCases(cases).map(c => ({
+        ...c,
+        centerNorm: String(c.center || '')
+          .toLowerCase()
+          .replace(/\s*health\s*center$/i, '')
+          .replace(/\s*center$/i, '')
+          .replace(/-/g, ' ')
+          .trim()
+      }));
+      const filteredByCenter = validCentersSet
+        ? normalized.filter(c => validCentersSet.has(c.centerNorm) || validCentersSet.has(String(c.barangay || '').toLowerCase()))
+        : normalized;
+
+      const processedData = processAnalyticsData(filteredByCenter.map(({ centerNorm, ...rest }) => rest));
+      setAnalyticsData(processedData);
+
+      // Get interventions from existing backend endpoint
+      try {
+        const presRes = await apiFetch(apiConfig.endpoints.prescriptions, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ riskAnalysis: processedData.riskAnalysis, timeRange, selectedBarangay })
+        });
+        if (presRes.ok) {
+          const { interventions } = await presRes.json();
+          if (Array.isArray(interventions)) {
+            setAnalyticsData({ ...processedData, interventionRecommendations: interventions });
+            setAiError('');
+          }
+        } else {
+          setAiError('AI service unavailable; showing risk analysis only.');
+        }
+      } catch (e) {
+        console.warn('Fallback AI fetch failed:', e);
+        setAiError('AI service unavailable; showing risk analysis only.');
+      }
+    } catch (e) {
+      console.error('Fallback flow failed:', e);
+      throw e;
     }
   };
 
