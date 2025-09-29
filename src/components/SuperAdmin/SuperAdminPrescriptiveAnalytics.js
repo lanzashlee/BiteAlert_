@@ -78,8 +78,10 @@ const SuperAdminPrescriptiveAnalytics = () => {
   // Fallback path used when server doesn't have /api/prescriptive-analytics yet (404)
   const clientSideFallbackFlow = async () => {
     try {
+      console.log('Running client-side fallback flow...');
       const casesRes = await apiFetch(apiConfig.endpoints.bitecases);
       const raw = await casesRes.json();
+      console.log('Raw cases response:', raw);
       const cases = Array.isArray(raw)
         ? raw
         : Array.isArray(raw?.data)
@@ -87,6 +89,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
           : Array.isArray(raw?.cases)
             ? raw.cases
             : [];
+      console.log('Processed cases:', cases.length);
 
       // Optional center filtering (mirrors previous client logic)
       let validCentersSet = null;
@@ -120,6 +123,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
         : normalized;
 
       const processedData = processAnalyticsData(filteredByCenter.map(({ centerNorm, ...rest }) => rest));
+      console.log('Processed analytics data:', processedData);
       setAnalyticsData(processedData);
 
       // Get interventions from existing backend endpoint
@@ -131,16 +135,68 @@ const SuperAdminPrescriptiveAnalytics = () => {
         });
         if (presRes.ok) {
           const { interventions } = await presRes.json();
+          console.log('AI interventions received:', interventions);
           if (Array.isArray(interventions)) {
             setAnalyticsData({ ...processedData, interventionRecommendations: interventions });
             setAiError('');
           }
         } else {
-          setAiError('AI service unavailable; showing risk analysis only.');
+          console.log('AI service failed, using heuristic fallback');
+          // Generate basic heuristic interventions
+          const heuristicInterventions = Object.entries(processedData.riskAnalysis)
+            .filter(([_, data]) => data.totalCases > 0)
+            .map(([barangay, data]) => ({
+              barangay,
+              riskScore: data.riskScore,
+              priority: data.priority,
+              reasoning: data.factors.join('; ') || 'Automated analysis based on case data.',
+              intervention: data.priority === 'high' 
+                ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability.'
+                : data.priority === 'medium'
+                  ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                  : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+              totalCases: data.totalCases,
+              recentCases: data.recentCases,
+              severeCases: data.severeCases,
+              ageGroupFocus: '',
+              timePattern: '',
+              resourceNeeds: data.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
+              coordinationRequired: data.topCenter ? `Coordinate with ${data.topCenter}` : 'Coordinate with nearest health center'
+            }))
+            .sort((a, b) => b.riskScore - a.riskScore);
+          
+          console.log('Generated heuristic interventions:', heuristicInterventions);
+          setAnalyticsData({ ...processedData, interventionRecommendations: heuristicInterventions });
+          setAiError('');
         }
       } catch (e) {
         console.warn('Fallback AI fetch failed:', e);
-        setAiError('AI service unavailable; showing risk analysis only.');
+        // Generate basic heuristic interventions even if AI completely fails
+        const heuristicInterventions = Object.entries(processedData.riskAnalysis)
+          .filter(([_, data]) => data.totalCases > 0)
+          .map(([barangay, data]) => ({
+            barangay,
+            riskScore: data.riskScore,
+            priority: data.priority,
+            reasoning: data.factors.join('; ') || 'Automated analysis based on case data.',
+            intervention: data.priority === 'high' 
+              ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability.'
+              : data.priority === 'medium'
+                ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+            totalCases: data.totalCases,
+            recentCases: data.recentCases,
+            severeCases: data.severeCases,
+            ageGroupFocus: '',
+            timePattern: '',
+            resourceNeeds: data.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
+            coordinationRequired: data.topCenter ? `Coordinate with ${data.topCenter}` : 'Coordinate with nearest health center'
+          }))
+          .sort((a, b) => b.riskScore - a.riskScore);
+        
+        console.log('Generated heuristic interventions (AI failed):', heuristicInterventions);
+        setAnalyticsData({ ...processedData, interventionRecommendations: heuristicInterventions });
+        setAiError('AI service unavailable; showing heuristic recommendations.');
       }
     } catch (e) {
       console.error('Fallback flow failed:', e);
