@@ -380,7 +380,7 @@ const SuperAdminPatients = () => {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
-  // Removed barangay filter from the list view
+  const [barangay, setBarangay] = useState('');
   const [centerFilter, setCenterFilter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
   const [dateRegistered, setDateRegistered] = useState('');
