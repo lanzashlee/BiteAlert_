@@ -296,6 +296,31 @@
   transform: translateX(4px);
 }
 
+/* Nested dropdown for branch/stock entries */
+.superadmin-stock-container .stock-entries {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.superadmin-stock-container .stock-entry {
+  background: #fff;
+}
+
+.superadmin-stock-container .stock-entry:hover {
+  background: #f8f9fa;
+}
+
+.superadmin-stock-container .stock-entry strong {
+  color: #2c3e50;
+}
+
+.superadmin-stock-container .vaccine-info i {
+  color: #6c757d;
+}
+
 .superadmin-stock-container .vaccine-info {
   flex: 1;
 }
