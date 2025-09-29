@@ -1933,7 +1933,7 @@ const SuperAdminPatients = () => {
                           <span className="barangay-info">{p.barangay || 'N/A'}</span>
                         </td>
                         <td>
-                          {p.center || p.centerName || 'N/A'}
+                          {p.createdAt ? new Date(p.createdAt).toLocaleString() : (p.dateRegistered ? new Date(p.dateRegistered).toLocaleString() : '—')}
                         </td>
                         <td>
                           {getPatientDateRegistered(p)}
