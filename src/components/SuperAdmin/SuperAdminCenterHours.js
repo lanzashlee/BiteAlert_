@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import { apiFetch } from '../../config/api';
 import './SuperAdminCenterHours.css';
 
 const SuperAdminCenterHours = () => {
@@ -16,14 +17,14 @@ const SuperAdminCenterHours = () => {
     const fetchData = async () => {
       try {
         // Fetch base center list
-        const res = await fetch('/api/centers');
+        const res = await apiFetch('/api/centers');
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.data || data.centers || []);
         setCenters(list);
 
         // Fetch persisted hours from dedicated collection
         try {
-          const hrsRes = await fetch('/api/center_hours');
+          const hrsRes = await apiFetch('/api/center_hours');
           if (hrsRes.ok) {
             const hrsJson = await hrsRes.json();
             const arr = Array.isArray(hrsJson) ? hrsJson : (hrsJson.data || hrsJson.centers || hrsJson.centerHours || []);
@@ -177,7 +178,7 @@ const SuperAdminCenterHours = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)

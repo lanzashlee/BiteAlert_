@@ -274,7 +274,7 @@ const SuperAdminPatientManagement = () => {
 
       // API call to change password
 
-      const response = await fetch('/api/change-patient-password', {
+      const response = await apiFetch('/api/change-patient-password', {
 
         method: 'POST',
 
@@ -348,7 +348,7 @@ const SuperAdminPatientManagement = () => {
 
       
 
-      fetch('/api/audit-trail', {
+      apiFetch('/api/audit-trail', {
 
         method: 'POST',
 
@@ -496,7 +496,7 @@ const SuperAdminPatientManagement = () => {
 
       try {
 
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
 
           method: 'POST',
 
@@ -576,7 +576,7 @@ const SuperAdminPatientManagement = () => {
           const needsEnrich = withCenterDerived.some(p => !p.center);
           if (needsEnrich) {
             try {
-              const bcRes = await fetch('/api/bitecases');
+              const bcRes = await apiFetch('/api/bitecases');
               const bcJson = await bcRes.json();
               const cases = Array.isArray(bcJson) ? bcJson : (Array.isArray(bcJson.data) ? bcJson.data : []);
               const byPatientId = new Map();
@@ -627,7 +627,7 @@ const SuperAdminPatientManagement = () => {
   useEffect(() => {
     const fetchCenters = async () => {
       try {
-        const res = await fetch('/api/centers');
+        const res = await apiFetch('/api/centers');
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.data || data.centers || []);
         const names = Array.from(new Set((list || [])

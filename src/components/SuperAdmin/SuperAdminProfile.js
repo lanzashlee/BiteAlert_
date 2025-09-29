@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import { apiFetch } from '../../config/api';
 import './SuperAdminProfile.css';
 
 const SuperAdminProfile = () => {
@@ -61,7 +62,7 @@ const SuperAdminProfile = () => {
       }
 
       try {
-        await fetch('/api/logout', {
+        await apiFetch('/api/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)

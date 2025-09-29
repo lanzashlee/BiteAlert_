@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../../config/api';
 
 const CreateAccount = () => {
   const [form, setForm] = useState({
@@ -16,7 +17,7 @@ const CreateAccount = () => {
     e.preventDefault();
     setMsg('Creating...');
     try {
-      const res = await fetch('/api/create-account', {
+      const res = await apiFetch('/api/create-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)

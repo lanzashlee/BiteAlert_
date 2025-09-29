@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { apiFetch } from '../../config/api';
 
 export default function PatientDiagnosisManagement({ selectedPatient }) {
   const [centers, setCenters] = useState([]);
@@ -261,7 +262,7 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
   useEffect(() => {
     const loadCenters = async () => {
       try {
-        const res = await fetch('/api/centers');
+        const res = await apiFetch('/api/centers');
         if (res.ok) {
           const json = await res.json();
           const list = Array.isArray(json) ? json : (json.data || []);
@@ -319,7 +320,7 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
       // Set patient registration number for display (try multiple field names)
       setPatientRegistrationNumber(selectedPatient.registrationNumber || selectedPatient.regNo || selectedPatient.registration_no || selectedPatient.regNumber || '');
       
-      const response = await fetch('/api/bitecases');
+      const response = await apiFetch('/api/bitecases');
       const data = await response.json();
       const cases = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
       
@@ -930,7 +931,7 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
         updatedAt: new Date().toISOString()
       };
       
-      const response = await fetch('/api/bitecases', {
+      const response = await apiFetch('/api/bitecases', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../../config/api';
 
 const ActivateAccount = () => {
   const [email, setEmail] = useState('');
@@ -8,7 +9,7 @@ const ActivateAccount = () => {
   const sendOtp = async () => {
     setMsg('Sending OTP...');
     try {
-      const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const res = await apiFetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const data = await res.json();
       setMsg(data.success ? 'OTP sent!' : (data.message || 'Failed to send OTP'));
     } catch (e) {
@@ -19,7 +20,7 @@ const ActivateAccount = () => {
   const activate = async () => {
     setMsg('Activating...');
     try {
-      const res = await fetch('/api/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp, newPassword: 'TempPass123!' }) });
+      const res = await apiFetch('/api/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp, newPassword: 'TempPass123!' }) });
       const data = await res.json();
       setMsg(data.success ? 'Activated! Please change your password.' : (data.message || 'Activation failed'));
     } catch (e) {
