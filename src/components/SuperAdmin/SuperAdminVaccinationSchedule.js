@@ -997,8 +997,7 @@ const SuperAdminVaccinationSchedule = () => {
     if (statusFilter) {
       filtered = filtered.filter(v => {
         if (statusFilter === 'overdue') {
-          // Only show as overdue if status is 'scheduled' and date has passed
-          return new Date(v.scheduledDate) < new Date() && v.status === 'scheduled';
+          return v.status === 'missed';
         }
         return v.status === statusFilter;
       });
@@ -1340,6 +1339,64 @@ const SuperAdminVaccinationSchedule = () => {
       showNotification('Error rescheduling vaccination: ' + error.message, 'error');
     } finally {
       setUpdatingVaccinationId(null);
+    }
+  };
+
+  // Reschedule a given day and cascade updates to later days only, marking past ones as missed
+  const handleRescheduleCascade = async (dayLabel, newDateStr) => {
+    try {
+      const current = selectedPatientDetail?.vaccinations?.[0] ? selectedPatientDetail : vaccinationsByPatient[Object.keys(vaccinationsByPatient)[0]];
+      // Find any vaccination entry for this day to extract ids
+      const anyEntry = vaccinations.find(v => v.vaccinationDay === dayLabel && selectedPatientDetail?.patient?.patientId ? v.patient?.patientId === selectedPatientDetail.patient.patientId : true);
+      if (!anyEntry) return;
+      await handleReschedule(anyEntry._id, newDateStr);
+
+      // Update local schedule list in modal: set chosen day date/status, recompute later dates from chosen base
+      setScheduleModalData(prev => {
+        if (!prev) return prev;
+        const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
+        const dayIndex = labels.indexOf(dayLabel);
+        const base = new Date(newDateStr);
+        const addDays = [0,3,7,14,28];
+        const nextSchedule = (prev.schedule || []).map(item => {
+          const idx = labels.indexOf(item.label);
+          if (idx < dayIndex) {
+            // earlier days unaffected
+            return item;
+          }
+          if (idx === dayIndex) {
+            return { ...item, date: new Date(base).toISOString(), status: 'scheduled' };
+          }
+          const d = new Date(base);
+          d.setDate(d.getDate() + (addDays[idx] - addDays[dayIndex]));
+          return { ...item, date: d.toISOString(), status: 'scheduled' };
+        });
+        return { ...prev, schedule: nextSchedule };
+      });
+
+      // After changing the plan, mark any previously scheduled past dates as missed locally
+      setVaccinations(prev => prev.map(v => {
+        if (v.vaccinationDay === dayLabel && new Date(v.scheduledDate).toISOString().slice(0,10) !== newDateStr) {
+          return { ...v, scheduledDate: new Date(newDateStr).toISOString(), status: 'scheduled' };
+        }
+        // For downstream days for same patient, recompute relative if they were scheduled
+        const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
+        const addDays = [0,3,7,14,28];
+        const idxV = labels.indexOf(v.vaccinationDay);
+        const idxBase = labels.indexOf(dayLabel);
+        if (v.patient?.patientId === anyEntry.patient?.patientId && idxV > idxBase) {
+          const d = new Date(newDateStr);
+          d.setDate(d.getDate() + (addDays[idxV] - addDays[idxBase]));
+          return { ...v, scheduledDate: d.toISOString(), status: 'scheduled' };
+        }
+        // If a scheduled date is already in the past, mark as missed
+        if (v.status === 'scheduled' && new Date(v.scheduledDate) < new Date()) {
+          return { ...v, status: 'missed' };
+        }
+        return v;
+      }));
+    } catch (e) {
+      console.warn('Failed cascade reschedule:', e);
     }
   };
 
@@ -1815,7 +1872,7 @@ const SuperAdminVaccinationSchedule = () => {
     if (status === 'missed') return 'status-missed';
     
     // Only calculate overdue if status is still 'scheduled' and date has passed
-    if (status === 'scheduled' && vaccinationDate < today) return 'status-overdue';
+    if (status === 'scheduled' && vaccinationDate < today) return 'status-missed';
     if (status === 'scheduled' && vaccinationDate.toDateString() === today.toDateString()) return 'status-today';
     if (status === 'scheduled') return 'status-scheduled';
     
@@ -1833,7 +1890,7 @@ const SuperAdminVaccinationSchedule = () => {
     if (status === 'missed') return 'Missed';
     
     // Only calculate overdue if status is still 'scheduled' and date has passed
-    if (status === 'scheduled' && vaccinationDate < today) return 'Overdue';
+    if (status === 'scheduled' && vaccinationDate < today) return 'Missed';
     if (status === 'scheduled' && vaccinationDate.toDateString() === today.toDateString()) return 'Today';
     if (status === 'scheduled') return 'Scheduled';
     
@@ -2180,17 +2237,36 @@ const SuperAdminVaccinationSchedule = () => {
                                      </span>
                                    )}
                                  </td>
-                                 <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
-                                <button 
-                                     className="bg-red-600 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:bg-red-700 transition-all duration-200 uppercase tracking-wide shadow-lg hover:shadow-xl hover:scale-105"
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       setSelectedDose(isSelected ? null : { day, scheduleItem });
-                                     }}
-                                   >
-                                     {isSelected ? 'Hide Details' : 'View Details'}
-                                </button>
-                                 </td>
+                                <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
+                                  <div className="action-buttons">
+                                    <button 
+                                      className="bg-red-600 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:bg-red-700 transition-all duration-200 uppercase tracking-wide shadow-lg hover:shadow-xl hover:scale-105"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedDose(isSelected ? null : { day, scheduleItem });
+                                      }}
+                                    >
+                                      {isSelected ? 'Hide Details' : 'View Details'}
+                                    </button>
+                                    <button
+                                      className="btn-calendar px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wide"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const input = document.createElement('input');
+                                        input.type = 'date';
+                                        input.min = new Date().toISOString().split('T')[0];
+                                        input.onchange = async () => {
+                                          const newDate = input.value;
+                                          if (!newDate) return;
+                                          await handleRescheduleCascade(day, newDate);
+                                        };
+                                        input.click();
+                                      }}
+                                    >
+                                      <i className="fa-solid fa-calendar"></i>
+                                    </button>
+                                  </div>
+                                </td>
                                </tr>
                                {isSelected && (
                                  <tr>

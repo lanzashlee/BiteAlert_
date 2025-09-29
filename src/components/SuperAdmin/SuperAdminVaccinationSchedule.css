@@ -651,6 +651,21 @@
   min-width: 80px;
 }
 
+.btn-calendar {
+  background: #f59e0b;
+  color: white;
+}
+.btn-calendar:hover:not(:disabled) {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+.btn-calendar:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.6;
+}
+
 .btn-complete {
   background: #10b981;
   color: white;
