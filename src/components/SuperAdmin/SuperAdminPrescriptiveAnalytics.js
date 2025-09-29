@@ -63,7 +63,12 @@ const SuperAdminPrescriptiveAnalytics = () => {
         const heuristics = buildHeuristicInterventions(data.riskAnalysis);
         interventions = heuristics;
       }
-      setAnalyticsData({ ...data, interventionRecommendations: interventions });
+      // Enforce 3–4 sentence recommendations
+      const enriched = interventions.map((it) => ({
+        ...it,
+        intervention: ensureRecommendationLength(it.intervention, it.priority, it.barangay, it.coordinationRequired)
+      }));
+      setAnalyticsData({ ...data, interventionRecommendations: enriched });
       setAiError('');
     } catch (error) {
       console.error('Error fetching prescriptive analytics:', error);
@@ -92,11 +97,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
           riskScore: d.riskScore || 0,
           priority: d.priority || 'low',
           reasoning: Array.isArray(d.factors) ? d.factors.join('; ') : (d.factors || ''),
-          intervention: (d.priority === 'high')
-            ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability.'
-            : (d.priority === 'medium')
-              ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
-              : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+          intervention: ensureRecommendationLength('', d.priority || 'low', barangay, d.topCenter),
           totalCases: d.totalCases || 0,
           recentCases: d.recentCases || 0,
           severeCases: d.severeCases || 0,
@@ -109,6 +110,26 @@ const SuperAdminPrescriptiveAnalytics = () => {
     } catch (_) {
       return [];
     }
+  };
+
+  // Ensure recommendation text is at least 3 sentences by appending a standard plan
+  const ensureRecommendationLength = (text = '', priority = 'low', barangay = '', coord = '') => {
+    const sentenceCount = (String(text).match(/[.!?]+\s/g) || []).length + (text.endsWith('.') ? 1 : 0);
+    if (sentenceCount >= 3 && text.trim()) return text;
+    const plan = buildPriorityPlan(priority, barangay, coord);
+    if (!text || !text.trim()) return plan;
+    return (text.trim().endsWith('.') ? text.trim() : text.trim() + '.') + ' ' + plan;
+  };
+
+  const buildPriorityPlan = (priority, barangay, coord) => {
+    const coordLine = coord && coord !== 'Coordinate with nearest health center' ? `${coord}.` : 'Coordinate with the nearest health center.';
+    if (priority === 'high') {
+      return `Deploy a mobile vaccination team in ${barangay} within 48 hours and set up a pop‑up clinic at the barangay hall. Conduct door‑to‑door risk communication and announce schedules via barangay channels and schools. Ensure ERIG and vaccines are available with cold‑chain checks and pre‑position supplies. ${coordLine}`;
+    }
+    if (priority === 'medium') {
+      return `Schedule an additional vaccination day in ${barangay} next week and publish clear triage/queueing instructions. Run information drives through barangay social media and health workers, focusing on recent cases and bite prevention. Verify stock levels and line‑list recent patients for follow‑up. ${coordLine}`;
+    }
+    return `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels. Review minimum stock levels, cold‑chain logs, and appointment slots to avoid crowding. Reassess case trends in two weeks and scale up if new clusters emerge. ${coordLine}`;
   };
 
   // Fallback path used when server doesn't have /api/prescriptive-analytics yet (404)
