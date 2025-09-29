@@ -335,8 +335,8 @@ const SuperAdminVaccinationSchedule = () => {
         console.warn('Failed fetching vaccinationdates:', e);
       }
 
-      // Build schedule from vaccinationdates
-      const scheduleList = vdItem ? buildScheduleFromVaccinationDates(vdItem) : [];
+      // Build schedule from vaccinationdates; fallback to bite case fields
+      let scheduleList = vdItem ? buildScheduleFromVaccinationDates(vdItem) : [];
       console.log('🔍 Built schedule list:', scheduleList);
 
      // Get vaccine info from bitecases if available
@@ -353,6 +353,14 @@ const SuperAdminVaccinationSchedule = () => {
            categoryOfExposure = biteCase.categoryOfExposure || biteCase.exposureCategory || biteCase.category || '';
            caseCenter = biteCase.center || biteCase.centerName || '';
             console.log('🔍 Found bite case vaccine info:', { brandName, genericName, route });
+            // If we don't have schedule yet, or it's empty, build from bite case per-day fields
+            if (!scheduleList || scheduleList.length === 0) {
+              scheduleList = buildVaccinationsForBiteCase(biteCase).map(d => ({
+                label: d.label,
+                date: d.date,
+                status: d.status || 'scheduled'
+              }));
+            }
           }
         }
       } catch (e) {
@@ -2163,20 +2171,22 @@ const SuperAdminVaccinationSchedule = () => {
                                              <p className="text-lg font-bold text-red-600 uppercase tracking-wide">Status</p>
                 </div>
                                            <label className="flex items-center space-x-4 cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                             <input 
-                                               type="checkbox" 
-                                               className="w-6 h-6 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                               checked={scheduleItem?.status === 'completed'}
-                                               onChange={(e) => {
-                                                 const newStatus = e.target.checked ? 'completed' : 'scheduled';
-                                                 setScheduleModalData(prev => ({
-                                                   ...prev,
-                                                   schedule: prev.schedule.map(item => 
-                                                     item.label === day ? { ...item, status: newStatus } : item
-                                                   )
-                                                 }));
-                                               }}
-                                             />
+                                            <input 
+                                              type="checkbox" 
+                                              className="w-6 h-6 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                                              checked={scheduleItem?.status === 'completed'}
+                                              onChange={(e) => {
+                                                if (scheduleItem?.status === 'completed') return; // lock completed
+                                                const newStatus = e.target.checked ? 'completed' : 'scheduled';
+                                                setScheduleModalData(prev => ({
+                                                  ...prev,
+                                                  schedule: prev.schedule.map(item => 
+                                                    item.label === day ? { ...item, status: newStatus } : item
+                                                  )
+                                                }));
+                                              }}
+                                              disabled={scheduleItem?.status === 'completed'}
+                                            />
                                              <span className={`text-lg font-semibold ${scheduleItem?.status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>
                                                {scheduleItem?.status === 'completed' ? '✅ Completed' : '⏳ Scheduled'}
                           </span>
@@ -2551,6 +2561,7 @@ const SuperAdminVaccinationSchedule = () => {
                 value={formData.scheduledDate}
                 onChange={(e) => handleFormChange('scheduledDate', e.target.value)}
                 className={`form-input ${formErrors.scheduledDate ? 'error' : ''}`}
+                disabled={formData.status === 'completed'}
               />
               {formErrors.scheduledDate && (
                 <span className="form-error">{formErrors.scheduledDate}</span>
@@ -2564,6 +2575,7 @@ const SuperAdminVaccinationSchedule = () => {
                 value={formData.status}
                 onChange={(e) => handleFormChange('status', e.target.value)}
                 className={`form-select ${formErrors.status ? 'error' : ''}`}
+                disabled={formData.status === 'completed'}
               >
                 <option value="scheduled">Scheduled</option>
                 <option value="completed">Completed</option>
