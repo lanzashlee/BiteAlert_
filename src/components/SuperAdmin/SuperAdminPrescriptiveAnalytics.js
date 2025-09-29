@@ -47,8 +47,38 @@ const SuperAdminPrescriptiveAnalytics = () => {
           : Array.isArray(raw?.cases)
             ? raw.cases
             : [];
+      // Fetch valid centers from Center Data Management and filter cases
+      let validCentersSet = null;
+      try {
+        const centersRes = await apiFetch(apiConfig.endpoints.centers);
+        const centersJson = await centersRes.json();
+        const centers = Array.isArray(centersJson) ? centersJson : (centersJson?.data || centersJson?.centers || []);
+        const norm = (v) => String(v || '')
+          .toLowerCase()
+          .replace(/\s*health\s*center$/i, '')
+          .replace(/\s*center$/i, '')
+          .replace(/-/g, ' ')
+          .trim();
+        validCentersSet = new Set((centers || [])
+          .filter(c => !c.isArchived)
+          .map(c => norm(c.centerName || c.name))
+          .filter(Boolean));
+      } catch (_) {}
+
       const normalized = normalizeCases(cases);
-      const processedData = processAnalyticsData(normalized);
+      const filteredByCenter = validCentersSet
+        ? normalized.filter(c => {
+            const norm = (v) => String(v || '')
+              .toLowerCase()
+              .replace(/\s*health\s*center$/i, '')
+              .replace(/\s*center$/i, '')
+              .replace(/-/g, ' ')
+              .trim();
+            return validCentersSet.has(norm(c.center));
+          })
+        : normalized;
+
+      const processedData = processAnalyticsData(filteredByCenter);
       setAnalyticsData(processedData);
       
       // Automatically generate AI recommendations
@@ -117,53 +147,8 @@ const SuperAdminPrescriptiveAnalytics = () => {
     };
   };
 
-  // Limit text to a maximum number of sentences
-  const truncateSentences = (text, max = 3) => {
-    if (!text) return text;
-    const parts = String(text)
-      .replace(/\s+/g, ' ')
-      .trim()
-      .split(/(?<=[.!?])\s+/);
-    if (parts.length <= max) return parts.join(' ');
-    return parts.slice(0, max).join(' ');
-  };
-
-  // Function to remove numbered lists from text
-  const removeNumberedLists = (text) => {
-    if (!text) return text;
-    
-    let cleanedText = text;
-    
-    // Remove patterns like "1. ", "2. ", "3. ", etc. (more aggressive)
-    cleanedText = cleanedText.replace(/\d+\.\s*/g, '');
-    
-    // Remove patterns like "1) ", "2) ", "3) ", etc.
-    cleanedText = cleanedText.replace(/\d+\)\s*/g, '');
-    
-    // Remove patterns like "• " or "- " at the beginning of lines
-    cleanedText = cleanedText.replace(/^[•\-]\s*/gm, '');
-    
-    // Remove patterns like "Step 1:", "Step 2:", etc.
-    cleanedText = cleanedText.replace(/Step\s+\d+:\s*/gi, '');
-    
-    // Remove patterns like "Action 1:", "Action 2:", etc.
-    cleanedText = cleanedText.replace(/Action\s+\d+:\s*/gi, '');
-    
-    // Remove patterns like "Recommendation 1:", "Recommendation 2:", etc.
-    cleanedText = cleanedText.replace(/Recommendation\s+\d+:\s*/gi, '');
-    
-    // Remove any remaining numbered patterns like "1st", "2nd", "3rd", etc.
-    cleanedText = cleanedText.replace(/\d+(st|nd|rd|th)\s*/gi, '');
-    
-    // Remove patterns like "First:", "Second:", "Third:", etc.
-    cleanedText = cleanedText.replace(/(First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth):\s*/gi, '');
-    
-    // Clean up multiple spaces and line breaks
-    cleanedText = cleanedText.replace(/\s+/g, ' ');
-    cleanedText = cleanedText.replace(/\n\s*\n/g, '\n').trim();
-    
-    return cleanedText;
-  };
+  // Keep AI text as-is (no aggressive cleanup) to avoid losing content
+  const keep = (text) => text;
 
   const generateWithAI = async (data, retryAttempt = 0) => {
     if (!data) return;
@@ -198,23 +183,11 @@ const SuperAdminPrescriptiveAnalytics = () => {
       
       const { interventions } = await res.json();
       if (Array.isArray(interventions) && interventions.length > 0) {
-        // Process interventions to remove numbered lists
-        const processedInterventions = interventions.map(intervention => {
-          const originalIntervention = intervention.intervention;
-          const cleanedIntervention = truncateSentences(removeNumberedLists(intervention.intervention), 3);
-          
-          // Debug logging to see the transformation
-          if (originalIntervention !== cleanedIntervention) {
-            console.log('Original:', originalIntervention);
-            console.log('Cleaned:', cleanedIntervention);
-          }
-          
-          return {
-            ...intervention,
-            reasoning: truncateSentences(removeNumberedLists(intervention.reasoning), 3),
-            intervention: cleanedIntervention
-          };
-        });
+        const processedInterventions = interventions.map(intervention => ({
+          ...intervention,
+          reasoning: keep(intervention.reasoning),
+          intervention: keep(intervention.recommendations || intervention.intervention)
+        }));
         
         setAnalyticsData({ ...data, interventionRecommendations: processedInterventions });
         setAiError(''); // Clear any previous errors
