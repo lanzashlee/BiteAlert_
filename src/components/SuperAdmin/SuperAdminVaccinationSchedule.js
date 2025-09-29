@@ -1343,11 +1343,11 @@ const SuperAdminVaccinationSchedule = () => {
   };
 
   // Reschedule a given day and cascade updates to later days only, marking past ones as missed
-  const handleRescheduleCascade = async (dayLabel, newDateStr) => {
+  const handleRescheduleCascade = async (dayLabel, newDateStr, patientIdForScope) => {
     try {
-      const current = selectedPatientDetail?.vaccinations?.[0] ? selectedPatientDetail : vaccinationsByPatient[Object.keys(vaccinationsByPatient)[0]];
-      // Find any vaccination entry for this day to extract ids
-      const anyEntry = vaccinations.find(v => v.vaccinationDay === dayLabel && selectedPatientDetail?.patient?.patientId ? v.patient?.patientId === selectedPatientDetail.patient.patientId : true);
+      const scopePatientId = patientIdForScope || selectedPatientDetail?.patient?.patientId || null;
+      // Find any vaccination entry for this day to extract ids within the same patient scope
+      const anyEntry = vaccinations.find(v => v.vaccinationDay === dayLabel && (!scopePatientId || v.patient?.patientId === scopePatientId));
       if (!anyEntry) return;
       await handleReschedule(anyEntry._id, newDateStr);
 
@@ -2254,13 +2254,21 @@ const SuperAdminVaccinationSchedule = () => {
                                         e.stopPropagation();
                                         const input = document.createElement('input');
                                         input.type = 'date';
+                                        input.style.position = 'fixed';
+                                        input.style.opacity = '0';
                                         input.min = new Date().toISOString().split('T')[0];
-                                        input.onchange = async () => {
+                                        document.body.appendChild(input);
+                                        input.addEventListener('change', async () => {
                                           const newDate = input.value;
+                                          document.body.removeChild(input);
                                           if (!newDate) return;
-                                          await handleRescheduleCascade(day, newDate);
-                                        };
-                                        input.click();
+                                          const pid = scheduleModalData?.patient?.patientId || '';
+                                          await handleRescheduleCascade(day, newDate, pid);
+                                        }, { once: true });
+                                        input.addEventListener('blur', () => {
+                                          if (document.body.contains(input)) document.body.removeChild(input);
+                                        }, { once: true });
+                                        input.showPicker ? input.showPicker() : input.click();
                                       }}
                                     >
                                       <i className="fa-solid fa-calendar"></i>
