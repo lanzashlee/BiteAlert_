@@ -1,4 +1,4 @@
-// API Configuration
+// API Configuration - Updated for Render deployment
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://bitealert-backend.onrender.com';
 
 export const apiConfig = {
