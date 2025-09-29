@@ -171,9 +171,37 @@ const SuperAdminAccountManagement = () => {
     setShowPasswordModal(true);
   };
 
-  // Handle new password input change
+  // Handle new password input change with real-time validation
   const handleNewPasswordChange = (value) => {
     setNewPassword(value);
+    setPasswordError(''); // Clear previous errors
+    
+    // Real-time validation
+    if (value.length > 0) {
+      const validation = validatePassword(value);
+      if (validation) {
+        setPasswordError(validation);
+      }
+    }
+  };
+
+  // Handle confirm password change with real-time validation
+  const handleConfirmPasswordChange = (value) => {
+    setConfirmPassword(value);
+    setPasswordError(''); // Clear previous errors
+    
+    // Real-time validation for password match
+    if (value.length > 0 && newPassword.length > 0) {
+      if (value !== newPassword) {
+        setPasswordError('Passwords do not match');
+      } else {
+        // Check if new password meets requirements
+        const validation = validatePassword(newPassword);
+        if (validation) {
+          setPasswordError(validation);
+        }
+      }
+    }
   };
 
   // Confirm activation/deactivation
@@ -293,7 +321,14 @@ const SuperAdminAccountManagement = () => {
         return;
       }
 
+      if (!newPassword || !confirmPassword) {
+        setPasswordError('Please fill in both password fields');
+        return;
+      }
+
       setProcessing(true);
+
+      console.log('Changing password for account:', selectedAccount.id);
 
       // API call to change password
       const response = await apiFetch('/api/change-admin-password', {
@@ -305,9 +340,16 @@ const SuperAdminAccountManagement = () => {
         })
       });
 
+      console.log('Password change response:', response);
+
       if (!response.ok) {
-        throw new Error('Failed to change password');
+        const errorText = await response.text();
+        console.error('Password change failed:', errorText);
+        throw new Error(`Failed to change password: ${errorText}`);
       }
+
+      const result = await response.json();
+      console.log('Password change result:', result);
 
       // Log audit trail
       await logAuditTrail(selectedAccount.id, `Password changed for account: ${selectedAccount.username}`);
@@ -520,10 +562,18 @@ const SuperAdminAccountManagement = () => {
                 type="password"
                 id="newPassword"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) => handleNewPasswordChange(e.target.value)}
                 placeholder="Enter new password"
-                className="password-input"
+                className={`password-input ${passwordError && newPassword.length > 0 ? 'error' : ''}`}
               />
+              {newPassword.length > 0 && (
+                <div className="password-strength">
+                  <div className={`strength-bar ${newPassword.length >= 8 ? 'strong' : newPassword.length >= 4 ? 'medium' : 'weak'}`}></div>
+                  <span className="strength-text">
+                    {newPassword.length >= 8 ? 'Strong' : newPassword.length >= 4 ? 'Medium' : 'Weak'}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label htmlFor="confirmPassword">Confirm New Password</label>
@@ -531,7 +581,7 @@ const SuperAdminAccountManagement = () => {
                 type="password"
                 id="confirmPassword"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => handleConfirmPasswordChange(e.target.value)}
                 placeholder="Confirm new password"
                 className="password-input"
               />

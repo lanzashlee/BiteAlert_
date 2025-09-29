@@ -461,6 +461,58 @@
   background: white;
 }
 
+.unified-modal-content .password-input.error {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* Password Strength Indicator */
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.strength-bar {
+  height: 4px;
+  width: 60px;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.strength-bar.weak {
+  background: #dc2626;
+  width: 20px;
+}
+
+.strength-bar.medium {
+  background: #f59e0b;
+  width: 40px;
+}
+
+.strength-bar.strong {
+  background: #10b981;
+  width: 60px;
+}
+
+.strength-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.strength-bar.weak + .strength-text {
+  color: #dc2626;
+}
+
+.strength-bar.medium + .strength-text {
+  color: #f59e0b;
+}
+
+.strength-bar.strong + .strength-text {
+  color: #10b981;
+}
+
 .unified-modal-content .form-group label {
   display: block;
   margin-bottom: 0.5rem;
