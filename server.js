@@ -1705,7 +1705,7 @@ ${JSON.stringify(barangaySummaries, null, 2)}
 Case Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):
 ${JSON.stringify(caseAnalysis, null, 2)}`;
 
-        const result = await model.generateContent({
+        let result = await model.generateContent({
             contents: [
                 { role: 'user', parts: [{ text: systemInstruction }] },
                 { role: 'user', parts: [{ text: userInstruction }] }
@@ -1740,7 +1740,7 @@ ${JSON.stringify(caseAnalysis, null, 2)}`;
             return s;
         };
 
-        const interventions = (Array.isArray(json) ? json : []).map(it => ({
+        let interventions = (Array.isArray(json) ? json : []).map(it => ({
             barangay: it.barangay,
             riskScore: Number(it.riskScore) || 0,
             priority: it.priority || 'low',
@@ -1754,6 +1754,52 @@ ${JSON.stringify(caseAnalysis, null, 2)}`;
             recentCases: barangaySummaries.find(b => b.barangay === it.barangay)?.recentCases || 0,
             severeCases: barangaySummaries.find(b => b.barangay === it.barangay)?.severeCases || 0
         })).sort((a, b) => b.riskScore - a.riskScore);
+
+        // If the model returned too short or empty content, retry once with a stronger instruction
+        const tooShort = interventions.length === 0 || interventions.some(it => ((it.reasoning.match(/[.!?]/g) || []).length < 4) || ((it.intervention.match(/[.!?]/g) || []).length < 4));
+        if (tooShort && genAI) {
+            try {
+                const strongerUser = userInstruction + "\n\nIMPORTANT: Your previous answer was too short. For EACH barangay, provide 4–6 sentences for reasoning AND 4–6 sentences for recommendations, grounded on the specific age distributions, time patterns, severe and recent counts, and topCenter.";
+                result = await model.generateContent({
+                    contents: [
+                        { role: 'user', parts: [{ text: systemInstruction }] },
+                        { role: 'user', parts: [{ text: strongerUser }] }
+                    ],
+                    generationConfig: {
+                        temperature: 0.95,
+                        topP: 0.95,
+                        topK: 50,
+                        maxOutputTokens: 3072
+                    }
+                });
+                let text2 = result.response.text();
+                const jsonMatch2 = text2.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+                if (jsonMatch2) text2 = jsonMatch2[1];
+                let json2;
+                try {
+                    json2 = JSON.parse(text2);
+                } catch (e) {
+                    const am = text2.match(/\[\s*{[\s\S]*}\s*\]/);
+                    json2 = am ? JSON.parse(am[0]) : [];
+                }
+                interventions = (Array.isArray(json2) ? json2 : []).map(it => ({
+                    barangay: it.barangay,
+                    riskScore: Number(it.riskScore) || 0,
+                    priority: it.priority || 'low',
+                    reasoning: ensureLength(it.reasoning || ''),
+                    intervention: ensureLength(it.recommendations || ''),
+                    ageGroupFocus: it.ageGroupFocus || '',
+                    timePattern: it.timePattern || '',
+                    resourceNeeds: it.resourceNeeds || '',
+                    coordinationRequired: it.coordinationRequired || '',
+                    totalCases: barangaySummaries.find(b => b.barangay === it.barangay)?.totalCases || 0,
+                    recentCases: barangaySummaries.find(b => b.barangay === it.barangay)?.recentCases || 0,
+                    severeCases: barangaySummaries.find(b => b.barangay === it.barangay)?.severeCases || 0
+                })).sort((a, b) => b.riskScore - a.riskScore);
+            } catch (retryErr) {
+                console.warn('Gemini retry failed:', retryErr.message);
+            }
+        }
 
         return res.json({ interventions });
     } catch (err) {
