@@ -2319,7 +2319,11 @@ const SuperAdminVaccinationSchedule = () => {
                                         if (left < minLeft) left = minLeft; // keep inside viewport
                                         if (left > maxLeft) left = maxLeft;
                                         const top = Math.round(rect.bottom + window.scrollY + 8);
-                                        setDatePicker({ day, patientId: scheduleModalData?.patient?.patientId || '', top, left });
+                                        // Prefill with existing date for this day
+                                        const existingISO = scheduleItem?.date || null;
+                                        const existingYMD = existingISO ? new Date(existingISO).toISOString().split('T')[0] : '';
+                                        const preview = existingYMD ? buildCascadePreview(day, existingYMD) : null;
+                                        setDatePicker({ day, patientId: scheduleModalData?.patient?.patientId || '', top, left, value: existingYMD, preview });
                                       }}
                                     >
                                       <i className="fa-solid fa-calendar"></i>
@@ -3004,6 +3008,7 @@ const SuperAdminVaccinationSchedule = () => {
                 type="date"
                 className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 flex-1"
                 min={new Date().toISOString().split('T')[0]}
+                value={datePicker?.value || ''}
                 onChange={(ev) => {
                   const value = ev.target.value;
                   if (!value) return;
