@@ -24,8 +24,7 @@ const allowedOrigins = [
     'http://localhost:3002',
     'https://bitealert-frontend.onrender.com',
     'https://bitealert-frontend-ppj8.onrender.com',
-    'https://bitealert-frontend-xm3h.onrender.com',
-    'https://bitealert-frontend-ppj8.onrender.com',
+    'https://bitealert-frontend-cs1q.onrender.com',
     'https://bitealert-frontend-xm3h.onrender.com'
 ].filter(Boolean);
 
