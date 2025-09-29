@@ -234,6 +234,39 @@ const SuperAdminVaccinationSchedule = () => {
       }));
   };
 
+  // Format date for display without timezone shifts; preserve YYYY-MM-DD when provided
+  const formatScheduleDate = (raw) => {
+    try {
+      if (!raw) return 'Not scheduled';
+      if (typeof raw === 'string') {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw; // already date-only
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return raw;
+        return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+      }
+      if (typeof raw === 'number') {
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return String(raw);
+        return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+      }
+      if (typeof raw === 'object') {
+        if (raw?.$date?.$numberLong) {
+          const d = new Date(Number(raw.$date.$numberLong));
+          return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+        }
+        if (raw?.$date) {
+          const d = new Date(raw.$date);
+          return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+        }
+      }
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return String(raw);
+      return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+    } catch (_) {
+      return String(raw);
+    }
+  };
+
       // Fetch latest vaccine info for this bite case directly from backend
   const openVaccineInfo = async (vaccination) => {
     try {
@@ -1961,7 +1994,7 @@ const SuperAdminVaccinationSchedule = () => {
                         <td>{getPatientDisplayName(v.patient)}</td>
                         <td>{v.patient?.patientId || 'N/A'}</td>
                         <td>{v.vaccinationDay}</td>
-                        <td>{new Date(v.scheduledDate).toLocaleDateString()}</td>
+                        <td>{formatScheduleDate(v.scheduledDate)}</td>
                         <td>
                           <span className={`status-badge ${getStatusBadgeClass(v.status, v.scheduledDate)}`}>{getStatusText(v.status, v.scheduledDate)}</span>
                         </td>
@@ -2124,7 +2157,7 @@ const SuperAdminVaccinationSchedule = () => {
                                  </td>
                                  <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
                                    <span className="text-sm sm:text-base md:text-lg text-gray-700 font-medium">
-                                     {scheduleItem ? new Date(scheduleItem.date).toLocaleDateString() : 'Not scheduled'}
+                                    {scheduleItem ? formatScheduleDate(scheduleItem.date) : 'Not scheduled'}
                                    </span>
                                  </td>
                                  <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
@@ -2635,7 +2668,7 @@ const SuperAdminVaccinationSchedule = () => {
           <div className="vaccine-info">
             <div><strong>Patient:</strong> {selectedVaccineInfo.patientName}</div>
             <div><strong>Day:</strong> {selectedVaccineInfo.vaccinationDay} ({selectedVaccineInfo.dose || '—'})</div>
-            <div><strong>Date:</strong> {new Date(selectedVaccineInfo.date).toLocaleDateString()}</div>
+            <div><strong>Date:</strong> {formatScheduleDate(selectedVaccineInfo.date)}</div>
             <div><strong>Brand:</strong> {selectedVaccineInfo.brand || 'Not recorded'}</div>
             <div><strong>Generic:</strong> {selectedVaccineInfo.generic || 'Not recorded'}</div>
             <div><strong>Route:</strong> {selectedVaccineInfo.route || 'Not recorded'}</div>
@@ -2688,7 +2721,7 @@ const SuperAdminVaccinationSchedule = () => {
                       {vaccination ? (
                         <div className="schedule-card-content">
                           <div className="schedule-info">
-                            <p><strong>Date:</strong> {new Date(vaccination.scheduledDate).toLocaleDateString()}</p>
+                            <p><strong>Date:</strong> {formatScheduleDate(vaccination.scheduledDate)}</p>
                             <p><strong>Vaccine Brand:</strong> {vaccination.vaccineBrand || 'Not specified'}</p>
                             <p><strong>Vaccine Generic:</strong> {vaccination.vaccineGeneric || 'Not specified'}</p>
                             <p><strong>Route:</strong> {vaccination.vaccineRoute || 'Not specified'}</p>
@@ -2792,9 +2825,9 @@ const SuperAdminVaccinationSchedule = () => {
                       <div className={`status-badge ${c.status === 'completed' ? 'status-completed' : c.status === 'missed' ? 'status-missed' : 'status-scheduled'}`}>{(c.status || 'scheduled').toUpperCase()}</div>
                     </div>
                     <div className="history-grid">
-                      <div><strong>Date Registered:</strong> {c.dateRegistered ? new Date(c.dateRegistered).toLocaleDateString() : 'N/A'}</div>
+                      <div><strong>Date Registered:</strong> {c.dateRegistered ? formatScheduleDate(c.dateRegistered) : 'N/A'}</div>
                       <div><strong>Center:</strong> {c.center || 'N/A'}</div>
-                      <div><strong>Exposure Date:</strong> {c.exposureDate ? new Date(c.exposureDate).toLocaleDateString() : 'N/A'}</div>
+                      <div><strong>Exposure Date:</strong> {c.exposureDate ? formatScheduleDate(c.exposureDate) : 'N/A'}</div>
                       <div><strong>Route:</strong> {c.route || 'N/A'}</div>
                       <div><strong>Generic:</strong> {c.genericName || 'N/A'}</div>
                       <div><strong>Brand:</strong> {c.brandName || 'N/A'}</div>
@@ -2802,7 +2835,7 @@ const SuperAdminVaccinationSchedule = () => {
                     {Array.isArray(c.scheduleDates) && c.scheduleDates.length > 0 && (
                       <div className="history-schedule">
                         {c.scheduleDates.slice(0,5).map((d, idx) => (
-                          <div key={idx} className="schedule-pill">{['D0','D3','D7','D14','D28'][idx]}: {new Date(d).toLocaleDateString()}</div>
+                          <div key={idx} className="schedule-pill">{['D0','D3','D7','D14','D28'][idx]}: {formatScheduleDate(d)}</div>
                         ))}
                       </div>
                     )}
