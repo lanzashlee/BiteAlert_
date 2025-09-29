@@ -267,7 +267,7 @@ const SuperAdminVaccinationSchedule = () => {
     }
   };
 
-      // Fetch latest vaccine info for this bite case directly from backend
+  // Fetch latest vaccine info for this bite case directly from backend
   const openVaccineInfo = async (vaccination) => {
     try {
       setShowVaccineInfoModal(true);
@@ -283,10 +283,10 @@ const SuperAdminVaccinationSchedule = () => {
       let biteCaseData = null;
       if (biteCaseRes.ok) {
         try {
-          const json = await biteCaseRes.json();
-          if (Array.isArray(json)) biteCaseData = json[0];
-          else if (json && json.data && Array.isArray(json.data)) biteCaseData = json.data[0];
-          else biteCaseData = json;
+        const json = await biteCaseRes.json();
+        if (Array.isArray(json)) biteCaseData = json[0];
+        else if (json && json.data && Array.isArray(json.data)) biteCaseData = json.data[0];
+        else biteCaseData = json;
         } catch (e) {
           const txt = await biteCaseRes.text();
           console.warn('Non-JSON bitecase response:', txt.slice(0, 120));
@@ -384,7 +384,7 @@ const SuperAdminVaccinationSchedule = () => {
         if (biteCaseRes.ok) {
           let biteCase = null;
           try {
-            const json = await biteCaseRes.json();
+          const json = await biteCaseRes.json();
             biteCase = Array.isArray(json) ? json[0] : (Array.isArray(json?.data) ? json.data[0] : json);
           } catch (e) {
             const txt = await biteCaseRes.text();
@@ -454,22 +454,22 @@ const SuperAdminVaccinationSchedule = () => {
       // Normalize and enrich fields; sort most recent first
       const normalized = list
         .map(bc => ({
-          id: bc._id,
-          registrationNumber: bc.registrationNumber,
-          dateRegistered: bc.dateRegistered || bc.createdAt,
+        id: bc._id,
+        registrationNumber: bc.registrationNumber,
+        dateRegistered: bc.dateRegistered || bc.createdAt,
           createdAt: bc.createdAt,
           center: bc.center || bc.centerName || '',
           address: bc.address || bc.patientAddress || '',
-          exposureDate: bc.exposureDate,
+        exposureDate: bc.exposureDate,
           severity: bc.severity || bc.exposureCategory || '',
           woundLocation: bc.woundLocation || '',
-          status: bc.status,
-          genericName: bc.genericName,
-          brandName: bc.brandName,
-          route: bc.route || bc.currentImmunization?.route?.[0] || '',
+        status: bc.status,
+        genericName: bc.genericName,
+        brandName: bc.brandName,
+        route: bc.route || bc.currentImmunization?.route?.[0] || '',
           notes: bc.notes || bc.remarks || '',
-          scheduleDates: bc.scheduleDates || [],
-          vaccinations: buildVaccinationsForBiteCase(bc)
+        scheduleDates: bc.scheduleDates || [],
+        vaccinations: buildVaccinationsForBiteCase(bc)
         }))
         .sort((a, b) => new Date(b.dateRegistered || b.createdAt || 0) - new Date(a.dateRegistered || a.createdAt || 0));
 
@@ -1492,10 +1492,19 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Handle form input changes
   const handleFormChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      // If user changes the scheduled date, auto-set status back to scheduled
+      if (field === 'scheduledDate' && value) {
+        const selectedDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (!isNaN(selectedDate.getTime()) && selectedDate >= today) {
+          next.status = 'scheduled';
+        }
+      }
+      return next;
+    });
     
     // Clear error when user starts typing
     if (formErrors[field]) {
@@ -2223,22 +2232,22 @@ const SuperAdminVaccinationSchedule = () => {
                                              <p className="text-lg font-bold text-red-600 uppercase tracking-wide">Status</p>
                 </div>
                                            <label className="flex items-center space-x-4 cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <input 
-                                              type="checkbox" 
-                                              className="w-6 h-6 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                              checked={scheduleItem?.status === 'completed'}
-                                              onChange={(e) => {
+                                             <input 
+                                               type="checkbox" 
+                                               className="w-6 h-6 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                                               checked={scheduleItem?.status === 'completed'}
+                                               onChange={(e) => {
                                                 if (scheduleItem?.status === 'completed') return; // lock completed
-                                                const newStatus = e.target.checked ? 'completed' : 'scheduled';
-                                                setScheduleModalData(prev => ({
-                                                  ...prev,
-                                                  schedule: prev.schedule.map(item => 
-                                                    item.label === day ? { ...item, status: newStatus } : item
-                                                  )
-                                                }));
-                                              }}
+                                                 const newStatus = e.target.checked ? 'completed' : 'scheduled';
+                                                 setScheduleModalData(prev => ({
+                                                   ...prev,
+                                                   schedule: prev.schedule.map(item => 
+                                                     item.label === day ? { ...item, status: newStatus } : item
+                                                   )
+                                                 }));
+                                               }}
                                               disabled={scheduleItem?.status === 'completed'}
-                                            />
+                                             />
                                              <span className={`text-lg font-semibold ${scheduleItem?.status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>
                                                {scheduleItem?.status === 'completed' ? '✅ Completed' : '⏳ Scheduled'}
                           </span>
@@ -2481,10 +2490,10 @@ const SuperAdminVaccinationSchedule = () => {
                 <option value="">Select a patient</option>
                 {patients.map(patient => (
                   <option key={patient.patientId || patient._id} value={patient.patientId || ''}>
-                     {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim()} 
-                     {patient.patientId && ` (ID: ${patient.patientId})`}
-                   </option>
-                 ))}
+                    {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim()} 
+                    {patient.patientId && ` (ID: ${patient.patientId})`}
+                  </option>
+                ))}
               </select>
               {formErrors.patientId && (
                 <span className="form-error">{formErrors.patientId}</span>
@@ -2613,7 +2622,7 @@ const SuperAdminVaccinationSchedule = () => {
                 value={formData.scheduledDate}
                 onChange={(e) => handleFormChange('scheduledDate', e.target.value)}
                 className={`form-input ${formErrors.scheduledDate ? 'error' : ''}`}
-                disabled={formData.status === 'completed'}
+                min={new Date().toISOString().split('T')[0]}
               />
               {formErrors.scheduledDate && (
                 <span className="form-error">{formErrors.scheduledDate}</span>
