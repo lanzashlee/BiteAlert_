@@ -685,6 +685,12 @@
   animation: popFadeScale 0.1s ease-out both;
 }
 
+/* Ensure popover appears above modals and is clickable */
+.date-popover,
+.animate-pop-100 {
+  pointer-events: auto;
+}
+
 .btn-complete {
   background: #10b981;
   color: white;
