@@ -86,6 +86,35 @@ try {
     console.warn('Failed to initialize GoogleGenerativeAI:', e.message);
 }
 
+// Helper: select a working Gemini model among several candidates
+async function getWorkingGeminiModel(preferredModel) {
+    if (!genAI) return null;
+    const candidates = [
+        (preferredModel || process.env.GEMINI_MODEL || '').trim(),
+        'gemini-1.5-pro-latest',
+        'gemini-1.5-pro',
+        'gemini-pro',
+        'gemini-1.0-pro',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-latest'
+    ].filter(Boolean);
+
+    for (const modelId of candidates) {
+        try {
+            const model = genAI.getGenerativeModel({ model: modelId });
+            const test = await model.generateContent('ping');
+            if (test?.response) {
+                console.log('Using Gemini model:', modelId);
+                return model;
+            }
+        } catch (err) {
+            console.warn(`Model candidate failed (${modelId}):`, err?.message || String(err));
+        }
+    }
+    console.warn('No working Gemini model found from candidates');
+    return null;
+}
+
 // MongoDB Configuration
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://lricamara6:Lanz0517@bitealert.febjlgm.mongodb.net/bitealert?retryWrites=true&w=majority";
 const MONGODB_OPTIONS = {
@@ -1685,7 +1714,31 @@ app.post('/api/prescriptions', async (req, res) => {
             return res.json({ interventions });
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+        const model = await getWorkingGeminiModel();
+        if (!model) {
+            console.warn('Gemini AI not initialized - returning heuristic fallback interventions');
+            const interventions = barangaySummaries
+                .map(s => ({
+                    barangay: s.barangay,
+                    riskScore: Number(s.riskScore) || 0,
+                    priority: s.priority || 'low',
+                    reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
+                    intervention: s.priority === 'high'
+                        ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
+                        : s.priority === 'medium'
+                            ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                            : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+                    ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
+                    timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
+                    resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
+                    coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
+                    totalCases: s.totalCases || 0,
+                    recentCases: s.recentCases || 0,
+                    severeCases: s.severeCases || 0
+                }))
+                .sort((a, b) => b.riskScore - a.riskScore);
+            return res.json({ interventions });
+        }
         const systemInstruction = `You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.
 
 STRICT REQUIREMENTS
@@ -4305,7 +4358,7 @@ app.post('/api/ai-test', async (req, res) => {
             return res.status(500).json({ error: 'AI service not initialized' });
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+        const model = await getWorkingGeminiModel();
         const result = await model.generateContent('Hello, respond with just "AI is working"');
         const text = result.response.text();
 
@@ -4608,7 +4661,7 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                     }))
                     .sort((a, b) => b.riskScore - a.riskScore);
             } else {
-                const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+                const model = await getWorkingGeminiModel();
                 const recentWindowDays = ({ week:7, month:30, quarter:90, year:365 }[timeRange] || 30);
                 const systemInstruction = 'You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.';
                 const userInstruction = `Time Range: ${timeRange} (≈${recentWindowDays} days)\nSelected Barangay Filter: ${selectedBarangay}\nBarangay Summaries (counts, recent, severe, priority, topCenter):\n${JSON.stringify(barangaySummaries, null, 2)}\n\nCase Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):\n${JSON.stringify(caseAnalysis, null, 2)}`;
