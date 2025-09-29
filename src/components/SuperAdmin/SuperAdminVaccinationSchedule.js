@@ -668,9 +668,19 @@ const SuperAdminVaccinationSchedule = () => {
           vaccinationUrl += `?center=${encodeURIComponent(userCenter)}`;
         }
         
-        // Fetch patients
-        const patientsRes = await fetch(patientsUrl);
-        const patientsData = await patientsRes.json();
+        // Fetch patients (use apiFetch with base URL and handle non-JSON responses)
+        const patientsRes = await apiFetch(patientsUrl);
+        let patientsData = [];
+        if (!patientsRes.ok) {
+          throw new Error(`Failed to fetch patients: ${patientsRes.status}`);
+        }
+        try {
+          patientsData = await patientsRes.json();
+        } catch (e) {
+          const text = await patientsRes.text();
+          console.error('Patients response not JSON:', text);
+          throw new Error('Patients API returned non-JSON');
+        }
         
         // Fetch bite cases which contain vaccination data
         const vaccinationRes = await apiFetch(vaccinationUrl);

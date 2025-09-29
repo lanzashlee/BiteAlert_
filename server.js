@@ -1629,11 +1629,28 @@ app.post('/api/prescriptions', async (req, res) => {
         }));
 
         if (!genAI) {
-            console.error('Gemini AI not initialized - API key missing or invalid');
-            return res.status(500).json({ 
-                error: 'AI service unavailable - API key not configured or invalid',
-                details: 'Please check GOOGLE_API_KEY environment variable'
-            });
+            console.warn('Gemini AI not initialized - returning heuristic fallback interventions');
+            const interventions = barangaySummaries
+                .map(s => ({
+                    barangay: s.barangay,
+                    riskScore: Number(s.riskScore) || 0,
+                    priority: s.priority || 'low',
+                    reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
+                    intervention: s.priority === 'high'
+                        ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
+                        : s.priority === 'medium'
+                            ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                            : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+                    ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
+                    timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
+                    resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
+                    coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
+                    totalCases: s.totalCases || 0,
+                    recentCases: s.recentCases || 0,
+                    severeCases: s.severeCases || 0
+                }))
+                .sort((a, b) => b.riskScore - a.riskScore);
+            return res.json({ interventions });
         }
 
         const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -1708,6 +1725,43 @@ ${JSON.stringify(caseAnalysis, null, 2)}`;
         return res.json({ interventions });
     } catch (err) {
         console.error('Gemini /api/prescriptions error:', err);
+        // Attempt a minimal safe fallback if possible
+        try {
+            const { riskAnalysis } = req.body || {};
+            if (riskAnalysis && typeof riskAnalysis === 'object') {
+                const barangaySummaries = Object.entries(riskAnalysis).map(([barangay, d]) => ({
+                    barangay,
+                    totalCases: d.totalCases || 0,
+                    recentCases: d.recentCases || 0,
+                    severeCases: d.severeCases || 0,
+                    riskScore: d.riskScore || 0,
+                    priority: d.priority || 'low',
+                    factors: d.factors || [],
+                    topCenter: d.topCenter || null
+                }));
+                const interventions = barangaySummaries
+                    .map(s => ({
+                        barangay: s.barangay,
+                        riskScore: Number(s.riskScore) || 0,
+                        priority: s.priority || 'low',
+                        reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
+                        intervention: s.priority === 'high'
+                            ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
+                            : s.priority === 'medium'
+                                ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                                : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+                        ageGroupFocus: '',
+                        timePattern: '',
+                        resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
+                        coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
+                        totalCases: s.totalCases || 0,
+                        recentCases: s.recentCases || 0,
+                        severeCases: s.severeCases || 0
+                    }))
+                    .sort((a, b) => b.riskScore - a.riskScore);
+                return res.json({ interventions });
+            }
+        } catch (_) {}
         return res.status(500).json({ error: 'Failed to generate prescriptions' });
     }
 });
