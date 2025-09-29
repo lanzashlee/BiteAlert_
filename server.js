@@ -4010,10 +4010,39 @@ app.get('/api/notifications', async (req, res) => {
 // Notifications stream endpoint
 app.get('/api/notifications/stream', async (req, res) => {
     try {
-        // Return empty notifications for now
-        res.json({ notifications: [] });
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+
+        // Initial ping to open the stream
+        res.write(': connected\n\n');
+
+        // Periodic keep-alive
+        const keepAlive = setInterval(() => {
+            res.write(`event: ping\n`);
+            res.write(`data: {"time":"${new Date().toISOString()}"}\n\n`);
+        }, 25000);
+
+        // Minimal sample event (empty list)
+        res.write(`event: init\n`);
+        res.write(`data: []\n\n`);
+
+        req.on('close', () => {
+            clearInterval(keepAlive);
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        // If SSE headers already sent, end the stream
+        try {
+            res.write(`event: error\n`);
+            res.write(`data: {"message":"${(error && error.message) || 'SSE error'}"}\n\n`);
+            res.end();
+        } catch (_) {
+            // fallback to JSON if not started
+            if (!res.headersSent) {
+                res.status(500).json({ error: error.message });
+            }
+        }
     }
 });
 

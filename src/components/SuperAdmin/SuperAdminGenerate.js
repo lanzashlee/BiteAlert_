@@ -123,7 +123,7 @@ const SuperAdminGenerate = () => {
         url += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(url);
+      const response = await apiFetch(url);
       const result = await response.json();
       if (result.success) {
         setRabiesUtilData(Array.isArray(result.data) ? result.data : (result.data?.table?.body || []));
@@ -141,7 +141,7 @@ const SuperAdminGenerate = () => {
         url += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(url);
+      const response = await apiFetch(url);
       const result = await response.json();
       let normalized = [];
       if (result.success) {
@@ -158,7 +158,7 @@ const SuperAdminGenerate = () => {
 
       // If animalType/biteSite are missing, enrich from bitecases collection
       try {
-        const bitesRes = await apiFetch('/api/bitecases');
+        const bitesRes = await apiFetch(apiConfig.endpoints.bitecases);
         const bitesJson = await bitesRes.json();
         const bites = Array.isArray(bitesJson) ? bitesJson : (bitesJson.data || bitesJson.cases || []);
         const byCaseNo = new Map();
@@ -207,7 +207,7 @@ const SuperAdminGenerate = () => {
         url += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(url);
+      const response = await apiFetch(url);
       const result = await response.json();
       if (result.success) {
         setCustomDemoData(Array.isArray(result.data) ? result.data : (result.data?.table?.body || []));
@@ -225,7 +225,7 @@ const SuperAdminGenerate = () => {
         url += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(url);
+      const response = await apiFetch(url);
       const result = await response.json();
       console.log('Patients API response:', result);
       if (result.success) {
@@ -246,7 +246,7 @@ const SuperAdminGenerate = () => {
         url += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(url);
+      const response = await apiFetch(url);
       const result = await response.json();
       console.log('Vaccination API response:', result);
       const normalizeVaccinationDay = (val) => {
@@ -315,7 +315,7 @@ const SuperAdminGenerate = () => {
         url += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(url);
+      const response = await apiFetch(url);
       const result = await response.json();
       console.log('Barangay API response:', result);
       if (result.success) {
@@ -842,7 +842,7 @@ const SuperAdminGenerate = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`${apiConfig.endpoints.accountStatus}/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -873,7 +873,7 @@ const SuperAdminGenerate = () => {
       }
 
       try {
-        await apiFetch('/api/logout', {
+        await apiFetch(apiConfig.endpoints.logout, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)

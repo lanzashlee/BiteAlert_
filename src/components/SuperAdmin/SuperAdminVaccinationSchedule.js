@@ -116,11 +116,11 @@ const SuperAdminVaccinationSchedule = () => {
     }
     
     // Update vaccinationdates
-    const putBases = ['/api/vaccinationdates'];
+    const putBases = [apiConfig.endpoints.vaccinationDates];
     let updated = false;
     for (const base of putBases) {
       try {
-        const res = await fetch(`${base}?biteCaseId=${encodeURIComponent(scheduleModalData.biteCaseId || '')}`, {
+        const res = await apiFetch(`${base}?biteCaseId=${encodeURIComponent(scheduleModalData.biteCaseId || '')}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -509,10 +509,7 @@ const SuperAdminVaccinationSchedule = () => {
 
   const fetchVaccinationDatesForPatient = async (patientId) => {
     const bases = [
-      '/api/vaccinationdates',
-      '/api/vaccination-dates',
-      '/vaccinationdates',
-      '/vaccination-dates'
+      apiConfig.endpoints.vaccinationDates
     ];
     for (const base of bases) {
       const data = await tryFetchJson(`${base}?patientId=${encodeURIComponent(patientId)}`);
@@ -524,10 +521,7 @@ const SuperAdminVaccinationSchedule = () => {
   const fetchAllVaccinationDates = async () => {
     const userCenter = getUserCenter();
     const bases = [
-      '/api/vaccinationdates',
-      '/api/vaccination-dates',
-      '/vaccinationdates',
-      '/vaccination-dates'
+      apiConfig.endpoints.vaccinationDates
     ];
     for (const base of bases) {
       let url = base;
@@ -666,8 +660,8 @@ const SuperAdminVaccinationSchedule = () => {
         const userCenter = getUserCenter();
         
         // Build API URLs with center filter for non-superadmin users
-        let patientsUrl = '/api/patients?page=1&limit=1000';
-        let vaccinationUrl = '/api/bitecases';
+        let patientsUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
+        let vaccinationUrl = apiConfig.endpoints.bitecases;
         
         if (userCenter && userCenter !== 'all') {
           patientsUrl += `&center=${encodeURIComponent(userCenter)}`;
@@ -679,7 +673,7 @@ const SuperAdminVaccinationSchedule = () => {
         const patientsData = await patientsRes.json();
         
         // Fetch bite cases which contain vaccination data
-        const vaccinationRes = await fetch(vaccinationUrl);
+        const vaccinationRes = await apiFetch(vaccinationUrl);
         const vaccinationData = await vaccinationRes.json();
         
         // Handle different response formats
@@ -703,11 +697,11 @@ const SuperAdminVaccinationSchedule = () => {
         // Fallback: try vaccinationdates if bitecases returned nothing
         if (!biteCases || biteCases.length === 0) {
           try {
-            let vdUrl = '/api/vaccinationdates';
+            let vdUrl = apiConfig.endpoints.vaccinationDates;
             if (userCenter && userCenter !== 'all') {
               vdUrl += `?center=${encodeURIComponent(userCenter)}`;
             }
-            const vdRes = await fetch(vdUrl);
+            const vdRes = await apiFetch(vdUrl);
             const vdData = await vdRes.json();
             if (Array.isArray(vdData)) {
               biteCases = vdData;
@@ -1490,13 +1484,13 @@ const SuperAdminVaccinationSchedule = () => {
       const userCenter = getUserCenter();
       
       // Build API URL with center filter for non-superadmin users
-      let vaccinationUrl = '/api/bitecases';
+      let vaccinationUrl = apiConfig.endpoints.bitecases;
       if (userCenter && userCenter !== 'all') {
         vaccinationUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
       // Fetch bite cases which contain vaccination data
-      const vaccinationRes = await fetch(vaccinationUrl);
+      const vaccinationRes = await apiFetch(vaccinationUrl);
       const vaccinationData = await vaccinationRes.json();
       
       // Handle different response formats

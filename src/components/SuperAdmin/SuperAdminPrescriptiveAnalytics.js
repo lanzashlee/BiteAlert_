@@ -38,7 +38,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
     setAiLoading(true);
     setAiError('');
     try {
-      const casesRes = await apiFetch('/api/bitecases');
+      const casesRes = await apiFetch(apiConfig.endpoints.bitecases);
       const raw = await casesRes.json();
       const cases = Array.isArray(raw)
         ? raw
@@ -161,7 +161,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
     const retryDelay = 3000; // 3 seconds
     
     try {
-      const res = await apiFetch('/api/prescriptions', {
+      const res = await apiFetch(apiConfig.endpoints.prescriptions, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ riskAnalysis: data.riskAnalysis, timeRange, selectedBarangay })
@@ -331,7 +331,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
       
       if (currentUser && currentUser.email) {
         try {
-          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
+          const res = await apiFetch(`${apiConfig.endpoints.accountStatus}/${encodeURIComponent(currentUser.email)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.account) {
@@ -362,7 +362,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
       }
 
       try {
-        await apiFetch('/api/logout', {
+        await apiFetch(apiConfig.endpoints.logout, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(logoutData)
