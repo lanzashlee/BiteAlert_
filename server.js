@@ -1685,7 +1685,7 @@ app.post('/api/prescriptions', async (req, res) => {
             return res.json({ interventions });
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
         const systemInstruction = `You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.
 
 STRICT REQUIREMENTS
@@ -4305,7 +4305,7 @@ app.post('/api/ai-test', async (req, res) => {
             return res.status(500).json({ error: 'AI service not initialized' });
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
         const result = await model.generateContent('Hello, respond with just "AI is working"');
         const text = result.response.text();
 
@@ -4608,7 +4608,7 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                     }))
                     .sort((a, b) => b.riskScore - a.riskScore);
             } else {
-                const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+                const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
                 const recentWindowDays = ({ week:7, month:30, quarter:90, year:365 }[timeRange] || 30);
                 const systemInstruction = 'You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.';
                 const userInstruction = `Time Range: ${timeRange} (≈${recentWindowDays} days)\nSelected Barangay Filter: ${selectedBarangay}\nBarangay Summaries (counts, recent, severe, priority, topCenter):\n${JSON.stringify(barangaySummaries, null, 2)}\n\nCase Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):\n${JSON.stringify(caseAnalysis, null, 2)}`;
