@@ -382,6 +382,7 @@ const SuperAdminPatients = () => {
   // Removed vaccination day filter
   const [status, setStatus] = useState('');
   const [barangay, setBarangay] = useState('');
+  const [sexFilter, setSexFilter] = useState('');
   const [centerFilter, setCenterFilter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
   const [dateRegistered, setDateRegistered] = useState('');
@@ -446,12 +447,13 @@ const SuperAdminPatients = () => {
     // vaccination day removed
     if (barangay) usp.set('barangay', barangay);
     if (centerFilter) usp.set('center', centerFilter);
+    if (sexFilter) usp.set('sex', sexFilter);
     if (dateFilter) usp.set('dateFilter', dateFilter);
     if (vaccinationDate) usp.set('vaccinationDate', vaccinationDate);
     usp.set('page', String(page));
     usp.set('limit', String(PAGE_SIZE));
     return usp.toString();
-  }, [query, status, barangay, centerFilter, dateFilter, vaccinationDate, page]);
+  }, [query, status, barangay, centerFilter, dateFilter, vaccinationDate, page, sexFilter]);
 
   // Load centers for filter dropdown
   useEffect(() => {
@@ -1440,6 +1442,43 @@ const SuperAdminPatients = () => {
           {/* Center filter removed as requested */}
           
           {/* Vaccination day filter removed */}
+          <div style={{ position: 'relative' }}>
+            <select 
+              value={sexFilter}
+              onChange={(e) => setSexFilter(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="">All Sex</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+            {sexFilter && (
+              <div style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                <i className="fa fa-venus-mars"></i>
+              </div>
+            )}
+          </div>
           
           <div style={{ position: 'relative' }}>
             <select 
@@ -1536,7 +1575,7 @@ const SuperAdminPatients = () => {
         </div>
 
         {/* Active Filters Display */}
-        {(query || barangay || dateFilter) && (
+        {(query || barangay || dateFilter || sexFilter) && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -1557,7 +1596,7 @@ const SuperAdminPatients = () => {
               fontSize: '12px',
               fontWeight: 800
             }}>
-              {['x', query, barangay, dateFilter].filter(Boolean).length - 1} active
+              {['x', query, barangay, dateFilter, sexFilter].filter(Boolean).length - 1} active
             </span>
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#0369a1' }}>
               Active Filters:
@@ -1638,6 +1677,31 @@ const SuperAdminPatients = () => {
                 </button>
               </span>
             )}
+            {sexFilter && (
+              <span style={{
+                backgroundColor: '#dc2626',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '500'
+              }}>
+                Sex: {sexFilter}
+                <button
+                  onClick={() => setSexFilter('')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'white',
+                    marginLeft: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            )}
             {dateFilter && (
               <span style={{
                 backgroundColor: '#dc2626',
@@ -1670,6 +1734,7 @@ const SuperAdminPatients = () => {
                 setCenterFilter('');
                 setDateFilter('');
                 setVaccinationDate('');
+                setSexFilter('');
               }}
               style={{
                 backgroundColor: '#6b7280',
