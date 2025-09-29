@@ -27,6 +27,7 @@ const SuperAdminStock = () => {
   });
   const [formLoading, setFormLoading] = useState(false);
   const [expandedCenters, setExpandedCenters] = useState(new Set());
+  const [expandedVaccines, setExpandedVaccines] = useState(new Set());
 
   // San Juan City Health Centers
   const sanJuanCenters = [
@@ -290,6 +291,13 @@ const SuperAdminStock = () => {
       newExpanded.add(centerName);
     }
     setExpandedCenters(newExpanded);
+  };
+
+  const toggleVaccineExpansion = (centerName, vaccineName) => {
+    const key = `${centerName}::${vaccineName}`;
+    const next = new Set(expandedVaccines);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setExpandedVaccines(next);
   };
 
   // Get unique types for filter dropdown
@@ -837,17 +845,22 @@ const SuperAdminStock = () => {
                                   }, 0) || 0;
                                   const stockStatus = getStockStatus(vaccineStock);
                                   
+                                  const vKey = `${center.centerName}::${vaccine.name}`;
+                                  const vExpanded = expandedVaccines.has(vKey);
                                   return (
                                     <div key={vaccineIndex} className="vaccine-item">
-                                      <div className="vaccine-info">
-                                        <div className="vaccine-name">{vaccine.name}</div>
-                                        <div className="vaccine-type">{vaccine.type}</div>
-                                        <div className="vaccine-brand">{vaccine.brand}</div>
+                                      <div className="vaccine-info" onClick={() => toggleVaccineExpansion(center.centerName, vaccine.name)} style={{cursor:'pointer'}}>
+                                        <i className={`fa-solid fa-chevron-${vExpanded ? 'down' : 'right'}`} style={{ marginRight: '8px' }} />
+                                        <div>
+                                          <div className="vaccine-name">{vaccine.name}</div>
+                                          <div className="vaccine-type">{vaccine.type}</div>
+                                          <div className="vaccine-brand">{vaccine.brand}</div>
+                                        </div>
                                       </div>
                                       <div className="vaccine-stock-info">
                                         <div className="stock-details">
                                           <span className="batch-number">
-                                            Batch: {vaccine.stockEntries?.[0]?.branchNo || 'N/A'}
+                                            Branch: {vaccine.stockEntries?.[0]?.branchNo || 'N/A'}
                                           </span>
                                           <span className="expiry-date">
                                             Expires: {vaccine.stockEntries?.[0]?.expirationDate || 'N/A'}
@@ -863,6 +876,28 @@ const SuperAdminStock = () => {
                                           </span>
                                         </div>
                                       </div>
+
+                                      {vExpanded && (
+                                        <div className="stock-entries" style={{ marginTop: '10px', padding: '10px', background:'#f8f9fa', borderRadius:'6px' }}>
+                                          {(vaccine.stockEntries || []).map((entry, idx) => {
+                                            let qty = entry.stock;
+                                            if (typeof qty === 'object' && qty?.$numberInt !== undefined) qty = parseInt(qty.$numberInt);
+                                            else if (typeof qty === 'object' && qty?.$numberDouble !== undefined) qty = parseFloat(qty.$numberDouble);
+                                            else qty = Number(qty);
+                                            return (
+                                              <div key={idx} className="stock-entry" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderTop: idx===0 ? 'none' : '1px solid #e9ecef' }}>
+                                                <div>
+                                                  <strong>Branch #{entry.branchNo || 'N/A'}</strong>
+                                                  <div style={{ fontSize:'0.9rem', color:'#6c757d' }}>Expires: {entry.expirationDate || 'N/A'}</div>
+                                                </div>
+                                                <div style={{ minWidth:'120px', textAlign:'right' }}>
+                                                  <span style={{ fontWeight:600 }}>{isNaN(qty) ? '0' : qty}</span>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}
