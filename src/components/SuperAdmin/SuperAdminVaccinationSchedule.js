@@ -55,6 +55,8 @@ const SuperAdminVaccinationSchedule = () => {
   const [showVaccineConfirm, setShowVaccineConfirm] = useState(false);
   const [vaccineConfirmData, setVaccineConfirmData] = useState(null);
   const [selectedVaccines, setSelectedVaccines] = useState({});
+  // Inline date picker popover state
+  const [datePicker, setDatePicker] = useState(null); // { day, patientId, top, left }
   
   // Get vaccine dosage based on type and route
   const getVaccineDosage = (vaccine, route) => {
@@ -2252,23 +2254,13 @@ const SuperAdminVaccinationSchedule = () => {
                                       className="btn-calendar px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wide"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        const input = document.createElement('input');
-                                        input.type = 'date';
-                                        input.style.position = 'fixed';
-                                        input.style.opacity = '0';
-                                        input.min = new Date().toISOString().split('T')[0];
-                                        document.body.appendChild(input);
-                                        input.addEventListener('change', async () => {
-                                          const newDate = input.value;
-                                          document.body.removeChild(input);
-                                          if (!newDate) return;
-                                          const pid = scheduleModalData?.patient?.patientId || '';
-                                          await handleRescheduleCascade(day, newDate, pid);
-                                        }, { once: true });
-                                        input.addEventListener('blur', () => {
-                                          if (document.body.contains(input)) document.body.removeChild(input);
-                                        }, { once: true });
-                                        input.showPicker ? input.showPicker() : input.click();
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        setDatePicker({
+                                          day,
+                                          patientId: scheduleModalData?.patient?.patientId || '',
+                                          top: Math.round(rect.bottom + window.scrollY + 8),
+                                          left: Math.round(rect.left + window.scrollX),
+                                        });
                                       }}
                                     >
                                       <i className="fa-solid fa-calendar"></i>
@@ -2939,6 +2931,36 @@ const SuperAdminVaccinationSchedule = () => {
           </div>
         )}
       />
+      {/* Inline Tailwind date picker popover */}
+      {datePicker && (
+        <div
+          className="fixed z-50"
+          style={{ top: datePicker.top, left: datePicker.left }}
+        >
+          <div className="bg-white border border-gray-200 rounded-xl shadow-2xl p-3 sm:p-4 flex items-center gap-2">
+            <input
+              type="date"
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              min={new Date().toISOString().split('T')[0]}
+              onChange={async (ev) => {
+                const value = ev.target.value;
+                if (!value) return;
+                await handleRescheduleCascade(datePicker.day, value, datePicker.patientId);
+                setDatePicker(null);
+              }}
+              autoFocus
+              onBlur={() => setTimeout(() => setDatePicker(null), 150)}
+            />
+            <button
+              className="ml-1 text-gray-500 hover:text-gray-700"
+              onClick={() => setDatePicker(null)}
+              type="button"
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
