@@ -117,6 +117,17 @@ const SuperAdminPrescriptiveAnalytics = () => {
     };
   };
 
+  // Limit text to a maximum number of sentences
+  const truncateSentences = (text, max = 3) => {
+    if (!text) return text;
+    const parts = String(text)
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(/(?<=[.!?])\s+/);
+    if (parts.length <= max) return parts.join(' ');
+    return parts.slice(0, max).join(' ');
+  };
+
   // Function to remove numbered lists from text
   const removeNumberedLists = (text) => {
     if (!text) return text;
@@ -190,7 +201,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
         // Process interventions to remove numbered lists
         const processedInterventions = interventions.map(intervention => {
           const originalIntervention = intervention.intervention;
-          const cleanedIntervention = removeNumberedLists(intervention.intervention);
+          const cleanedIntervention = truncateSentences(removeNumberedLists(intervention.intervention), 3);
           
           // Debug logging to see the transformation
           if (originalIntervention !== cleanedIntervention) {
@@ -200,7 +211,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
           
           return {
             ...intervention,
-            reasoning: removeNumberedLists(intervention.reasoning),
+            reasoning: truncateSentences(removeNumberedLists(intervention.reasoning), 3),
             intervention: cleanedIntervention
           };
         });
