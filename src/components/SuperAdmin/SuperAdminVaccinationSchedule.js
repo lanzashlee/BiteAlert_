@@ -2308,17 +2308,17 @@ const SuperAdminVaccinationSchedule = () => {
                                      </span>
                                    )}
                                  </td>
-                                <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
+                                 <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
                                   <div className="action-buttons">
-                                    <button 
-                                      className="bg-red-600 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:bg-red-700 transition-all duration-200 uppercase tracking-wide shadow-lg hover:shadow-xl hover:scale-105"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedDose(isSelected ? null : { day, scheduleItem });
-                                      }}
-                                    >
-                                      {isSelected ? 'Hide Details' : 'View Details'}
-                                    </button>
+                                <button 
+                                     className="bg-red-600 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:bg-red-700 transition-all duration-200 uppercase tracking-wide shadow-lg hover:shadow-xl hover:scale-105"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       setSelectedDose(isSelected ? null : { day, scheduleItem });
+                                     }}
+                                   >
+                                     {isSelected ? 'Hide Details' : 'View Details'}
+                                </button>
                                     <button
                                       className="btn-calendar px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wide"
                                       disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
@@ -2348,7 +2348,7 @@ const SuperAdminVaccinationSchedule = () => {
                                       <i className="fa-solid fa-calendar"></i>
                                     </button>
                                   </div>
-                                </td>
+                                 </td>
                                </tr>
                                {isSelected && (
                                  <tr>
@@ -2900,46 +2900,46 @@ const SuperAdminVaccinationSchedule = () => {
                           </div>
                           
                           <div className="schedule-actions">
-                            <button
-                              className="btn-complete-small"
-                              onClick={() => {
+                                <button
+                                  className="btn-complete-small"
+                                  onClick={() => {
                                 if (vaccination.status !== 'scheduled') return;
-                                setShowPatientDetailModal(false);
-                                customConfirm(
-                                  'Mark this vaccination as completed?',
-                                  { action: () => handleMarkCompleted(vaccination._id) }
-                                );
-                              }}
+                                    setShowPatientDetailModal(false);
+                                    customConfirm(
+                                      'Mark this vaccination as completed?',
+                                      { action: () => handleMarkCompleted(vaccination._id) }
+                                    );
+                                  }}
                               disabled={updatingVaccinationId === vaccination._id || vaccination.status !== 'scheduled'}
-                            >
-                              {updatingVaccinationId === vaccination._id ? (
-                                <>
-                                  <i className="fa-solid fa-spinner fa-spin"></i> Updating...
-                                </>
-                              ) : (
-                                'Complete'
-                              )}
-                            </button>
-                            <button
-                              className="btn-missed-small"
-                              onClick={() => {
+                                >
+                                  {updatingVaccinationId === vaccination._id ? (
+                                    <>
+                                      <i className="fa-solid fa-spinner fa-spin"></i> Updating...
+                                    </>
+                                  ) : (
+                                    'Complete'
+                                  )}
+                                </button>
+                                <button
+                                  className="btn-missed-small"
+                                  onClick={() => {
                                 if (vaccination.status !== 'scheduled') return;
-                                setShowPatientDetailModal(false);
-                                customConfirm(
-                                  'Mark this vaccination as missed?',
-                                  { action: () => handleMarkMissed(vaccination._id) }
-                                );
-                              }}
+                                    setShowPatientDetailModal(false);
+                                    customConfirm(
+                                      'Mark this vaccination as missed?',
+                                      { action: () => handleMarkMissed(vaccination._id) }
+                                    );
+                                  }}
                               disabled={updatingVaccinationId === vaccination._id || vaccination.status !== 'scheduled'}
-                            >
-                              {updatingVaccinationId === vaccination._id ? (
-                                <>
-                                  <i className="fa-solid fa-spinner fa-spin"></i> Updating...
-                                </>
-                              ) : (
-                                'Missed'
-                              )}
-                            </button>
+                                >
+                                  {updatingVaccinationId === vaccination._id ? (
+                                    <>
+                                      <i className="fa-solid fa-spinner fa-spin"></i> Updating...
+                                    </>
+                                  ) : (
+                                    'Missed'
+                                  )}
+                                </button>
                             <button
                               className="btn-edit-small"
                               onClick={() => {

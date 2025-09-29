@@ -65,20 +65,23 @@ const SuperAdminPrescriptiveAnalytics = () => {
           .filter(Boolean));
       } catch (_) {}
 
-      const normalized = normalizeCases(cases);
+      const normalized = normalizeCases(cases).map(c => ({
+        ...c,
+        centerNorm: String(c.center || '')
+          .toLowerCase()
+          .replace(/\s*health\s*center$/i, '')
+          .replace(/\s*center$/i, '')
+          .replace(/-/g, ' ')
+          .trim()
+      }));
       const filteredByCenter = validCentersSet
         ? normalized.filter(c => {
-            const norm = (v) => String(v || '')
-              .toLowerCase()
-              .replace(/\s*health\s*center$/i, '')
-              .replace(/\s*center$/i, '')
-              .replace(/-/g, ' ')
-              .trim();
-            return validCentersSet.has(norm(c.center));
+            // keep if case center matches a managed center OR its barangay name matches a managed center name
+            return validCentersSet.has(c.centerNorm) || validCentersSet.has(String(c.barangay || '').toLowerCase());
           })
         : normalized;
 
-      const processedData = processAnalyticsData(filteredByCenter);
+      const processedData = processAnalyticsData(filteredByCenter.map(({centerNorm, ...rest}) => rest));
       setAnalyticsData(processedData);
       
       // Automatically generate AI recommendations
@@ -183,10 +186,12 @@ const SuperAdminPrescriptiveAnalytics = () => {
       
       const { interventions } = await res.json();
       if (Array.isArray(interventions) && interventions.length > 0) {
+        // Allow longer prose: keep full text and join arrays if provided
+        const normalizeText = (t) => Array.isArray(t) ? t.join(' ') : t;
         const processedInterventions = interventions.map(intervention => ({
           ...intervention,
-          reasoning: keep(intervention.reasoning),
-          intervention: keep(intervention.recommendations || intervention.intervention)
+          reasoning: keep(normalizeText(intervention.reasoning)),
+          intervention: keep(normalizeText(intervention.recommendations || intervention.intervention))
         }));
         
         setAnalyticsData({ ...data, interventionRecommendations: processedInterventions });
