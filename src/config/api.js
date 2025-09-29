@@ -27,6 +27,7 @@ export const apiConfig = {
     
     // Prescription endpoints
     prescriptions: '/api/prescriptions',
+    prescriptiveAnalytics: '/api/prescriptive-analytics',
     
     // Audit trail
     auditTrail: '/api/audit-trail',

@@ -38,56 +38,25 @@ const SuperAdminPrescriptiveAnalytics = () => {
     setAiLoading(true);
     setAiError('');
     try {
-      const casesRes = await apiFetch(apiConfig.endpoints.bitecases);
-      const raw = await casesRes.json();
-      const cases = Array.isArray(raw)
-        ? raw
-        : Array.isArray(raw?.data)
-          ? raw.data
-          : Array.isArray(raw?.cases)
-            ? raw.cases
-            : [];
-      // Fetch valid centers from Center Data Management and filter cases
-      let validCentersSet = null;
-      try {
-        const centersRes = await apiFetch(apiConfig.endpoints.centers);
-        const centersJson = await centersRes.json();
-        const centers = Array.isArray(centersJson) ? centersJson : (centersJson?.data || centersJson?.centers || []);
-        const norm = (v) => String(v || '')
-          .toLowerCase()
-          .replace(/\s*health\s*center$/i, '')
-          .replace(/\s*center$/i, '')
-          .replace(/-/g, ' ')
-          .trim();
-        validCentersSet = new Set((centers || [])
-          .filter(c => !c.isArchived)
-          .map(c => norm(c.centerName || c.name))
-          .filter(Boolean));
-      } catch (_) {}
-
-      const normalized = normalizeCases(cases).map(c => ({
-        ...c,
-        centerNorm: String(c.center || '')
-          .toLowerCase()
-          .replace(/\s*health\s*center$/i, '')
-          .replace(/\s*center$/i, '')
-          .replace(/-/g, ' ')
-          .trim()
-      }));
-      const filteredByCenter = validCentersSet
-        ? normalized.filter(c => {
-            // keep if case center matches a managed center OR its barangay name matches a managed center name
-            return validCentersSet.has(c.centerNorm) || validCentersSet.has(String(c.barangay || '').toLowerCase());
-          })
-        : normalized;
-
-      const processedData = processAnalyticsData(filteredByCenter.map(({centerNorm, ...rest}) => rest));
-      setAnalyticsData(processedData);
-      
-      // Automatically generate AI recommendations
-      await generateWithAI(processedData);
+      const res = await apiFetch(apiConfig.endpoints.prescriptiveAnalytics, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timeRange, selectedBarangay })
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server error ${res.status}: ${text}`);
+      }
+      const json = await res.json();
+      if (!json?.success || !json?.data) {
+        throw new Error('Invalid response from prescriptive analytics');
+      }
+      setAnalyticsData(json.data);
+      setAiError('');
     } catch (error) {
-      console.error('Error fetching analytics data:', error);
+      console.error('Error fetching prescriptive analytics:', error);
+      setAiError(error.message || 'Failed to fetch prescriptive analytics');
+      setAnalyticsData({ cases: [], riskAnalysis: {}, interventionRecommendations: [] });
     } finally {
       setLoading(false);
       setAiLoading(false);
@@ -150,61 +119,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
     };
   };
 
-  // Keep AI text as-is (no aggressive cleanup) to avoid losing content
-  const keep = (text) => text;
-
-  const generateWithAI = async (data, retryAttempt = 0) => {
-    if (!data) return;
-    
-    const maxRetries = 2;
-    const retryDelay = 3000; // 3 seconds
-    
-    try {
-      const res = await apiFetch(apiConfig.endpoints.prescriptions, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ riskAnalysis: data.riskAnalysis, timeRange, selectedBarangay })
-      });
-      
-      if (!res.ok) {
-        if (res.status === 503 && retryAttempt < maxRetries) {
-          // Retry for 503 errors
-          console.log(`AI service overloaded, retrying in ${retryDelay/1000}s... (attempt ${retryAttempt + 1}/${maxRetries + 1})`);
-          setAiError(`AI service is busy, retrying... (${retryAttempt + 1}/${maxRetries + 1})`);
-          setTimeout(() => {
-            generateWithAI(data, retryAttempt + 1);
-          }, retryDelay);
-          return;
-        } else if (res.status === 503) {
-          throw new Error('AI service is temporarily overloaded. Please try again in a few minutes.');
-        } else if (res.status === 400) {
-          throw new Error('Invalid request to AI service. Please check your data.');
-        } else {
-          throw new Error(`AI service error (${res.status}). Please try again later.`);
-        }
-      }
-      
-      const { interventions } = await res.json();
-      if (Array.isArray(interventions) && interventions.length > 0) {
-        // Allow longer prose: keep full text and join arrays if provided
-        const normalizeText = (t) => Array.isArray(t) ? t.join(' ') : t;
-        const processedInterventions = interventions.map(intervention => ({
-          ...intervention,
-          reasoning: keep(normalizeText(intervention.reasoning)),
-          intervention: keep(normalizeText(intervention.recommendations || intervention.intervention))
-        }));
-        
-        setAnalyticsData({ ...data, interventionRecommendations: processedInterventions });
-        setAiError(''); // Clear any previous errors
-        setRetryCount(0); // Reset retry count on success
-      } else {
-        setAiError('AI returned no recommendations. This might be due to insufficient data or service limitations.');
-      }
-    } catch (e) {
-      console.error('AI Generation Error:', e);
-      setAiError(e.message || 'Failed to generate AI recommendations. Please try again later.');
-    }
-  };
+  // Client-side AI generation removed; handled by server
 
   const calculateRiskScores = (cases) => {
     const barangayData = {};
@@ -430,7 +345,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
                   onClick={() => {
                     setAiError('');
                     setAiLoading(true);
-                    generateWithAI(analyticsData);
+                    fetchAnalyticsData();
                   }}
                 >
                   🔄 Retry

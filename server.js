@@ -4386,9 +4386,272 @@ app.post('/api/change-admin-password', async (req, res) => {
 // Vaccination data endpoint
 app.get('/api/vaccination-data', async (req, res) => {
     try {
+        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
         const vaccinations = await VaccinationDate.find({}).populate('patientId', 'firstName lastName');
         res.json({ success: true, data: vaccinations });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Server-side Prescriptive Analytics: compute risk + generate interventions
+app.post('/api/prescriptive-analytics', async (req, res) => {
+    try {
+        const { timeRange = 'month', selectedBarangay = 'all' } = req.body || {};
+
+        // Models
+        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+        const Center = mongoose.connection.model('Center', new mongoose.Schema({}, { strict: false }), 'centers');
+
+        // Fetch cases within time range
+        const now = new Date();
+        const timeRangeMap = { week: 7, month: 30, quarter: 90, year: 365 };
+        const daysBack = timeRangeMap[timeRange] || 30;
+        const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
+
+        const rawCases = await BiteCase.find({ createdAt: { $gte: startDate } }).lean();
+
+        // Fetch valid centers and normalize names for filtering
+        let validCentersSet = null;
+        try {
+            const centers = await Center.find({ isArchived: { $ne: true } }, { centerName: 1, name: 1 }).lean();
+            const norm = (v) => String(v || '')
+                .toLowerCase()
+                .replace(/\s*health\s*center$/i, '')
+                .replace(/\s*center$/i, '')
+                .replace(/-/g, ' ')
+                .trim();
+            validCentersSet = new Set((centers || []).map(c => norm(c.centerName || c.name)).filter(Boolean));
+        } catch (_) {}
+
+        // Helpers to normalize case data similar to frontend logic
+        const inferBarangayFromText = (text) => {
+            if (!text) return null;
+            const hay = String(text).toLowerCase();
+            const barangays = [
+                'addition hills', 'balong-bato', 'batis', 'corazon de jesus', 'ermitaño',
+                'greenhills', 'isabelita', 'kabayanan', 'little baguio', 'maytunas', 'onse',
+                'pasadena', 'pedro cruz', 'progreso', 'rivera', 'salapan', 'san perfecto',
+                'santa lucia', 'tibagan', 'west crame'
+            ];
+            const match = barangays.find(b => hay.includes(b));
+            // Capitalize each word to match display
+            return match ? match.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
+        };
+
+        const coerceDate = (v) => {
+            if (!v) return null;
+            if (typeof v === 'string') return new Date(v);
+            if (typeof v === 'number') return new Date(v);
+            if (v?.$date?.$numberLong) return new Date(Number(v.$date.$numberLong));
+            if (v?.$date) return new Date(v.$date);
+            return new Date(v);
+        };
+        const mapSeverity = (c) => {
+            const exposureCategory = (c.exposureCategory || '').toString().toUpperCase();
+            const exposureType = (c.exposureType || '').toString();
+            if (exposureCategory === 'III' || exposureType === '3') return 'high';
+            if (exposureCategory === 'II' || exposureType === '2') return 'medium';
+            return 'low';
+        };
+
+        const normalized = (rawCases || []).map(c => {
+            const incidentDate = coerceDate(c.incidentDate || c.exposureDate || c.dateRegistered || c.createdAt || c.updatedAt);
+            const severity = c.severity || mapSeverity(c);
+            const center = c.center || c.centerName || c.healthCenter || c.facility || c.treatmentCenter || null;
+            const barangayDirect = c.barangay || c.addressBarangay || c.patientBarangay || c.locationBarangay || c.barangayName || null;
+            const addressBlob = c.address || c.patientAddress || c.location || c.addressString || c.fullAddress || '';
+            const barangay = barangayDirect || inferBarangayFromText(addressBlob);
+            const centerNorm = String(center || '')
+                .toLowerCase()
+                .replace(/\s*health\s*center$/i, '')
+                .replace(/\s*center$/i, '')
+                .replace(/-/g, ' ')
+                .trim();
+            return { incidentDate, severity, center, centerNorm, barangay };
+        }).filter(c => !!c.incidentDate && !!c.barangay);
+
+        const filteredByCenter = validCentersSet
+            ? normalized.filter(c => validCentersSet.has(c.centerNorm) || validCentersSet.has(String(c.barangay || '').toLowerCase()))
+            : normalized;
+
+        // Filter by selected barangay
+        const finalCases = selectedBarangay === 'all' ? filteredByCenter : filteredByCenter.filter(c => c.barangay === selectedBarangay);
+
+        // Calculate risk scores (mirrors frontend logic)
+        const barangayData = {};
+        finalCases.forEach(case_ => {
+            const barangay = case_.barangay;
+            if (!barangayData[barangay]) {
+                barangayData[barangay] = {
+                    totalCases: 0,
+                    severeCases: 0,
+                    moderateCases: 0,
+                    mildCases: 0,
+                    recentCases: 0,
+                    riskScore: 0,
+                    priority: 'low',
+                    factors: [],
+                    centerCounts: {},
+                    topCenter: null
+                };
+            }
+            barangayData[barangay].totalCases++;
+            if (case_.severity === 'high') barangayData[barangay].severeCases++;
+            else if (case_.severity === 'medium') barangayData[barangay].moderateCases++;
+            else barangayData[barangay].mildCases++;
+            const caseDate = new Date(case_.incidentDate);
+            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            if (caseDate > weekAgo) barangayData[barangay].recentCases++;
+            const centerName = case_.center || case_.healthCenter || case_.centerName || case_.facility || null;
+            if (centerName) {
+                if (!barangayData[barangay].centerCounts[centerName]) barangayData[barangay].centerCounts[centerName] = 0;
+                barangayData[barangay].centerCounts[centerName]++;
+            }
+        });
+        Object.keys(barangayData).forEach(barangay => {
+            const data = barangayData[barangay];
+            const factors = [];
+            let riskScore = 0;
+            const centers = Object.entries(data.centerCounts);
+            if (centers.length > 0) {
+                centers.sort((a,b) => b[1] - a[1]);
+                data.topCenter = centers[0][0];
+            }
+            if (data.totalCases >= 15) { factors.push('Very high case count (>=15)'); riskScore += 45; }
+            else if (data.totalCases >= 7) { factors.push('Elevated case count (>=7)'); riskScore += 30; }
+            else if (data.totalCases > 0) { factors.push('Cases present'); riskScore += 15; }
+            if (data.recentCases >= 5) { factors.push('Recent spike in cases'); riskScore += 35; }
+            else if (data.recentCases >= 2) { factors.push('Multiple recent cases'); riskScore += 20; }
+            if (data.severeCases > 0) { factors.push('Severe cases present'); riskScore += 25; }
+            else if (data.moderateCases >= 3) { factors.push('Several moderate cases'); riskScore += 15; }
+            const highDensityBarangays = ['Greenhills', 'Addition Hills', 'Kabayanan', 'Corazon de Jesus'];
+            if (highDensityBarangays.includes(barangay)) { factors.push('High population density'); riskScore += 20; }
+            data.riskScore = Math.min(100, riskScore);
+            data.factors = factors;
+            if (data.riskScore >= 70) data.priority = 'high';
+            else if (data.riskScore >= 40) data.priority = 'medium';
+            else data.priority = 'low';
+        });
+
+        // Generate interventions using existing AI endpoint logic (reuse route internals)
+        // We'll call the same generation flow locally to avoid HTTP overhead
+        let interventions = [];
+        try {
+            // Reuse analyzeCasePatterns from this file for AI context
+            const caseAnalysis = analyzeCasePatterns(finalCases.map(c => ({
+                barangay: c.barangay,
+                age: 0,
+                createdAt: c.incidentDate,
+                incidentDate: c.incidentDate,
+                severity: c.severity
+            })), selectedBarangay);
+
+            // Prepare barangay summaries for AI prompt
+            let barangaySummaries = Object.entries(barangayData).map(([barangay, d]) => ({
+                barangay,
+                totalCases: d.totalCases || 0,
+                recentCases: d.recentCases || 0,
+                severeCases: d.severeCases || 0,
+                riskScore: d.riskScore || 0,
+                priority: d.priority || 'low',
+                factors: d.factors || [],
+                topCenter: d.topCenter || null,
+                ageDistribution: caseAnalysis[barangay]?.ageDistribution || {},
+                timePatterns: caseAnalysis[barangay]?.timePatterns || {},
+                severityBreakdown: caseAnalysis[barangay]?.severityBreakdown || {},
+                trendAnalysis: caseAnalysis[barangay]?.trendAnalysis || {}
+            }));
+
+            // Filter to valid centers if available
+            if (validCentersSet && validCentersSet.size > 0) {
+                const norm = (v) => String(v || '')
+                    .toLowerCase()
+                    .replace(/\s*health\s*center$/i, '')
+                    .replace(/\s*center$/i, '')
+                    .replace(/-/g, ' ')
+                    .trim();
+                barangaySummaries = barangaySummaries.filter(b => validCentersSet.has(norm(b.topCenter)) || validCentersSet.has(norm(b.barangay)));
+            }
+
+            // Initialize Gemini on-demand if needed (reuse global genAI)
+            if (!genAI) {
+                try {
+                    let apiKey = (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLEAI_API_KEY || '').replace(/^['\"]|['\"]$/g, '').trim();
+                    if (apiKey) {
+                        const { GoogleGenerativeAI } = require('@google/generative-ai');
+                        genAI = new GoogleGenerativeAI(apiKey);
+                    }
+                } catch (_) {}
+            }
+
+            if (!genAI) {
+                // Heuristic fallback
+                interventions = barangaySummaries
+                    .map(s => ({
+                        barangay: s.barangay,
+                        riskScore: Number(s.riskScore) || 0,
+                        priority: s.priority || 'low',
+                        reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
+                        intervention: s.priority === 'high'
+                            ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
+                            : s.priority === 'medium'
+                                ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                                : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+                        ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
+                        timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
+                        resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
+                        coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
+                        totalCases: s.totalCases || 0,
+                        recentCases: s.recentCases || 0,
+                        severeCases: s.severeCases || 0
+                    }))
+                    .sort((a, b) => b.riskScore - a.riskScore);
+            } else {
+                const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+                const recentWindowDays = ({ week:7, month:30, quarter:90, year:365 }[timeRange] || 30);
+                const systemInstruction = 'You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.';
+                const userInstruction = `Time Range: ${timeRange} (≈${recentWindowDays} days)\nSelected Barangay Filter: ${selectedBarangay}\nBarangay Summaries (counts, recent, severe, priority, topCenter):\n${JSON.stringify(barangaySummaries, null, 2)}\n\nCase Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):\n${JSON.stringify(caseAnalysis, null, 2)}`;
+                let result = await model.generateContent({
+                    contents: [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'user', parts: [{ text: userInstruction }] } ],
+                    generationConfig: { temperature: 0.9, topP: 0.9, topK: 40, maxOutputTokens: 2048 }
+                });
+                let text = result.response.text();
+                const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+                if (jsonMatch) text = jsonMatch[1];
+                let json;
+                try { json = JSON.parse(text); } catch (e) { const am = text.match(/\[\s*{[\s\S]*}\s*\]/); json = am ? JSON.parse(am[0]) : []; }
+                const ensureLength = (s) => { if (!s) return s; const count = (s.match(/[.!?]/g) || []).length; return count < 4 ? s + ' Provide targeted risk communication, coordinate with the top center, and ensure sufficient vaccine and ERIG stocks while monitoring age‑specific attendance over the next two weeks.' : s; };
+                interventions = (Array.isArray(json) ? json : []).map(it => ({
+                    barangay: it.barangay,
+                    riskScore: Number(it.riskScore) || 0,
+                    priority: it.priority || 'low',
+                    reasoning: ensureLength(it.analysis || it.reasoning || ''),
+                    intervention: ensureLength(it.recommendation || it.recommendations || ''),
+                    prediction: it.prediction || '',
+                    ageGroupFocus: it.ageGroupFocus || '',
+                    timePattern: it.timePattern || '',
+                    resourceNeeds: it.resourceNeeds || '',
+                    coordinationRequired: it.coordinationRequired || '',
+                    totalCases: barangaySummaries.find(b => b.barangay === it.barangay)?.totalCases || 0,
+                    recentCases: barangaySummaries.find(b => b.barangay === it.barangay)?.recentCases || 0,
+                    severeCases: barangaySummaries.find(b => b.barangay === it.barangay)?.severeCases || 0
+                })).sort((a, b) => b.riskScore - a.riskScore);
+            }
+        } catch (genErr) {
+            console.warn('Prescriptive analytics generation failed, using heuristic fallback:', genErr.message);
+        }
+
+        return res.json({
+            success: true,
+            data: {
+                cases: finalCases.map(({ centerNorm, ...rest }) => rest),
+                riskAnalysis: barangayData,
+                interventionRecommendations: interventions
+            }
+        });
+    } catch (error) {
+        console.error('Error in /api/prescriptive-analytics:', error);
+        res.status(500).json({ success: false, message: 'Failed to compute prescriptive analytics' });
     }
 });
