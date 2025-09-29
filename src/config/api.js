@@ -1,6 +1,10 @@
 // API Configuration - Updated for Render deployment
 // Force redeploy to pick up environment variables
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://bitealert-backend.onrender.com';
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:4000'
+    : 'https://bitealert-backend.onrender.com');
 
 // Debug: Log the API base URL to console
 console.log('API Base URL:', API_BASE_URL);

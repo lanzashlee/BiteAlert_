@@ -3916,7 +3916,7 @@ app.get('/api/center_hours', async (req, res) => {
     const { existingOnly } = req.query;
     // If not filtering, return all
     if (!existingOnly || String(existingOnly).toLowerCase() !== 'true') {
-      const centers = await CenterHours.find();
+    const centers = await CenterHours.find();
       return res.json({ success: true, data: centers });
     }
     // Filter to centers that exist in Center collection (by id or name)
