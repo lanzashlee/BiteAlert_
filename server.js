@@ -1694,7 +1694,25 @@ STRICT REQUIREMENTS
 - Justify: reasoning must cite the concrete patterns (e.g., "weekly spike on Fridays", "age 13–18 high", "5 severe in last 7 days").
 - Operations: specify what to do in the next 24–48 hours (locations, teams, materials), and who coordinates (name the top center when present).
 
-OUTPUT JSON ONLY (no markdown, no prose outside JSON)
+After preparing your analysis, recommendations and prediction per barangay, include ONLY ONE fenced code block that contains a JSON array with the schema below. Do not include commentary outside the code block. Keys must match exactly.
+
+JSON SCHEMA EXAMPLE (values are placeholders; replace with real content for each barangay):
+[
+  {
+    "barangay": "Balong-Bato",
+    "priority": "high|medium|low",
+    "riskScore": 72,
+    "analysis": "4–6 full sentences…",
+    "recommendation": "4–6 full sentences…",
+    "prediction": "2–3 sentences about expected trend if actions are done",
+    "ageGroupFocus": "13–18",
+    "timePattern": "Weekend spikes",
+    "resourceNeeds": "ERIG, 2 nurses, 1 physician, IEC materials",
+    "coordinationRequired": "San Juan Health Center"
+  }
+]
+
+OUTPUT JSON ONLY (no markdown outside the code block)
 [
   {
     "barangay": "string",
@@ -1748,7 +1766,7 @@ ${JSON.stringify(caseAnalysis, null, 2)}`;
             json = arrayMatch ? JSON.parse(arrayMatch[0]) : [];
         }
 
-        // Enforce sentence length; if too short, augment reasoning/recommendations
+        // Normalize and enforce fields from the schema
         const ensureLength = (s) => {
             if (!s) return s;
             const count = (s.match(/[.!?]/g) || []).length;
@@ -1762,8 +1780,9 @@ ${JSON.stringify(caseAnalysis, null, 2)}`;
             barangay: it.barangay,
             riskScore: Number(it.riskScore) || 0,
             priority: it.priority || 'low',
-            reasoning: ensureLength(it.reasoning || ''),
-            intervention: ensureLength(it.recommendations || ''),
+            reasoning: ensureLength(it.analysis || it.reasoning || ''),
+            intervention: ensureLength(it.recommendation || it.recommendations || ''),
+            prediction: it.prediction || '',
             ageGroupFocus: it.ageGroupFocus || '',
             timePattern: it.timePattern || '',
             resourceNeeds: it.resourceNeeds || '',
