@@ -78,6 +78,17 @@ const SuperAdminVaccinationSchedule = () => {
       window.removeEventListener('resize', onScrollOrResize);
     };
   }, [datePicker]);
+
+  // While date picker is open, hide page scrollbars for a clean popover UX
+  useEffect(() => {
+    if (datePicker) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev || '';
+      };
+    }
+  }, [datePicker]);
   
   // Get vaccine dosage based on type and route
   const getVaccineDosage = (vaccine, route) => {
