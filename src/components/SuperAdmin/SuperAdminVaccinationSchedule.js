@@ -2329,17 +2329,19 @@ const SuperAdminVaccinationSchedule = () => {
                                         // Prefer centered relative to the button; constrain to viewport, slight left bias
                                         const width = 320; // popover width
                                         const gutter = 8;
-                                        const centerLeft = rect.left + window.scrollX + rect.width / 2 - width / 2;
+                                        // For fixed-position popover, use viewport coords (no scroll offsets)
+                                        const centerLeft = rect.left + rect.width / 2 - width / 2;
                                         let left = centerLeft;
-                                        const minLeft = window.scrollX + gutter;
-                                        const maxLeft = window.scrollX + window.innerWidth - width - gutter;
+                                        const minLeft = gutter;
+                                        const maxLeft = window.innerWidth - width - gutter;
                                         if (left < minLeft) left = minLeft; // keep inside viewport
                                         if (left > maxLeft) left = maxLeft;
-                                        const top = Math.round(rect.bottom + window.scrollY + 8);
+                                        const top = Math.round(rect.bottom + 8);
                                         // Prefill with existing date for this day
                                         const existingISO = scheduleItem?.date || null;
-                                        const existingYMD = existingISO ? new Date(existingISO).toISOString().split('T')[0] : '';
-                                        const preview = existingYMD ? buildCascadePreview(day, existingYMD) : null;
+                                        const defaultYMD = new Date().toISOString().split('T')[0];
+                                        const existingYMD = existingISO ? new Date(existingISO).toISOString().split('T')[0] : defaultYMD;
+                                        const preview = buildCascadePreview(day, existingYMD);
                                         setDatePicker({ day, patientId: scheduleModalData?.patient?.patientId || '', top, left, value: existingYMD, preview });
                                       }}
                                     >
