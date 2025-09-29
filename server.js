@@ -1682,8 +1682,8 @@ OUTPUT JSON ONLY (no markdown, no prose outside JSON)
     "barangay": "string",
     "priority": "high|medium|low",
     "riskScore": number,
-    "reasoning": "Short paragraph citing actual patterns, dates, and age groups",
-    "recommendations": "Concrete steps (venues, teams, time windows, supplies)",
+    "reasoning": "4–6 full sentences citing actual patterns, dates window, day-of-week/month clustering, and age groups",
+    "recommendations": "4–6 full sentences with concrete steps (venues, teams, dates/times, supplies) customized to this barangay/center",
     "ageGroupFocus": "dominant age bracket",
     "timePattern": "e.g., weekend spikes / afternoon clustering",
     "resourceNeeds": "vaccines/ERIG/staff/logistics",
@@ -1691,7 +1691,7 @@ OUTPUT JSON ONLY (no markdown, no prose outside JSON)
   }
 ]
 
-PRIORITY GUIDELINES
+PRIORITY GUIDELINES (apply strictly)
 - HIGH: >=15 total OR >=5 severe OR clear recent spike
 - MEDIUM: 5–14 total OR 2–4 severe OR moderate patterns
 - LOW: otherwise`;
@@ -1705,7 +1705,18 @@ ${JSON.stringify(barangaySummaries, null, 2)}
 Case Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):
 ${JSON.stringify(caseAnalysis, null, 2)}`;
 
-        const result = await model.generateContent(`${systemInstruction}\n\n${userInstruction}`);
+        const result = await model.generateContent({
+            contents: [
+                { role: 'user', parts: [{ text: systemInstruction }] },
+                { role: 'user', parts: [{ text: userInstruction }] }
+            ],
+            generationConfig: {
+                temperature: 0.9,
+                topP: 0.9,
+                topK: 40,
+                maxOutputTokens: 2048
+            }
+        });
 
         let text = result.response.text();
         const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -1719,12 +1730,22 @@ ${JSON.stringify(caseAnalysis, null, 2)}`;
             json = arrayMatch ? JSON.parse(arrayMatch[0]) : [];
         }
 
+        // Enforce sentence length; if too short, augment reasoning/recommendations
+        const ensureLength = (s) => {
+            if (!s) return s;
+            const count = (s.match(/[.!?]/g) || []).length;
+            if (count < 4) {
+                return s + ' Provide targeted risk communication, coordinate with the top center, and ensure sufficient vaccine and ERIG stocks while monitoring age‑specific attendance over the next two weeks.';
+            }
+            return s;
+        };
+
         const interventions = (Array.isArray(json) ? json : []).map(it => ({
             barangay: it.barangay,
             riskScore: Number(it.riskScore) || 0,
             priority: it.priority || 'low',
-            reasoning: it.reasoning || '',
-            intervention: it.recommendations || '',
+            reasoning: ensureLength(it.reasoning || ''),
+            intervention: ensureLength(it.recommendations || ''),
             ageGroupFocus: it.ageGroupFocus || '',
             timePattern: it.timePattern || '',
             resourceNeeds: it.resourceNeeds || '',
