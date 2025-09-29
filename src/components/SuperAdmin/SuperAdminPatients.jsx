@@ -1436,44 +1436,7 @@ const SuperAdminPatients = () => {
             )}
           </div>
           
-          <div style={{ position: 'relative' }}>
-            <select 
-              value={centerFilter} 
-              onChange={(e) => { setCenterFilter(e.target.value); setPage(1); }}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                backgroundColor: 'white'
-              }}
-            >
-              <option value="">All Centers</option>
-              {centerOptions.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            {centerFilter && (
-              <div style={{
-                position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                backgroundColor: '#dc2626',
-                color: 'white',
-                borderRadius: '50%',
-                width: '20px',
-                height: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}>
-                <i className="fa fa-hospital"></i>
-              </div>
-            )}
-          </div>
+          {/* Center filter removed as requested */}
           
           <div style={{ position: 'relative' }}>
             <select 
@@ -1516,7 +1479,60 @@ const SuperAdminPatients = () => {
             )}
           </div>
           
-          {/* Barangay filter removed as requested */}
+          <div style={{ position: 'relative' }}>
+            <select 
+              value={barangay} 
+              onChange={(e) => setBarangay(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="">Select Barangay</option>
+              <option value="Batis">Batis</option>
+              <option value="Balong-Bato">Balong-Bato</option>
+              <option value="Corazon de Jesus">Corazon de Jesus</option>
+              <option value="Ermitaño">Ermitaño</option>
+              <option value="Greenhills">Greenhills</option>
+              <option value="Isabelita">Isabelita</option>
+              <option value="Kabayanan">Kabayanan</option>
+              <option value="Little Baguio">Little Baguio</option>
+              <option value="Maytunas">Maytunas</option>
+              <option value="Onse">Onse</option>
+              <option value="Pasadena">Pasadena</option>
+              <option value="Pedro Cruz">Pedro Cruz</option>
+              <option value="Progreso">Progreso</option>
+              <option value="Rivera">Rivera</option>
+              <option value="Salapan">Salapan</option>
+              <option value="San Perfecto">San Perfecto</option>
+              <option value="Santa Lucia">Santa Lucia</option>
+              <option value="Tibagan">Tibagan</option>
+              <option value="West Crame">West Crame</option>
+            </select>
+            {barangay && (
+              <div style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                <i className="fa fa-map-marker"></i>
+              </div>
+            )}
+          </div>
           
           <div style={{ position: 'relative' }}>
             <input
