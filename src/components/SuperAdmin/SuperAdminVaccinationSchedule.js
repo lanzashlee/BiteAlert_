@@ -2306,8 +2306,10 @@ const SuperAdminVaccinationSchedule = () => {
                                     </button>
                                     <button
                                       className="btn-calendar px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wide"
+                                      disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        if (scheduleItem?.status && scheduleItem.status !== 'scheduled') return;
                                         const rect = e.currentTarget.getBoundingClientRect();
                                         // Prefer centered relative to the button; constrain to viewport, slight left bias
                                         const width = 320; // popover width
@@ -2376,7 +2378,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                className="w-6 h-6 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                                                checked={scheduleItem?.status === 'completed'}
                                                onChange={(e) => {
-                                                if (scheduleItem?.status === 'completed') return; // lock completed
+                                               if (scheduleItem?.status && scheduleItem.status !== 'scheduled') return; // lock when completed/missed
                                                  const newStatus = e.target.checked ? 'completed' : 'scheduled';
                                                  setScheduleModalData(prev => ({
                                                    ...prev,
@@ -2385,7 +2387,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                    )
                                                  }));
                                                }}
-                                              disabled={scheduleItem?.status === 'completed'}
+                                              disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
                                              />
                                              <span className={`text-lg font-semibold ${scheduleItem?.status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>
                                                {scheduleItem?.status === 'completed' ? '✅ Completed' : '⏳ Scheduled'}
@@ -2412,6 +2414,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                      className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                                                      checked={selectedVaccines['VAXIRAB (PCEC)'] || false}
                                                      onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'VAXIRAB (PCEC)': e.target.checked }))}
+                                                     disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
                                                    />
                                                    <span className="text-lg font-semibold text-gray-800">VAXIRAB (PCEC)</span>
                                                  </label>
@@ -2421,6 +2424,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                      className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                                                      checked={selectedVaccines['SPEEDA (PVRV)'] || false}
                                                      onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'SPEEDA (PVRV)': e.target.checked }))}
+                                                     disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
                                                    />
                                                    <span className="text-lg font-semibold text-gray-800">SPEEDA (PVRV)</span>
                                                  </label>
@@ -2435,6 +2439,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                    className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                                                    checked={selectedVaccines['TCV'] || false}
                                                    onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'TCV': e.target.checked }))}
+                                                   disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
                                                  />
                                                  <span className="text-lg font-semibold text-gray-800">TCV</span>
                                                </label>
@@ -2448,6 +2453,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                    className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                                                    checked={selectedVaccines['ERIG'] || false}
                                                    onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'ERIG': e.target.checked }))}
+                                                   disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
                                                  />
                                                  <span className="text-lg font-semibold text-gray-800">ERIG</span>
                                                </label>
@@ -2457,7 +2463,7 @@ const SuperAdminVaccinationSchedule = () => {
                                   
                                         <button
                                            className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide shadow-lg hover:shadow-xl transform hover:scale-105"
-                                           disabled={doseEditLoading}
+                                           disabled={doseEditLoading || (scheduleItem?.status && scheduleItem.status !== 'scheduled')}
                                           onClick={(e) => {
                                             e.stopPropagation();
                                              setVaccineConfirmData({
