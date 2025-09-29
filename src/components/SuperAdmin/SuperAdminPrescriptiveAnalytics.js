@@ -56,7 +56,14 @@ const SuperAdminPrescriptiveAnalytics = () => {
       if (!json?.success || !json?.data) {
         throw new Error('Invalid response from prescriptive analytics');
       }
-      setAnalyticsData(json.data);
+      // Ensure we always have interventions; synthesize heuristics if missing/empty
+      const data = json.data || { cases: [], riskAnalysis: {}, interventionRecommendations: [] };
+      let interventions = Array.isArray(data.interventionRecommendations) ? data.interventionRecommendations : [];
+      if (interventions.length === 0) {
+        const heuristics = buildHeuristicInterventions(data.riskAnalysis);
+        interventions = heuristics;
+      }
+      setAnalyticsData({ ...data, interventionRecommendations: interventions });
       setAiError('');
     } catch (error) {
       console.error('Error fetching prescriptive analytics:', error);
@@ -72,6 +79,35 @@ const SuperAdminPrescriptiveAnalytics = () => {
     } finally {
       setLoading(false);
       setAiLoading(false);
+    }
+  };
+
+  // Build heuristic interventions from a riskAnalysis object
+  const buildHeuristicInterventions = (riskAnalysis = {}) => {
+    try {
+      return Object.entries(riskAnalysis)
+        .filter(([, d]) => (d?.totalCases || 0) > 0)
+        .map(([barangay, d]) => ({
+          barangay,
+          riskScore: d.riskScore || 0,
+          priority: d.priority || 'low',
+          reasoning: Array.isArray(d.factors) ? d.factors.join('; ') : (d.factors || ''),
+          intervention: (d.priority === 'high')
+            ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability.'
+            : (d.priority === 'medium')
+              ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+              : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+          totalCases: d.totalCases || 0,
+          recentCases: d.recentCases || 0,
+          severeCases: d.severeCases || 0,
+          ageGroupFocus: '',
+          timePattern: '',
+          resourceNeeds: d.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
+          coordinationRequired: d.topCenter ? `Coordinate with ${d.topCenter}` : 'Coordinate with nearest health center'
+        }))
+        .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0));
+    } catch (_) {
+      return [];
     }
   };
 
