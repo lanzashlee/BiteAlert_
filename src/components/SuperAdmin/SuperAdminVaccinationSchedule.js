@@ -720,6 +720,14 @@ const SuperAdminVaccinationSchedule = () => {
           biteCases = vaccinationData.data;
         }
 
+        // Only include bite cases that already have an assigned schedule
+        const hasAssignedSchedule = (bc) => {
+          const perDay = [bc.d0Date, bc.d3Date, bc.d7Date, bc.d14Date, bc.d28Date].some(Boolean);
+          const arraySched = Array.isArray(bc.scheduleDates) && bc.scheduleDates.some(Boolean);
+          return perDay || arraySched;
+        };
+        biteCases = (biteCases || []).filter(hasAssignedSchedule);
+
         // Fallback: try vaccinationdates if bitecases returned nothing
         if (!biteCases || biteCases.length === 0) {
           try {
