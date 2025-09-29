@@ -17,7 +17,8 @@ const UnifiedModal = ({
   showCancel = true,
   confirmButtonClass = 'confirm-btn',
   cancelButtonClass = 'cancel-btn',
-  customContent = null
+  customContent = null,
+  size = 'md' // 'sm' | 'md' | 'lg'
 }) => {
   if (!isOpen) return null;
 
@@ -33,10 +34,16 @@ const UnifiedModal = ({
     }
   };
 
+  const contentStyle = size === 'sm'
+    ? { maxWidth: '460px', width: '92%' }
+    : size === 'lg'
+      ? { maxWidth: '900px', width: '95%' }
+      : {};
+
   return (
     <div className="unified-modal active">
       <div className="unified-modal-overlay" onClick={handleOverlayClick}></div>
-      <div className={`unified-modal-content ${customContent ? 'has-custom-content' : ''}`}>
+      <div className={`unified-modal-content ${customContent ? 'has-custom-content' : ''}`} style={contentStyle}>
         <div className="unified-modal-header">
           {icon && (
             <div className={`unified-modal-icon-wrapper ${iconType}`}>

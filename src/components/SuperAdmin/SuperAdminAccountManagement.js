@@ -537,6 +537,7 @@ const SuperAdminAccountManagement = () => {
         onConfirm={confirmPasswordChange}
         isLoading={processing}
         loadingText="Changing Password..."
+        size="sm"
         customContent={
           <div className="password-change-form">
             {/* Admin Information Section - Only show after user starts typing */}
