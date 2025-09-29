@@ -2288,12 +2288,17 @@ const SuperAdminVaccinationSchedule = () => {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         const rect = e.currentTarget.getBoundingClientRect();
-                                        setDatePicker({
-                                          day,
-                                          patientId: scheduleModalData?.patient?.patientId || '',
-                                          top: Math.round(rect.bottom + window.scrollY + 8),
-                                          left: Math.round(rect.left + window.scrollX),
-                                        });
+                                        // Prefer centered relative to the button; constrain to viewport, slight left bias
+                                        const width = 320; // popover width
+                                        const gutter = 8;
+                                        const centerLeft = rect.left + window.scrollX + rect.width / 2 - width / 2;
+                                        let left = centerLeft;
+                                        const minLeft = window.scrollX + gutter;
+                                        const maxLeft = window.scrollX + window.innerWidth - width - gutter;
+                                        if (left < minLeft) left = minLeft; // keep inside viewport
+                                        if (left > maxLeft) left = maxLeft;
+                                        const top = Math.round(rect.bottom + window.scrollY + 8);
+                                        setDatePicker({ day, patientId: scheduleModalData?.patient?.patientId || '', top, left });
                                       }}
                                     >
                                       <i className="fa-solid fa-calendar"></i>
