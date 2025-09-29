@@ -1458,6 +1458,10 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Handle edit vaccination
   const handleEditVaccination = (vaccination) => {
+    if (vaccination?.status && vaccination.status !== 'scheduled') {
+      showNotification('This dose is view-only because it is already ' + vaccination.status + '.', 'info');
+      return;
+    }
     setSelectedVaccination(vaccination);
     setFormData({
       patientId: vaccination.patient?.patientId || '',
@@ -2886,13 +2890,14 @@ const SuperAdminVaccinationSchedule = () => {
                             <button
                               className="btn-complete-small"
                               onClick={() => {
+                                if (vaccination.status !== 'scheduled') return;
                                 setShowPatientDetailModal(false);
                                 customConfirm(
                                   'Mark this vaccination as completed?',
                                   { action: () => handleMarkCompleted(vaccination._id) }
                                 );
                               }}
-                              disabled={updatingVaccinationId === vaccination._id || vaccination.status === 'completed'}
+                              disabled={updatingVaccinationId === vaccination._id || vaccination.status !== 'scheduled'}
                             >
                               {updatingVaccinationId === vaccination._id ? (
                                 <>
@@ -2905,13 +2910,14 @@ const SuperAdminVaccinationSchedule = () => {
                             <button
                               className="btn-missed-small"
                               onClick={() => {
+                                if (vaccination.status !== 'scheduled') return;
                                 setShowPatientDetailModal(false);
                                 customConfirm(
                                   'Mark this vaccination as missed?',
                                   { action: () => handleMarkMissed(vaccination._id) }
                                 );
                               }}
-                              disabled={updatingVaccinationId === vaccination._id || vaccination.status === 'missed'}
+                              disabled={updatingVaccinationId === vaccination._id || vaccination.status !== 'scheduled'}
                             >
                               {updatingVaccinationId === vaccination._id ? (
                                 <>
@@ -2924,9 +2930,11 @@ const SuperAdminVaccinationSchedule = () => {
                             <button
                               className="btn-edit-small"
                               onClick={() => {
+                                if (vaccination.status !== 'scheduled') return;
                                 setShowPatientDetailModal(false);
                                 handleEditVaccination(vaccination);
                               }}
+                              disabled={vaccination.status !== 'scheduled'}
                             >
                               Edit
                             </button>
