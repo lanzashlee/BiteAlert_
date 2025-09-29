@@ -1279,7 +1279,7 @@ const SuperAdminVaccinationSchedule = () => {
   const handleEditVaccination = (vaccination) => {
     setSelectedVaccination(vaccination);
     setFormData({
-      patientId: vaccination.patient?._id || '',
+      patientId: vaccination.patient?.patientId || '',
       vaccinationDay: vaccination.vaccinationDay || '',
       scheduledDate: vaccination.scheduledDate ? new Date(vaccination.scheduledDate).toISOString().split('T')[0] : '',
       notes: vaccination.notes || '',
@@ -1706,7 +1706,7 @@ const SuperAdminVaccinationSchedule = () => {
   const vaccinationsByPatient = useMemo(() => {
     const grouped = {};
     filteredVaccinations.forEach(vaccination => {
-      const patientId = vaccination.patient?._id || 'unknown';
+      const patientId = vaccination.patient?.patientId || 'unknown';
       if (!grouped[patientId]) {
         grouped[patientId] = {
           patient: vaccination.patient,
@@ -1922,7 +1922,7 @@ const SuperAdminVaccinationSchedule = () => {
                   </thead>
                   <tbody>
                     {filteredVaccinations.map(v => (
-                      <tr key={v._id} onClick={() => openPatientScheduleModal(vaccinationsByPatient[v.patient?._id || 'unknown'])} style={{cursor:'pointer'}}>
+                      <tr key={v._id} onClick={() => openPatientScheduleModal(vaccinationsByPatient[v.patient?.patientId || 'unknown'])} style={{cursor:'pointer'}}>
                         <td>{getPatientDisplayName(v.patient)}</td>
                         <td>{v.patient?.patientId || 'N/A'}</td>
                         <td>{v.vaccinationDay}</td>
@@ -2410,11 +2410,11 @@ const SuperAdminVaccinationSchedule = () => {
               >
                 <option value="">Select a patient</option>
                 {patients.map(patient => (
-                  <option key={patient._id} value={patient._id}>
-                    {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim()} 
-                    {patient.patientId && ` (ID: ${patient.patientId})`}
-                  </option>
-                ))}
+                  <option key={patient.patientId || patient._id} value={patient.patientId || ''}>
+                     {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim()} 
+                     {patient.patientId && ` (ID: ${patient.patientId})`}
+                   </option>
+                 ))}
               </select>
               {formErrors.patientId && (
                 <span className="form-error">{formErrors.patientId}</span>
