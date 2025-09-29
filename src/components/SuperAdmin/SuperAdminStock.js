@@ -878,20 +878,20 @@ const SuperAdminStock = () => {
                                       </div>
 
                                       {vExpanded && (
-                                        <div className="stock-entries" style={{ marginTop: '10px', padding: '10px', background:'#f8f9fa', borderRadius:'6px' }}>
+                                        <div className="stock-entries">
                                           {(vaccine.stockEntries || []).map((entry, idx) => {
                                             let qty = entry.stock;
                                             if (typeof qty === 'object' && qty?.$numberInt !== undefined) qty = parseInt(qty.$numberInt);
                                             else if (typeof qty === 'object' && qty?.$numberDouble !== undefined) qty = parseFloat(qty.$numberDouble);
                                             else qty = Number(qty);
                                             return (
-                                              <div key={idx} className="stock-entry" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderTop: idx===0 ? 'none' : '1px solid #e9ecef' }}>
-                                                <div>
-                                                  <strong>Branch #{entry.branchNo || 'N/A'}</strong>
-                                                  <div style={{ fontSize:'0.9rem', color:'#6c757d' }}>Expires: {entry.expirationDate || 'N/A'}</div>
+                                              <div key={idx} className="stock-entry">
+                                                <div className="stock-entry-left">
+                                                  <div className="stock-entry-branch">Branch #{entry.branchNo || 'N/A'}</div>
+                                                  <div className="stock-entry-expiry">Expires: {entry.expirationDate || 'N/A'}</div>
                                                 </div>
-                                                <div style={{ minWidth:'120px', textAlign:'right' }}>
-                                                  <span style={{ fontWeight:600 }}>{isNaN(qty) ? '0' : qty}</span>
+                                                <div className="stock-entry-right">
+                                                  <span className="stock-entry-qty">{isNaN(qty) ? '0' : qty}</span>
                                                 </div>
                                               </div>
                                             );

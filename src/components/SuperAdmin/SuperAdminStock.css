@@ -298,22 +298,46 @@
 
 /* Nested dropdown for branch/stock entries */
 .superadmin-stock-container .stock-entries {
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  animation: fadeIn 0.2s ease-out;
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
 }
 
 .superadmin-stock-container .stock-entry {
-  background: #fff;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
-.superadmin-stock-container .stock-entry:hover {
-  background: #f8f9fa;
+.superadmin-stock-container .stock-entry-left {
+  display: flex;
+  flex-direction: column;
 }
 
-.superadmin-stock-container .stock-entry strong {
+.superadmin-stock-container .stock-entry-branch {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.superadmin-stock-container .stock-entry-expiry {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.superadmin-stock-container .stock-entry-right {
+  text-align: right;
+  min-width: 100px;
+}
+
+.superadmin-stock-container .stock-entry-qty {
+  font-weight: 700;
+  font-size: 1.1rem;
   color: #2c3e50;
 }
 
