@@ -666,6 +666,25 @@
   opacity: 0.6;
 }
 
+/* Inline date picker popover styles */
+.date-popover {
+  overflow: hidden; /* no internal scrollbars */
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.date-popover::-webkit-scrollbar { /* Chrome/Safari */
+  display: none;
+}
+
+@keyframes popFadeScale {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-pop-100 {
+  animation: popFadeScale 0.1s ease-out both;
+}
+
 .btn-complete {
   background: #10b981;
   color: white;

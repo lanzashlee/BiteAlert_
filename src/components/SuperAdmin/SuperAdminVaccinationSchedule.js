@@ -2971,8 +2971,8 @@ const SuperAdminVaccinationSchedule = () => {
       />
       {/* Inline Tailwind date picker popover */}
       {datePicker && (
-        <div className="fixed z-50" style={{ top: datePicker.top, left: datePicker.left }}>
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 w-[320px]">
+        <div className="fixed z-50 animate-pop-100" style={{ top: datePicker.top, left: datePicker.left }}>
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 w-[320px] date-popover">
             <div className="flex items-start justify-between mb-2">
               <div>
                 <div className="text-xs font-bold text-red-600 uppercase tracking-wide">Reschedule {datePicker.day}</div>
