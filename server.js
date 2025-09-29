@@ -1612,7 +1612,7 @@ app.post('/api/prescriptions', async (req, res) => {
         // Analyze case patterns by age groups, time patterns, and severity
         const caseAnalysis = analyzeCasePatterns(allCases, selectedBarangay);
         
-        const barangaySummaries = Object.entries(riskAnalysis).map(([barangay, d]) => ({
+        let barangaySummaries = Object.entries(riskAnalysis).map(([barangay, d]) => ({
             barangay,
             totalCases: d.totalCases || 0,
             recentCases: d.recentCases || 0,
@@ -1627,6 +1627,24 @@ app.post('/api/prescriptions', async (req, res) => {
             severityBreakdown: caseAnalysis[barangay]?.severityBreakdown || {},
             trendAnalysis: caseAnalysis[barangay]?.trendAnalysis || {}
         }));
+
+        // Filter to centers that exist in Center Data Management
+        try {
+            const Center = mongoose.connection.model('Center', new mongoose.Schema({}, { strict: false }), 'centers');
+            const centers = await Center.find({ isArchived: { $ne: true } }, { centerName: 1, name: 1 }).lean();
+            const norm = (v) => String(v || '')
+                .toLowerCase()
+                .replace(/\s*health\s*center$/i, '')
+                .replace(/\s*center$/i, '')
+                .replace(/-/g, ' ')
+                .trim();
+            const validCenters = new Set((centers || []).map(c => norm(c.centerName || c.name)).filter(Boolean));
+            if (validCenters.size > 0) {
+                barangaySummaries = barangaySummaries.filter(b => validCenters.has(norm(b.topCenter)) || validCenters.has(norm(b.barangay)));
+            }
+        } catch (e) {
+            console.warn('Center filter skipped:', e.message);
+        }
 
         // Re-initialize Gemini client at request-time if not yet initialized
         if (!genAI) {
