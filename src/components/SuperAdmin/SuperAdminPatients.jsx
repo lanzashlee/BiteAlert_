@@ -379,6 +379,7 @@ const SuperAdminPatients = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
+  // Removed vaccination day filter
   const [status, setStatus] = useState('');
   const [barangay, setBarangay] = useState('');
   const [centerFilter, setCenterFilter] = useState('');
@@ -442,7 +443,7 @@ const SuperAdminPatients = () => {
   const params = useMemo(() => {
     const usp = new URLSearchParams();
     if (query) usp.set('q', query);
-    if (status) usp.set('vaccinationDay', status);
+    // vaccination day removed
     if (barangay) usp.set('barangay', barangay);
     if (centerFilter) usp.set('center', centerFilter);
     if (dateFilter) usp.set('dateFilter', dateFilter);
@@ -1438,46 +1439,7 @@ const SuperAdminPatients = () => {
           
           {/* Center filter removed as requested */}
           
-          <div style={{ position: 'relative' }}>
-            <select 
-              value={status} 
-              onChange={(e) => handleVaccinationDayChange(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                backgroundColor: 'white'
-              }}
-            >
-              <option value="">Select Vaccination Day</option>
-              <option value="day0">Day 0</option>
-              <option value="day3">Day 3</option>
-              <option value="day7">Day 7</option>
-              <option value="day14">Day 14</option>
-              <option value="day28">Day 28</option>
-            </select>
-            {status && (
-              <div style={{
-                position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                backgroundColor: '#dc2626',
-                color: 'white',
-                borderRadius: '50%',
-                width: '20px',
-                height: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}>
-                <i className="fa fa-filter"></i>
-              </div>
-            )}
-          </div>
+          {/* Vaccination day filter removed */}
           
           <div style={{ position: 'relative' }}>
             <select 
@@ -1570,47 +1532,11 @@ const SuperAdminPatients = () => {
             )}
           </div>
           
-          {status && (
-            <div style={{ position: 'relative' }}>
-              <input
-                type="date"
-                placeholder={`Select ${status.charAt(0).toUpperCase() + status.slice(1).replace('day', 'Day ')} Date`}
-                value={vaccinationDate}
-                onChange={(e) => setVaccinationDate(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  backgroundColor: 'white'
-                }}
-              />
-              {vaccinationDate && (
-                <div style={{
-                  position: 'absolute',
-                  top: '-8px',
-                  right: '-8px',
-                  backgroundColor: '#dc2626',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}>
-                  <i className="fa fa-calendar"></i>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Vaccination date picker removed */}
         </div>
 
         {/* Active Filters Display */}
-        {(query || status || barangay || dateFilter || vaccinationDate) && (
+        {(query || barangay || dateFilter) && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -1631,7 +1557,7 @@ const SuperAdminPatients = () => {
               fontSize: '12px',
               fontWeight: 800
             }}>
-              {['x', query, status, barangay, dateFilter, vaccinationDate].filter(Boolean).length - 1} active
+              {['x', query, barangay, dateFilter].filter(Boolean).length - 1} active
             </span>
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#0369a1' }}>
               Active Filters:
@@ -1686,35 +1612,7 @@ const SuperAdminPatients = () => {
                 </button>
               </span>
             )}
-            {status && (
-              <span style={{
-                backgroundColor: '#dc2626',
-                color: 'white',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: '500'
-              }}>
-                {status.charAt(0).toUpperCase() + status.slice(1).replace('day', 'Day ')}
-                {vaccinationDate ? ` - ${new Date(vaccinationDate).toLocaleDateString()}` : ''}
-                <button
-                  onClick={() => {
-                    setStatus('');
-                    setVaccinationDate('');
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'white',
-                    marginLeft: '6px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  ×
-                </button>
-              </span>
-            )}
+            {/* vaccination day chip removed */}
             {barangay && (
               <span style={{
                 backgroundColor: '#dc2626',
