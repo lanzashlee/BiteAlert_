@@ -22,11 +22,9 @@ const SuperAdminAccountManagement = () => {
   
   // Password change modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [showAdminInfo, setShowAdminInfo] = useState(false);
 
   // Handle sign out
   const handleSignOut = async () => {
@@ -167,36 +165,15 @@ const SuperAdminAccountManagement = () => {
   const handlePasswordChange = (accountId) => {
     const account = adminAccounts.find(acc => acc.id === accountId);
     setSelectedAccount(account);
-    setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError('');
-    setShowAdminInfo(false);
     setShowPasswordModal(true);
   };
 
   // Handle new password input change
-  const handleNewPasswordChange = async (value) => {
+  const handleNewPasswordChange = (value) => {
     setNewPassword(value);
-    
-    // Show admin info and fetch current password when user starts typing
-    if (value.length > 0 && !showAdminInfo) {
-      setShowAdminInfo(true);
-      
-      try {
-        // Fetch current password for display
-        const response = await apiFetch(`/api/get-admin-password/${selectedAccount.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentPassword(data.currentPassword || '••••••••');
-        } else {
-          setCurrentPassword('••••••••');
-        }
-      } catch (error) {
-        console.error('Error fetching current password:', error);
-        setCurrentPassword('••••••••');
-      }
-    }
   };
 
   // Confirm activation/deactivation
@@ -337,10 +314,8 @@ const SuperAdminAccountManagement = () => {
 
       showToast('Password changed successfully', 'success');
       setShowPasswordModal(false);
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setShowAdminInfo(false);
       setSelectedAccount(null);
       
     } catch (error) {
@@ -363,11 +338,9 @@ const SuperAdminAccountManagement = () => {
   const closePasswordModal = () => {
     setShowPasswordModal(false);
     setSelectedAccount(null);
-    setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError('');
-    setShowAdminInfo(false);
     setProcessing(false);
   };
 
@@ -540,52 +513,6 @@ const SuperAdminAccountManagement = () => {
         size="sm"
         customContent={
           <div className="password-change-form">
-            {/* Admin Information Section - Only show after user starts typing */}
-            {showAdminInfo && (
-              <div className="admin-info-section">
-                <h4>Admin Information</h4>
-                <div className="admin-info-grid">
-                  <div className="info-item">
-                    <span className="info-label">Admin ID:</span>
-                    <span className="info-value">{selectedAccount?.adminID || selectedAccount?.id || 'N/A'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Username:</span>
-                    <span className="info-value">{selectedAccount?.username || 'N/A'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Full Name:</span>
-                    <span className="info-value">{selectedAccount?.fullName || 'N/A'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Role:</span>
-                    <span className="info-value">{selectedAccount?.role || 'N/A'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Status:</span>
-                    <span className={`info-value status-${selectedAccount?.isActive ? 'active' : 'inactive'}`}>
-                      {selectedAccount?.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Current Password Display - Only show after user starts typing */}
-            {showAdminInfo && (
-              <div className="form-group">
-                <label htmlFor="currentPassword">Current Password</label>
-                <input
-                  type="text"
-                  id="currentPassword"
-                  value={currentPassword}
-                  readOnly
-                  className="password-input current-password-display"
-                  placeholder="Loading current password..."
-                />
-              </div>
-            )}
-
             {/* New Password Fields */}
             <div className="form-group">
               <label htmlFor="newPassword">New Password</label>
@@ -593,7 +520,7 @@ const SuperAdminAccountManagement = () => {
                 type="password"
                 id="newPassword"
                 value={newPassword}
-                onChange={(e) => handleNewPasswordChange(e.target.value)}
+                onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password"
                 className="password-input"
               />
