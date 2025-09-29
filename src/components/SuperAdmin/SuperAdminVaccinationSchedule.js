@@ -234,7 +234,7 @@ const SuperAdminVaccinationSchedule = () => {
       }));
   };
 
-  // Fetch latest vaccine info for this bite case directly from backend
+      // Fetch latest vaccine info for this bite case directly from backend
   const openVaccineInfo = async (vaccination) => {
     try {
       setShowVaccineInfoModal(true);
@@ -242,17 +242,22 @@ const SuperAdminVaccinationSchedule = () => {
       setSelectedVaccineInfo(null);
 
       // Try canonical endpoint first
-      let biteCaseRes = await fetch(`/api/bitecases/${vaccination.originalId}`);
+      let biteCaseRes = await apiFetch(`${apiConfig.endpoints.bitecases}/${vaccination.originalId}`);
       if (!biteCaseRes.ok) {
         // Fallback: some backends use query format
-        biteCaseRes = await fetch(`/api/bitecases?id=${encodeURIComponent(vaccination.originalId)}`);
+        biteCaseRes = await apiFetch(`${apiConfig.endpoints.bitecases}?id=${encodeURIComponent(vaccination.originalId)}`);
       }
       let biteCaseData = null;
       if (biteCaseRes.ok) {
-        const json = await biteCaseRes.json();
-        if (Array.isArray(json)) biteCaseData = json[0];
-        else if (json && json.data && Array.isArray(json.data)) biteCaseData = json.data[0];
-        else biteCaseData = json;
+        try {
+          const json = await biteCaseRes.json();
+          if (Array.isArray(json)) biteCaseData = json[0];
+          else if (json && json.data && Array.isArray(json.data)) biteCaseData = json.data[0];
+          else biteCaseData = json;
+        } catch (e) {
+          const txt = await biteCaseRes.text();
+          console.warn('Non-JSON bitecase response:', txt.slice(0, 120));
+        }
       }
 
       const dose = getDoseCodeFromDay(vaccination.vaccinationDay);
@@ -342,10 +347,16 @@ const SuperAdminVaccinationSchedule = () => {
      // Get vaccine info from bitecases if available
     let brandName = '', genericName = '', route = '', categoryOfExposure = '', caseCenter = '';
       try {
-        const biteCaseRes = await fetch(`/api/bitecases?patientId=${encodeURIComponent(patientId)}`);
+        const biteCaseRes = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
         if (biteCaseRes.ok) {
-          const json = await biteCaseRes.json();
-         const biteCase = Array.isArray(json) ? json[0] : (Array.isArray(json?.data) ? json.data[0] : json);
+          let biteCase = null;
+          try {
+            const json = await biteCaseRes.json();
+            biteCase = Array.isArray(json) ? json[0] : (Array.isArray(json?.data) ? json.data[0] : json);
+          } catch (e) {
+            const txt = await biteCaseRes.text();
+            console.warn('Non-JSON bitecases by patientId:', txt.slice(0, 120));
+          }
          if (biteCase) {
             brandName = biteCase.brandName || '';
             genericName = biteCase.genericName || '';
