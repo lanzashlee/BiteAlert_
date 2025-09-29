@@ -551,12 +551,12 @@ const SuperAdminPatientManagement = () => {
         const userCenter = getUserCenter();
         
         // Build API URL with center filter for non-superadmin users
-        let apiUrl = '/api/patients?page=1&limit=1000';
+        let apiUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
         if (userCenter && userCenter !== 'all') {
           apiUrl += `&center=${encodeURIComponent(userCenter)}`;
         }
 
-        const res = await fetch(apiUrl);
+        const res = await apiFetch(apiUrl);
 
         const data = await res.json();
 
@@ -576,7 +576,7 @@ const SuperAdminPatientManagement = () => {
           const needsEnrich = withCenterDerived.some(p => !p.center);
           if (needsEnrich) {
             try {
-              const bcRes = await apiFetch('/api/bitecases');
+              const bcRes = await apiFetch(apiConfig.endpoints.bitecases);
               const bcJson = await bcRes.json();
               const cases = Array.isArray(bcJson) ? bcJson : (Array.isArray(bcJson.data) ? bcJson.data : []);
               const byPatientId = new Map();

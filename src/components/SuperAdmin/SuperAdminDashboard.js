@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
-import { apiFetch, apiConfig } from '../../config/api';
+import { apiFetch, apiConfig, getApiUrl } from '../../config/api';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -127,7 +127,7 @@ const SuperAdminDashboard = () => {
       const fetchLatest = async () => {
         try {
           const qs = lastEventTime ? `?since=${encodeURIComponent(lastEventTime)}` : '';
-          const res = await apiFetch(`/api/notifications${qs}`);
+          const res = await apiFetch(`${apiConfig.endpoints.notifications}${qs}`);
           if (res.ok) {
             const data = await res.json();
             const list = Array.isArray(data) ? data : (data.notifications || []);
@@ -145,7 +145,7 @@ const SuperAdminDashboard = () => {
     // Attempt SSE first
     try {
       if (window && 'EventSource' in window) {
-        eventSource = new EventSource('/api/notifications/stream');
+        eventSource = new EventSource(getApiUrl(`${apiConfig.endpoints.notifications}/stream`));
         eventSource.onmessage = (e) => {
           try {
             const payload = JSON.parse(e.data);
@@ -396,22 +396,22 @@ const SuperAdminDashboard = () => {
       // Get staff count for the specific center
       let staffCount = 0;
       try {
-        let staffUrl = '/api/staffs';
+        let staffUrl = `${apiConfig.endpoints.staffs}`;
         if (userCenter && userCenter !== 'all') {
           staffUrl += `?center=${encodeURIComponent(userCenter)}`;
         }
-        const response = await fetch(staffUrl);
+        const response = await apiFetch(staffUrl);
         const result = await response.json();
         if (result.success && Array.isArray(result.staffs)) {
           staffCount = result.staffs.length;
         }
       } catch {}
-      let vaccineUrl = '/api/vaccinestocks';
+      let vaccineUrl = `${apiConfig.endpoints.vaccinestocks}`;
       if (userCenter && userCenter !== 'all') {
         vaccineUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const vaccineResponse = await fetch(vaccineUrl);
+      const vaccineResponse = await apiFetch(vaccineUrl);
       const vaccineResult = await vaccineResponse.json();
       let totalStock = 0;
       if (vaccineResult.success && Array.isArray(vaccineResult.data)) {
@@ -429,12 +429,12 @@ const SuperAdminDashboard = () => {
         }, 0);
       }
 
-      let summaryUrl = `/api/dashboard-summary?filter=${timeRange}`;
+      let summaryUrl = `${apiConfig.endpoints.dashboardSummary}?filter=${timeRange}`;
       if (userCenter && userCenter !== 'all') {
         summaryUrl += `&center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(summaryUrl);
+      const response = await apiFetch(summaryUrl);
       const result = await response.json();
       if (result.success && result.data) {
         const { totalPatients, healthCenters, activeCases, adminCount } = result.data;
@@ -467,12 +467,12 @@ const SuperAdminDashboard = () => {
   const updatePatientGrowth = async () => {
     try {
       const userCenter = getUserCenter();
-      let apiUrl = '/api/patient-growth';
+      let apiUrl = `${apiConfig.endpoints.patientGrowth}`;
       if (userCenter && userCenter !== 'all') {
         apiUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(apiUrl);
+      const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
         setPatientsChartData(prev => ({
@@ -487,12 +487,12 @@ const SuperAdminDashboard = () => {
   const updateCasesPerBarangay = async () => {
     try {
       const userCenter = getUserCenter();
-      let apiUrl = '/api/cases-per-barangay';
+      let apiUrl = `${apiConfig.endpoints.casesPerBarangay}`;
       if (userCenter && userCenter !== 'all') {
         apiUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(apiUrl);
+      const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
         const barangayNames = result.data.map(item => item.barangay);
@@ -505,12 +505,12 @@ const SuperAdminDashboard = () => {
   const updateVaccineStockTrends = async () => {
     try {
       const userCenter = getUserCenter();
-      let apiUrl = '/api/vaccine-stock-trends';
+      let apiUrl = `${apiConfig.endpoints.vaccineStockTrends}`;
       if (userCenter && userCenter !== 'all') {
         apiUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(apiUrl);
+      const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
         setVaccinesChartData(prev => ({ ...prev, labels: result.labels, datasets: [{ ...prev.datasets[0], data: result.data }] }));
@@ -521,12 +521,12 @@ const SuperAdminDashboard = () => {
   const updateSeverityChart = async () => {
     try {
       const userCenter = getUserCenter();
-      let apiUrl = '/api/severity-distribution';
+      let apiUrl = `${apiConfig.endpoints.severityDistribution}`;
       if (userCenter && userCenter !== 'all') {
         apiUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
-      const response = await fetch(apiUrl);
+      const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
         const { Mild, Moderate, Severe } = result.data;
@@ -633,7 +633,7 @@ const SuperAdminDashboard = () => {
             {/* User Profile */}
             <div className="user-profile" onClick={() => navigate('/superadmin/profile')}>
               <div className="profile-picture">
-                <img src="/api/profile-picture" alt="Profile" onError={(e) => {
+                <img src={getApiUrl(apiConfig.endpoints.profilePicture)} alt="Profile" onError={(e) => {
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'block';
                 }} />
