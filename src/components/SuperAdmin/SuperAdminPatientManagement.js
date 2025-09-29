@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { apiFetch } from '../../config/api';
+import { apiFetch, apiConfig } from '../../config/api';
 
 import ResponsiveSidebar from './ResponsiveSidebar';
 
