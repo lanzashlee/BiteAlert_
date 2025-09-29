@@ -1402,6 +1402,39 @@ const SuperAdminVaccinationSchedule = () => {
     }
   };
 
+  // Build a preview of cascade changes and validations
+  const buildCascadePreview = (dayLabel, newDateStr) => {
+    const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
+    const addDays = [0,3,7,14,28];
+    const idxBase = labels.indexOf(dayLabel);
+    const baseDate = new Date(newDateStr);
+    const errors = [];
+    if (isNaN(baseDate.getTime())) errors.push('Invalid date.');
+    const today = new Date(); today.setHours(0,0,0,0);
+    if (baseDate < today) errors.push('Date cannot be in the past.');
+    // Validate not earlier than previous dose date (if exists)
+    const schedule = scheduleModalData?.schedule || [];
+    if (idxBase > 0) {
+      const prevLabel = labels[idxBase-1];
+      const prev = schedule.find(s => s.label === prevLabel);
+      if (prev && prev.date) {
+        const prevDate = new Date(prev.date);
+        if (baseDate < prevDate) {
+          errors.push(`${dayLabel} cannot be earlier than ${prevLabel} (${formatScheduleDate(prev.date)}).`);
+        }
+      }
+    }
+    const affected = [];
+    if (!errors.length) {
+      for (let i = idxBase; i < labels.length; i++) {
+        const d = new Date(baseDate);
+        d.setDate(d.getDate() + (addDays[i] - addDays[idxBase]));
+        affected.push({ label: labels[i], date: d.toISOString() });
+      }
+    }
+    return { errors, affected };
+  };
+
   // Handle edit vaccination
   const handleEditVaccination = (vaccination) => {
     setSelectedVaccination(vaccination);
@@ -2933,31 +2966,61 @@ const SuperAdminVaccinationSchedule = () => {
       />
       {/* Inline Tailwind date picker popover */}
       {datePicker && (
-        <div
-          className="fixed z-50"
-          style={{ top: datePicker.top, left: datePicker.left }}
-        >
-          <div className="bg-white border border-gray-200 rounded-xl shadow-2xl p-3 sm:p-4 flex items-center gap-2">
-            <input
-              type="date"
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-              min={new Date().toISOString().split('T')[0]}
-              onChange={async (ev) => {
-                const value = ev.target.value;
-                if (!value) return;
-                await handleRescheduleCascade(datePicker.day, value, datePicker.patientId);
-                setDatePicker(null);
-              }}
-              autoFocus
-              onBlur={() => setTimeout(() => setDatePicker(null), 150)}
-            />
-            <button
-              className="ml-1 text-gray-500 hover:text-gray-700"
-              onClick={() => setDatePicker(null)}
-              type="button"
-            >
-              <i className="fa-solid fa-xmark"></i>
-            </button>
+        <div className="fixed z-50" style={{ top: datePicker.top, left: datePicker.left }}>
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 w-[320px]">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <div className="text-xs font-bold text-red-600 uppercase tracking-wide">Reschedule {datePicker.day}</div>
+                <div className="text-[11px] text-gray-500">Future dates only. Earlier doses won’t change.</div>
+              </div>
+              <button className="text-gray-400 hover:text-gray-600" onClick={() => setDatePicker(null)} type="button">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 flex-1"
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(ev) => {
+                  const value = ev.target.value;
+                  if (!value) return;
+                  const preview = buildCascadePreview(datePicker.day, value);
+                  setDatePicker(prev => ({ ...prev, value, preview }));
+                }}
+                autoFocus
+              />
+              <button
+                className="btn-calendar px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                disabled={!datePicker?.preview || (datePicker?.preview?.errors || []).length > 0}
+                onClick={async () => {
+                  const value = datePicker?.value;
+                  if (!value) return;
+                  await handleRescheduleCascade(datePicker.day, value, datePicker.patientId);
+                  setDatePicker(null);
+                }}
+                type="button"
+              >
+                Apply
+              </button>
+            </div>
+            {datePicker?.preview && (datePicker.preview.errors || []).length > 0 && (
+              <div className="mt-2 text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+                {(datePicker.preview.errors || []).map((e,i) => (
+                  <div key={i}>• {e}</div>
+                ))}
+              </div>
+            )}
+            {datePicker?.preview && (datePicker.preview.errors || []).length === 0 && (
+              <div className="mt-2 text-[12px] text-gray-700 bg-gray-50 border border-gray-200 rounded-md p-2">
+                <div className="font-semibold mb-1">This will set:</div>
+                <ul className="list-disc ml-4">
+                  {datePicker.preview.affected.map(a => (
+                    <li key={a.label}><span className="font-medium">{a.label}:</span> {formatScheduleDate(a.date)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
