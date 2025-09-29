@@ -24,7 +24,7 @@ const SuperAdminCenterHours = () => {
 
         // Fetch persisted hours from dedicated collection
         try {
-          const hrsRes = await apiFetch('/api/center_hours');
+          const hrsRes = await apiFetch('/api/center_hours?existingOnly=true');
           if (hrsRes.ok) {
             const hrsJson = await hrsRes.json();
             const arr = Array.isArray(hrsJson) ? hrsJson : (hrsJson.data || hrsJson.centers || hrsJson.centerHours || []);

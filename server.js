@@ -3913,8 +3913,24 @@ app.get('/api/center-hours', async (req, res) => {
 // Mirror route using underscore to match new client
 app.get('/api/center_hours', async (req, res) => {
   try {
-    const centers = await CenterHours.find();
-    res.json({ success: true, data: centers });
+    const { existingOnly } = req.query;
+    // If not filtering, return all
+    if (!existingOnly || String(existingOnly).toLowerCase() !== 'true') {
+      const centers = await CenterHours.find();
+      return res.json({ success: true, data: centers });
+    }
+    // Filter to centers that exist in Center collection (by id or name)
+    const centerDocs = await Center.find({}, { _id: 1, centerName: 1 });
+    const validIds = new Set(centerDocs.map(c => String(c._id)));
+    const validNames = new Set(centerDocs.map(c => (c.centerName || '').toLowerCase()));
+
+    const hours = await CenterHours.find();
+    const filtered = hours.filter(h => {
+      const idMatch = h.centerId && validIds.has(String(h.centerId));
+      const nameMatch = h.centerName && validNames.has(String(h.centerName).toLowerCase());
+      return idMatch || nameMatch;
+    });
+    return res.json({ success: true, data: filtered });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to fetch center_hours', error: err.message });
   }
