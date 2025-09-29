@@ -57,6 +57,27 @@ const SuperAdminVaccinationSchedule = () => {
   const [selectedVaccines, setSelectedVaccines] = useState({});
   // Inline date picker popover state
   const [datePicker, setDatePicker] = useState(null); // { day, patientId, top, left }
+
+  // Close popover on Escape / outside click / heavy scroll or resize
+  useEffect(() => {
+    if (!datePicker) return;
+    const onKey = (e) => { if (e.key === 'Escape') setDatePicker(null); };
+    const onClick = (e) => {
+      const el = document.querySelector('.date-popover-container');
+      if (el && !el.contains(e.target)) setDatePicker(null);
+    };
+    const onScrollOrResize = () => { setDatePicker(null); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClick);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [datePicker]);
   
   // Get vaccine dosage based on type and route
   const getVaccineDosage = (vaccine, route) => {
@@ -2967,8 +2988,8 @@ const SuperAdminVaccinationSchedule = () => {
       />
       {/* Inline Tailwind date picker popover */}
       {datePicker && (
-        <div className="fixed z-[1000] animate-pop-100 pointer-events-auto" style={{ top: datePicker.top, left: datePicker.left }}>
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 w-[320px] date-popover">
+        <div className="fixed z-[1000] animate-pop-100 pointer-events-auto date-popover-container" style={{ top: datePicker.top, left: datePicker.left }}>
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 w-[320px] date-popover" onClick={(e)=>e.stopPropagation()}>
             <div className="flex items-start justify-between mb-2">
               <div>
                 <div className="text-xs font-bold text-red-600 uppercase tracking-wide">Reschedule {datePicker.day}</div>

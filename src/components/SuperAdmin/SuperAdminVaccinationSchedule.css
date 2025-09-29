@@ -685,6 +685,13 @@
   animation: popFadeScale 0.1s ease-out both;
 }
 
+.date-popover input[type="date"] {
+  transition: border-color .1s ease, box-shadow .1s ease;
+}
+.date-popover button {
+  transition: background-color .1s ease, transform .1s ease, opacity .1s ease;
+}
+
 /* Ensure popover appears above modals and is clickable */
 .date-popover,
 .animate-pop-100 {
