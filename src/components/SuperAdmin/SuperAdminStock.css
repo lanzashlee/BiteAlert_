@@ -301,18 +301,20 @@
   margin-top: 10px;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 10px;
+  padding-left: 8px; /* visually nest under vaccine item */
 }
 
 .superadmin-stock-container .stock-entry {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
-  background: #ffffff;
+  padding: 0.6rem 0.9rem;
+  background: #f9fbf9;
   border: 1px solid #e9ecef;
+  border-left: 4px solid #28a745;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .superadmin-stock-container .stock-entry-left {
@@ -321,23 +323,24 @@
 }
 
 .superadmin-stock-container .stock-entry-branch {
-  font-weight: 700;
+  font-weight: 600;
   color: #2c3e50;
+  font-size: 0.95rem;
 }
 
 .superadmin-stock-container .stock-entry-expiry {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #6c757d;
 }
 
 .superadmin-stock-container .stock-entry-right {
   text-align: right;
-  min-width: 100px;
+  min-width: 90px;
 }
 
 .superadmin-stock-container .stock-entry-qty {
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #2c3e50;
 }
 
