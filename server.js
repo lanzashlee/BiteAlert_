@@ -1628,6 +1628,20 @@ app.post('/api/prescriptions', async (req, res) => {
             trendAnalysis: caseAnalysis[barangay]?.trendAnalysis || {}
         }));
 
+        // Re-initialize Gemini client at request-time if not yet initialized
+        if (!genAI) {
+            try {
+                let apiKey = (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLEAI_API_KEY || '').replace(/^['\"]|['\"]$/g, '').trim();
+                if (apiKey) {
+                    const { GoogleGenerativeAI } = require('@google/generative-ai');
+                    genAI = new GoogleGenerativeAI(apiKey);
+                    console.log('Gemini AI client initialized on-demand');
+                }
+            } catch (e) {
+                console.warn('On-demand Gemini init failed:', e.message);
+            }
+        }
+
         if (!genAI) {
             console.warn('Gemini AI not initialized - returning heuristic fallback interventions');
             const interventions = barangaySummaries
