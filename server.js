@@ -2977,8 +2977,13 @@ app.put('/api/bitecases/:id', async (req, res) => {
         const fields = ['d0Date','d3Date','d7Date','d14Date','d28Date'];
         fields.forEach(k => { if (body[k]) body[k] = new Date(body[k]); });
 
-        // If a per-day date is updated, cascade future days from that base
+        // Load existing doc to respect completed doses and avoid changing earlier doses
+        const existing = await BiteCase.findById(id);
+        if (!existing) return res.status(404).json({ success: false, message: 'Bite case not found' });
+
+        // If a per-day date is updated, cascade future days from that base, skipping completed ones
         const addDays = { d0Date:0, d3Date:3, d7Date:7, d14Date:14, d28Date:28 };
+        const statusMap = { d0Date:'d0Status', d3Date:'d3Status', d7Date:'d7Status', d14Date:'d14Status', d28Date:'d28Status' };
         const keysProvided = fields.filter(k => body[k]);
         if (keysProvided.length > 0) {
             // choose the most downstream key provided to avoid double-cascade
@@ -2988,17 +2993,18 @@ app.put('/api/bitecases/:id', async (req, res) => {
             const labels = ['d0Date','d3Date','d7Date','d14Date','d28Date'];
             const idxBase = labels.indexOf(baseKey);
             for (let i = idxBase+1; i < labels.length; i++) {
+                const statusKey = statusMap[labels[i]];
+                const existingStatus = existing[statusKey];
+                if (String(existingStatus).toLowerCase() === 'completed') {
+                    continue; // do not modify completed downstream dates
+                }
                 const diff = addDays[labels[i]] - addDays[baseKey];
                 const d = new Date(baseDate);
                 d.setDate(d.getDate() + diff);
                 body[labels[i]] = d;
-                // also ensure statuses to scheduled for downstream if provided as status fields
-                const statusMap = { d0Date:'d0Status', d3Date:'d3Status', d7Date:'d7Status', d14Date:'d14Status', d28Date:'d28Status' };
-                const statusKey = statusMap[labels[i]];
                 if (!body[statusKey]) body[statusKey] = 'scheduled';
             }
             // Ensure base status becomes scheduled unless explicitly set completed
-            const statusMap = { d0Date:'d0Status', d3Date:'d3Status', d7Date:'d7Status', d14Date:'d14Status', d28Date:'d28Status' };
             const baseStatusKey = statusMap[baseKey];
             if (!body[baseStatusKey]) body[baseStatusKey] = 'scheduled';
         }
