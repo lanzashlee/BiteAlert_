@@ -63,10 +63,11 @@ const SuperAdminPrescriptiveAnalytics = () => {
         const heuristics = buildHeuristicInterventions(data.riskAnalysis);
         interventions = heuristics;
       }
-      // Enforce 3–4 sentence recommendations
+      // Enforce 3–4 sentence recommendations and analyses
       const enriched = interventions.map((it) => ({
         ...it,
-        intervention: ensureRecommendationLength(it.intervention, it.priority, it.barangay, it.coordinationRequired)
+        intervention: ensureRecommendationLength(it.intervention, it.priority, it.barangay, it.coordinationRequired),
+        reasoning: ensureAnalysisLength(it.reasoning, it.barangay, it.totalCases, it.recentCases, it.severeCases, it.priority, it.ageGroupFocus, it.timePattern, it.coordinationRequired)
       }));
       setAnalyticsData({ ...data, interventionRecommendations: enriched });
       setAiError('');
@@ -96,7 +97,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
           barangay,
           riskScore: d.riskScore || 0,
           priority: d.priority || 'low',
-          reasoning: Array.isArray(d.factors) ? d.factors.join('; ') : (d.factors || ''),
+          reasoning: buildReasoningParagraph(barangay, d),
           intervention: ensureRecommendationLength('', d.priority || 'low', barangay, d.topCenter),
           totalCases: d.totalCases || 0,
           recentCases: d.recentCases || 0,
@@ -130,6 +131,29 @@ const SuperAdminPrescriptiveAnalytics = () => {
       return `Schedule an additional vaccination day in ${barangay} next week and publish clear triage/queueing instructions. Run information drives through barangay social media and health workers, focusing on recent cases and bite prevention. Verify stock levels and line‑list recent patients for follow‑up. ${coordLine}`;
     }
     return `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels. Review minimum stock levels, cold‑chain logs, and appointment slots to avoid crowding. Reassess case trends in two weeks and scale up if new clusters emerge. ${coordLine}`;
+  };
+
+  // Ensure analysis text reaches 3–5 sentences by building an explanatory paragraph
+  const ensureAnalysisLength = (text = '', barangay = '', total = 0, recent = 0, severe = 0, priority = 'low', ageGroup = '', timePattern = '', coord = '') => {
+    const count = (String(text).match(/[.!?]+\s/g) || []).length + (text.endsWith('.') ? 1 : 0);
+    if (count >= 3 && text.trim()) return text;
+    return buildAnalysisParagraph(barangay, { totalCases: total, recentCases: recent, severeCases: severe, priority, ageGroup, timePattern, topCenter: coord });
+  };
+
+  const buildAnalysisParagraph = (barangay, d = {}) => {
+    const total = d.totalCases || 0;
+    const recent = d.recentCases || 0;
+    const severe = d.severeCases || 0;
+    const priority = (d.priority || 'low').toLowerCase();
+    const ageGroup = d.ageGroup || d.ageGroupFocus || '';
+    const timePattern = d.timePattern || '';
+    const center = d.topCenter ? ` Cases appear to cluster around ${d.topCenter}.` : '';
+    const trend = recent >= Math.max(2, Math.round(total * 0.25)) ? 'a recent uptick' : 'stable activity';
+    const severityLine = severe > 0 ? ` ${severe} severe exposure${severe > 1 ? 's' : ''} were recorded, elevating risk.` : ' No severe exposures were recorded in the current window.';
+    const patternLine = timePattern ? ` Incidents tend to occur during ${timePattern.toLowerCase()}.` : '';
+    const ageLine = ageGroup ? ` The most affected age group is ${ageGroup}.` : '';
+    const priorityLine = ` Overall priority is ${priority.toUpperCase()} based on volume and recency.`;
+    return `In ${barangay}, there are ${total} total reported cases with ${recent} occurring in the recent period, indicating ${trend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`;
   };
 
   // Fallback path used when server doesn't have /api/prescriptive-analytics yet (404)
