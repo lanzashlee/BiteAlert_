@@ -384,37 +384,44 @@ const SuperAdminVaccinationSchedule = () => {
     }
   };
 
-  // Open patient case history
+  // Open patient case history (re-fetches on open; uses true patientId)
   const openCaseHistory = async (patient) => {
     try {
       setShowHistoryModal(true);
       setCaseHistoryLoading(true);
       setCaseHistory([]);
 
-      // Fetch all bite cases for the patient
-      let res = await fetch(`/api/bitecases?patientId=${encodeURIComponent(patient.patientId || patient._id || '')}`);
-      let list = [];
-      if (res.ok) {
-        const json = await res.json();
-        list = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
-      }
+      const truePatientId = patient?.patientId || '';
+      if (!truePatientId) throw new Error('Missing patientId');
 
-      // Normalize minimal history fields
-      const normalized = list.map(bc => ({
-        id: bc._id,
-        registrationNumber: bc.registrationNumber,
-        dateRegistered: bc.dateRegistered || bc.createdAt,
-        center: bc.center,
-        exposureDate: bc.exposureDate,
-        status: bc.status,
-        genericName: bc.genericName,
-        brandName: bc.brandName,
-        route: bc.route || bc.currentImmunization?.route?.[0] || '',
-        scheduleDates: bc.scheduleDates || [],
-        vaccinations: buildVaccinationsForBiteCase(bc)
-      }));
+      // Fetch all bite cases for the patient via API helper
+      const res = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(truePatientId)}`);
+      const raw = res.ok ? await res.json() : [];
+      const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.data) ? raw.data : []);
 
-      // Merge any statuses from current UI vaccinations state (more up-to-date)
+      // Normalize and enrich fields; sort most recent first
+      const normalized = list
+        .map(bc => ({
+          id: bc._id,
+          registrationNumber: bc.registrationNumber,
+          dateRegistered: bc.dateRegistered || bc.createdAt,
+          createdAt: bc.createdAt,
+          center: bc.center || bc.centerName || '',
+          address: bc.address || bc.patientAddress || '',
+          exposureDate: bc.exposureDate,
+          severity: bc.severity || bc.exposureCategory || '',
+          woundLocation: bc.woundLocation || '',
+          status: bc.status,
+          genericName: bc.genericName,
+          brandName: bc.brandName,
+          route: bc.route || bc.currentImmunization?.route?.[0] || '',
+          notes: bc.notes || bc.remarks || '',
+          scheduleDates: bc.scheduleDates || [],
+          vaccinations: buildVaccinationsForBiteCase(bc)
+        }))
+        .sort((a, b) => new Date(b.dateRegistered || b.createdAt || 0) - new Date(a.dateRegistered || a.createdAt || 0));
+
+      // Merge any statuses from current UI vaccinations state (ensures latest)
       const vaccinationByBiteCase = vaccinations.filter(v => v.biteCaseId).reduce((acc, v) => {
         if (!acc[v.biteCaseId]) acc[v.biteCaseId] = {};
         acc[v.biteCaseId][v.vaccinationDay] = v.status;
@@ -430,7 +437,8 @@ const SuperAdminVaccinationSchedule = () => {
         }
       });
       setCaseHistory(normalized);
-    } catch (_) {
+    } catch (e) {
+      console.warn('Failed to load case history:', e);
       setCaseHistory([]);
     } finally {
       setCaseHistoryLoading(false);
