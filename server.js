@@ -1668,43 +1668,41 @@ app.post('/api/prescriptions', async (req, res) => {
         }
 
         const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const systemInstruction = `You are an expert public health decision-support assistant specializing in animal bite incident prevention and control in San Juan City barangays. 
+        const systemInstruction = `You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.
 
-        You will receive comprehensive data including case counts, age distributions, time patterns, severity breakdowns, and trend analysis for each barangay. Your task is to generate evidence-based, actionable interventions.
+STRICT REQUIREMENTS
+- Use: counts, recent dates window, age distributions, daily/weekly/monthly patterns, severity, and the topCenter (managed health center) for coordination.
+- Tailor: recommendations must be unique per barangay; avoid templates or generic phrases.
+- Justify: reasoning must cite the concrete patterns (e.g., "weekly spike on Fridays", "age 13–18 high", "5 severe in last 7 days").
+- Operations: specify what to do in the next 24–48 hours (locations, teams, materials), and who coordinates (name the top center when present).
 
-        ANALYSIS REQUIREMENTS:
-        - Analyze case spikes and patterns based on age groups, time periods, and severity
-        - Identify high-risk demographics and temporal patterns
-        - Assess resource allocation needs based on case volume and severity
-        - Consider coordination with health centers and emergency response
+OUTPUT JSON ONLY (no markdown, no prose outside JSON)
+[
+  {
+    "barangay": "string",
+    "priority": "high|medium|low",
+    "riskScore": number,
+    "reasoning": "Short paragraph citing actual patterns, dates, and age groups",
+    "recommendations": "Concrete steps (venues, teams, time windows, supplies)",
+    "ageGroupFocus": "dominant age bracket",
+    "timePattern": "e.g., weekend spikes / afternoon clustering",
+    "resourceNeeds": "vaccines/ERIG/staff/logistics",
+    "coordinationRequired": "which center to coordinate (topCenter)"
+  }
+]
 
-        RESPONSE FORMAT:
-        Return ONLY a JSON array with this exact structure:
-        [{
-          "barangay": "string",
-          "priority": "high|medium|low", 
-          "riskScore": number,
-          "reasoning": "Detailed analysis of case patterns, spikes, and risk factors",
-          "recommendations": "Specific, actionable steps for barangay officials",
-          "ageGroupFocus": "Primary age group requiring attention",
-          "timePattern": "Identified temporal pattern (daily/weekly/monthly spikes)",
-          "resourceNeeds": "Required resources and personnel",
-          "coordinationRequired": "Health center coordination needs"
-        }]
+PRIORITY GUIDELINES
+- HIGH: >=15 total OR >=5 severe OR clear recent spike
+- MEDIUM: 5–14 total OR 2–4 severe OR moderate patterns
+- LOW: otherwise`;
 
-        PRIORITY GUIDELINES:
-        - HIGH: >15 cases OR >5 severe cases OR significant age/time spikes
-        - MEDIUM: 5-15 cases OR 2-5 severe cases OR moderate patterns
-        - LOW: <5 cases OR minimal patterns
-
-        Focus on immediate, implementable actions that barangay officials can execute within 24-48 hours.`;
-        
-        const userInstruction = `Time Range: ${timeRange || 'month'}
-Selected Barangay: ${selectedBarangay || 'all'}
-Comprehensive Barangay Data:
+        const recentWindowDays = ( { week:7, month:30, quarter:90, year:365 }[timeRange] || 30 );
+        const userInstruction = `Time Range: ${timeRange || 'month'} (≈${recentWindowDays} days)
+Selected Barangay Filter: ${selectedBarangay || 'all'}
+Barangay Summaries (counts, recent, severe, priority, topCenter):
 ${JSON.stringify(barangaySummaries, null, 2)}
 
-Case Pattern Analysis:
+Case Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):
 ${JSON.stringify(caseAnalysis, null, 2)}`;
 
         const result = await model.generateContent(`${systemInstruction}\n\n${userInstruction}`);
