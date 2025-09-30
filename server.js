@@ -4614,21 +4614,23 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                 severity: c.severity
             })), selectedBarangay);
 
-            // Prepare barangay summaries for AI prompt
-            let barangaySummaries = Object.entries(barangayData).map(([barangay, d]) => ({
-                barangay,
-                totalCases: d.totalCases || 0,
-                recentCases: d.recentCases || 0,
-                severeCases: d.severeCases || 0,
-                riskScore: d.riskScore || 0,
-                priority: d.priority || 'low',
-                factors: d.factors || [],
-                topCenter: d.topCenter || null,
-                ageDistribution: caseAnalysis[barangay]?.ageDistribution || {},
-                timePatterns: caseAnalysis[barangay]?.timePatterns || {},
-                severityBreakdown: caseAnalysis[barangay]?.severityBreakdown || {},
-                trendAnalysis: caseAnalysis[barangay]?.trendAnalysis || {}
-            }));
+            // Prepare barangay summaries for AI prompt - only include barangays with cases
+            let barangaySummaries = Object.entries(barangayData)
+                .filter(([_, d]) => (d.totalCases || 0) > 0) // Only show barangays with cases
+                .map(([barangay, d]) => ({
+                    barangay,
+                    totalCases: d.totalCases || 0,
+                    recentCases: d.recentCases || 0,
+                    severeCases: d.severeCases || 0,
+                    riskScore: d.riskScore || 0,
+                    priority: d.priority || 'low',
+                    factors: d.factors || [],
+                    topCenter: d.topCenter || null,
+                    ageDistribution: caseAnalysis[barangay]?.ageDistribution || {},
+                    timePatterns: caseAnalysis[barangay]?.timePatterns || {},
+                    severityBreakdown: caseAnalysis[barangay]?.severityBreakdown || {},
+                    trendAnalysis: caseAnalysis[barangay]?.trendAnalysis || {}
+                }));
 
             // Filter to valid centers if available
             if (validCentersSet && validCentersSet.size > 0) {

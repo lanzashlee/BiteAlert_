@@ -92,7 +92,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
   const buildHeuristicInterventions = (riskAnalysis = {}) => {
     try {
       return Object.entries(riskAnalysis)
-        .filter(([, d]) => d && typeof d === 'object') // Show all barangays, even with 0 cases
+        .filter(([, d]) => (d?.totalCases || 0) > 0) // Only show barangays with cases
         .map(([barangay, d]) => ({
           barangay,
           riskScore: d.riskScore || 0,
@@ -231,7 +231,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
           console.log('AI service failed, using heuristic fallback');
           // Generate basic heuristic interventions
           const heuristicInterventions = Object.entries(processedData.riskAnalysis)
-            .filter(([_, data]) => data && typeof data === 'object') // Show all barangays
+            .filter(([_, data]) => data.totalCases > 0) // Only show barangays with cases
             .map(([barangay, data]) => ({
               barangay,
               riskScore: data.riskScore,
