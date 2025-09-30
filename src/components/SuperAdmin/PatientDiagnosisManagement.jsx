@@ -707,6 +707,25 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
     setSubmitting(true);
     
     try {
+      // Validation: Check if center is selected
+      if (!formData.center || formData.center.trim() === '') {
+        alert('Please select a center for this case.');
+        setSubmitting(false);
+        return;
+      }
+      
+      // Validation: Check required fields
+      const requiredFields = [
+        'firstName', 'lastName', 'sex', 'age', 'barangay', 'arrivalDate'
+      ];
+      
+      const missingFields = requiredFields.filter(field => !formData[field] || formData[field].trim() === '');
+      if (missingFields.length > 0) {
+        alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        setSubmitting(false);
+        return;
+      }
+      
       // Convert form data to match the database structure
       const submitData = {
         patientId: selectedPatient._id || selectedPatient.patientId,
@@ -931,6 +950,10 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
         updatedAt: new Date().toISOString()
       };
       
+      // Log the center information for debugging
+      console.log('Submitting case to center:', formData.center);
+      console.log('Case data includes center:', submitData.center);
+      
       const response = await apiFetch('/api/bitecases', {
         method: 'POST',
         headers: {
@@ -941,7 +964,7 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
       
       if (response.ok) {
         const responseData = await response.json();
-        alert(`Case submitted successfully! New case ID: ${responseData._id || 'N/A'}`);
+        alert(`Case submitted successfully to ${formData.center}! New case ID: ${responseData._id || 'N/A'}`);
         // Refresh case history to show the new case
         await loadCaseHistory();
         // Set flag to show new case was added
