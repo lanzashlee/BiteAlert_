@@ -1134,17 +1134,21 @@ app.get('/api/reports/staff', async (req, res) => {
 // Profile API Endpoints
 app.get('/api/profile/:userId', async (req, res) => {
     try {
+        console.log('Profile API called for userId:', req.params.userId);
         const { userId } = req.params;
         let user = await Admin.findById(userId);
         
         if (!user) {
+            console.log('User not found in Admin collection, checking SuperAdmin...');
             user = await SuperAdmin.findById(userId);
         }
 
         if (!user) {
+            console.log('User not found in any collection');
             return res.status(404).json({ message: 'User not found' });
         }
 
+        console.log('User found:', { id: user._id, email: user.email, role: user.role });
         res.json({
             success: true,
             data: {
