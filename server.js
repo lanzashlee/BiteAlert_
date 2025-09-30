@@ -93,12 +93,10 @@ async function getWorkingGeminiModel(preferredModel) {
     if (!genAI) return null;
     const candidates = [
         (preferredModel || process.env.GEMINI_MODEL || '').trim(),
-        'gemini-1.5-pro-latest',
+        'gemini-1.5-flash',
         'gemini-1.5-pro',
         'gemini-pro',
-        'gemini-1.0-pro',
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-latest'
+        'gemini-1.0-pro'
     ].filter(Boolean);
 
     for (const modelId of candidates) {
