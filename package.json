@@ -40,7 +40,7 @@
     "server": "set API_PORT=4000 && nodemon server.js",
     "dev": "concurrently \"npm run start\" \"npm run server\"",
     "build": "react-scripts build && npm run copy-redirects",
-    "copy-redirects": "node -e \"const fs=require('fs'); fs.copyFileSync('public/_redirects', 'build/_redirects')\"",
+    "copy-redirects": "node -e \"const fs=require('fs'); fs.copyFileSync('public/_redirects', 'build/_redirects'); fs.copyFileSync('public/404.html', 'build/404.html'); fs.copyFileSync('public/vercel.json', 'build/vercel.json'); fs.copyFileSync('public/netlify.toml', 'build/netlify.toml')\"",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "server:prod": "node server.js"

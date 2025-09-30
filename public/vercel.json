@@ -1,0 +1,62 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/static/(.*)",
+      "destination": "/static/$1"
+    },
+    {
+      "source": "/img/(.*)",
+      "destination": "/img/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/dashboard",
+      "destination": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "source": "/patients",
+      "destination": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "source": "/centers",
+      "destination": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "source": "/reports",
+      "destination": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "source": "/analytics",
+      "destination": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "source": "/register",
+      "destination": "/index.html",
+      "statusCode": 200
+    }
+  ]
+}

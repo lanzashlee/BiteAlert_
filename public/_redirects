@@ -11,5 +11,15 @@
 /manifest.json  /manifest.json  200
 /asset-manifest.json  /asset-manifest.json  200
 
+# Specific routes that should redirect to index.html
+/dashboard  /index.html  200
+/patients  /index.html  200
+/centers  /index.html  200
+/reports  /index.html  200
+/analytics  /index.html  200
+/admin  /index.html  200
+/login  /index.html  200
+/register  /index.html  200
+
 # All other routes should serve index.html for React Router
 /*    /index.html   200
