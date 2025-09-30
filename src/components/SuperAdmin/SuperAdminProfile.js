@@ -275,13 +275,50 @@ const SuperAdminProfile = () => {
     try {
       const stored = resolveUserFromStorage();
       const id = getUserId(stored);
-      const response = await fetch(`/api/profile/${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify(formData)
-      });
+      
+      // Try different update endpoints
+      const updateEndpoints = [
+        `/api/profile/${encodeURIComponent(id)}`,
+        `/api/admin-accounts/${encodeURIComponent(id)}`,
+        `/api/superadmin/${encodeURIComponent(id)}`
+      ];
+      
+      let response;
+      let lastError;
+      
+      for (const endpoint of updateEndpoints) {
+        try {
+          console.log(`Trying update endpoint: ${endpoint}`);
+          response = await apiFetch(endpoint, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          
+          console.log('Update API response status:', response.status);
+          
+          if (response.status === 404) {
+            console.log(`Endpoint ${endpoint} returned 404, trying next...`);
+            continue;
+          }
+          
+          if (response.ok) {
+            console.log(`Success with update endpoint: ${endpoint}`);
+            break;
+          }
+        } catch (error) {
+          console.error(`Failed with update endpoint ${endpoint}:`, error);
+          lastError = error;
+          continue;
+        }
+      }
+      
+      if (!response || response.status === 404) {
+        throw lastError || new Error('All update endpoints failed or returned 404');
+      }
 
       const data = await response.json();
+      console.log('Update API payload:', data);
       
       if (data.success || data.updated || response.ok) {
         setSuccess('Profile updated successfully!');
@@ -307,13 +344,55 @@ const SuperAdminProfile = () => {
     try {
       const stored = resolveUserFromStorage();
       const id = getUserId(stored);
-      const response = await fetch(`/api/profile/${encodeURIComponent(id)}/change-password`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify(passwordData)
-      });
+      
+      // Try different password change endpoints
+      const passwordEndpoints = [
+        `/api/profile/${encodeURIComponent(id)}/change-password`,
+        `/api/admin-accounts/${encodeURIComponent(id)}/change-password`,
+        `/api/superadmin/${encodeURIComponent(id)}/change-password`,
+        `/api/change-admin-password`
+      ];
+      
+      let response;
+      let lastError;
+      
+      for (const endpoint of passwordEndpoints) {
+        try {
+          console.log(`Trying password change endpoint: ${endpoint}`);
+          response = await apiFetch(endpoint, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...passwordData,
+              adminId: id,
+              userId: id
+            })
+          });
+          
+          console.log('Password change API response status:', response.status);
+          
+          if (response.status === 404) {
+            console.log(`Endpoint ${endpoint} returned 404, trying next...`);
+            continue;
+          }
+          
+          if (response.ok) {
+            console.log(`Success with password change endpoint: ${endpoint}`);
+            break;
+          }
+        } catch (error) {
+          console.error(`Failed with password change endpoint ${endpoint}:`, error);
+          lastError = error;
+          continue;
+        }
+      }
+      
+      if (!response || response.status === 404) {
+        throw lastError || new Error('All password change endpoints failed or returned 404');
+      }
 
       const data = await response.json();
+      console.log('Password change API payload:', data);
       
       if (data.success || response.ok) {
         setPasswordSuccess('Password changed successfully!');
@@ -327,6 +406,7 @@ const SuperAdminProfile = () => {
         setPasswordErrors({ submit: data.message || 'Failed to change password' });
       }
     } catch (error) {
+      console.error('Password change error:', error);
       setPasswordErrors({ submit: 'Network error. Please try again.' });
     }
   };
