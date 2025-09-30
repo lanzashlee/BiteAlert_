@@ -130,25 +130,59 @@ const SuperAdminProfile = () => {
       }
 
       console.log('Fetching profile for user ID:', id);
-      const response = await apiFetch(`/api/profile/${encodeURIComponent(id)}`);
+      console.log('API base URL from config:', process.env.REACT_APP_API_URL || 'https://bitealert-backend-doga.onrender.com');
+      
+      // Try different profile endpoints
+      const profileEndpoints = [
+        `/api/profile/${encodeURIComponent(id)}`,
+        `/api/admin-accounts/${encodeURIComponent(id)}`,
+        `/api/superadmin/${encodeURIComponent(id)}`
+      ];
+      
+      let response;
+      let lastError;
+      
+      for (const endpoint of profileEndpoints) {
+        try {
+          console.log(`Trying profile endpoint: ${endpoint}`);
+          response = await apiFetch(endpoint);
+          
+          console.log('Profile API response status:', response.status);
+          console.log('Profile API response headers:', Object.fromEntries(response.headers.entries()));
 
-      console.log('Profile API response status:', response.status);
-      console.log('Profile API response headers:', Object.fromEntries(response.headers.entries()));
+          if (response.status === 401) {
+            localStorage.removeItem('userData');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return;
+          }
 
-      if (response.status === 401) {
-        localStorage.removeItem('userData');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
+          if (response.status === 404) {
+            console.log(`Endpoint ${endpoint} returned 404, trying next...`);
+            continue;
+          }
+
+          // Check if response is JSON
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const textResponse = await response.text();
+            console.error('Non-JSON response received:', textResponse.substring(0, 200));
+            throw new Error(`Expected JSON but received ${contentType}. Response: ${textResponse.substring(0, 100)}...`);
+          }
+
+          // If we get here, the response is valid
+          console.log(`Success with endpoint: ${endpoint}`);
+          break;
+        } catch (error) {
+          console.error(`Failed with endpoint ${endpoint}:`, error);
+          lastError = error;
+          continue;
+        }
       }
-
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('Non-JSON response received:', textResponse.substring(0, 200));
-        throw new Error(`Expected JSON but received ${contentType}. Response: ${textResponse.substring(0, 100)}...`);
+      
+      if (!response || response.status === 404) {
+        throw lastError || new Error('All profile endpoints failed or returned 404');
       }
 
       const payload = await response.json();
