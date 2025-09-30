@@ -13,37 +13,49 @@ const SuperAdminCenterHours = () => {
   const [editValues, setEditValues] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch base center list
-        const res = await apiFetch('/api/centers');
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
-        setCenters(list);
+  const fetchData = async () => {
+    try {
+      console.log('Fetching centers data...');
+      // Fetch base center list
+      const res = await apiFetch('/api/centers');
+      const data = await res.json();
+      console.log('Centers API response:', data);
+      const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+      setCenters(list);
+      console.log('Centers loaded:', list.length);
 
-        // Fetch persisted hours from dedicated collection
-        try {
-          const hrsRes = await apiFetch('/api/center_hours?existingOnly=true');
-          if (hrsRes.ok) {
-            const hrsJson = await hrsRes.json();
-            const arr = Array.isArray(hrsJson) ? hrsJson : (hrsJson.data || hrsJson.centers || hrsJson.centerHours || []);
-            const map = {};
-            (arr || []).forEach((it) => {
-              if (!it) return;
-              const key = it.centerId || it._id || it.id;
-              if (key) {
-                map[String(key)] = { hours: it.hours || {}, contactNumber: it.contactNumber || '' };
-              }
-            });
-            setHoursByCenterId(map);
-          }
-        } catch (_) {}
-      } catch (e) {
-      } finally {
-        setLoading(false);
+      // Fetch persisted hours from dedicated collection
+      try {
+        console.log('Fetching center hours data...');
+        const hrsRes = await apiFetch('/api/center_hours?existingOnly=true');
+        if (hrsRes.ok) {
+          const hrsJson = await hrsRes.json();
+          console.log('Center hours API response:', hrsJson);
+          const arr = Array.isArray(hrsJson) ? hrsJson : (hrsJson.data || hrsJson.centers || hrsJson.centerHours || []);
+          const map = {};
+          (arr || []).forEach((it) => {
+            if (!it) return;
+            const key = it.centerId || it._id || it.id;
+            if (key) {
+              map[String(key)] = { hours: it.hours || {}, contactNumber: it.contactNumber || '' };
+            }
+          });
+          setHoursByCenterId(map);
+          console.log('Center hours loaded:', Object.keys(map).length);
+        } else {
+          console.log('Center hours API not available, using default data');
+        }
+      } catch (err) {
+        console.log('Center hours fetch failed:', err);
       }
-    };
+    } catch (e) {
+      console.error('Error fetching data:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -114,7 +126,7 @@ const SuperAdminCenterHours = () => {
       };
 
       // Upsert into center_hours collection (server supports this route)
-      const res = await fetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
+      const res = await apiFetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(doc),
@@ -206,6 +218,16 @@ const SuperAdminCenterHours = () => {
       <main className="main-content">
         <div className="content-header">
           <h2>Center Service Hours</h2>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => {
+              setLoading(true);
+              fetchData();
+            }}
+            disabled={loading}
+          >
+            <i className="fa-solid fa-refresh"></i> Refresh Data
+          </button>
         </div>
         {loading ? (
           <div className="loading-state" aria-label="Loading">
@@ -234,7 +256,7 @@ const SuperAdminCenterHours = () => {
                       {days.map((d) => (
                         <td key={`${c._id}-${d.toLowerCase()}`}>{getHoursForDay(c, d)}</td>
                       ))}
-                      <td>{c.contactNumber || '—'}</td>
+                      <td>{(hoursByCenterId[String(c._id)]?.contactNumber || c.contactNumber || '—')}</td>
                       <td style={{ textAlign:'right' }}>
                         <button className="btn btn-primary" onClick={() => beginEdit(c)}>Edit</button>
                       </td>
