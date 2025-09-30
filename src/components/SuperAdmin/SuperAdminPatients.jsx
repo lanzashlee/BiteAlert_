@@ -995,7 +995,7 @@ const SuperAdminPatients = () => {
     setVaccinationError('');
     
     try {
-      // Try to get vaccination data from vaccination schedule
+      // Fetch vaccination data from the vaccinationdates collection
       const patientId = targetPatient._id || targetPatient.patientId || targetPatient.patientID || targetPatient.id;
       const response = await apiFetch(`${apiConfig.endpoints.vaccinations}?patientId=${patientId}`);
       const data = await response.json();
@@ -1009,15 +1009,19 @@ const SuperAdminPatients = () => {
         vaccinations = data.vaccinations;
       }
       
-      // Transform vaccination data to show history
+      // Transform vaccination data to match the table format
       const vaccinationHistory = vaccinations.map(vaccination => ({
-        vaccinationDay: vaccination.vaccinationDay || vaccination.day || 'Unknown Day',
-        scheduledDate: vaccination.scheduledDate || vaccination.date || vaccination.createdAt,
-        completedDate: vaccination.completedDate || (vaccination.status === 'completed' ? vaccination.updatedAt : null),
+        date: vaccination.completedDate ? 
+          new Date(vaccination.completedDate).toLocaleDateString() : 
+          vaccination.scheduledDate ? 
+            new Date(vaccination.scheduledDate).toLocaleDateString() : 
+            'Not scheduled',
+        center: vaccination.center || vaccination.centerName || 'Unknown Center',
+        patientName: `${targetPatient.firstName || ''} ${targetPatient.lastName || ''}`.trim() || targetPatient.name || 'Unknown Patient',
+        vaccineUsed: vaccination.vaccineType || vaccination.vaccine || 'Anti-Rabies',
         status: vaccination.status || 'scheduled',
-        vaccineType: vaccination.vaccineType || vaccination.vaccine || 'Anti-Rabies',
-        notes: vaccination.notes || vaccination.remarks || '',
-        center: vaccination.center || vaccination.centerName || 'Unknown Center'
+        vaccinationDay: vaccination.vaccinationDay || vaccination.day || 'Unknown Day',
+        notes: vaccination.notes || vaccination.remarks || ''
       }));
       
       setVaccinationHistory(vaccinationHistory);
@@ -2247,25 +2251,14 @@ const SuperAdminPatients = () => {
                         }}>
                           <thead>
                             <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>Date</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>Center</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>Name</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>Vaccine Type/Status</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>DATE</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>CENTER</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>PATIENT NAME</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>VACCINE USED</th>
                             </tr>
                           </thead>
                           <tbody>
                             {vaccinationHistory.map((vaccination, index) => {
-                              const displayDate = vaccination.completedDate ? 
-                                new Date(vaccination.completedDate).toLocaleDateString() : 
-                                vaccination.scheduledDate ? 
-                                  new Date(vaccination.scheduledDate).toLocaleDateString() : 
-                                  'Not scheduled';
-                              
-                              const statusText = vaccination.status === 'completed' ? 'COMPLETED' : 
-                                               vaccination.status === 'missed' ? 'MISSED' : 'SCHEDULED';
-                              
-                              const vaccineDisplay = `${vaccination.vaccineType || 'Anti-Rabies'} (${statusText})`;
-                              
                               return (
                                 <tr key={index} style={{ 
                                   borderBottom: '1px solid #dee2e6',
@@ -2273,13 +2266,13 @@ const SuperAdminPatients = () => {
                                                  vaccination.status === 'missed' ? '#fff8f8' : '#fafafa'
                                 }}>
                                   <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
-                                    {displayDate}
+                                    {vaccination.date}
                                   </td>
                                   <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
-                                    {vaccination.center || 'Unknown Center'}
+                                    {vaccination.center}
                                   </td>
                                   <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
-                                    {selectedPatient?.firstName} {selectedPatient?.lastName}
+                                    {vaccination.patientName}
                                   </td>
                                   <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
                                     <span style={{
@@ -2287,7 +2280,7 @@ const SuperAdminPatients = () => {
                                              vaccination.status === 'missed' ? '#dc2626' : '#6b7280',
                                       fontWeight: '500'
                                     }}>
-                                      {vaccineDisplay}
+                                      {vaccination.vaccineUsed}
                                     </span>
                                   </td>
                                 </tr>
