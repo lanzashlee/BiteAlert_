@@ -492,7 +492,7 @@ const SuperAdminPatients = () => {
           apiUrl += `?center=${encodeURIComponent(userCenter)}`;
         }
         
-        const res = await fetch(apiUrl, { signal: controller.signal });
+        const res = await apiFetch(apiUrl, { signal: controller.signal });
         const data = await res.json();
         if (res.ok) {
           const biteCases = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
