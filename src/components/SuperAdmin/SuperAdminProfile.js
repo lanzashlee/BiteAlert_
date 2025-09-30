@@ -111,12 +111,17 @@ const SuperAdminProfile = () => {
   const loadUserData = async () => {
     try {
       const user = resolveUserFromStorage();
+      console.log('Resolved user from storage:', user);
+      
       if (!user) {
+        console.log('No user found in storage, redirecting to login');
         window.location.href = '/login';
         return;
       }
 
       const id = getUserId(user);
+      console.log('Extracted user ID:', id);
+      
       if (!id) {
         console.warn('No user id found in stored user object:', user);
         setUserData(null);
@@ -124,9 +129,10 @@ const SuperAdminProfile = () => {
         return;
       }
 
-      const response = await fetch(`/api/profile/${encodeURIComponent(id)}`, {
-        headers: { 'Accept': 'application/json', ...authHeaders() }
-      });
+      console.log('Fetching profile for user ID:', id);
+      const response = await apiFetch(`/api/profile/${encodeURIComponent(id)}`);
+
+      console.log('Profile API response status:', response.status);
 
       if (response.status === 401) {
         localStorage.removeItem('userData');
@@ -137,12 +143,16 @@ const SuperAdminProfile = () => {
       }
 
       const payload = await response.json();
+      console.log('Profile API payload:', payload);
+      
       const profile = payload && payload.success ? payload.data : payload;
 
       if (profile && (profile.email || profile.firstName || profile.lastName)) {
+        console.log('Profile data found:', profile);
         setUserData(profile);
         setFormData(profile);
       } else {
+        console.log('No valid profile data found in response');
         setUserData(null);
       }
     } catch (error) {

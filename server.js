@@ -1146,15 +1146,18 @@ app.get('/api/profile/:userId', async (req, res) => {
         }
 
         res.json({
-            firstName: user.firstName,
-            middleName: user.middleName,
-            lastName: user.lastName,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-            birthdate: user.birthdate,
-            role: user.role,
-            adminID: user.adminID,
-            superAdminID: user.superAdminID
+            success: true,
+            data: {
+                firstName: user.firstName,
+                middleName: user.middleName,
+                lastName: user.lastName,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                birthdate: user.birthdate,
+                role: user.role,
+                adminID: user.adminID,
+                superAdminID: user.superAdminID
+            }
         });
     } catch (error) {
         console.error('Error fetching profile:', error);
