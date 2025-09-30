@@ -92,7 +92,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
   const buildHeuristicInterventions = (riskAnalysis = {}) => {
     try {
       return Object.entries(riskAnalysis)
-        .filter(([, d]) => (d?.totalCases || 0) > 0)
+        .filter(([, d]) => d && typeof d === 'object') // Show all barangays, even with 0 cases
         .map(([barangay, d]) => ({
           barangay,
           riskScore: d.riskScore || 0,
@@ -130,7 +130,8 @@ const SuperAdminPrescriptiveAnalytics = () => {
     if (priority === 'medium') {
       return `Schedule an additional vaccination day in ${barangay} next week and publish clear triage/queueing instructions. Run information drives through barangay social media and health workers, focusing on recent cases and bite prevention. Verify stock levels and line‑list recent patients for follow‑up. ${coordLine}`;
     }
-    return `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels. Review minimum stock levels, cold‑chain logs, and appointment slots to avoid crowding. Reassess case trends in two weeks and scale up if new clusters emerge. ${coordLine}`;
+    // For low priority (including 0 cases), provide preventive measures
+    return `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels. Continue preventive education about animal bite safety and rabies awareness. Monitor for any emerging cases and maintain baseline vaccination capacity. ${coordLine}`;
   };
 
   // Ensure analysis text reaches 3–5 sentences by building an explanatory paragraph
@@ -148,6 +149,11 @@ const SuperAdminPrescriptiveAnalytics = () => {
     const ageGroup = d.ageGroup || d.ageGroupFocus || '';
     const timePattern = d.timePattern || '';
     const center = d.topCenter ? ` Cases appear to cluster around ${d.topCenter}.` : '';
+    
+    if (total === 0) {
+      return `In ${barangay}, no cases have been reported in the current period, indicating a low-risk area. This suggests effective prevention measures or limited animal exposure. Continue routine surveillance and maintain baseline vaccination capacity. Overall priority is ${priority.toUpperCase()} based on the absence of reported incidents.`;
+    }
+    
     const trend = recent >= Math.max(2, Math.round(total * 0.25)) ? 'a recent uptick' : 'stable activity';
     const severityLine = severe > 0 ? ` ${severe} severe exposure${severe > 1 ? 's' : ''} were recorded, elevating risk.` : ' No severe exposures were recorded in the current window.';
     const patternLine = timePattern ? ` Incidents tend to occur during ${timePattern.toLowerCase()}.` : '';
@@ -225,7 +231,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
           console.log('AI service failed, using heuristic fallback');
           // Generate basic heuristic interventions
           const heuristicInterventions = Object.entries(processedData.riskAnalysis)
-            .filter(([_, data]) => data.totalCases > 0)
+            .filter(([_, data]) => data && typeof data === 'object') // Show all barangays
             .map(([barangay, data]) => ({
               barangay,
               riskScore: data.riskScore,
