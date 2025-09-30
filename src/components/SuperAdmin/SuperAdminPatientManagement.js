@@ -149,47 +149,15 @@ const SuperAdminPatientManagement = () => {
 
   // Handle new password input change
 
-  const handleNewPasswordChange = async (value) => {
-
+  const handleNewPasswordChange = (value) => {
     setNewPassword(value);
-
-    
-
-    // Show admin info and fetch current password when user starts typing
-
-    if (value.length > 0 && !showAdminInfo) {
-
-      setShowAdminInfo(true);
-
-      
-
-      try {
-
-        // Fetch current password for display
-        const response = await apiFetch(`/api/get-patient-password/${selectedPatient._id}`);
-
-        if (response.ok) {
-
-          const data = await response.json();
-
-          setCurrentPassword(data.currentPassword || '••••••••');
-
-        } else {
-
-          setCurrentPassword('••••••••');
-
-        }
-
-      } catch (error) {
-
-        console.error('Error fetching current password:', error);
-
-        setCurrentPassword('••••••••');
-
-      }
-
+    // Keep compact like Admin modal: do not expand with extra info
+    setShowAdminInfo(false);
+    setPasswordError('');
+    if (value.length > 0) {
+      const validation = validatePassword(value);
+      if (validation) setPasswordError(validation);
     }
-
   };
 
 

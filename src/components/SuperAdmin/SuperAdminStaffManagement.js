@@ -656,53 +656,10 @@ const SuperAdminStaffManagement = () => {
         onConfirm={confirmPasswordChange}
         isLoading={isProcessing}
         loadingText="Changing Password..."
+        size="sm"
         customContent={
           <div className="password-change-form">
-            {/* Staff Information Section - Only show after user starts typing */}
-            {showAdminInfo && (
-              <div className="admin-info-section">
-                <h4>Staff Information</h4>
-                <div className="admin-info-grid">
-                  <div className="info-item">
-                    <span className="info-label">Staff ID:</span>
-                    <span className="info-value">{selectedStaff?.staffId || 'N/A'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Full Name:</span>
-                    <span className="info-value">{selectedStaff?.fullName || 'N/A'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Role:</span>
-                    <span className="info-value">{selectedStaff?.role || 'N/A'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Phone:</span>
-                    <span className="info-value">{selectedStaff?.phone || 'N/A'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Status:</span>
-                    <span className={`info-value status-${selectedStaff?.isApproved ? 'active' : 'inactive'}`}>
-                      {selectedStaff?.isApproved ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Current Password Display - Only show after user starts typing */}
-            {showAdminInfo && (
-              <div className="form-group">
-                <label htmlFor="currentPassword">Current Password</label>
-                <input
-                  type="text"
-                  id="currentPassword"
-                  value={currentPassword}
-                  readOnly
-                  className="password-input current-password-display"
-                  placeholder="Loading current password..."
-                />
-              </div>
-            )}
+            {/* Compact modal like Admin: omit info/current password to keep small */}
 
             {/* New Password Fields */}
             <div className="form-group">
