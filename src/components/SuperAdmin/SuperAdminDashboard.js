@@ -568,13 +568,43 @@ const SuperAdminDashboard = () => {
       const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
-        const { Mild, Moderate, Severe } = result.data;
+        const { Mild = 0, Moderate = 0, Severe = 0 } = result.data || {};
         const total = Mild + Moderate + Severe;
-        if (total === 0) {
-          setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
-        } else {
+        if (total > 0) {
           setSeverityChartData(prev => ({ labels: ['Mild', 'Moderate', 'Severe'], datasets: [{ ...prev.datasets[0], data: [Mild, Moderate, Severe] }] }));
+          return;
         }
+      }
+
+      // Fallback: compute severity distribution directly from bite cases
+      try {
+        let biteUrl = `${apiConfig.endpoints.bitecases}`;
+        if (userCenter && userCenter !== 'all') {
+          biteUrl += `?center=${encodeURIComponent(userCenter)}`;
+        }
+        const biteRes = await apiFetch(biteUrl);
+        const biteJson = await biteRes.json();
+        let cases = [];
+        if (Array.isArray(biteJson)) cases = biteJson;
+        else if (biteJson?.success && Array.isArray(biteJson.data)) cases = biteJson.data;
+        else if (Array.isArray(biteJson?.data)) cases = biteJson.data;
+
+        let mild = 0, moderate = 0, severe = 0;
+        (cases || []).forEach(c => {
+          const s = String(c.severity || c.caseSeverity || '').toLowerCase();
+          if (s === 'low' || s === 'mild') mild += 1;
+          else if (s === 'medium' || s === 'moderate') moderate += 1;
+          else if (s === 'high' || s === 'severe') severe += 1;
+        });
+
+        const total = mild + moderate + severe;
+        if (total > 0) {
+          setSeverityChartData(prev => ({ labels: ['Mild', 'Moderate', 'Severe'], datasets: [{ ...prev.datasets[0], data: [mild, moderate, severe] }] }));
+        } else {
+          setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
+        }
+      } catch (e) {
+        setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
       }
     } catch (e) { console.error(e); }
   };
