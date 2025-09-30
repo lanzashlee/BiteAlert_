@@ -4382,25 +4382,35 @@ app.post('/api/ai-test', async (req, res) => {
 app.get('/api/vaccinations', async (req, res) => {
     try {
         const { patientId } = req.query;
+        console.log('Vaccinations request for patientId:', patientId);
+        
         if (!patientId) {
             return res.status(400).json({ error: 'Patient ID is required' });
         }
 
-        // Define VaccinationDate model inline
-        const VaccinationDate = mongoose.model('VaccinationDate', new mongoose.Schema({
-            patientId: { type: String, required: true },
-            vaccinationDay: { type: String, required: true },
-            scheduledDate: { type: Date, required: true },
-            completedDate: { type: Date },
-            status: { type: String, enum: ['scheduled', 'completed', 'missed'], default: 'scheduled' },
-            vaccineType: { type: String, default: 'Anti-Rabies' },
-            notes: { type: String },
-            center: { type: String },
-            createdAt: { type: Date, default: Date.now },
-            updatedAt: { type: Date, default: Date.now }
-        }));
+        // Try to get existing model first, or create if it doesn't exist
+        let VaccinationDate;
+        try {
+            VaccinationDate = mongoose.model('VaccinationDate');
+        } catch (error) {
+            // Model doesn't exist, create it
+            console.log('Creating VaccinationDate model...');
+            VaccinationDate = mongoose.model('VaccinationDate', new mongoose.Schema({
+                patientId: { type: String, required: true },
+                vaccinationDay: { type: String, required: true },
+                scheduledDate: { type: Date, required: true },
+                completedDate: { type: Date },
+                status: { type: String, enum: ['scheduled', 'completed', 'missed'], default: 'scheduled' },
+                vaccineType: { type: String, default: 'Anti-Rabies' },
+                notes: { type: String },
+                center: { type: String },
+                createdAt: { type: Date, default: Date.now },
+                updatedAt: { type: Date, default: Date.now }
+            }, { collection: 'vaccinationdates' }));
+        }
 
         const vaccinations = await VaccinationDate.find({ patientId }).sort({ scheduledDate: 1 });
+        console.log('Found vaccinations:', vaccinations.length);
         res.json(vaccinations);
     } catch (error) {
         console.error('Error fetching vaccinations:', error);
