@@ -1025,7 +1025,25 @@ const SuperAdminPatients = () => {
           biteCases = data.data;
         }
       }
-      
+      // Client-side match to ensure we only use the current patient's cases
+      try {
+        const pid = patientId && String(patientId).trim();
+        const regNo = registrationNumber && String(registrationNumber).trim();
+        const pnameLower = patientName.toLowerCase();
+        biteCases = (biteCases || []).filter(c => {
+          const cid = String(c.patientId || c.patientID || '').trim();
+          const cname = String(c.patientName || '').trim().toLowerCase();
+          const creg = String(c.registrationNumber || '').trim();
+          if (pid && cid && pid === cid) return true;
+          if (regNo && creg && regNo === creg) return true;
+          if (pnameLower && cname) {
+            if (cname === pnameLower) return true;
+            return cname.includes(pnameLower) || pnameLower.includes(cname);
+          }
+          return false;
+        });
+      } catch (_) {}
+
       // Extract vaccination data from bite cases (completed, missed, scheduled)
       const vaccinationHistory = [];
       const dayLabels = ['Day 0', 'Day 3', 'Day 7', 'Day 14', 'Day 28'];
