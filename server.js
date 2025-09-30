@@ -4425,13 +4425,27 @@ app.get('/api/get-admin-password/:id', async (req, res) => {
 app.post('/api/change-admin-password', async (req, res) => {
     try {
         const { adminId, newPassword } = req.body;
+        console.log('Password change request for adminId:', adminId);
+        
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        const admin = await Admin.findByIdAndUpdate(adminId, { password: hashedPassword });
+        
+        // Try to find admin by _id first, then by adminID
+        let admin = await Admin.findByIdAndUpdate(adminId, { password: hashedPassword });
+        console.log('Found admin by _id:', !!admin);
+        
         if (!admin) {
+            // Try finding by adminID field
+            admin = await Admin.findOneAndUpdate({ adminID: adminId }, { password: hashedPassword });
+            console.log('Found admin by adminID:', !!admin);
+        }
+        
+        if (!admin) {
+            console.log('Admin not found with ID:', adminId);
             return res.status(404).json({ error: 'Admin not found' });
         }
         res.json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
+        console.error('Password change error:', error);
         res.status(500).json({ error: error.message });
     }
 });

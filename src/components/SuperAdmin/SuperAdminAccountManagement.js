@@ -336,7 +336,7 @@ const SuperAdminAccountManagement = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          accountId: selectedAccount.id, 
+          adminId: selectedAccount.id, 
           newPassword: newPassword 
         })
       });
