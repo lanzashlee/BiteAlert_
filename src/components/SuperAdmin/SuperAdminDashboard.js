@@ -437,22 +437,61 @@ const SuperAdminDashboard = () => {
       const response = await apiFetch(summaryUrl);
       const result = await response.json();
       if (result.success && result.data) {
-        const { totalPatients, healthCenters, activeCases, adminCount } = result.data;
-        
-        // For center-based admins, adjust the counts to be center-specific
-        let centerSpecificHealthCenters = healthCenters;
-        
-        if (userCenter && userCenter !== 'all') {
-          // Center-based admins only see their own center
-          centerSpecificHealthCenters = 1;
+        const { totalPatients, adminCount } = result.data;
+
+        // Health centers: fetch directly from Center Data Management
+        let centersCount = 0;
+        try {
+          const centersRes = await apiFetch(apiConfig.endpoints.centers);
+          const centersJson = await centersRes.json();
+          const centers = Array.isArray(centersJson)
+            ? centersJson
+            : (centersJson?.data || centersJson?.centers || []);
+          const centerNames = Array.from(new Set((centers || [])
+            .filter(c => !c.isArchived)
+            .map(c => String(c.centerName || c.name || '').trim())
+            .filter(Boolean)));
+          centersCount = centerNames.length;
+        } catch (e) {
+          centersCount = 0;
         }
-        
+
+        // Active cases: count from Vaccine Schedule (bite cases with assigned schedule)
+        let activeCasesCount = 0;
+        try {
+          let vaccinationUrl = apiConfig.endpoints.bitecases;
+          if (userCenter && userCenter !== 'all') {
+            vaccinationUrl += `?center=${encodeURIComponent(userCenter)}`;
+          }
+          const vaccinationRes = await apiFetch(vaccinationUrl);
+          const vaccinationData = await vaccinationRes.json();
+          let biteCases = [];
+          if (Array.isArray(vaccinationData)) biteCases = vaccinationData;
+          else if (vaccinationData?.success && Array.isArray(vaccinationData.data)) biteCases = vaccinationData.data;
+          else if (Array.isArray(vaccinationData?.data)) biteCases = vaccinationData.data;
+
+          const hasAssignedSchedule = (bc) => {
+            const perDay = [bc.d0Date, bc.d3Date, bc.d7Date, bc.d14Date, bc.d28Date].some(Boolean);
+            const arraySched = Array.isArray(bc.scheduleDates) && bc.scheduleDates.some(Boolean);
+            return perDay || arraySched;
+          };
+
+          activeCasesCount = (biteCases || []).filter(hasAssignedSchedule).length;
+        } catch (e) {
+          activeCasesCount = 0;
+        }
+
+        // For center-based admins, only their center counts as 1
+        if (userCenter && userCenter !== 'all') {
+          centersCount = 1;
+        }
+
         setSummary({
           totalPatients,
           vaccineStocks: totalStock,
-          healthCenters: centerSpecificHealthCenters,
-          staffCount: staffCount, // Use the center-specific staff count we calculated above
-          activeCases: typeof activeCases === 'number' ? activeCases : 0,
+          healthCenters: centersCount,
+          staffCount: staffCount,
+          activeCases: activeCasesCount,
           adminCount: typeof adminCount === 'number' ? adminCount : 0
         });
       }
