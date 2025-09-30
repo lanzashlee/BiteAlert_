@@ -26,7 +26,8 @@ const allowedOrigins = [
     'https://bitealert-frontend-ppj8.onrender.com',
     'https://bitealert-frontend-cs1q.onrender.com',
     'https://bitealert-frontend-xm3h.onrender.com',
-    'https://bitealert-frontend-p1od.onrender.com'
+    'https://bitealert-frontend-p1od.onrender.com',
+    'https://bite-alert-clgv.vercel.app'
 ].filter(Boolean);
 
 const corsOptions = {
