@@ -476,7 +476,8 @@ const SuperAdminDashboard = () => {
             return perDay || arraySched;
           };
 
-          activeCasesCount = (biteCases || []).filter(hasAssignedSchedule).length;
+          // Treat as active when there is a schedule AND status is not completed
+          activeCasesCount = (biteCases || []).filter(bc => hasAssignedSchedule(bc) && String(bc.status || '').toLowerCase() !== 'completed').length;
         } catch (e) {
           activeCasesCount = 0;
         }
@@ -595,6 +596,14 @@ const SuperAdminDashboard = () => {
           if (s === 'low' || s === 'mild') mild += 1;
           else if (s === 'medium' || s === 'moderate') moderate += 1;
           else if (s === 'high' || s === 'severe') severe += 1;
+          else {
+            // Infer from management.category (Category 1/2/3) when explicit severity is absent
+            const cats = (c.management && c.management.category) || c.category || [];
+            const catStr = Array.isArray(cats) ? cats.join(',').toLowerCase() : String(cats || '').toLowerCase();
+            if (catStr.includes('category 1')) mild += 1;
+            else if (catStr.includes('category 2')) moderate += 1;
+            else if (catStr.includes('category 3')) severe += 1;
+          }
         });
 
         const total = mild + moderate + severe;
