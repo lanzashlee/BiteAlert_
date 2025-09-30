@@ -1026,42 +1026,48 @@ const SuperAdminPatients = () => {
         }
       }
       
-      // Extract vaccination data from bite cases
+      // Extract vaccination data from bite cases (completed, missed, scheduled)
       const vaccinationHistory = [];
+      const dayLabels = ['Day 0', 'Day 3', 'Day 7', 'Day 14', 'Day 28'];
       biteCases.forEach(biteCase => {
-        const vaccinationDates = [
-          { day: 'Day 0', date: biteCase.day0Date || biteCase.day0_date || biteCase.d0Date, vaccine: 'Anti-Rabies' },
-          { day: 'Day 3', date: biteCase.day3Date || biteCase.day3_date || biteCase.d3Date, vaccine: 'Anti-Rabies' },
-          { day: 'Day 7', date: biteCase.day7Date || biteCase.day7_date || biteCase.d7Date, vaccine: 'Anti-Rabies' },
-          { day: 'Day 14', date: biteCase.day14Date || biteCase.day14_date || biteCase.d14Date, vaccine: 'Anti-Rabies' },
-          { day: 'Day 28', date: biteCase.day28Date || biteCase.day28_date || biteCase.d28Date, vaccine: 'Anti-Rabies' }
+        const scheduleArr = Array.isArray(biteCase.scheduleDates) ? biteCase.scheduleDates : [];
+        const dayEntries = [
+          { key: 'd0',   date: biteCase.day0Date || biteCase.day0_date || biteCase.d0Date,   status: biteCase.d0Status },
+          { key: 'd3',   date: biteCase.day3Date || biteCase.day3_date || biteCase.d3Date,   status: biteCase.d3Status },
+          { key: 'd7',   date: biteCase.day7Date || biteCase.day7_date || biteCase.d7Date,   status: biteCase.d7Status },
+          { key: 'd14',  date: biteCase.day14Date || biteCase.day14_date || biteCase.d14Date, status: biteCase.d14Status },
+          { key: 'd28',  date: biteCase.day28Date || biteCase.day28_date || biteCase.d28Date, status: biteCase.d28Status }
         ];
-        
-        vaccinationDates.forEach(vaccination => {
-          if (vaccination.date) {
-            try {
-              let dateValue = vaccination.date;
-              
-              // Handle different date formats
-              if (dateValue && typeof dateValue === 'object' && dateValue.$date) {
-                dateValue = dateValue.$date;
-              }
-              
-              if (dateValue) {
-                const vaccinationDate = new Date(dateValue);
-                vaccinationHistory.push({
-                  date: vaccinationDate.toLocaleDateString(),
-                  center: biteCase.center || biteCase.healthCenter || biteCase.centerName || 'Unknown Center',
-                  patientName: patientName || biteCase.patientName || 'Unknown Patient',
-                  vaccineUsed: vaccination.vaccine,
-                  status: 'completed', // If there's a date, it's completed
-                  vaccinationDay: vaccination.day,
-                  notes: biteCase.notes || ''
-                });
-              }
-            } catch (error) {
-              console.warn(`Error parsing vaccination date ${vaccination.day}:`, error);
-            }
+
+        dayEntries.forEach((entry, idx) => {
+          let scheduled = scheduleArr[idx] || null;
+          let completed = entry.date || null;
+          let status = (entry.status || '').toLowerCase();
+          // determine status
+          if (completed) status = 'completed';
+          else if (status === 'missed') status = 'missed';
+          else if (scheduled) status = 'scheduled';
+          else status = '';
+
+          // build record only if we have either a date/status or scheduled
+          if (completed || scheduled || status === 'missed') {
+            // normalize dates
+            const toDateString = (val) => {
+              if (!val) return '';
+              let v = val;
+              if (typeof v === 'object' && v.$date) v = v.$date;
+              try { return new Date(v).toLocaleDateString(); } catch { return String(v); }
+            };
+            const record = {
+              date: completed ? toDateString(completed) : (scheduled ? toDateString(scheduled) : '—'),
+              center: biteCase.center || biteCase.healthCenter || biteCase.centerName || 'Unknown Center',
+              patientName: patientName || biteCase.patientName || 'Unknown Patient',
+              vaccineUsed: 'Anti-Rabies',
+              status,
+              vaccinationDay: dayLabels[idx],
+              notes: biteCase.notes || ''
+            };
+            vaccinationHistory.push(record);
           }
         });
       });
