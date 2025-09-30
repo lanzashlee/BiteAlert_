@@ -652,6 +652,25 @@
   font-size: 0.9rem;
 }
 
+.password-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  color: #059669;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.password-success i {
+  color: #059669;
+  font-size: 0.9rem;
+}
+
 .password-requirements {
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
@@ -792,22 +811,26 @@
 }
 
 .toast {
-  min-width: 280px;
-  padding: 15px;
-  border-radius: 10px;
+  min-width: 320px;
+  padding: 18px 20px;
+  border-radius: 12px;
   background: white;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   gap: 12px;
   opacity: 0;
   transform: translateX(30px);
-  transition: all 0.3s ease;
+  transition: all 0.4s ease;
+  border-left: 4px solid;
+  font-weight: 500;
+  z-index: 10000;
 }
 
 .toast.show {
   opacity: 1;
   transform: translateX(0);
+  animation: slideInRight 0.4s ease-out;
 }
 
 .toast i {
@@ -1162,6 +1185,17 @@
   to {
     opacity: 1;
     transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

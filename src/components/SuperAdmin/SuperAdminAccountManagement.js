@@ -25,6 +25,7 @@ const SuperAdminAccountManagement = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   // Handle sign out
   const handleSignOut = async () => {
@@ -354,11 +355,19 @@ const SuperAdminAccountManagement = () => {
       // Log audit trail
       await logAuditTrail(selectedAccount.id, `Password changed for account: ${selectedAccount.username}`);
 
+      // Show success message
+      setPasswordSuccess(true);
+      setPasswordError('');
       showToast('Password changed successfully', 'success');
-      setShowPasswordModal(false);
-      setNewPassword('');
-      setConfirmPassword('');
-      setSelectedAccount(null);
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setNewPassword('');
+        setConfirmPassword('');
+        setSelectedAccount(null);
+        setPasswordSuccess(false);
+      }, 2000);
       
     } catch (error) {
       console.error('Error changing password:', error);
@@ -383,6 +392,7 @@ const SuperAdminAccountManagement = () => {
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError('');
+    setPasswordSuccess(false);
     setProcessing(false);
   };
 
@@ -590,6 +600,12 @@ const SuperAdminAccountManagement = () => {
               <div className="password-error">
                 <i className="fa-solid fa-exclamation-triangle"></i>
                 {passwordError}
+              </div>
+            )}
+            {passwordSuccess && (
+              <div className="password-success">
+                <i className="fa-solid fa-check-circle"></i>
+                Password changed successfully! Closing modal...
               </div>
             )}
             <div className="password-requirements">
