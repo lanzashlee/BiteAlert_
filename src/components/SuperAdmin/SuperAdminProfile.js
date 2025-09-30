@@ -130,16 +130,59 @@ const SuperAdminProfile = () => {
       }
 
       console.log('Fetching profile for user ID:', id);
-      const response = await apiFetch(`/api/profile/${encodeURIComponent(id)}`);
+      
+      // Try different API base URLs if the first one fails
+      const apiUrls = [
+        'https://bitealert-backend.onrender.com',
+        'https://bitealert-backend-doga.onrender.com'
+      ];
+      
+      let response;
+      let lastError;
+      
+      for (const baseUrl of apiUrls) {
+        try {
+          console.log(`Trying API URL: ${baseUrl}`);
+          const fullUrl = `${baseUrl}/api/profile/${encodeURIComponent(id)}`;
+          response = await fetch(fullUrl, {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...authHeaders()
+            }
+          });
+          
+          console.log('Profile API response status:', response.status);
+          console.log('Profile API response headers:', Object.fromEntries(response.headers.entries()));
 
-      console.log('Profile API response status:', response.status);
+          if (response.status === 401) {
+            localStorage.removeItem('userData');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return;
+          }
 
-      if (response.status === 401) {
-        localStorage.removeItem('userData');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        return;
+          // Check if response is JSON
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const textResponse = await response.text();
+            console.error('Non-JSON response received:', textResponse.substring(0, 200));
+            throw new Error(`Expected JSON but received ${contentType}. Response: ${textResponse.substring(0, 100)}...`);
+          }
+
+          // If we get here, the response is valid JSON
+          break;
+        } catch (error) {
+          console.error(`Failed with URL ${baseUrl}:`, error);
+          lastError = error;
+          continue;
+        }
+      }
+      
+      if (!response) {
+        throw lastError || new Error('All API URLs failed');
       }
 
       const payload = await response.json();
