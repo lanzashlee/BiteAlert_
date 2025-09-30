@@ -206,7 +206,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
       const processedData = processAnalyticsData(filteredByCenter.map(({ centerNorm, ...rest }) => rest));
       console.log('Processed analytics data:', processedData);
       setAnalyticsData(processedData);
-
+      
       // Get interventions from existing backend endpoint
       try {
         const presRes = await apiFetch(apiConfig.endpoints.prescriptions, {

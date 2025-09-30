@@ -1,0 +1,5 @@
+[33me072277[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix admin password change: correct parameter name from accountId to adminId, add fallback search by adminID field, and add debugging logs
+[33m9c10e9d[m Fix Render deployment redirects: change frontend to static site, add comprehensive _redirects file, and configure routes in render.yaml
+[33m8006a39[m Add vaccination history to patient management: show completed/missed vaccinations from vaccination scheduler in patient case history
+[33m93c5c79[m Fix Animal Bite Exposure Report: load directly from bitecases API, add sample data fallback, and improve debugging
+[33mb951055[m Fix Generate Report data loading: use apiFetch for staff/admin data, add sample data fallback, and improve debugging
