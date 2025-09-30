@@ -38,7 +38,9 @@ const corsOptions = {
             console.log('CORS allowing request with no origin');
             return callback(null, true);
         }
-        if (allowedOrigins.includes(origin)) {
+        // Allow exact matches or Vercel preview subdomains for this project
+        const isVercelPreview = /https:\/\/bite-alert-clgv-[a-z0-9-]+\.vercel\.app$/i.test(origin || '');
+        if (allowedOrigins.includes(origin) || isVercelPreview) {
             console.log('CORS allowed for origin:', origin);
             return callback(null, true);
         }
