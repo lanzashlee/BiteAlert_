@@ -173,11 +173,7 @@ const SuperAdminAuditTrail = () => {
       <main className="main-content">
         <div className="content-header">
           <h2>Audit Trail</h2>
-          <div className="header-actions">
-            <button className="btn btn-primary">
-              <i className="fa-solid fa-download" /> Export
-            </button>
-          </div>
+          {/* Export removed per request */}
         </div>
 
         <div className="content-body">
