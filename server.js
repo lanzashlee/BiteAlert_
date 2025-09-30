@@ -4378,6 +4378,36 @@ app.post('/api/ai-test', async (req, res) => {
 
 // Missing endpoints that frontend is calling
 
+// Get vaccinations endpoint
+app.get('/api/vaccinations', async (req, res) => {
+    try {
+        const { patientId } = req.query;
+        if (!patientId) {
+            return res.status(400).json({ error: 'Patient ID is required' });
+        }
+
+        // Define VaccinationDate model inline
+        const VaccinationDate = mongoose.model('VaccinationDate', new mongoose.Schema({
+            patientId: { type: String, required: true },
+            vaccinationDay: { type: String, required: true },
+            scheduledDate: { type: Date, required: true },
+            completedDate: { type: Date },
+            status: { type: String, enum: ['scheduled', 'completed', 'missed'], default: 'scheduled' },
+            vaccineType: { type: String, default: 'Anti-Rabies' },
+            notes: { type: String },
+            center: { type: String },
+            createdAt: { type: Date, default: Date.now },
+            updatedAt: { type: Date, default: Date.now }
+        }));
+
+        const vaccinations = await VaccinationDate.find({ patientId }).sort({ scheduledDate: 1 });
+        res.json(vaccinations);
+    } catch (error) {
+        console.error('Error fetching vaccinations:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get patient password endpoint
 app.get('/api/get-patient-password/:id', async (req, res) => {
     try {

@@ -51,6 +51,7 @@ export const apiConfig = {
     // Vaccination endpoints
     vaccinationData: '/api/vaccination-data',
     vaccinationDates: '/api/vaccinationdates',
+    vaccinations: '/api/vaccinations',
     
     // Dashboard endpoints
     dashboardSummary: '/api/dashboard-summary',
