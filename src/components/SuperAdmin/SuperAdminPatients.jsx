@@ -2239,79 +2239,62 @@ const SuperAdminPatients = () => {
                         <small style={{ color: '#9ca3af' }}>This patient has no recorded vaccinations yet.</small>
                       </div>
                     ) : (
-                      <div className="vaccination-timeline" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                        {vaccinationHistory.map((vaccination, index) => (
-                          <div key={index} className={`vaccination-item ${vaccination.status}`} style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            padding: '1rem',
-                            marginBottom: '0.5rem',
-                            borderRadius: '8px',
-                            border: '1px solid #e5e7eb',
-                            backgroundColor: vaccination.status === 'completed' ? '#f0fdf4' : 
-                                           vaccination.status === 'missed' ? '#fef2f2' : '#f9fafb'
-                          }}>
-                            <div className="vaccination-icon" style={{
-                              marginRight: '1rem',
-                              fontSize: '1.2rem',
-                              color: vaccination.status === 'completed' ? '#10b981' : 
-                                     vaccination.status === 'missed' ? '#ef4444' : '#6b7280'
-                            }}>
-                              <i className={`fa ${vaccination.status === 'completed' ? 'fa-check-circle' : 
-                                           vaccination.status === 'missed' ? 'fa-times-circle' : 'fa-clock'}`}></i>
-                            </div>
-                            <div className="vaccination-content" style={{ flex: 1 }}>
-                              <div className="vaccination-header" style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: '0.5rem'
-                              }}>
-                                <h6 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
-                                  {vaccination.vaccinationDay}
-                                </h6>
-                                <span className={`vaccination-status ${vaccination.status}`} style={{
-                                  padding: '0.25rem 0.5rem',
-                                  borderRadius: '4px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '500',
-                                  backgroundColor: vaccination.status === 'completed' ? '#dcfce7' : 
-                                                 vaccination.status === 'missed' ? '#fee2e2' : '#f3f4f6',
-                                  color: vaccination.status === 'completed' ? '#166534' : 
-                                         vaccination.status === 'missed' ? '#dc2626' : '#374151'
+                      <div className="vaccination-table-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                        <table className="vaccination-table" style={{ 
+                          width: '100%', 
+                          borderCollapse: 'collapse',
+                          fontSize: '0.9rem'
+                        }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>Date</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>Center</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>Name</th>
+                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>Vaccine Type/Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {vaccinationHistory.map((vaccination, index) => {
+                              const displayDate = vaccination.completedDate ? 
+                                new Date(vaccination.completedDate).toLocaleDateString() : 
+                                vaccination.scheduledDate ? 
+                                  new Date(vaccination.scheduledDate).toLocaleDateString() : 
+                                  'Not scheduled';
+                              
+                              const statusText = vaccination.status === 'completed' ? 'COMPLETED' : 
+                                               vaccination.status === 'missed' ? 'MISSED' : 'SCHEDULED';
+                              
+                              const vaccineDisplay = `${vaccination.vaccineType || 'Anti-Rabies'} (${statusText})`;
+                              
+                              return (
+                                <tr key={index} style={{ 
+                                  borderBottom: '1px solid #dee2e6',
+                                  backgroundColor: vaccination.status === 'completed' ? '#f8fff8' : 
+                                                 vaccination.status === 'missed' ? '#fff8f8' : '#fafafa'
                                 }}>
-                                  {vaccination.status === 'completed' ? 'Completed' : 
-                                   vaccination.status === 'missed' ? 'Missed' : 'Scheduled'}
-                                </span>
-                              </div>
-                              <div className="vaccination-details" style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                                <p style={{ margin: '0.25rem 0' }}>
-                                  <strong>Date:</strong> {vaccination.scheduledDate ? new Date(vaccination.scheduledDate).toLocaleDateString() : 'Not scheduled'}
-                                </p>
-                                {vaccination.completedDate && (
-                                  <p style={{ margin: '0.25rem 0' }}>
-                                    <strong>Completed:</strong> {new Date(vaccination.completedDate).toLocaleDateString()}
-                                  </p>
-                                )}
-                                {vaccination.vaccineType && (
-                                  <p style={{ margin: '0.25rem 0' }}>
-                                    <strong>Vaccine:</strong> {vaccination.vaccineType}
-                                  </p>
-                                )}
-                                {vaccination.center && (
-                                  <p style={{ margin: '0.25rem 0' }}>
-                                    <strong>Center:</strong> {vaccination.center}
-                                  </p>
-                                )}
-                                {vaccination.notes && (
-                                  <p style={{ margin: '0.25rem 0' }}>
-                                    <strong>Notes:</strong> {vaccination.notes}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                                  <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
+                                    {displayDate}
+                                  </td>
+                                  <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
+                                    {vaccination.center || 'Unknown Center'}
+                                  </td>
+                                  <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
+                                    {selectedPatient?.firstName} {selectedPatient?.lastName}
+                                  </td>
+                                  <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
+                                    <span style={{
+                                      color: vaccination.status === 'completed' ? '#059669' : 
+                                             vaccination.status === 'missed' ? '#dc2626' : '#6b7280',
+                                      fontWeight: '500'
+                                    }}>
+                                      {vaccineDisplay}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     )
                   )}
