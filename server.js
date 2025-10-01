@@ -4488,6 +4488,25 @@ app.get('/api/get-admin-password/:id', async (req, res) => {
     }
 });
 
+// Get staff password endpoint
+app.get('/api/get-staff-password/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Create Staff model dynamically
+        const Staff = mongoose.connection.model('Staff', new mongoose.Schema({}, { strict: false }), 'staffs');
+        const staff = await Staff.findById(id).select('password');
+        
+        if (!staff) {
+            return res.status(404).json({ error: 'Staff not found' });
+        }
+        res.json({ success: true, password: staff.password });
+    } catch (error) {
+        console.error('Error getting staff password:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Change admin password endpoint
 app.post('/api/change-admin-password', async (req, res) => {
     try {
@@ -4513,6 +4532,39 @@ app.post('/api/change-admin-password', async (req, res) => {
         res.json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
         console.error('Password change error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Change staff password endpoint
+app.post('/api/change-staff-password', async (req, res) => {
+    try {
+        const { staffId, newPassword } = req.body;
+        console.log('Password change request for staffId:', staffId);
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Create Staff model dynamically
+        const Staff = mongoose.connection.model('Staff', new mongoose.Schema({}, { strict: false }), 'staffs');
+        
+        // Try to find staff by _id first, then by staffID
+        let staff = await Staff.findByIdAndUpdate(staffId, { password: hashedPassword });
+        console.log('Found staff by _id:', !!staff);
+        
+        if (!staff) {
+            // Try finding by staffID field
+            staff = await Staff.findOneAndUpdate({ staffID: staffId }, { password: hashedPassword });
+            console.log('Found staff by staffID:', !!staff);
+        }
+        
+        if (!staff) {
+            console.log('Staff not found with ID:', staffId);
+            return res.status(404).json({ error: 'Staff not found' });
+        }
+        
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Staff password change error:', error);
         res.status(500).json({ error: error.message });
     }
 });
