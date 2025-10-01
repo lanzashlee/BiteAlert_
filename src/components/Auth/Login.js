@@ -9,6 +9,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Logging in...');
   const [error, setError] = useState('');
   const [showEmailPopup, setShowEmailPopup] = useState(false);
@@ -82,12 +83,15 @@ const Login = () => {
     }
   };
 
-  // Disable auto-login on app open: require explicit credentials entry
+  // Disable auto-login on app open unless rememberMe was explicitly set
   useEffect(() => {
-    localStorage.removeItem('userData');
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('userData');
-    sessionStorage.removeItem('token');
+    const remembered = localStorage.getItem('rememberMe') === 'true';
+    if (!remembered) {
+      localStorage.removeItem('userData');
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('userData');
+      sessionStorage.removeItem('token');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -113,12 +117,15 @@ const Login = () => {
       
       if (data.success) {
         console.log('Login successful, storing user data:', data.user);
-        localStorage.setItem('userData', JSON.stringify(data.user));
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-          console.log('Token stored');
+        // Persist based on rememberMe
+        if (rememberMe) {
+          localStorage.setItem('userData', JSON.stringify(data.user));
+          if (data.token) localStorage.setItem('token', data.token);
+          localStorage.setItem('rememberMe', 'true');
         } else {
-          console.log('No token in response');
+          sessionStorage.setItem('userData', JSON.stringify(data.user));
+          if (data.token) sessionStorage.setItem('token', data.token);
+          localStorage.removeItem('rememberMe');
         }
         
         // Set role-specific loading message
@@ -270,6 +277,10 @@ const Login = () => {
               </div>
             </div>
             <button type="button" className="forgot-password" onClick={() => setForgotOpen(true)}>Forgot Password?</button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+              Remember me on this device
+            </label>
             <button type="submit" className="sign-in-btn-modern" disabled={loading}>
               Sign In
             </button>

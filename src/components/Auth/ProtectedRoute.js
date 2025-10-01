@@ -10,12 +10,15 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
-        // Check if user data exists in localStorage
-        const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser');
-        const token = localStorage.getItem('token');
-        
-        if (!userData || !token) {
-          console.log('No user data or token found, redirecting to login');
+        // Check if user data exists in storage (token optional)
+        const userData =
+          localStorage.getItem('userData') ||
+          sessionStorage.getItem('userData') ||
+          localStorage.getItem('currentUser') ||
+          sessionStorage.getItem('currentUser');
+
+        if (!userData) {
+          console.log('No user data found, redirecting to login');
           navigate('/login');
           return;
         }
@@ -30,7 +33,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
           return;
         }
 
-        // Skip API verification for faster loading - trust localStorage
+        // Skip API verification for faster loading - trust storage
         // Only check account status for admins
         if (user.role === 'admin') {
           try {
