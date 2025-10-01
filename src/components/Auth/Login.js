@@ -82,31 +82,12 @@ const Login = () => {
     }
   };
 
+  // Disable auto-login on app open: require explicit credentials entry
   useEffect(() => {
-    const verifyExistingSession = async () => {
-      const userDataRaw = localStorage.getItem('userData');
-      const token = localStorage.getItem('token');
-      if (!userDataRaw || !token) return;
-      
-      try {
-        const userData = JSON.parse(userDataRaw);
-        
-        // Skip API verification for faster login - trust localStorage
-        // Only check account status for admins
-        if (userData.role === 'admin') {
-          if (await checkAccountStatus(userData.email)) {
-            redirectBasedOnRole(userData.role);
-          }
-        } else {
-          // For superadmin, trust localStorage and redirect immediately
-          redirectBasedOnRole(userData.role);
-        }
-      } catch (e) {
-        localStorage.removeItem('userData');
-        localStorage.removeItem('token');
-      }
-    };
-    verifyExistingSession();
+    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('userData');
+    sessionStorage.removeItem('token');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

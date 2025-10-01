@@ -3,6 +3,9 @@ export function clearAuthStorage() {
     localStorage.removeItem('currentUser');
     localStorage.removeItem('userData');
     localStorage.removeItem('token');
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('userData');
+    sessionStorage.removeItem('token');
     // Clear any cached API responses
     try {
       localStorage.removeItem('apiCache');

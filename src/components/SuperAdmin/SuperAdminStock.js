@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 // import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { apiFetch } from '../../config/api';
+import { fullLogout } from '../../utils/auth';
 import LoadingSpinner from './DogLoadingSpinner';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminStock.css';
@@ -48,62 +49,8 @@ const SuperAdminStock = () => {
 
   // Confirm sign out
   const confirmSignOut = async () => {
-    try {
-      let currentUser = JSON.parse(localStorage.getItem('currentUser')) || JSON.parse(localStorage.getItem('userData'));
-      
-      if (currentUser && currentUser.email) {
-        try {
-          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.account) {
-              currentUser = { ...currentUser, ...data.account };
-            }
-          }
-        } catch (err) {
-          console.warn('Failed to fetch account status for logout:', err);
-        }
-      }
-
-      if (!currentUser) {
-        throw new Error('No active session found');
-      }
-
-      const logoutData = {
-        role: currentUser.role,
-        firstName: currentUser.firstName,
-        middleName: currentUser.middleName || '',
-        lastName: currentUser.lastName,
-        action: 'Signed out'
-      };
-
-      if (currentUser.role === 'admin' && currentUser.adminID) {
-        logoutData.adminID = currentUser.adminID;
-      } else if (currentUser.role === 'superadmin' && currentUser.superAdminID) {
-        logoutData.superAdminID = currentUser.superAdminID;
-      }
-
-      try {
-        await apiFetch('/api/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(logoutData)
-        });
-      } catch (err) {
-        console.warn('Logout API call failed:', err);
-      }
-
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('token');
-      
-      window.location.replace('/login');
-    } catch (error) {
-      console.error('Error during sign out:', error);
-      alert(error.message || 'Error signing out. Please try again.');
-    } finally {
-      setShowSignoutModal(false);
-    }
+    try { await fullLogout(apiFetch); } catch {}
+    setShowSignoutModal(false);
   };
 
   useEffect(() => {
