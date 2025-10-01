@@ -76,26 +76,35 @@ const SuperAdminStaffManagement = () => {
     setShowPasswordModal(true);
   };
 
-  // Handle new password input change
-  const handleNewPasswordChange = async (value) => {
+  // Handle new password input change with real-time validation
+  const handleNewPasswordChange = (value) => {
     setNewPassword(value);
+    setPasswordError(''); // Clear previous errors
     
-    // Show admin info and fetch current password when user starts typing
-    if (value.length > 0 && !showAdminInfo) {
-      setShowAdminInfo(true);
-      
-      try {
-        // Fetch current password for display
-        const response = await apiFetch(`/api/get-staff-password/${selectedStaff._id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentPassword(data.currentPassword || '••••••••');
-        } else {
-          setCurrentPassword('••••••••');
+    // Real-time validation
+    if (value.length > 0) {
+      const validation = validatePassword(value);
+      if (validation) {
+        setPasswordError(validation);
+      }
+    }
+  };
+
+  // Handle confirm password change with real-time validation
+  const handleConfirmPasswordChange = (value) => {
+    setConfirmPassword(value);
+    setPasswordError(''); // Clear previous errors
+    
+    // Real-time validation for password match
+    if (value.length > 0 && newPassword.length > 0) {
+      if (value !== newPassword) {
+        setPasswordError('Passwords do not match');
+      } else {
+        // Check if new password meets requirements
+        const validation = validatePassword(newPassword);
+        if (validation) {
+          setPasswordError(validation);
         }
-      } catch (error) {
-        console.error('Error fetching current password:', error);
-        setCurrentPassword('••••••••');
       }
     }
   };
@@ -137,7 +146,14 @@ const SuperAdminStaffManagement = () => {
         return;
       }
 
+      if (!newPassword || !confirmPassword) {
+        setPasswordError('Please fill in both password fields');
+        return;
+      }
+
       setIsProcessing(true);
+
+      console.log('Changing password for staff:', selectedStaff._id);
 
       // API call to change password
       const response = await apiFetch('/api/change-staff-password', {
@@ -149,20 +165,30 @@ const SuperAdminStaffManagement = () => {
         })
       });
 
+      console.log('Password change response:', response);
+
       if (!response.ok) {
-        throw new Error('Failed to change password');
+        const errorText = await response.text();
+        console.error('Password change failed:', errorText);
+        throw new Error(`Failed to change password: ${errorText}`);
       }
+
+      const result = await response.json();
+      console.log('Password change result:', result);
 
       // Log audit trail
       await logAuditTrail(selectedStaff._id, `Password changed for staff: ${selectedStaff.fullName}`);
 
+      // Show success message
       showNotification('Password changed successfully', 'success');
-      setShowPasswordModal(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setShowAdminInfo(false);
-      setSelectedStaff(null);
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setNewPassword('');
+        setConfirmPassword('');
+        setSelectedStaff(null);
+      }, 2000);
       
     } catch (error) {
       console.error('Error changing password:', error);
@@ -659,8 +685,6 @@ const SuperAdminStaffManagement = () => {
         size="sm"
         customContent={
           <div className="password-change-form">
-            {/* Compact modal like Admin: omit info/current password to keep small */}
-
             {/* New Password Fields */}
             <div className="form-group">
               <label htmlFor="newPassword">New Password</label>
@@ -670,8 +694,16 @@ const SuperAdminStaffManagement = () => {
                 value={newPassword}
                 onChange={(e) => handleNewPasswordChange(e.target.value)}
                 placeholder="Enter new password"
-                className="password-input"
+                className={`password-input ${passwordError && newPassword.length > 0 ? 'error' : ''}`}
               />
+              {newPassword.length > 0 && (
+                <div className="password-strength">
+                  <div className={`strength-bar ${newPassword.length >= 8 ? 'strong' : newPassword.length >= 4 ? 'medium' : 'weak'}`}></div>
+                  <span className="strength-text">
+                    {newPassword.length >= 8 ? 'Strong' : newPassword.length >= 4 ? 'Medium' : 'Weak'}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label htmlFor="confirmPassword">Confirm New Password</label>
@@ -679,7 +711,7 @@ const SuperAdminStaffManagement = () => {
                 type="password"
                 id="confirmPassword"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => handleConfirmPasswordChange(e.target.value)}
                 placeholder="Confirm new password"
                 className="password-input"
               />

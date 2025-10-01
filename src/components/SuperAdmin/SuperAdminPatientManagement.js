@@ -149,14 +149,36 @@ const SuperAdminPatientManagement = () => {
 
   // Handle new password input change
 
+  // Handle new password input change with real-time validation
   const handleNewPasswordChange = (value) => {
     setNewPassword(value);
-    // Keep compact like Admin modal: do not expand with extra info
-    setShowAdminInfo(false);
-    setPasswordError('');
+    setPasswordError(''); // Clear previous errors
+    
+    // Real-time validation
     if (value.length > 0) {
       const validation = validatePassword(value);
-      if (validation) setPasswordError(validation);
+      if (validation) {
+        setPasswordError(validation);
+      }
+    }
+  };
+
+  // Handle confirm password change with real-time validation
+  const handleConfirmPasswordChange = (value) => {
+    setConfirmPassword(value);
+    setPasswordError(''); // Clear previous errors
+    
+    // Real-time validation for password match
+    if (value.length > 0 && newPassword.length > 0) {
+      if (value !== newPassword) {
+        setPasswordError('Passwords do not match');
+      } else {
+        // Check if new password meets requirements
+        const validation = validatePassword(newPassword);
+        if (validation) {
+          setPasswordError(validation);
+        }
+      }
     }
   };
 
@@ -205,88 +227,66 @@ const SuperAdminPatientManagement = () => {
   // Confirm password change
 
   const confirmPasswordChange = async () => {
-
     try {
-
       setPasswordError('');
-
       
-
       // Validate passwords
-
       const passwordValidation = validatePassword(newPassword);
-
       if (passwordValidation) {
-
         setPasswordError(passwordValidation);
-
         return;
-
       }
-
       
-
       if (newPassword !== confirmPassword) {
-
         setPasswordError('Passwords do not match');
-
         return;
-
       }
 
-
+      if (!newPassword || !confirmPassword) {
+        setPasswordError('Please fill in both password fields');
+        return;
+      }
 
       setIsProcessing(true);
+
+      console.log('Changing password for patient:', selectedPatient._id);
 
 
 
       // API call to change password
-
       const response = await apiFetch('/api/change-patient-password', {
-
         method: 'POST',
-
         headers: { 'Content-Type': 'application/json' },
-
         body: JSON.stringify({ 
-
           patientId: selectedPatient._id, 
-
           newPassword: newPassword 
-
         })
-
       });
 
-
+      console.log('Password change response:', response);
 
       if (!response.ok) {
-
-        throw new Error('Failed to change password');
-
+        const errorText = await response.text();
+        console.error('Password change failed:', errorText);
+        throw new Error(`Failed to change password: ${errorText}`);
       }
 
-
+      const result = await response.json();
+      console.log('Password change result:', result);
 
       // Log audit trail
-
       await logAuditTrail(selectedPatient._id, `Password changed for patient: ${selectedPatient.fullName || selectedPatient.firstName + ' ' + selectedPatient.lastName}`);
 
-
-
+      // Show success message
       showNotification('Password changed successfully', 'success');
-
-      setShowPasswordModal(false);
-
-      setCurrentPassword('');
-
-      setNewPassword('');
-
-      setConfirmPassword('');
-
-      setShowAdminInfo(false);
-
-      setSelectedPatient(null);
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setNewPassword('');
+        setConfirmPassword('');
+        setSelectedPatient(null);
+      }, 2000);
 
       
 
@@ -1211,20 +1211,21 @@ const SuperAdminPatientManagement = () => {
               <label htmlFor="newPassword">New Password</label>
 
               <input
-
                 type="password"
-
                 id="newPassword"
-
                 value={newPassword}
-
                 onChange={(e) => handleNewPasswordChange(e.target.value)}
-
                 placeholder="Enter new password"
-
-                className="password-input"
-
+                className={`password-input ${passwordError && newPassword.length > 0 ? 'error' : ''}`}
               />
+              {newPassword.length > 0 && (
+                <div className="password-strength">
+                  <div className={`strength-bar ${newPassword.length >= 8 ? 'strong' : newPassword.length >= 4 ? 'medium' : 'weak'}`}></div>
+                  <span className="strength-text">
+                    {newPassword.length >= 8 ? 'Strong' : newPassword.length >= 4 ? 'Medium' : 'Weak'}
+                  </span>
+                </div>
+              )}
 
             </div>
 
@@ -1240,7 +1241,7 @@ const SuperAdminPatientManagement = () => {
 
                 value={confirmPassword}
 
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => handleConfirmPasswordChange(e.target.value)}
 
                 placeholder="Confirm new password"
 
