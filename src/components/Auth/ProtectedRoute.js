@@ -30,61 +30,30 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
           return;
         }
 
-        // Verify session with backend
-        try {
-          const response = await apiFetch('/api/verify-session', {
-            method: 'GET',
-            headers: { Authorization: `Bearer ${token}` }
-          });
-
-          if (!response.ok) {
-            console.log('Session verification failed, redirecting to login');
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('userData');
-            localStorage.removeItem('token');
-            navigate('/login');
-            return;
-          }
-
-          const data = await response.json();
-          if (!data.success) {
-            console.log('Session verification returned failure, redirecting to login');
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('userData');
-            localStorage.removeItem('token');
-            navigate('/login');
-            return;
-          }
-
-          // Check account status for admins
-          if (user.role === 'admin') {
-            try {
-              const statusResponse = await apiFetch(`/api/account-status/${encodeURIComponent(user.email)}`);
-              if (statusResponse.ok) {
-                const statusData = await statusResponse.json();
-                if (statusData.success && statusData.account && statusData.account.isActive === false) {
-                  console.log('Account is deactivated, redirecting to login');
-                  localStorage.removeItem('currentUser');
-                  localStorage.removeItem('userData');
-                  localStorage.removeItem('token');
-                  navigate('/login');
-                  return;
-                }
+        // Skip API verification for faster loading - trust localStorage
+        // Only check account status for admins
+        if (user.role === 'admin') {
+          try {
+            const statusResponse = await apiFetch(`/api/account-status/${encodeURIComponent(user.email)}`);
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              if (statusData.success && statusData.account && statusData.account.isActive === false) {
+                console.log('Account is deactivated, redirecting to login');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('userData');
+                localStorage.removeItem('token');
+                navigate('/login');
+                return;
               }
-            } catch (error) {
-              console.warn('Failed to check account status:', error);
-              // Continue with authentication even if status check fails
             }
+          } catch (error) {
+            console.warn('Failed to check account status:', error);
+            // Continue with authentication even if status check fails
           }
-
-          console.log('Authentication successful');
-          setIsAuthenticated(true);
-        } catch (error) {
-          console.error('Session verification error:', error);
-          // If API is down, still allow access if user data exists
-          console.log('API verification failed, but allowing access with stored data');
-          setIsAuthenticated(true);
         }
+
+        console.log('Authentication successful');
+        setIsAuthenticated(true);
       } catch (error) {
         console.error('Authentication check error:', error);
         navigate('/login');
@@ -104,17 +73,19 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
         alignItems: 'center', 
         height: '100vh',
         flexDirection: 'column',
-        gap: '20px'
+        gap: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white'
       }}>
         <div style={{
-          width: '50px',
-          height: '50px',
-          border: '5px solid #f3f3f3',
-          borderTop: '5px solid #3498db',
+          width: '40px',
+          height: '40px',
+          border: '3px solid rgba(255,255,255,0.3)',
+          borderTop: '3px solid white',
           borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
+          animation: 'spin 0.8s linear infinite'
         }}></div>
-        <p>Loading...</p>
+        <p style={{ margin: 0, fontSize: '16px', fontWeight: '500' }}>Loading...</p>
         <style>{`
           @keyframes spin {
             0% { transform: rotate(0deg); }

@@ -84,10 +84,28 @@ export const getApiUrl = (endpoint) => {
   return `${apiConfig.baseURL}${endpoint}`;
 };
 
-// Helper function for fetch with base URL
+// Import caching utilities
+import { getCachedData, setCachedData } from '../utils/apiCache';
+
+// Helper function for fetch with base URL and caching
 export const apiFetch = async (endpoint, options = {}) => {
   const url = getApiUrl(endpoint);
-  return fetch(url, {
+  
+  // Check cache for GET requests
+  if (!options.method || options.method === 'GET') {
+    const cachedData = getCachedData(url);
+    if (cachedData) {
+      console.log('Using cached data for:', url);
+      return {
+        ok: true,
+        json: () => Promise.resolve(cachedData),
+        status: 200,
+        headers: new Headers()
+      };
+    }
+  }
+  
+  const response = await fetch(url, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
@@ -95,4 +113,16 @@ export const apiFetch = async (endpoint, options = {}) => {
     },
     ...options,
   });
+  
+  // Cache successful GET responses
+  if (response.ok && (!options.method || options.method === 'GET')) {
+    try {
+      const data = await response.clone().json();
+      setCachedData(url, data);
+    } catch (error) {
+      console.warn('Failed to cache response:', error);
+    }
+  }
+  
+  return response;
 };

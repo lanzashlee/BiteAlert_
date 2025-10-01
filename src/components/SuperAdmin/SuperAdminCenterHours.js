@@ -16,37 +16,38 @@ const SuperAdminCenterHours = () => {
   const fetchData = async () => {
     try {
       console.log('Fetching centers data...');
-      // Fetch base center list
-      const res = await apiFetch('/api/centers');
-      const data = await res.json();
-      console.log('Centers API response:', data);
-      const list = Array.isArray(data) ? data : (data.data || data.centers || []);
-      setCenters(list);
-      console.log('Centers loaded:', list.length);
+      // Use Promise.all for parallel requests
+      const [centersRes, hoursRes] = await Promise.allSettled([
+        apiFetch('/api/centers'),
+        apiFetch('/api/center_hours?existingOnly=true')
+      ]);
 
-      // Fetch persisted hours from dedicated collection
-      try {
-        console.log('Fetching center hours data...');
-        const hrsRes = await apiFetch('/api/center_hours?existingOnly=true');
-        if (hrsRes.ok) {
-          const hrsJson = await hrsRes.json();
-          console.log('Center hours API response:', hrsJson);
-          const arr = Array.isArray(hrsJson) ? hrsJson : (hrsJson.data || hrsJson.centers || hrsJson.centerHours || []);
-          const map = {};
-          (arr || []).forEach((it) => {
-            if (!it) return;
-            const key = it.centerId || it._id || it.id;
-            if (key) {
-              map[String(key)] = { hours: it.hours || {}, contactNumber: it.contactNumber || '' };
-            }
-          });
-          setHoursByCenterId(map);
-          console.log('Center hours loaded:', Object.keys(map).length);
-        } else {
-          console.log('Center hours API not available, using default data');
-        }
-      } catch (err) {
-        console.log('Center hours fetch failed:', err);
+      // Process centers data
+      if (centersRes.status === 'fulfilled') {
+        const data = await centersRes.value.json();
+        console.log('Centers API response:', data);
+        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+        setCenters(list);
+        console.log('Centers loaded:', list.length);
+      }
+
+      // Process hours data
+      if (hoursRes.status === 'fulfilled' && hoursRes.value.ok) {
+        const hrsJson = await hoursRes.value.json();
+        console.log('Center hours API response:', hrsJson);
+        const arr = Array.isArray(hrsJson) ? hrsJson : (hrsJson.data || hrsJson.centers || hrsJson.centerHours || []);
+        const map = {};
+        (arr || []).forEach((it) => {
+          if (!it) return;
+          const key = it.centerId || it._id || it.id;
+          if (key) {
+            map[String(key)] = { hours: it.hours || {}, contactNumber: it.contactNumber || '' };
+          }
+        });
+        setHoursByCenterId(map);
+        console.log('Center hours loaded:', Object.keys(map).length);
+      } else {
+        console.log('Center hours API not available, using default data');
       }
     } catch (e) {
       console.error('Error fetching data:', e);

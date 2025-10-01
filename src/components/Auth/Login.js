@@ -87,20 +87,19 @@ const Login = () => {
       const userDataRaw = localStorage.getItem('userData');
       const token = localStorage.getItem('token');
       if (!userDataRaw || !token) return;
+      
       try {
         const userData = JSON.parse(userDataRaw);
-        const res = await apiFetch('/api/verify-session', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await safeParseJson(res);
-        if (data?.success) {
+        
+        // Skip API verification for faster login - trust localStorage
+        // Only check account status for admins
+        if (userData.role === 'admin') {
           if (await checkAccountStatus(userData.email)) {
             redirectBasedOnRole(userData.role);
           }
         } else {
-          localStorage.removeItem('userData');
-          localStorage.removeItem('token');
+          // For superadmin, trust localStorage and redirect immediately
+          redirectBasedOnRole(userData.role);
         }
       } catch (e) {
         localStorage.removeItem('userData');
@@ -116,9 +115,6 @@ const Login = () => {
     setError('');
     setLoading(true);
     setLoadingMessage('Logging in...');
-    
-    // Show initial loading for 2 seconds
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
     try {
       const res = await apiFetch(apiConfig.endpoints.login, {
