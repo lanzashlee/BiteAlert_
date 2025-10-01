@@ -157,6 +157,8 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     } catch { return null; }
   };
 
+  const toISO = (d) => d.toISOString().split('T')[0]; // Convert to YYYY-MM-DD format
+
   const genReg = () => {
     const yy = String(new Date().getFullYear()).slice(2);
     const rnd = Math.floor(Math.random()*10000).toString().padStart(4,'0');
@@ -193,7 +195,6 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
 
     // initialize schedule D0..D28 with ISO format for date inputs
     const base = new Date();
-    const toISO = (d) => d.toISOString().split('T')[0]; // Convert to YYYY-MM-DD format
     setSchedule({ 
       d0: toISO(base), 
       d3: toISO(new Date(base.getTime()+3*86400000)), 
