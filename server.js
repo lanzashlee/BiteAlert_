@@ -3225,14 +3225,54 @@ app.get('/api/bitecases/find', async (req, res) => {
 // Create a new bitecase (minimal create from Diagnosis module)
 app.post('/api/bitecases', async (req, res) => {
     try {
+        console.log('Creating bite case with payload:', req.body);
+        
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         const payload = req.body || {};
-        const doc = new BiteCase({ ...payload, createdAt: new Date(), updatedAt: new Date() });
+        
+        // Validate required fields
+        const requiredFields = ['patientId', 'firstName', 'lastName', 'center'];
+        const missingFields = requiredFields.filter(field => !payload[field] || payload[field].toString().trim() === '');
+        
+        if (missingFields.length > 0) {
+            console.error('Missing required fields:', missingFields);
+            return res.status(400).json({ 
+                success: false, 
+                message: `Missing required fields: ${missingFields.join(', ')}` 
+            });
+        }
+        
+        // Clean and validate data
+        const cleanPayload = {
+            ...payload,
+            // Ensure dates are properly formatted
+            arrivalDate: payload.arrivalDate ? new Date(payload.arrivalDate) : new Date(),
+            birthdate: payload.birthdate ? new Date(payload.birthdate) : null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            // Ensure arrays are properly formatted
+            typeOfExposure: Array.isArray(payload.typeOfExposure) ? payload.typeOfExposure : [],
+            siteOfBite: Array.isArray(payload.siteOfBite) ? payload.siteOfBite : [],
+            natureOfInjury: Array.isArray(payload.natureOfInjury) ? payload.natureOfInjury : [],
+            externalCause: Array.isArray(payload.externalCause) ? payload.externalCause : [],
+            placeOfOccurrence: Array.isArray(payload.placeOfOccurrence) ? payload.placeOfOccurrence : [],
+            scheduleDates: Array.isArray(payload.scheduleDates) ? payload.scheduleDates : []
+        };
+        
+        console.log('Creating bite case with clean payload:', cleanPayload);
+        
+        const doc = new BiteCase(cleanPayload);
         await doc.save();
+        
+        console.log('Bite case created successfully:', doc._id);
         return res.status(201).json({ success: true, data: doc });
     } catch (error) {
         console.error('Error creating bitecase:', error);
-        return res.status(500).json({ success: false, message: 'Failed to create bitecase' });
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Failed to create bitecase',
+            error: error.message 
+        });
     }
 });
 

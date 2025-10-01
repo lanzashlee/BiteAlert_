@@ -707,21 +707,74 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
     setSubmitting(true);
     
     try {
-      // Validation: Check if center is selected
+      // Enhanced validation
+      const validationErrors = [];
+      
+      // Check if center is selected
       if (!formData.center || formData.center.trim() === '') {
-        alert('Please select a center for this case.');
-        setSubmitting(false);
-        return;
+        validationErrors.push('Please select a center for this case.');
       }
       
-      // Validation: Check required fields
+      // Check required fields
       const requiredFields = [
-        'firstName', 'lastName', 'sex', 'age', 'barangay', 'arrivalDate'
+        { field: 'firstName', label: 'First Name' },
+        { field: 'lastName', label: 'Last Name' },
+        { field: 'sex', label: 'Sex' },
+        { field: 'age', label: 'Age' },
+        { field: 'barangay', label: 'Barangay' },
+        { field: 'arrivalDate', label: 'Arrival Date' }
       ];
       
-      const missingFields = requiredFields.filter(field => !formData[field] || formData[field].trim() === '');
-      if (missingFields.length > 0) {
-        alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      requiredFields.forEach(({ field, label }) => {
+        if (!formData[field] || formData[field].toString().trim() === '') {
+          validationErrors.push(`${label} is required.`);
+        }
+      });
+      
+      // Validate age is a number
+      if (formData.age && (isNaN(formData.age) || formData.age < 0 || formData.age > 150)) {
+        validationErrors.push('Age must be a valid number between 0 and 150.');
+      }
+      
+      // Validate weight if provided
+      if (formData.weight && (isNaN(formData.weight) || formData.weight < 0 || formData.weight > 1000)) {
+        validationErrors.push('Weight must be a valid number between 0 and 1000 kg.');
+      }
+      
+      // Validate at least one type of exposure is selected
+      if (!formData.typeBite && !formData.typeNonBite) {
+        validationErrors.push('Please select at least one type of exposure (Bite or Non-Bite).');
+      }
+      
+      // Validate bite sites if bite is selected
+      if (formData.typeBite) {
+        const hasBiteSite = Object.values(formData.biteSites).some(site => site);
+        if (!hasBiteSite) {
+          validationErrors.push('Please select at least one bite site if bite exposure is selected.');
+        }
+      }
+      
+      // Validate date format
+      if (formData.arrivalDate) {
+        const arrivalDate = new Date(formData.arrivalDate);
+        if (isNaN(arrivalDate.getTime())) {
+          validationErrors.push('Please enter a valid arrival date.');
+        }
+      }
+      
+      // Validate birthdate if provided
+      if (formData.birthdate) {
+        const birthdate = new Date(formData.birthdate);
+        if (isNaN(birthdate.getTime())) {
+          validationErrors.push('Please enter a valid birthdate.');
+        } else if (birthdate > new Date()) {
+          validationErrors.push('Birthdate cannot be in the future.');
+        }
+      }
+      
+      // Show validation errors
+      if (validationErrors.length > 0) {
+        alert('Please fix the following errors:\n\n' + validationErrors.join('\n'));
         setSubmitting(false);
         return;
       }
@@ -954,6 +1007,8 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
       console.log('Submitting case to center:', formData.center);
       console.log('Case data includes center:', submitData.center);
       
+      console.log('Submitting case data:', submitData);
+      
       const response = await apiFetch('/api/bitecases', {
         method: 'POST',
         headers: {
@@ -962,9 +1017,13 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
         body: JSON.stringify(submitData)
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       if (response.ok) {
         const responseData = await response.json();
-        alert(`Case submitted successfully to ${formData.center}! New case ID: ${responseData._id || 'N/A'}`);
+        console.log('Success response:', responseData);
+        alert(`Case submitted successfully to ${formData.center}! New case ID: ${responseData.data?._id || responseData._id || 'N/A'}`);
         // Refresh case history to show the new case
         await loadCaseHistory();
         // Set flag to show new case was added
@@ -1049,7 +1108,16 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
           patientSignature: '', witnessSignature: ''
         }));
       } else {
-        throw new Error('Failed to submit case');
+        // Get error details from response
+        let errorMessage = 'Failed to submit case';
+        try {
+          const errorData = await response.json();
+          console.error('Error response:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Could not parse error response:', e);
+        }
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error submitting case:', error);
