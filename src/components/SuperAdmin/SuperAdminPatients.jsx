@@ -893,7 +893,11 @@ const SuperAdminPatients = () => {
 
   // Load case history for a specific patient
   const loadCaseHistoryForPatient = async (patient) => {
-    if (!patient) return;
+    if (!patient) {
+      console.log('No patient provided to loadCaseHistoryForPatient');
+      return;
+    }
+    console.log('Loading case history for patient:', patient);
     setHistoryLoading(true);
     setHistoryError('');
     try {
@@ -905,6 +909,8 @@ const SuperAdminPatients = () => {
       const pfname = String(patient.firstName || '').trim().toLowerCase();
       const plname = String(patient.lastName || '').trim().toLowerCase();
       const list = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+      console.log('All bite cases:', list.length);
+      console.log('Patient ID:', pid, 'Registration:', reg, 'Name:', pname);
       const filtered = list.filter(c => {
         const cid = String(c.patientId || c.patientID || '').trim();
         const cname = String(c.patientName || '').trim().toLowerCase();
@@ -921,6 +927,8 @@ const SuperAdminPatients = () => {
         }
         return false;
       });
+      console.log('Filtered cases:', filtered.length);
+      console.log('Filtered cases data:', filtered);
       setCaseHistory(filtered.sort((a,b)=> new Date(b.createdAt||b.incidentDate||0)-new Date(a.createdAt||a.incidentDate||0)));
     } catch (err) {
       setHistoryError(err.message || 'Failed to load case history');
@@ -2605,7 +2613,7 @@ const SuperAdminPatients = () => {
                   <button 
                     type="button"
                     className="patient-modal-btn"
-                    onClick={() => { setShowHistory(true); loadCaseHistory(); }}
+                    onClick={() => { setShowHistory(true); loadCaseHistoryForPatient(selectedPatient); }}
                   >
                     Case History
                   </button>
