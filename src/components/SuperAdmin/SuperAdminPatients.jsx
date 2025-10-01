@@ -1004,82 +1004,69 @@ const SuperAdminPatients = () => {
       console.log('Patient registration number:', registrationNumber);
       console.log('Patient name:', patientName);
       
-      // Try multiple approaches to find vaccination data
-      let data = [];
+      // Get vaccination data from bite cases (same as vaccination scheduler)
+      let biteCases = [];
+      
+      // Try multiple approaches to find bite cases with vaccination data
       
       // Approach 1: Try with patientId
       try {
         console.log('Trying with patientId:', patientId);
-        const response1 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(patientId)}`);
+        const response1 = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
         const data1 = await response1.json();
-        console.log('Vaccination data with patientId:', data1);
+        console.log('Bite cases data with patientId:', data1);
         if (Array.isArray(data1) && data1.length > 0) {
-          data = data1;
+          biteCases = data1;
         }
       } catch (error) {
         console.log('Error with patientId approach:', error);
       }
       
       // Approach 2: Try with registration number
-      if (data.length === 0 && registrationNumber) {
+      if (biteCases.length === 0 && registrationNumber) {
         try {
           console.log('Trying with registration number:', registrationNumber);
-          const response2 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?registrationNumber=${encodeURIComponent(registrationNumber)}`);
+          const response2 = await apiFetch(`${apiConfig.endpoints.bitecases}?registrationNumber=${encodeURIComponent(registrationNumber)}`);
           const data2 = await response2.json();
-          console.log('Vaccination data with registration number:', data2);
+          console.log('Bite cases data with registration number:', data2);
           if (Array.isArray(data2) && data2.length > 0) {
-            data = data2;
+            biteCases = data2;
           }
         } catch (error) {
           console.log('Error with registration number approach:', error);
         }
       }
       
-      // Approach 3: Try with patient name
-      if (data.length === 0 && patientName) {
+      // Approach 3: Get all bite cases and filter client-side
+      if (biteCases.length === 0) {
         try {
-          console.log('Trying with patient name:', patientName);
-          const response3 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?name=${encodeURIComponent(patientName)}`);
-          const data3 = await response3.json();
-          console.log('Vaccination data with patient name:', data3);
-          if (Array.isArray(data3) && data3.length > 0) {
-            data = data3;
-          }
-        } catch (error) {
-          console.log('Error with patient name approach:', error);
-        }
-      }
-      
-      // Approach 4: Get all vaccination dates and filter client-side
-      if (data.length === 0) {
-        try {
-          console.log('Trying to get all vaccination dates and filter client-side');
-          const response4 = await apiFetch(apiConfig.endpoints.vaccinationDates);
-          const allData = await response4.json();
-          console.log('All vaccination dates:', allData);
+          console.log('Trying to get all bite cases and filter client-side');
+          const response3 = await apiFetch(apiConfig.endpoints.bitecases);
+          const allData = await response3.json();
+          console.log('All bite cases:', allData);
           
           if (Array.isArray(allData)) {
-            // Filter by patientId, registrationNumber, or name
-            data = allData.filter(vaccination => {
-              const vPatientId = vaccination.patientId || '';
-              const vRegistrationNumber = vaccination.registrationNumber || '';
+            // Filter by patientId or registrationNumber
+            biteCases = allData.filter(biteCase => {
+              const bcPatientId = biteCase.patientId || '';
+              const bcRegistrationNumber = biteCase.registrationNumber || '';
               
               // Check if patientId matches
-              if (patientId && vPatientId && vPatientId === patientId) return true;
+              if (patientId && bcPatientId && bcPatientId === patientId) return true;
               
               // Check if registration number matches
-              if (registrationNumber && vRegistrationNumber && vRegistrationNumber === registrationNumber) return true;
+              if (registrationNumber && bcRegistrationNumber && bcRegistrationNumber === registrationNumber) return true;
               
               return false;
             });
-            console.log('Filtered vaccination data:', data);
+            console.log('Filtered bite cases:', biteCases);
           }
         } catch (error) {
           console.log('Error with client-side filtering approach:', error);
         }
       }
       
-      console.log('Final vaccination schedule data:', data);
+      console.log('Final bite cases data:', biteCases);
       
       // Also try fetching all vaccination dates to see if there's any data
       try {
@@ -1090,20 +1077,20 @@ const SuperAdminPatients = () => {
         console.log('Error fetching all vaccination dates:', error);
       }
       
-      if (Array.isArray(data) && data.length > 0) {
-        // Process vaccination dates to create history records
+      if (Array.isArray(biteCases) && biteCases.length > 0) {
+        // Process bite cases to create vaccination history records (same as vaccination scheduler)
         const historyRecords = [];
         
-        data.forEach(vaccinationDate => {
-          console.log('Processing vaccination date:', vaccinationDate);
+        biteCases.forEach(biteCase => {
+          console.log('Processing bite case for vaccination data:', biteCase);
           
-          // Extract vaccination schedule data
+          // Extract vaccination data from bite case (same structure as vaccination scheduler)
           const scheduleData = [
-            { day: 'Day 0', date: vaccinationDate.d0Date, status: vaccinationDate.d0Status },
-            { day: 'Day 3', date: vaccinationDate.d3Date, status: vaccinationDate.d3Status },
-            { day: 'Day 7', date: vaccinationDate.d7Date, status: vaccinationDate.d7Status },
-            { day: 'Day 14', date: vaccinationDate.d14Date, status: vaccinationDate.d14Status },
-            { day: 'Day 28', date: vaccinationDate.d28Date, status: vaccinationDate.d28Status }
+            { day: 'Day 0', date: biteCase.d0Date, status: biteCase.d0Status },
+            { day: 'Day 3', date: biteCase.d3Date, status: biteCase.d3Status },
+            { day: 'Day 7', date: biteCase.d7Date, status: biteCase.d7Status },
+            { day: 'Day 14', date: biteCase.d14Date, status: biteCase.d14Status },
+            { day: 'Day 28', date: biteCase.d28Date, status: biteCase.d28Status }
           ];
           
           scheduleData.forEach(schedule => {
@@ -1112,12 +1099,12 @@ const SuperAdminPatients = () => {
                 day: schedule.day,
                 date: schedule.date ? new Date(schedule.date).toLocaleDateString() : 'Not scheduled',
                 status: schedule.status || 'scheduled',
-                vaccineType: vaccinationDate.vaccineType || 'Anti-Rabies',
-                center: vaccinationDate.center || vaccinationDate.centerName || 'Unknown Center',
+                vaccineType: biteCase.vaccineType || 'Anti-Rabies',
+                center: biteCase.center || biteCase.centerName || 'Unknown Center',
                 patientName: `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
-                notes: vaccinationDate.notes || '',
-                biteCaseId: vaccinationDate.biteCaseId,
-                createdAt: vaccinationDate.createdAt
+                notes: biteCase.notes || '',
+                biteCaseId: biteCase._id,
+                createdAt: biteCase.createdAt
               };
               
               // Only add records that have been completed, missed, or scheduled
@@ -1137,63 +1124,10 @@ const SuperAdminPatients = () => {
         });
         
         setVaccinationHistory(historyRecords);
-        console.log('Processed vaccination history:', historyRecords);
+        console.log('Processed vaccination history from bite cases:', historyRecords);
       } else {
-        console.log('No vaccination schedule data found, trying alternative approach...');
-        
-        // Try to get vaccination data from bite cases as fallback
-        try {
-          const biteCasesResponse = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
-          const biteCasesData = await biteCasesResponse.json();
-          console.log('Bite cases data for vaccination fallback:', biteCasesData);
-          
-          if (Array.isArray(biteCasesData) && biteCasesData.length > 0) {
-            const historyRecords = [];
-            
-            biteCasesData.forEach(biteCase => {
-              console.log('Processing bite case for vaccination data:', biteCase);
-              
-              // Extract vaccination data from bite case
-              const scheduleData = [
-                { day: 'Day 0', date: biteCase.day0Date, status: biteCase.d0Status },
-                { day: 'Day 3', date: biteCase.day3Date, status: biteCase.d3Status },
-                { day: 'Day 7', date: biteCase.day7Date, status: biteCase.d7Status },
-                { day: 'Day 14', date: biteCase.day14Date, status: biteCase.d14Status },
-                { day: 'Day 28', date: biteCase.day28Date, status: biteCase.d28Status }
-              ];
-              
-              scheduleData.forEach(schedule => {
-                if (schedule.date || schedule.status) {
-                  const record = {
-                    day: schedule.day,
-                    date: schedule.date ? new Date(schedule.date).toLocaleDateString() : 'Not scheduled',
-                    status: schedule.status || 'scheduled',
-                    vaccineType: biteCase.vaccineType || 'Anti-Rabies',
-                    center: biteCase.center || biteCase.centerName || 'Unknown Center',
-                    patientName: `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
-                    notes: biteCase.notes || '',
-                    biteCaseId: biteCase._id,
-                    createdAt: biteCase.createdAt
-                  };
-                  
-                  // Only add records that have been completed, missed, or scheduled
-                  if (record.status === 'completed' || record.status === 'missed' || record.status === 'scheduled') {
-                    historyRecords.push(record);
-                  }
-                }
-              });
-            });
-            
-            setVaccinationHistory(historyRecords);
-            console.log('Processed vaccination history from bite cases:', historyRecords);
-          } else {
-            console.log('No bite cases data found either');
-            setVaccinationHistory([]);
-          }
-        } catch (error) {
-          console.error('Error fetching bite cases for vaccination fallback:', error);
-          setVaccinationHistory([]);
-        }
+        console.log('No bite cases data found');
+        setVaccinationHistory([]);
       }
     } catch (error) {
       console.error('Error loading vaccination history:', error);
