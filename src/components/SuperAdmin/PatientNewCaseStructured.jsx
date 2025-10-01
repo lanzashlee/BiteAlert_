@@ -1133,19 +1133,98 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           
           {current.active && (
             <div style={{ marginLeft: 24 }}>
-              {/* Toxoid Section */}
+              {/* Exposure/Immunization Type */}
               <div style={{ marginBottom: 16 }}>
-                <h4 style={{ ...h3Style, fontSize: '16px', marginBottom: 12 }}>Toxoid</h4>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.post} onChange={e=>setCurrent(s=>({ ...s, post:e.target.checked, pre:e.target.checked?false:s.pre, prevImm:e.target.checked?false:s.prevImm }))} />
+                    Post Exposure
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.pre} onChange={e=>setCurrent(s=>({ ...s, pre:e.target.checked, post:e.target.checked?false:s.post, prevImm:e.target.checked?false:s.prevImm }))} />
+                    Pre-Exposure Prophylaxis
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.prevImm} onChange={e=>setCurrent(s=>({ ...s, prevImm:e.target.checked, post:false, pre:false }))} />
+                    (Previously Immunized/PEP)
+                  </label>
+                </div>
+              </div>
+
+              {/* Vaccine Name */}
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Vaccine Name:</p>
                 <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                  <Labeled labelText="TT1:">
-                    <input type="date" style={inputCss} value={tt.tt1} onChange={e=>setTt(s=>({ ...s, tt1:e.target.value }))} />
-                  </Labeled>
-                  <Labeled labelText="TT2:">
-                    <input type="date" style={inputCss} value={tt.tt2} onChange={e=>setTt(s=>({ ...s, tt2:e.target.value }))} />
-                  </Labeled>
-                  <Labeled labelText="TT3:">
-                    <input type="date" style={inputCss} value={tt.tt3} onChange={e=>setTt(s=>({ ...s, tt3:e.target.value }))} />
-                  </Labeled>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.pvrv} onChange={e=>setCurrent(s=>({ ...s, pvrv:e.target.checked, pcec:e.target.checked?false:s.pcec }))} />
+                    SPEEDA (PVRV)
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.pcec} onChange={e=>setCurrent(s=>({ ...s, pcec:e.target.checked, pvrv:e.target.checked?false:s.pvrv }))} />
+                    VAXIRAB (PCEC)
+                  </label>
+                </div>
+              </div>
+
+              {/* Route of Administration */}
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Route of Administration:</p>
+                <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.id} onChange={e=>setCurrent(s=>({ ...s, id:e.target.checked, im:e.target.checked?false:s.im }))} />
+                    Intradermal (ID)
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.im} onChange={e=>setCurrent(s=>({ ...s, im:e.target.checked, id:e.target.checked?false:s.id }))} />
+                    Intramuscular (IM)
+                  </label>
+                </div>
+              </div>
+
+              {/* Schedule Dates */}
+              <div style={{ marginBottom: 16 }}>
+                <h4 style={{ ...h3Style, fontSize: '16px', marginBottom: 8 }}>SCHEDULE DATES OF IMMUNIZATION</h4>
+                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>DATE</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D0:</span>
+                    <input 
+                      type="date" 
+                      style={inputCss} 
+                      value={schedule.d0} 
+                      onChange={e => {
+                        const d0Date = e.target.value;
+                        if (d0Date) {
+                          const baseDate = new Date(d0Date);
+                          setSchedule({
+                            d0: d0Date,
+                            d3: toISO(new Date(baseDate.getTime() + 3 * 86400000)),
+                            d7: toISO(new Date(baseDate.getTime() + 7 * 86400000)),
+                            d14: toISO(new Date(baseDate.getTime() + 14 * 86400000)),
+                            d28: toISO(new Date(baseDate.getTime() + 28 * 86400000))
+                          });
+                        } else {
+                          setSchedule(s => ({ ...s, d0: '' }));
+                        }
+                      }}
+                    />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D3:</span>
+                    <input type="date" style={inputCss} value={schedule.d3} onChange={e=>setSchedule(s=>({ ...s, d3:e.target.value }))} />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D7:</span>
+                    <input type="date" style={inputCss} value={schedule.d7} onChange={e=>setSchedule(s=>({ ...s, d7:e.target.value }))} />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D14:</span>
+                    <input type="date" style={inputCss} value={schedule.d14} onChange={e=>setSchedule(s=>({ ...s, d14:e.target.value }))} />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D28:</span>
+                    <input type="date" style={inputCss} value={schedule.d28} onChange={e=>setSchedule(s=>({ ...s, d28:e.target.value }))} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1238,78 +1317,6 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         </div>
       </div>
 
-      {/* SCHEDULE DATES OF IMMUNIZATION */}
-      <div style={card}>
-        <h3 style={h3Style}>SCHEDULE DATES OF IMMUNIZATION</h3>
-        <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: palette.text }}>DATE</p>
-        
-        {/* Auto-calculating Schedule Dates */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D0:</span>
-            <input 
-              type="date" 
-              style={inputCss} 
-              value={schedule.d0} 
-              onChange={e => {
-                const d0Date = e.target.value;
-                if (d0Date) {
-                  const baseDate = new Date(d0Date);
-                  setSchedule({
-                    d0: d0Date,
-                    d3: toISO(new Date(baseDate.getTime() + 3 * 86400000)),
-                    d7: toISO(new Date(baseDate.getTime() + 7 * 86400000)),
-                    d14: toISO(new Date(baseDate.getTime() + 14 * 86400000)),
-                    d28: toISO(new Date(baseDate.getTime() + 28 * 86400000))
-                  });
-                } else {
-                  setSchedule(s => ({ ...s, d0: '' }));
-                }
-              }}
-            />
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D3:</span>
-            <input 
-              type="date" 
-              style={inputCss} 
-              value={schedule.d3} 
-              onChange={e => setSchedule(s => ({ ...s, d3: e.target.value }))}
-            />
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D7:</span>
-            <input 
-              type="date" 
-              style={inputCss} 
-              value={schedule.d7} 
-              onChange={e => setSchedule(s => ({ ...s, d7: e.target.value }))}
-            />
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D14:</span>
-            <input 
-              type="date" 
-              style={inputCss} 
-              value={schedule.d14} 
-              onChange={e => setSchedule(s => ({ ...s, d14: e.target.value }))}
-            />
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D28:</span>
-            <input 
-              type="date" 
-              style={inputCss} 
-              value={schedule.d28} 
-              onChange={e => setSchedule(s => ({ ...s, d28: e.target.value }))}
-            />
-          </div>
-        </div>
-      </div>
 
       {/* Save/Cancel */}
       <div style={{ 
