@@ -2211,76 +2211,199 @@ const SuperAdminPatients = () => {
 
 
                 <div className="info-section">
-                  <h5>
-                    <span>Case History</span>
-                  </h5>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h5 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fa fa-history" style={{ color: '#3b82f6' }}></i>
+                      <span>Case History</span>
+                      {caseHistory.length > 0 && (
+                        <span style={{ 
+                          background: '#3b82f6', 
+                          color: 'white', 
+                          padding: '2px 8px', 
+                          borderRadius: '12px', 
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}>
+                          {caseHistory.length} case{caseHistory.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </h5>
+                    {caseHistory.length > 0 && (
+                      <button
+                        onClick={loadCaseHistory}
+                        style={{
+                          background: '#f3f4f6',
+                          border: '1px solid #d1d5db',
+                          color: '#374151',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <i className="fa fa-refresh"></i>
+                        Refresh
+                      </button>
+                    )}
+                  </div>
+                  
+                  {historyLoading && (
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      alignItems: 'center', 
+                      padding: '2rem',
+                      color: '#6b7280'
+                    }}>
+                      <i className="fa fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                      Loading case history...
+                    </div>
+                  )}
+                  
                   {historyError && (
                     <div className="error-state" style={{ marginBottom: '1rem' }}>
+                      <i className="fa fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
                       {historyError}
                     </div>
                   )}
+                  
                   {!historyLoading && !historyError && (
                     caseHistory.length === 0 ? (
-                    <div className="empty-state" style={{ padding:'1rem 0' }}>
-                        <i className="fa fa-file-medical" style={{ fontSize: '2rem', color: '#9ca3af', marginBottom: '0.5rem' }}></i>
-                        <p style={{ margin: '0', fontSize: '1rem', color: '#6b7280' }}>No previous cases found</p>
+                    <div className="empty-state" style={{ padding:'2rem 0', textAlign: 'center' }}>
+                        <i className="fa fa-file-medical" style={{ fontSize: '3rem', color: '#9ca3af', marginBottom: '1rem' }}></i>
+                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#6b7280', fontWeight: '500' }}>No previous cases found</p>
                         <small style={{ color: '#9ca3af' }}>This patient has no recorded bite cases yet.</small>
                     </div>
                   ) : (
-                      <div className="table-responsive" style={{ boxShadow:'none', borderRadius:12, maxHeight: '300px', overflowY: 'auto' }}>
+                      <div className="table-responsive" style={{ boxShadow:'none', borderRadius:12, maxHeight: '400px', overflowY: 'auto' }}>
                       <table className="table" style={{ minWidth: 'auto', tableLayout: 'auto' }}>
-                        <thead>
+                        <thead style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 1 }}>
                           <tr>
-                            <th style={{ width: '20%' }}>Date</th>
-                            <th style={{ width: '25%' }}>Type</th>
-                            <th style={{ width: '20%' }}>Animal</th>
-                            <th style={{ width: '20%' }}>Category</th>
-                            <th style={{ width: '15%' }}>Actions</th>
+                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Date</th>
+                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Type</th>
+                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Animal</th>
+                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Category</th>
+                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Status</th>
+                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Center</th>
+                            <th style={{ width: '10%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {caseHistory.map((c)=> (
-                              <tr key={c._id} style={{ cursor: 'pointer' }} onClick={() => handleCaseClick(c)}>
-                              <td style={{ fontSize: '0.85rem' }}>
-                                {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : (c.incidentDate ? new Date(c.incidentDate).toLocaleDateString() : 'N/A')}
+                          {caseHistory.map((c, index)=> (
+                              <tr key={c._id} style={{ 
+                                cursor: 'pointer',
+                                backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
+                                transition: 'background-color 0.2s ease'
+                              }} 
+                              onClick={() => handleCaseClick(c)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#f0f9ff';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f9fafb';
+                              }}>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <span style={{ fontWeight: '500' }}>
+                                    {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : (c.incidentDate ? new Date(c.incidentDate).toLocaleDateString() : 'N/A')}
+                                  </span>
+                                  {c.incidentDate && c.createdAt && new Date(c.incidentDate).toLocaleDateString() !== new Date(c.createdAt).toLocaleDateString() && (
+                                    <small style={{ color: '#6b7280', fontSize: '0.7rem' }}>
+                                      Incident: {new Date(c.incidentDate).toLocaleDateString()}
+                                    </small>
+                                  )}
+                                </div>
                               </td>
-                                <td style={{ fontSize: '0.85rem' }}>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                  backgroundColor: c.typeOfExposure && c.typeOfExposure.includes('BITE') ? '#fef2f2' : '#f0f9ff',
+                                  color: c.typeOfExposure && c.typeOfExposure.includes('BITE') ? '#dc2626' : '#2563eb'
+                                }}>
                                   {c.typeOfExposure && c.typeOfExposure.includes('BITE') ? 'Bite' : 
                                    c.typeOfExposure && c.typeOfExposure.includes('NON-BITE') ? 'Non-Bite' : 'Unknown'}
-                                </td>
-                                <td style={{ fontSize: '0.85rem' }}>
-                                  {c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'Dog' : 
-                                   c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'Cat' : 
-                                   c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Others') ? (c.animalProfile.othersSpecify || 'Other') : 'Unknown'}
-                                </td>
-                                <td style={{ fontSize: '0.85rem' }}>
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <i className={`fa ${c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'fa-dog' : 
+                                                   c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'fa-cat' : 'fa-paw'}`} 
+                                     style={{ color: '#6b7280', fontSize: '0.8rem' }}></i>
+                                  <span>
+                                    {c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'Dog' : 
+                                     c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'Cat' : 
+                                     c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Others') ? (c.animalProfile.othersSpecify || 'Other') : 'Unknown'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                  backgroundColor: c.management && c.management.category && c.management.category.includes('Category 3') ? '#fef2f2' : 
+                                                  c.management && c.management.category && c.management.category.includes('Category 2') ? '#fef3c7' : '#f0f9ff',
+                                  color: c.management && c.management.category && c.management.category.includes('Category 3') ? '#dc2626' : 
+                                         c.management && c.management.category && c.management.category.includes('Category 2') ? '#d97706' : '#2563eb'
+                                }}>
                                   {c.management && c.management.category && c.management.category.includes('Category 1') ? 'Cat 1' : 
                                    c.management && c.management.category && c.management.category.includes('Category 2') ? 'Cat 2' : 
                                    c.management && c.management.category && c.management.category.includes('Category 3') ? 'Cat 3' : 'Unknown'}
-                                </td>
-                                <td>
-                                  <button 
-                                    style={{
-                                      background: '#dc2626',
-                                      border: 'none',
-                                      color: 'white',
-                                      padding: '4px 8px',
-                                      borderRadius: '4px',
-                                      fontSize: '0.7rem',
-                                      cursor: 'pointer',
-                                      transition: 'all 0.3s ease',
-                                      fontWeight: '500'
-                                    }}
-                                    onMouseOver={(e) => {
-                                      e.target.style.backgroundColor = '#b91c1c';
-                                    }}
-                                    onMouseOut={(e) => {
-                                      e.target.style.backgroundColor = '#dc2626';
-                                    }}
-                                  >
-                                    View
-                                  </button>
-                                </td>
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                  backgroundColor: c.status === 'Completed' ? '#f0fdf4' : 
+                                                  c.status === 'Ongoing' ? '#fef3c7' : '#f3f4f6',
+                                  color: c.status === 'Completed' ? '#16a34a' : 
+                                         c.status === 'Ongoing' ? '#d97706' : '#6b7280'
+                                }}>
+                                  {c.status || 'Unknown'}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{ color: '#6b7280' }}>
+                                  {c.center || c.centerName || 'N/A'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 8px' }}>
+                                <button 
+                                  style={{
+                                    background: '#3b82f6',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    fontWeight: '500',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = '#2563eb';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = '#3b82f6';
+                                  }}
+                                >
+                                  <i className="fa fa-eye"></i>
+                                  View
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
