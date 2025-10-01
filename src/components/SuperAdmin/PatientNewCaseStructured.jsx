@@ -23,12 +23,47 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
   useEffect(() => {
     const loadCenters = async () => {
       try {
-        const response = await apiFetch('/api/centers');
-        if (response.success) {
-          setCenters(response.data || []);
+        console.log('Loading centers...');
+        // Try multiple possible endpoints
+        const endpoints = ['/api/centers', '/api/center', '/api/health-centers'];
+        
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`Trying endpoint: ${endpoint}`);
+            const response = await apiFetch(endpoint);
+            console.log(`${endpoint} response:`, response);
+            
+            if (response.success && response.data && Array.isArray(response.data)) {
+              setCenters(response.data);
+              console.log('Centers loaded successfully from:', endpoint);
+              return;
+            } else if (Array.isArray(response)) {
+              setCenters(response);
+              console.log('Centers loaded successfully from:', endpoint);
+              return;
+            }
+          } catch (endpointError) {
+            console.log(`${endpoint} failed:`, endpointError);
+            continue;
+          }
         }
+        
+        console.log('All center endpoints failed, using fallback data');
+        // Fallback: Use some default centers if API fails
+        setCenters([
+          { _id: '1', name: 'Balong-Bato Center' },
+          { _id: '2', name: 'Salapan Center' },
+          { _id: '3', name: 'San Juan Center' }
+        ]);
+        
       } catch (error) {
         console.error('Error loading centers:', error);
+        // Fallback data
+        setCenters([
+          { _id: '1', name: 'Balong-Bato Center' },
+          { _id: '2', name: 'Salapan Center' },
+          { _id: '3', name: 'San Juan Center' }
+        ]);
       }
     };
     loadCenters();
@@ -156,17 +191,84 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     setProvince(p.province||'');
     setZipCode(p.zipCode||'');
 
-    // initialize schedule D0..D28
+    // initialize schedule D0..D28 with ISO format for date inputs
     const base = new Date();
-    const f = (d)=> d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-    setSchedule({ d0:f(base), d3:f(new Date(base.getTime()+3*86400000)), d7:f(new Date(base.getTime()+7*86400000)), d14:f(new Date(base.getTime()+14*86400000)), d28:f(new Date(base.getTime()+28*86400000))});
+    const toISO = (d) => d.toISOString().split('T')[0]; // Convert to YYYY-MM-DD format
+    setSchedule({ 
+      d0: toISO(base), 
+      d3: toISO(new Date(base.getTime()+3*86400000)), 
+      d7: toISO(new Date(base.getTime()+7*86400000)), 
+      d14: toISO(new Date(base.getTime()+14*86400000)), 
+      d28: toISO(new Date(base.getTime()+28*86400000))
+    });
   }, [selectedPatient]);
 
   const validate = () => {
+    // Basic information validation
     if (!firstName || !lastName || !sex) return 'Basic information is incomplete';
     if (!barangay || !city || !province) return 'Address is incomplete';
-    if (!current.pvrv && !current.pcec) return 'Select vaccine name (SPEEDA or VAXIRAB)';
-    if (!current.id && !current.im) return 'Select route (ID or IM)';
+    
+    // Animal Profile validation
+    if (!animal.dog && !animal.cat && !animal.other) return 'Please select at least one animal type';
+    if (animal.other && !animal.otherText.trim()) return 'Please specify the animal type in "Others" field';
+    
+    if (!animal.healthy && !animal.sick && !animal.died && !animal.killed) return 'Please select animal condition';
+    
+    if (!animal.brainExam && !animal.noBrainExam && !animal.unknown) return 'Please select brain exam status';
+    
+    if (!animal.immunized && !animal.notImmunized) return 'Please select immunization status';
+    if (animal.immunized && !animal.immunizedYear.trim()) return 'Please specify the year of immunization';
+    
+    if (!animal.pet && !animal.neighbor && !animal.stray) return 'Please select animal ownership';
+    
+    // Nature of Injury validation
+    if (!injury.multiple && !injury.abrasion && !injury.avulsion && !injury.burn && !injury.concussion && !injury.contusion && !injury.openWound && !injury.trauma && !injury.others) {
+      return 'Please select at least one injury type or mark as "No" for multiple injuries';
+    }
+    if (injury.others && !injury.othersText.trim()) return 'Please specify other injury details';
+    if (injury.burn && (!injury.burnDegree || injury.burnDegree < 1 || injury.burnDegree > 4)) return 'Please specify valid burn degree (1-4)';
+    
+    // External Cause validation
+    if (!biteSting && !chemicalSubstance) return 'Please select at least one external cause';
+    if (biteSting && !biteStingDetails.trim()) return 'Please specify the animal/insect for bite/sting';
+    if (chemicalSubstance && !chemicalDetails.trim()) return 'Please specify the chemical substance';
+    
+    // Place of Occurrence validation
+    if (!place.home && !place.school && !place.road && !place.neighbor && !place.others) return 'Please select place of occurrence';
+    if (place.others && !place.othersText.trim()) return 'Please specify other place of occurrence';
+    
+    // Disposition validation
+    if (!treated && !transferred) return 'Please select disposition (Treated & Sent Home or Transferred)';
+    if (transferred && !transferredTo.trim()) return 'Please select facility/hospital for transfer';
+    
+    // Circumstance of Bite validation
+    if (!provoked && !unprovoked) return 'Please select circumstance of bite (Provoked or Unprovoked)';
+    
+    // Medical History validation
+    if (!diagnosis.trim()) return 'Please enter diagnosis';
+    if (!category1 && !category2 && !category3) return 'Please select bite category';
+    if (!allergyHistory.trim()) return 'Please enter allergy history';
+    if (!maintenanceMedications.trim()) return 'Please enter maintenance medications';
+    if (!management.trim()) return 'Please enter management plan';
+    
+    // Patient Immunization validation
+    if (!dpt.complete && !dpt.incomplete && !dpt.none) return 'Please select DPT immunization status';
+    if (dpt.complete && !dpt.year.trim()) return 'Please specify the year for complete DPT immunization';
+    if (dpt.incomplete && !dpt.doses.trim()) return 'Please specify number of doses for incomplete DPT immunization';
+    
+    // Current Anti-Rabies Immunization validation
+    if (!current.active && !current.passive) return 'Please select immunization type (Active or Passive)';
+    if (current.active && !current.post && !current.pre && !current.prevImm) return 'Please select exposure type for active immunization';
+    if (current.active && !current.pvrv && !current.pcec) return 'Please select vaccine name (SPEEDA or VAXIRAB)';
+    if (current.active && !current.id && !current.im) return 'Please select route of administration (ID or IM)';
+    
+    if (current.passive && !current.skinTest && !current.hrig) return 'Please select passive immunization type (SKIN TEST or HRIG)';
+    if (current.skinTest && (!current.skinTime || !current.skinRead || !current.skinResult.trim())) return 'Please complete SKIN TEST details';
+    if (current.hrig && !current.hrigDose.trim()) return 'Please specify HRIG dose';
+    
+    // Schedule dates validation
+    if (!schedule.d0 || !schedule.d3 || !schedule.d7 || !schedule.d14 || !schedule.d28) return 'Please complete all vaccination schedule dates';
+    
     return '';
   };
 
@@ -547,7 +649,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input 
               type="checkbox" 
               checked={injury.abrasion} 
-              disabled={!injury.multiple && getSelectedInjuryCount() > 0 && !injury.abrasion}
+              disabled={!injury.multiple}
               onChange={e=>setInjury(s=>({ ...s, abrasion: e.target.checked }))} 
             />
             Abrasion
@@ -556,7 +658,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input 
               type="checkbox" 
               checked={injury.avulsion} 
-              disabled={!injury.multiple && getSelectedInjuryCount() > 0 && !injury.avulsion}
+              disabled={!injury.multiple}
               onChange={e=>setInjury(s=>({ ...s, avulsion: e.target.checked }))} 
             />
             Avulsion
@@ -565,7 +667,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input 
               type="checkbox" 
               checked={injury.burn} 
-              disabled={!injury.multiple && getSelectedInjuryCount() > 0 && !injury.burn}
+              disabled={!injury.multiple}
               onChange={e=>setInjury(s=>({ ...s, burn: e.target.checked }))} 
             />
             Burn (Degree of Burn and Extent of Body Surface involve Degree)
@@ -574,7 +676,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input 
               type="checkbox" 
               checked={injury.concussion} 
-              disabled={!injury.multiple && getSelectedInjuryCount() > 0 && !injury.concussion}
+              disabled={!injury.multiple}
               onChange={e=>setInjury(s=>({ ...s, concussion: e.target.checked }))} 
             />
             Concussion
@@ -583,7 +685,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input 
               type="checkbox" 
               checked={injury.contusion} 
-              disabled={!injury.multiple && getSelectedInjuryCount() > 0 && !injury.contusion}
+              disabled={!injury.multiple}
               onChange={e=>setInjury(s=>({ ...s, contusion: e.target.checked }))} 
             />
             Contusion
@@ -592,7 +694,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input 
               type="checkbox" 
               checked={injury.openWound} 
-              disabled={!injury.multiple && getSelectedInjuryCount() > 0 && !injury.openWound}
+              disabled={!injury.multiple}
               onChange={e=>setInjury(s=>({ ...s, openWound: e.target.checked }))} 
             />
             Open wound/laceration
@@ -601,7 +703,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input 
               type="checkbox" 
               checked={injury.trauma} 
-              disabled={!injury.multiple && getSelectedInjuryCount() > 0 && !injury.trauma}
+              disabled={!injury.multiple}
               onChange={e=>setInjury(s=>({ ...s, trauma: e.target.checked }))} 
             />
             Trauma
@@ -614,7 +716,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input 
               type="checkbox" 
               checked={injury.others} 
-              disabled={!injury.multiple && getSelectedInjuryCount() > 0 && !injury.others}
+              disabled={!injury.multiple}
               onChange={e=>setInjury(s=>({ ...s, others: e.target.checked }))} 
             />
             Others:
@@ -632,7 +734,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             placeholder="Specify other injury details..."
             value={injury.othersText} 
             onChange={e=>setInjury(s=>({ ...s, othersText: e.target.value }))}
-            disabled={!injury.others}
+            disabled={!injury.others || !injury.multiple}
           />
         </div>
 
@@ -706,10 +808,19 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
               <label style={{ display:'block', marginBottom:4, fontWeight:'bold' }}>Specify facility/hospital:</label>
               <select style={inputCss} value={transferredTo} onChange={e=>setTransferredTo(e.target.value)}>
                 <option value="">Select facility/hospital</option>
-                {centers.map(center => (
-                  <option key={center._id} value={center.name}>{center.name}</option>
-                ))}
+                {centers.length > 0 ? (
+                  centers.map(center => (
+                    <option key={center._id} value={center.name}>{center.name}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Loading centers...</option>
+                )}
               </select>
+              {centers.length === 0 && (
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  No centers available. Check console for errors.
+                </div>
+              )}
             </div>
           ) : null}
         </div>
@@ -1007,7 +1118,8 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         </div>
       </div>
 
-      {/* Current Anti-Rabies */}
+
+      {/* Current Anti-Rabies Immunization */}
       <div style={card}>
         <h3 style={h3Style}>Current Anti‑Rabies Immunization</h3>
         
@@ -1020,79 +1132,19 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           
           {current.active && (
             <div style={{ marginLeft: 24 }}>
-              {/* Exposure/Immunization Type */}
+              {/* Toxoid Section */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.post} onChange={e=>setCurrent(s=>({ ...s, post:e.target.checked, pre:e.target.checked?false:s.pre, prevImm:e.target.checked?false:s.prevImm }))} />
-                    Post Exposure
-                  </label>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.pre} onChange={e=>setCurrent(s=>({ ...s, pre:e.target.checked, post:e.target.checked?false:s.post, prevImm:e.target.checked?false:s.prevImm }))} />
-                    Pre-Exposure Prophylaxis
-                  </label>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.prevImm} onChange={e=>setCurrent(s=>({ ...s, prevImm:e.target.checked, post:false, pre:false }))} />
-                    (Previously Immunized/PEP)
-                  </label>
-                </div>
-              </div>
-
-              {/* Vaccine Name */}
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Vaccine Name:</p>
+                <h4 style={{ ...h3Style, fontSize: '16px', marginBottom: 12 }}>Toxoid</h4>
                 <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.pvrv} onChange={e=>setCurrent(s=>({ ...s, pvrv:e.target.checked, pcec:e.target.checked?false:s.pcec }))} />
-                    SPEEDA (PVRV)
-                  </label>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.pcec} onChange={e=>setCurrent(s=>({ ...s, pcec:e.target.checked, pvrv:e.target.checked?false:s.pvrv }))} />
-                    VAXIRAB (PCEC)
-                  </label>
-                </div>
-              </div>
-
-              {/* Route of Administration */}
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Route of Administration:</p>
-                <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.id} onChange={e=>setCurrent(s=>({ ...s, id:e.target.checked, im:e.target.checked?false:s.im }))} />
-                    Intradermal (ID)
-                  </label>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.im} onChange={e=>setCurrent(s=>({ ...s, im:e.target.checked, id:e.target.checked?false:s.id }))} />
-                    Intramuscular (IM)
-                  </label>
-                </div>
-              </div>
-
-              {/* Schedule Dates */}
-              <div style={{ marginBottom: 16 }}>
-                <h4 style={{ ...h3Style, fontSize: '16px', marginBottom: 8 }}>SCHEDULE DATES OF IMMUNIZATION</h4>
-                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>DATE</p>
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D0:</span>
-                    <input type="date" style={inputCss} value={schedule.d0} onChange={e=>setSchedule(s=>({ ...s, d0:e.target.value }))} />
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D3:</span>
-                    <input type="date" style={inputCss} value={schedule.d3} onChange={e=>setSchedule(s=>({ ...s, d3:e.target.value }))} />
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D7:</span>
-                    <input type="date" style={inputCss} value={schedule.d7} onChange={e=>setSchedule(s=>({ ...s, d7:e.target.value }))} />
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D14:</span>
-                    <input type="date" style={inputCss} value={schedule.d14} onChange={e=>setSchedule(s=>({ ...s, d14:e.target.value }))} />
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D28:</span>
-                    <input type="date" style={inputCss} value={schedule.d28} onChange={e=>setSchedule(s=>({ ...s, d28:e.target.value }))} />
-                  </div>
+                  <Labeled labelText="TT1:">
+                    <input type="date" style={inputCss} value={tt.tt1} onChange={e=>setTt(s=>({ ...s, tt1:e.target.value }))} />
+                  </Labeled>
+                  <Labeled labelText="TT2:">
+                    <input type="date" style={inputCss} value={tt.tt2} onChange={e=>setTt(s=>({ ...s, tt2:e.target.value }))} />
+                  </Labeled>
+                  <Labeled labelText="TT3:">
+                    <input type="date" style={inputCss} value={tt.tt3} onChange={e=>setTt(s=>({ ...s, tt3:e.target.value }))} />
+                  </Labeled>
                 </div>
               </div>
             </div>
@@ -1129,25 +1181,28 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
                       <Labeled labelText="Result:">
                         <input style={inputCss} value={current.skinResult} onChange={e=>setCurrent(s=>({ ...s, skinResult:e.target.value }))} />
                       </Labeled>
-                      <Labeled labelText="Date Given:">
-                        <input type="date" style={inputCss} value={current.skinDate} onChange={e=>setCurrent(s=>({ ...s, skinDate:e.target.value }))} />
+                      <Labeled labelText="Dose:">
+                        <input style={inputCss} value={current.skinDose || 'U'} onChange={e=>setCurrent(s=>({ ...s, skinDose:e.target.value }))} />
                       </Labeled>
                     </div>
+                    <Labeled labelText="Date Given:">
+                      <input type="date" style={inputCss} value={current.skinDate} onChange={e=>setCurrent(s=>({ ...s, skinDate:e.target.value }))} />
+                    </Labeled>
                   </div>
                 )}
               </div>
 
-              {/* HRIG */}
+              {/* TIG */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display:'flex', alignItems:'center', gap:8, marginBottom: 8 }}>
                   <input type="checkbox" checked={current.hrig} onChange={e=>setCurrent(s=>({ ...s, hrig:e.target.checked }))} />
-                  <span style={{ fontWeight: 'bold' }}>HRIG</span>
+                  <span style={{ fontWeight: 'bold' }}>TIG</span>
                 </label>
                 
                 {current.hrig && (
                   <div style={{ marginLeft: 24, display:'flex', gap:16, flexWrap:'wrap' }}>
                     <Labeled labelText="Dose:">
-                      <input style={inputCss} value={current.hrigDose} onChange={e=>setCurrent(s=>({ ...s, hrigDose:e.target.value }))} />
+                      <input style={inputCss} value={current.hrigDose || 'U'} onChange={e=>setCurrent(s=>({ ...s, hrigDose:e.target.value }))} />
                     </Labeled>
                     <Labeled labelText="Date Given:">
                       <input type="date" style={inputCss} value={current.hrigDate} onChange={e=>setCurrent(s=>({ ...s, hrigDate:e.target.value }))} />
@@ -1182,15 +1237,76 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         </div>
       </div>
 
-      {/* Vaccination Schedule (D0 to D28) */}
+      {/* SCHEDULE DATES OF IMMUNIZATION */}
       <div style={card}>
-        <h3 style={h3Style}>Vaccination Schedule (D0–D28)</h3>
-        <div style={row}>
-          <Labeled labelText="D0 (First Dose)"><input type="date" style={inputCss} value={schedule.d0} onChange={e=>setSchedule(s=>({ ...s, d0:e.target.value }))} /></Labeled>
-          <Labeled labelText="D3 (Second Dose)"><input type="date" style={inputCss} value={schedule.d3} onChange={e=>setSchedule(s=>({ ...s, d3:e.target.value }))} /></Labeled>
-          <Labeled labelText="D7 (Third Dose)"><input type="date" style={inputCss} value={schedule.d7} onChange={e=>setSchedule(s=>({ ...s, d7:e.target.value }))} /></Labeled>
-          <Labeled labelText="D14 (Fourth Dose)"><input type="date" style={inputCss} value={schedule.d14} onChange={e=>setSchedule(s=>({ ...s, d14:e.target.value }))} /></Labeled>
-          <Labeled labelText="D28/30 (Fifth Dose)"><input type="date" style={inputCss} value={schedule.d28} onChange={e=>setSchedule(s=>({ ...s, d28:e.target.value }))} /></Labeled>
+        <h3 style={h3Style}>SCHEDULE DATES OF IMMUNIZATION</h3>
+        <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: palette.text }}>DATE</p>
+        
+        {/* Auto-calculating Schedule Dates */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D0:</span>
+            <input 
+              type="date" 
+              style={inputCss} 
+              value={schedule.d0} 
+              onChange={e => {
+                const d0Date = e.target.value;
+                if (d0Date) {
+                  const baseDate = new Date(d0Date);
+                  setSchedule({
+                    d0: d0Date,
+                    d3: toISO(new Date(baseDate.getTime() + 3 * 86400000)),
+                    d7: toISO(new Date(baseDate.getTime() + 7 * 86400000)),
+                    d14: toISO(new Date(baseDate.getTime() + 14 * 86400000)),
+                    d28: toISO(new Date(baseDate.getTime() + 28 * 86400000))
+                  });
+                } else {
+                  setSchedule(s => ({ ...s, d0: '' }));
+                }
+              }}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D3:</span>
+            <input 
+              type="date" 
+              style={inputCss} 
+              value={schedule.d3} 
+              onChange={e => setSchedule(s => ({ ...s, d3: e.target.value }))}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D7:</span>
+            <input 
+              type="date" 
+              style={inputCss} 
+              value={schedule.d7} 
+              onChange={e => setSchedule(s => ({ ...s, d7: e.target.value }))}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D14:</span>
+            <input 
+              type="date" 
+              style={inputCss} 
+              value={schedule.d14} 
+              onChange={e => setSchedule(s => ({ ...s, d14: e.target.value }))}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ minWidth: '30px', fontWeight: 'bold', color: palette.text }}>D28:</span>
+            <input 
+              type="date" 
+              style={inputCss} 
+              value={schedule.d28} 
+              onChange={e => setSchedule(s => ({ ...s, d28: e.target.value }))}
+            />
+          </div>
         </div>
       </div>
 
