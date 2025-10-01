@@ -199,173 +199,210 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     } finally { setSaving(false); }
   };
 
+  // --- Styling helpers (match app palette) ---
+  const palette = { brand:'#7D0C0C', paper:'#FFFFFF', line:'#e5e7eb', subtle:'#f9fafb' };
+  const card = { background:palette.paper, border:'1px solid '+palette.line, borderRadius:12, padding:16, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' };
+  const h3Style = { color:palette.brand, fontSize:18, fontWeight:700, margin:'0 0 10px 0' };
+  const label = { fontSize:13, fontWeight:600, color:'#374151', marginBottom:6 };
+  const inputCss = { width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:8, background:'#fff', outline:'none' };
+  const row = { display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:12 };
+
+  const Labeled = ({ labelText, children }) => (
+    <div style={{ display:'flex', flexDirection:'column' }}>
+      <label style={label}>{labelText}</label>
+      {children}
+    </div>
+  );
+
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
       {error ? <div style={{ color:'#b91c1c', background:'#fee2e2', border:'1px solid #fecaca', padding:12, borderRadius:8 }}>{error}</div> : null}
 
       {/* Basic info */}
-      <h3 style={{ color:'#7D0C0C' }}>Basic Information</h3>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:8 }}>
-        <input placeholder="Registration Number" value={registrationNumber} readOnly />
-        <input placeholder="Date Registered" value={dateRegistered} readOnly />
-        <input placeholder="Center" value={center} readOnly />
-        <input placeholder="First Name" value={firstName} onChange={e=>setFirstName(e.target.value)} />
-        <input placeholder="Middle Name" value={middleName} onChange={e=>setMiddleName(e.target.value)} />
-        <input placeholder="Last Name" value={lastName} onChange={e=>setLastName(e.target.value)} />
-        <input placeholder="Birthdate (Month Day, Year)" value={birthdate} onChange={e=>setBirthdate(e.target.value)} />
-        <input placeholder="Sex" value={sex} onChange={e=>setSex(e.target.value)} />
-        <input placeholder="Age" value={age} onChange={e=>setAge(e.target.value)} />
-        <input placeholder="Weight" value={weight} onChange={e=>setWeight(e.target.value)} />
-        <input placeholder="Birthplace" value={birthPlace} onChange={e=>setBirthPlace(e.target.value)} />
-        <input placeholder="Civil Status" value={civilStatus} onChange={e=>setCivilStatus(e.target.value)} />
-        <input placeholder="Nationality" value={nationality} onChange={e=>setNationality(e.target.value)} />
-        <input placeholder="Religion" value={religion} onChange={e=>setReligion(e.target.value)} />
-        <input placeholder="Contact No." value={phone} onChange={e=>setPhone(e.target.value)} />
+      <div style={card}>
+        <h3 style={h3Style}>Basic Information</h3>
+        <div style={row}>
+          <Labeled labelText="Registration Number"><input style={inputCss} value={registrationNumber} readOnly /></Labeled>
+          <Labeled labelText="Date Registered"><input style={inputCss} value={dateRegistered} readOnly /></Labeled>
+          <Labeled labelText="Center"><input style={inputCss} value={center} readOnly /></Labeled>
+        </div>
+        <div style={{ height:10 }} />
+        <div style={row}>
+          <Labeled labelText="First Name"><input style={inputCss} value={firstName} onChange={e=>setFirstName(e.target.value)} /></Labeled>
+          <Labeled labelText="Middle Name"><input style={inputCss} value={middleName} onChange={e=>setMiddleName(e.target.value)} /></Labeled>
+          <Labeled labelText="Last Name"><input style={inputCss} value={lastName} onChange={e=>setLastName(e.target.value)} /></Labeled>
+          <Labeled labelText="Birthdate (Month Day, Year)"><input style={inputCss} value={birthdate} onChange={e=>setBirthdate(e.target.value)} /></Labeled>
+          <Labeled labelText="Sex"><input style={inputCss} value={sex} onChange={e=>setSex(e.target.value)} /></Labeled>
+          <Labeled labelText="Age"><input style={inputCss} value={age} onChange={e=>setAge(e.target.value)} /></Labeled>
+          <Labeled labelText="Weight (kg)"><input style={inputCss} value={weight} onChange={e=>setWeight(e.target.value)} /></Labeled>
+          <Labeled labelText="Birthplace"><input style={inputCss} value={birthPlace} onChange={e=>setBirthPlace(e.target.value)} /></Labeled>
+          <Labeled labelText="Civil Status"><input style={inputCss} value={civilStatus} onChange={e=>setCivilStatus(e.target.value)} /></Labeled>
+          <Labeled labelText="Nationality"><input style={inputCss} value={nationality} onChange={e=>setNationality(e.target.value)} /></Labeled>
+          <Labeled labelText="Religion"><input style={inputCss} value={religion} onChange={e=>setReligion(e.target.value)} /></Labeled>
+          <Labeled labelText="Contact No."><input style={inputCss} value={phone} onChange={e=>setPhone(e.target.value)} /></Labeled>
+        </div>
       </div>
 
       {/* Address */}
-      <h3 style={{ color:'#7D0C0C' }}>Address</h3>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:8 }}>
-        <input placeholder="House No." value={houseNo} onChange={e=>setHouseNo(e.target.value)} />
-        <input placeholder="Street" value={street} onChange={e=>setStreet(e.target.value)} />
-        <input placeholder="Barangay" value={barangay} onChange={e=>setBarangay(e.target.value)} />
-        <input placeholder="Subdivision" value={subdivision} onChange={e=>setSubdivision(e.target.value)} />
-        <input placeholder="City" value={city} onChange={e=>setCity(e.target.value)} />
-        <input placeholder="Province" value={province} onChange={e=>setProvince(e.target.value)} />
-        <input placeholder="Zip Code" value={zipCode} onChange={e=>setZipCode(e.target.value)} />
+      <div style={card}>
+        <h3 style={h3Style}>Address</h3>
+        <div style={row}>
+          <Labeled labelText="House No."><input style={inputCss} value={houseNo} onChange={e=>setHouseNo(e.target.value)} /></Labeled>
+          <Labeled labelText="Street"><input style={inputCss} value={street} onChange={e=>setStreet(e.target.value)} /></Labeled>
+          <Labeled labelText="Barangay"><input style={inputCss} value={barangay} onChange={e=>setBarangay(e.target.value)} /></Labeled>
+          <Labeled labelText="Subdivision"><input style={inputCss} value={subdivision} onChange={e=>setSubdivision(e.target.value)} /></Labeled>
+          <Labeled labelText="City"><input style={inputCss} value={city} onChange={e=>setCity(e.target.value)} /></Labeled>
+          <Labeled labelText="Province"><input style={inputCss} value={province} onChange={e=>setProvince(e.target.value)} /></Labeled>
+          <Labeled labelText="Zip Code"><input style={inputCss} value={zipCode} onChange={e=>setZipCode(e.target.value)} /></Labeled>
+        </div>
       </div>
 
       {/* History of Bite */}
-      <h3 style={{ color:'#7D0C0C' }}>History of Bite</h3>
-      <div style={{ display:'flex', gap:20, flexWrap:'wrap' }}>
+      <div style={card}>
+        <h3 style={h3Style}>History of Bite</h3>
+        <div style={{ display:'flex', gap:20, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={typeNonBite} onChange={e=>{setTypeNonBite(e.target.checked); if (e.target.checked) setTypeBite(false);}} /> NON-BITE</label>
         <label><input type="checkbox" checked={typeBite} onChange={e=>{setTypeBite(e.target.checked); if (e.target.checked) setTypeNonBite(false);}} /> BITE</label>
-      </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:8 }}>
-        <input placeholder="Date of Inquiry" value={dateOfInquiry} onChange={e=>setDateOfInquiry(e.target.value)} />
-        <input placeholder="Time of Injury (AM/PM)" value={timeOfInjury} onChange={e=>setTimeOfInjury(e.target.value)} />
-      </div>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+        </div>
+        <div style={row}>
+          <Labeled labelText="Date of Inquiry"><input style={inputCss} placeholder="Month Day, Year" value={dateOfInquiry} onChange={e=>setDateOfInquiry(e.target.value)} /></Labeled>
+          <Labeled labelText="Time of Injury (AM/PM)"><input style={inputCss} placeholder="e.g., 10:30 AM" value={timeOfInjury} onChange={e=>setTimeOfInjury(e.target.value)} /></Labeled>
+        </div>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:8 }}>
         {['head','face','neck','chest','back','abdomen','upper','lower'].map(k => (
           <label key={k}><input type="checkbox" checked={site[k]} onChange={e=>setSite(s=>({ ...s, [k]: e.target.checked }))} /> {k === 'upper' ? 'Upper Extremities' : k === 'lower' ? 'Lower Extremities' : k.charAt(0).toUpperCase()+k.slice(1)}</label>
         ))}
         <label><input type="checkbox" checked={site.others} onChange={e=>setSite(s=>({ ...s, others: e.target.checked }))} /> Others</label>
-        <input placeholder="Others (specify)" value={site.othersText} onChange={e=>setSite(s=>({ ...s, othersText: e.target.value }))} />
+          <input style={{ ...inputCss, maxWidth:320 }} placeholder="Others (specify)" value={site.othersText} onChange={e=>setSite(s=>({ ...s, othersText: e.target.value }))} />
+        </div>
       </div>
 
       {/* Nature of Injury */}
-      <h3 style={{ color:'#7D0C0C' }}>Nature of Injury</h3>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+      <div style={card}>
+        <h3 style={h3Style}>Nature of Injury</h3>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         {['multiple','abrasion','avulsion','burn','concussion','contusion','openWound','trauma'].map(k => (
           <label key={k}><input type="checkbox" checked={injury[k]} onChange={e=>setInjury(s=>({ ...s, [k]: e.target.checked }))} /> {k === 'openWound' ? 'Open Wound' : k.charAt(0).toUpperCase()+k.slice(1)}</label>
         ))}
-      </div>
-      {injury.burn ? (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:8 }}>
-          <input placeholder="Burn Degree (1-4)" value={injury.burnDegree} onChange={e=>setInjury(s=>({ ...s, burnDegree: Number(e.target.value||1) }))} />
-          <input placeholder="Burn Site" value={injury.burnSite} onChange={e=>setInjury(s=>({ ...s, burnSite: e.target.value }))} />
         </div>
-      ) : null}
+        {injury.burn ? (
+          <div style={row}>
+            <Labeled labelText="Burn Degree (1-4)"><input style={inputCss} value={injury.burnDegree} onChange={e=>setInjury(s=>({ ...s, burnDegree: Number(e.target.value||1) }))} /></Labeled>
+            <Labeled labelText="Burn Site"><input style={inputCss} value={injury.burnSite} onChange={e=>setInjury(s=>({ ...s, burnSite: e.target.value }))} /></Labeled>
+          </div>
+        ) : null}
+      </div>
 
       {/* External Cause / Place / Disposition */}
-      <h3 style={{ color:'#7D0C0C' }}>External Cause</h3>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+      <div style={card}>
+        <h3 style={h3Style}>External Cause</h3>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={biteSting} onChange={e=>setBiteSting(e.target.checked)} /> Bite/Sting</label>
-        {biteSting ? <input placeholder="Specify animal/insect" value={biteStingDetails} onChange={e=>setBiteStingDetails(e.target.value)} /> : null}
+          {biteSting ? <input style={{ ...inputCss, maxWidth:360 }} placeholder="Specify animal/insect" value={biteStingDetails} onChange={e=>setBiteStingDetails(e.target.value)} /> : null}
         <label><input type="checkbox" checked={chemicalSubstance} onChange={e=>setChemicalSubstance(e.target.checked)} /> Chemical Substance</label>
-        {chemicalSubstance ? <input placeholder="Specify chemical substance" value={chemicalDetails} onChange={e=>setChemicalDetails(e.target.value)} /> : null}
-      </div>
+          {chemicalSubstance ? <input style={{ ...inputCss, maxWidth:360 }} placeholder="Specify chemical substance" value={chemicalDetails} onChange={e=>setChemicalDetails(e.target.value)} /> : null}
+        </div>
 
-      <h3 style={{ color:'#7D0C0C' }}>Place of Occurrence</h3>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+        <h3 style={{ ...h3Style, marginTop:14 }}>Place of Occurrence</h3>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         {['home','school','road','neighbor'].map(k => (
           <label key={k}><input type="checkbox" checked={place[k]} onChange={e=>setPlace(s=>({ ...s, [k]: e.target.checked }))} /> {k.charAt(0).toUpperCase()+k.slice(1)}</label>
         ))}
         <label><input type="checkbox" checked={place.others} onChange={e=>setPlace(s=>({ ...s, others: e.target.checked }))} /> Others</label>
-        <input placeholder="Others (specify)" value={place.othersText} onChange={e=>setPlace(s=>({ ...s, othersText: e.target.value }))} />
-      </div>
+          <input style={{ ...inputCss, maxWidth:320 }} placeholder="Others (specify)" value={place.othersText} onChange={e=>setPlace(s=>({ ...s, othersText: e.target.value }))} />
+        </div>
 
-      <h3 style={{ color:'#7D0C0C' }}>Disposition</h3>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+        <h3 style={{ ...h3Style, marginTop:14 }}>Disposition</h3>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={treated} onChange={e=>{setTreated(e.target.checked); if (e.target.checked) setTransferred(false);}} /> Treated & Sent Home</label>
         <label><input type="checkbox" checked={transferred} onChange={e=>{setTransferred(e.target.checked); if (e.target.checked) setTreated(false);}} /> Transferred</label>
-        {transferred ? <input placeholder="Facility/Hospital" value={transferredTo} onChange={e=>setTransferredTo(e.target.value)} /> : null}
+          {transferred ? <input style={{ ...inputCss, maxWidth:380 }} placeholder="Facility/Hospital" value={transferredTo} onChange={e=>setTransferredTo(e.target.value)} /> : null}
+        </div>
       </div>
 
       {/* Animal Profile */}
-      <h3 style={{ color:'#7D0C0C' }}>Animal Profile</h3>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+      <div style={card}>
+        <h3 style={h3Style}>Animal Profile</h3>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         {['dog','cat','other'].map(k => (<label key={k}><input type="checkbox" checked={animal[k]} onChange={e=>setAnimal(s=>({ ...s, [k]: e.target.checked }))} /> {k==='other'?'Others':k.charAt(0).toUpperCase()+k.slice(1)}</label>))}
-        {animal.other ? <input placeholder="Others (specify)" value={animal.otherText} onChange={e=>setAnimal(s=>({ ...s, otherText: e.target.value }))} /> : null}
-      </div>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+          {animal.other ? <input style={{ ...inputCss, maxWidth:320 }} placeholder="Others (specify)" value={animal.otherText} onChange={e=>setAnimal(s=>({ ...s, otherText: e.target.value }))} /> : null}
+        </div>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         {['healthy','sick','died','killed'].map(k => (<label key={k}><input type="checkbox" checked={animal[k]} onChange={e=>setAnimal(s=>({ ...s, [k]: e.target.checked }))} /> {k.charAt(0).toUpperCase()+k.slice(1)}</label>))}
-      </div>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+        </div>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         {['brainExam','noBrainExam','unknown'].map(k => (<label key={k}><input type="checkbox" checked={animal[k]} onChange={e=>setAnimal(s=>({ ...s, [k]: e.target.checked }))} /> {k==='brainExam'?'Brain Exam Done':k==='noBrainExam'?'No Brain Exam':'Unknown'}</label>))}
-      </div>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+        </div>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={animal.immunized} onChange={e=>setAnimal(s=>({ ...s, immunized: e.target.checked, notImmunized: e.target.checked?false:s.notImmunized }))} /> Immunized</label>
-        {animal.immunized ? <input placeholder="Year" value={animal.immunizedYear} onChange={e=>setAnimal(s=>({ ...s, immunizedYear: e.target.value }))} /> : null}
+          {animal.immunized ? <input style={{ ...inputCss, maxWidth:160 }} placeholder="Year" value={animal.immunizedYear} onChange={e=>setAnimal(s=>({ ...s, immunizedYear: e.target.value }))} /> : null}
         <label><input type="checkbox" checked={animal.notImmunized} onChange={e=>setAnimal(s=>({ ...s, notImmunized: e.target.checked, immunized: e.target.checked?false:s.immunized }))} /> None</label>
-      </div>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+        </div>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         {['pet','neighbor','stray'].map(k => (<label key={k}><input type="checkbox" checked={animal[k]} onChange={e=>setAnimal(s=>({ ...s, [k]: e.target.checked }))} /> {k.charAt(0).toUpperCase()+k.slice(1)}</label>))}
+        </div>
       </div>
 
       {/* Patient Immunization */}
-      <h3 style={{ color:'#7D0C0C' }}>Patient Immunization</h3>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+      <div style={card}>
+        <h3 style={h3Style}>Patient Immunization</h3>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={dpt.complete} onChange={e=>setDpt(s=>({ ...s, complete:e.target.checked, incomplete:e.target.checked?false:s.incomplete, none:e.target.checked?false:s.none }))} /> DPT Complete</label>
-        {dpt.complete ? <input placeholder="Year Given (last dose)" value={dpt.year} onChange={e=>setDpt(s=>({ ...s, year:e.target.value }))} /> : null}
-      </div>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+          {dpt.complete ? <input style={{ ...inputCss, maxWidth:160 }} placeholder="Year Given (last dose)" value={dpt.year} onChange={e=>setDpt(s=>({ ...s, year:e.target.value }))} /> : null}
+        </div>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={dpt.incomplete} onChange={e=>setDpt(s=>({ ...s, incomplete:e.target.checked, complete:e.target.checked?false:s.complete, none:e.target.checked?false:s.none }))} /> DPT Incomplete</label>
-        {dpt.incomplete ? <input placeholder="No. of doses given" value={dpt.doses} onChange={e=>setDpt(s=>({ ...s, doses:e.target.value }))} /> : null}
-      </div>
-      <label><input type="checkbox" checked={dpt.none} onChange={e=>setDpt(s=>({ ...s, none:e.target.checked, complete:false, incomplete:false }))} /> DPT None</label>
+          {dpt.incomplete ? <input style={{ ...inputCss, maxWidth:200 }} placeholder="No. of doses given" value={dpt.doses} onChange={e=>setDpt(s=>({ ...s, doses:e.target.value }))} /> : null}
+        </div>
+        <label><input type="checkbox" checked={dpt.none} onChange={e=>setDpt(s=>({ ...s, none:e.target.checked, complete:false, incomplete:false }))} /> DPT None</label>
 
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:8 }}>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:8 }}>
         <label><input type="checkbox" checked={tt.active} onChange={e=>setTt(s=>({ ...s, active:e.target.checked }))} /> TT Active</label>
         <label><input type="checkbox" checked={tt.passive} onChange={e=>setTt(s=>({ ...s, passive:e.target.checked }))} /> TT Passive</label>
-      </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:8 }}>
-        <input placeholder="TT1 Date" value={tt.tt1} onChange={e=>setTt(s=>({ ...s, tt1:e.target.value }))} />
-        <input placeholder="TT2 Date" value={tt.tt2} onChange={e=>setTt(s=>({ ...s, tt2:e.target.value }))} />
-        <input placeholder="TT3 Date" value={tt.tt3} onChange={e=>setTt(s=>({ ...s, tt3:e.target.value }))} />
+        </div>
+        <div style={row}>
+          <Labeled labelText="TT1 Date"><input style={inputCss} placeholder="Month Day, Year" value={tt.tt1} onChange={e=>setTt(s=>({ ...s, tt1:e.target.value }))} /></Labeled>
+          <Labeled labelText="TT2 Date"><input style={inputCss} placeholder="Month Day, Year" value={tt.tt2} onChange={e=>setTt(s=>({ ...s, tt2:e.target.value }))} /></Labeled>
+          <Labeled labelText="TT3 Date"><input style={inputCss} placeholder="Month Day, Year" value={tt.tt3} onChange={e=>setTt(s=>({ ...s, tt3:e.target.value }))} /></Labeled>
+        </div>
       </div>
 
       {/* Current Anti-Rabies */}
-      <h3 style={{ color:'#7D0C0C' }}>Current Anti‑Rabies Immunization</h3>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+      <div style={card}>
+        <h3 style={h3Style}>Current Anti‑Rabies Immunization</h3>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={current.active} onChange={e=>setCurrent(s=>({ ...s, active:e.target.checked }))} /> Active</label>
         <label><input type="checkbox" checked={current.post} onChange={e=>setCurrent(s=>({ ...s, post:e.target.checked, pre:e.target.checked?false:s.pre, prevImm:e.target.checked?false:s.prevImm }))} /> Post Exposure</label>
         <label><input type="checkbox" checked={current.pre} onChange={e=>setCurrent(s=>({ ...s, pre:e.target.checked, post:e.target.checked?false:s.post, prevImm:e.target.checked?false:s.prevImm }))} /> Pre‑Exposure</label>
         <label><input type="checkbox" checked={current.prevImm} onChange={e=>setCurrent(s=>({ ...s, prevImm:e.target.checked, post:false, pre:false }))} /> Previously Immunized</label>
-      </div>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+        </div>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={current.pvrv} onChange={e=>setCurrent(s=>({ ...s, pvrv:e.target.checked, pcec:e.target.checked?false:s.pcec }))} /> SPEEDA (PVRV)</label>
         <label><input type="checkbox" checked={current.pcec} onChange={e=>setCurrent(s=>({ ...s, pcec:e.target.checked, pvrv:e.target.checked?false:s.pvrv }))} /> VAXIRAB (PCEC)</label>
-      </div>
-      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+        </div>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
         <label><input type="checkbox" checked={current.id} onChange={e=>setCurrent(s=>({ ...s, id:e.target.checked, im:e.target.checked?false:s.im }))} /> ID</label>
         <label><input type="checkbox" checked={current.im} onChange={e=>setCurrent(s=>({ ...s, im:e.target.checked, id:e.target.checked?false:s.id }))} /> IM</label>
+        </div>
+
       </div>
 
-      {/* Schedule */}
-      <h3 style={{ color:'#7D0C0C' }}>Schedule Dates of Immunization</h3>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:8 }}>
-        <input placeholder="D0" value={schedule.d0} onChange={e=>setSchedule(s=>({ ...s, d0:e.target.value }))} />
-        <input placeholder="D3" value={schedule.d3} onChange={e=>setSchedule(s=>({ ...s, d3:e.target.value }))} />
-        <input placeholder="D7" value={schedule.d7} onChange={e=>setSchedule(s=>({ ...s, d7:e.target.value }))} />
-        <input placeholder="D14" value={schedule.d14} onChange={e=>setSchedule(s=>({ ...s, d14:e.target.value }))} />
-        <input placeholder="D28" value={schedule.d28} onChange={e=>setSchedule(s=>({ ...s, d28:e.target.value }))} />
+      {/* Vaccination Schedule (D0 to D28) */}
+      <div style={card}>
+        <h3 style={h3Style}>Vaccination Schedule (D0–D28)</h3>
+        <div style={row}>
+          <Labeled labelText="D0 (First Dose)"><input style={inputCss} value={schedule.d0} onChange={e=>setSchedule(s=>({ ...s, d0:e.target.value }))} /></Labeled>
+          <Labeled labelText="D3 (Second Dose)"><input style={inputCss} value={schedule.d3} onChange={e=>setSchedule(s=>({ ...s, d3:e.target.value }))} /></Labeled>
+          <Labeled labelText="D7 (Third Dose)"><input style={inputCss} value={schedule.d7} onChange={e=>setSchedule(s=>({ ...s, d7:e.target.value }))} /></Labeled>
+          <Labeled labelText="D14 (Fourth Dose)"><input style={inputCss} value={schedule.d14} onChange={e=>setSchedule(s=>({ ...s, d14:e.target.value }))} /></Labeled>
+          <Labeled labelText="D28/30 (Fifth Dose)"><input style={inputCss} value={schedule.d28} onChange={e=>setSchedule(s=>({ ...s, d28:e.target.value }))} /></Labeled>
+        </div>
       </div>
 
       {/* Save/Cancel */}
-      <div style={{ display:'flex', gap:12, justifyContent:'flex-end', marginTop:12 }}>
-        <button onClick={onCancel} style={{ padding:'10px 16px', background:'#6b7280', color:'#fff', border:'none', borderRadius:8 }}>Cancel</button>
-        <button disabled={saving} onClick={onSave} style={{ padding:'10px 16px', background:'#7D0C0C', color:'#fff', border:'none', borderRadius:8 }}>{saving?'Saving...':'Save'}</button>
+      <div style={{ display:'flex', gap:12, justifyContent:'flex-end', marginTop:4 }}>
+        <button onClick={onCancel} style={{ padding:'10px 16px', background:'#6b7280', color:'#fff', border:'none', borderRadius:8, cursor:'pointer' }}>Cancel</button>
+        <button disabled={saving} onClick={onSave} style={{ padding:'10px 16px', background:'#7D0C0C', color:'#fff', border:'none', borderRadius:8, cursor:saving?'not-allowed':'pointer' }}>{saving?'Saving...':'Save'}</button>
       </div>
     </div>
   );
