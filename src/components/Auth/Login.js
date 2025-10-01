@@ -127,6 +127,8 @@ const Login = () => {
           if (data.token) sessionStorage.setItem('token', data.token);
           localStorage.removeItem('rememberMe');
         }
+        // Keep a mirror in currentUser for legacy reads
+        try { localStorage.setItem('currentUser', JSON.stringify(data.user)); } catch {}
         
         // Set role-specific loading message
         const role = data.user?.role;

@@ -1502,7 +1502,7 @@ const SuperAdminPatients = () => {
   // Confirm sign out
   const confirmSignOut = async () => {
     try { await fullLogout(apiFetch); } catch {}
-    setShowSignoutModal(false);
+      setShowSignoutModal(false);
   };
 
   return (
