@@ -703,7 +703,7 @@ app.post('/api/login', async (req, res) => {
 
         // Generate a simple token (in production, use JWT)
         const token = Buffer.from(`${user._id}:${Date.now()}`).toString('base64');
-        
+
         return res.json({
             success: true,
             token: token,
@@ -1160,15 +1160,15 @@ app.get('/api/profile/:userId', async (req, res) => {
         res.json({
             success: true,
             data: {
-                firstName: user.firstName,
-                middleName: user.middleName,
-                lastName: user.lastName,
-                email: user.email,
-                phoneNumber: user.phoneNumber,
-                birthdate: user.birthdate,
-                role: user.role,
-                adminID: user.adminID,
-                superAdminID: user.superAdminID
+            firstName: user.firstName,
+            middleName: user.middleName,
+            lastName: user.lastName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            birthdate: user.birthdate,
+            role: user.role,
+            adminID: user.adminID,
+            superAdminID: user.superAdminID
             }
         });
     } catch (error) {
@@ -3674,14 +3674,14 @@ app.post('/api/patients', async (req, res) => {
         
         // Log audit trail for patient registration
         try {
-            await logAuditTrail(
-                newPatient._id,
-                'patient',
-                newPatient.firstName,
-                newPatient.middleName,
-                newPatient.lastName,
-                'Registered'
-            );
+        await logAuditTrail(
+            newPatient._id,
+            'patient',
+            newPatient.firstName,
+            newPatient.middleName,
+            newPatient.lastName,
+            'Registered'
+        );
         } catch (auditError) {
             console.warn('Audit logging failed:', auditError.message);
         }
