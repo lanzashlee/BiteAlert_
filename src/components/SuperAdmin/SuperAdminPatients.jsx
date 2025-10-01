@@ -414,6 +414,11 @@ const SuperAdminPatients = () => {
   const [showCaseDetails, setShowCaseDetails] = useState(false);
   const [expandedCases, setExpandedCases] = useState(new Set());
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  
+  // Vaccination history states
+  const [vaccinationHistory, setVaccinationHistory] = useState([]);
+  const [vaccinationLoading, setVaccinationLoading] = useState(false);
+  const [vaccinationError, setVaccinationError] = useState('');
   const [newPatientData, setNewPatientData] = useState({
     firstName: '',
     middleName: '',
@@ -881,8 +886,9 @@ const SuperAdminPatients = () => {
     setShowCaseDetails(false);
     setSelectedCase(null);
     
-    // Automatically load case history when opening patient modal
+    // Automatically load case history and vaccination history when opening patient modal
     await loadCaseHistoryForPatient(patient);
+    await loadVaccinationHistoryFromSchedule(patient);
   };
 
   // Load case history for a specific patient
@@ -982,6 +988,80 @@ const SuperAdminPatients = () => {
     }
   };
 
+  // Load vaccination history from vaccination schedule
+  const loadVaccinationHistoryFromSchedule = async (patient) => {
+    if (!patient) return;
+    
+    setVaccinationLoading(true);
+    setVaccinationError('');
+    
+    try {
+      const patientId = patient._id || patient.patientId || patient.patientID || patient.id;
+      console.log('Loading vaccination history for patient:', patientId);
+      
+      // Fetch vaccination dates from the vaccination schedule
+      const response = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(patientId)}`);
+      const data = await response.json();
+      
+      console.log('Vaccination schedule data:', data);
+      
+      if (Array.isArray(data)) {
+        // Process vaccination dates to create history records
+        const historyRecords = [];
+        
+        data.forEach(vaccinationDate => {
+          // Extract vaccination schedule data
+          const scheduleData = [
+            { day: 'Day 0', date: vaccinationDate.d0Date, status: vaccinationDate.d0Status },
+            { day: 'Day 3', date: vaccinationDate.d3Date, status: vaccinationDate.d3Status },
+            { day: 'Day 7', date: vaccinationDate.d7Date, status: vaccinationDate.d7Status },
+            { day: 'Day 14', date: vaccinationDate.d14Date, status: vaccinationDate.d14Status },
+            { day: 'Day 28', date: vaccinationDate.d28Date, status: vaccinationDate.d28Status }
+          ];
+          
+          scheduleData.forEach(schedule => {
+            if (schedule.date || schedule.status) {
+              const record = {
+                day: schedule.day,
+                date: schedule.date ? new Date(schedule.date).toLocaleDateString() : 'Not scheduled',
+                status: schedule.status || 'scheduled',
+                vaccineType: vaccinationDate.vaccineType || 'Anti-Rabies',
+                center: vaccinationDate.center || vaccinationDate.centerName || 'Unknown Center',
+                patientName: `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
+                notes: vaccinationDate.notes || '',
+                biteCaseId: vaccinationDate.biteCaseId,
+                createdAt: vaccinationDate.createdAt
+              };
+              
+              // Only add records that have been completed, missed, or scheduled
+              if (record.status === 'completed' || record.status === 'missed' || record.status === 'scheduled') {
+                historyRecords.push(record);
+              }
+            }
+          });
+        });
+        
+        // Sort by date (most recent first)
+        historyRecords.sort((a, b) => {
+          if (a.date === 'Not scheduled' && b.date === 'Not scheduled') return 0;
+          if (a.date === 'Not scheduled') return 1;
+          if (b.date === 'Not scheduled') return -1;
+          return new Date(b.date) - new Date(a.date);
+        });
+        
+        setVaccinationHistory(historyRecords);
+        console.log('Processed vaccination history:', historyRecords);
+      } else {
+        console.log('No vaccination schedule data found');
+        setVaccinationHistory([]);
+      }
+    } catch (error) {
+      console.error('Error loading vaccination history:', error);
+      setVaccinationError('Failed to load vaccination history from schedule');
+    } finally {
+      setVaccinationLoading(false);
+    }
+  };
 
   // Handle sign out
   const handleSignOut = () => {
@@ -2285,6 +2365,156 @@ const SuperAdminPatients = () => {
                                     View
                                   </button>
                                 </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    )
+                  )}
+                </div>
+
+                {/* Vaccination History Section */}
+                <div className="info-section">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h5 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fa fa-syringe" style={{ color: '#10b981' }}></i>
+                      <span>Vaccination History</span>
+                      {vaccinationHistory.length > 0 && (
+                        <span style={{ 
+                          background: '#10b981', 
+                          color: 'white', 
+                          padding: '2px 8px', 
+                          borderRadius: '12px', 
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}>
+                          {vaccinationHistory.length} record{vaccinationHistory.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </h5>
+                    {vaccinationHistory.length > 0 && (
+                      <button
+                        onClick={() => loadVaccinationHistoryFromSchedule(selectedPatient)}
+                        style={{
+                          background: '#f3f4f6',
+                          border: '1px solid #d1d5db',
+                          color: '#374151',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <i className="fa fa-refresh"></i>
+                        Refresh
+                      </button>
+                    )}
+                  </div>
+                  
+                  {vaccinationLoading && (
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      alignItems: 'center', 
+                      padding: '2rem',
+                      color: '#6b7280'
+                    }}>
+                      <i className="fa fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                      Loading vaccination history...
+                    </div>
+                  )}
+                  
+                  {vaccinationError && (
+                    <div className="error-state" style={{ marginBottom: '1rem' }}>
+                      <i className="fa fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
+                      {vaccinationError}
+                    </div>
+                  )}
+                  
+                  {!vaccinationLoading && !vaccinationError && (
+                    vaccinationHistory.length === 0 ? (
+                    <div className="empty-state" style={{ padding:'2rem 0', textAlign: 'center' }}>
+                        <i className="fa fa-syringe" style={{ fontSize: '3rem', color: '#9ca3af', marginBottom: '1rem' }}></i>
+                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#6b7280', fontWeight: '500' }}>No vaccination history found</p>
+                        <small style={{ color: '#9ca3af' }}>This patient has no recorded vaccinations in the schedule yet.</small>
+                    </div>
+                  ) : (
+                      <div className="table-responsive" style={{ boxShadow:'none', borderRadius:12, maxHeight: '400px', overflowY: 'auto' }}>
+                      <table className="table" style={{ minWidth: 'auto', tableLayout: 'auto' }}>
+                        <thead style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 1 }}>
+                          <tr>
+                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Day</th>
+                            <th style={{ width: '20%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Date</th>
+                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Status</th>
+                            <th style={{ width: '20%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Vaccine</th>
+                            <th style={{ width: '20%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Center</th>
+                            <th style={{ width: '10%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {vaccinationHistory.map((record, index)=> (
+                              <tr key={`${record.day}-${index}`} style={{ 
+                                cursor: 'pointer',
+                                backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
+                                transition: 'background-color 0.2s ease'
+                              }} 
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#f0f9ff';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f9fafb';
+                              }}>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                  backgroundColor: '#e0f2fe',
+                                  color: '#0369a1'
+                                }}>
+                                  {record.day}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{ fontWeight: '500' }}>
+                                  {record.date}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                  backgroundColor: record.status === 'completed' ? '#f0fdf4' : 
+                                                  record.status === 'missed' ? '#fef2f2' : '#fef3c7',
+                                  color: record.status === 'completed' ? '#16a34a' : 
+                                         record.status === 'missed' ? '#dc2626' : '#d97706'
+                                }}>
+                                  {record.status}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <i className="fa fa-syringe" style={{ color: '#10b981', fontSize: '0.8rem' }}></i>
+                                  <span>{record.vaccineType}</span>
+                                </div>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{ color: '#6b7280' }}>
+                                  {record.center}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
+                                <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                                  {record.notes || '—'}
+                                </span>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
