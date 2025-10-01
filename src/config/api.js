@@ -1,6 +1,10 @@
 // API Configuration - Updated for Render deployment
 // Force redeploy to pick up environment variables
 // Use the backend URL from render.yaml configuration
+
+// Import caching utilities
+import { getCachedData, setCachedData } from '../utils/apiCache';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://bitealert-backend-doga.onrender.com';
 
 // Debug: Log the API base URL to console
@@ -83,9 +87,6 @@ export const apiConfig = {
 export const getApiUrl = (endpoint) => {
   return `${apiConfig.baseURL}${endpoint}`;
 };
-
-// Import caching utilities
-import { getCachedData, setCachedData } from '../utils/apiCache';
 
 // Helper function for fetch with base URL and caching
 export const apiFetch = async (endpoint, options = {}) => {
