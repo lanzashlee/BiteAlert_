@@ -630,9 +630,13 @@ app.post('/login', async (req, res) => {
         
         console.log(`Login successful for ${email} (${userType})`);
 
+        // Generate a simple token (in production, use JWT)
+        const token = Buffer.from(`${user._id}:${Date.now()}`).toString('base64');
+
         // Send response
         res.json({
             success: true,
+            token: token,
             user: {
                 id: user._id,
                 firstName: user.firstName,
@@ -697,8 +701,12 @@ app.post('/api/login', async (req, res) => {
             ids
         );
 
+        // Generate a simple token (in production, use JWT)
+        const token = Buffer.from(`${user._id}:${Date.now()}`).toString('base64');
+        
         return res.json({
             success: true,
+            token: token,
             user: {
                 id: user._id,
                 firstName: user.firstName,

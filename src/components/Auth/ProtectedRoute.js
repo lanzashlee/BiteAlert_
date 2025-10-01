@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     const checkAuthentication = async () => {
       try {
         // Check if user data exists in localStorage
-        const userData = localStorage.getItem('currentUser') || localStorage.getItem('userData');
+        const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser');
         const token = localStorage.getItem('token');
         
         if (!userData || !token) {

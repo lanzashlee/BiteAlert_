@@ -117,15 +117,28 @@ const Login = () => {
     setLoadingMessage('Logging in...');
     
     try {
+      console.log('Attempting login with:', { email, password: '***' });
       const res = await apiFetch(apiConfig.endpoints.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
+      
+      console.log('Login response status:', res.status);
+      console.log('Login response headers:', Object.fromEntries(res.headers.entries()));
+      
       const data = await safeParseJson(res);
+      console.log('Login response data:', data);
+      
       if (data.success) {
+        console.log('Login successful, storing user data:', data.user);
         localStorage.setItem('userData', JSON.stringify(data.user));
-        if (data.token) localStorage.setItem('token', data.token);
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          console.log('Token stored');
+        } else {
+          console.log('No token in response');
+        }
         
         // Set role-specific loading message
         const role = data.user?.role;
@@ -137,10 +150,13 @@ const Login = () => {
           setLoadingMessage('Logging in as User...');
         }
         
-        // Show role-specific message for 2 seconds
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        if (await checkAccountStatus(email)) {
+        // Check account status for admins only
+        if (role === 'admin') {
+          if (await checkAccountStatus(email)) {
+            redirectBasedOnRole(role);
+          }
+        } else {
+          // For superadmin, redirect immediately
           redirectBasedOnRole(role);
         }
       } else {
