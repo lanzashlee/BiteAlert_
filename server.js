@@ -4431,12 +4431,17 @@ app.get('/api/vaccinations', async (req, res) => {
 app.get('/api/get-patient-password/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        
+        // Create Patient model dynamically
+        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
         const patient = await Patient.findById(id).select('password');
+        
         if (!patient) {
             return res.status(404).json({ error: 'Patient not found' });
         }
         res.json({ success: true, password: patient.password });
     } catch (error) {
+        console.error('Error getting patient password:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -4446,12 +4451,17 @@ app.post('/api/change-patient-password', async (req, res) => {
     try {
         const { patientId, newPassword } = req.body;
         const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Create Patient model dynamically
+        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
         const patient = await Patient.findByIdAndUpdate(patientId, { password: hashedPassword });
+        
         if (!patient) {
             return res.status(404).json({ error: 'Patient not found' });
         }
         res.json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
+        console.error('Error changing patient password:', error);
         res.status(500).json({ error: error.message });
     }
 });
