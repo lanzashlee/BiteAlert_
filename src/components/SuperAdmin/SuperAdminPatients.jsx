@@ -1003,6 +1003,7 @@ const SuperAdminPatients = () => {
       console.log('Loading vaccination history for patient:', patientId);
       console.log('Patient registration number:', registrationNumber);
       console.log('Patient name:', patientName);
+      console.log('Full patient object:', patient);
       
       // Get vaccination data from vaccination dates (direct approach)
       let vaccinationDates = [];
@@ -1021,10 +1022,21 @@ const SuperAdminPatients = () => {
         console.log('All vaccination dates data:', allData);
         
         if (Array.isArray(allData)) {
+          console.log('Total vaccination dates found:', allData.length);
+          
           // Filter by patientId or registrationNumber
           vaccinationDates = allData.filter(vaccinationDate => {
             const vdPatientId = vaccinationDate.patientId || '';
             const vdRegistrationNumber = vaccinationDate.registrationNumber || '';
+            
+            console.log('Checking vaccination date:', {
+              vdPatientId,
+              vdRegistrationNumber,
+              patientId,
+              registrationNumber,
+              patientIdMatch: patientId && vdPatientId && vdPatientId === patientId,
+              registrationMatch: registrationNumber && vdRegistrationNumber && vdRegistrationNumber === registrationNumber
+            });
             
             // Check if patientId matches
             if (patientId && vdPatientId && vdPatientId === patientId) return true;
