@@ -276,11 +276,14 @@ const Login = () => {
                 </ul>
               </div>
             </div>
-            <button type="button" className="forgot-password" onClick={() => setForgotOpen(true)}>Forgot Password?</button>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-              Remember me on this device
-            </label>
+            {/* Forgot + Remember row */}
+            <div className="auth-row">
+              <button type="button" className="forgot-password" onClick={() => setForgotOpen(true)}>Forgot Password?</button>
+              <label className="remember-me">
+                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                <span>Remember me</span>
+              </label>
+            </div>
             <button type="submit" className="sign-in-btn-modern" disabled={loading}>
               Sign In
             </button>
