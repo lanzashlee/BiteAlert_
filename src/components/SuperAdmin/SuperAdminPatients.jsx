@@ -1000,16 +1000,32 @@ const SuperAdminPatients = () => {
       console.log('Loading vaccination history for patient:', patientId);
       
       // Fetch vaccination dates from the vaccination schedule
-      const response = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(patientId)}`);
-      const data = await response.json();
+      console.log('Fetching vaccination data for patientId:', patientId);
+      console.log('API endpoint:', `${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(patientId)}`);
       
+      const response = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(patientId)}`);
+      console.log('API response status:', response.status);
+      console.log('API response ok:', response.ok);
+      
+      const data = await response.json();
       console.log('Vaccination schedule data:', data);
       
-      if (Array.isArray(data)) {
+      // Also try fetching all vaccination dates to see if there's any data
+      try {
+        const allResponse = await apiFetch(apiConfig.endpoints.vaccinationDates);
+        const allData = await allResponse.json();
+        console.log('All vaccination dates (first 5):', Array.isArray(allData) ? allData.slice(0, 5) : allData);
+      } catch (error) {
+        console.log('Error fetching all vaccination dates:', error);
+      }
+      
+      if (Array.isArray(data) && data.length > 0) {
         // Process vaccination dates to create history records
         const historyRecords = [];
         
         data.forEach(vaccinationDate => {
+          console.log('Processing vaccination date:', vaccinationDate);
+          
           // Extract vaccination schedule data
           const scheduleData = [
             { day: 'Day 0', date: vaccinationDate.d0Date, status: vaccinationDate.d0Status },
@@ -1052,8 +1068,61 @@ const SuperAdminPatients = () => {
         setVaccinationHistory(historyRecords);
         console.log('Processed vaccination history:', historyRecords);
       } else {
-        console.log('No vaccination schedule data found');
-        setVaccinationHistory([]);
+        console.log('No vaccination schedule data found, trying alternative approach...');
+        
+        // Try to get vaccination data from bite cases as fallback
+        try {
+          const biteCasesResponse = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
+          const biteCasesData = await biteCasesResponse.json();
+          console.log('Bite cases data for vaccination fallback:', biteCasesData);
+          
+          if (Array.isArray(biteCasesData) && biteCasesData.length > 0) {
+            const historyRecords = [];
+            
+            biteCasesData.forEach(biteCase => {
+              console.log('Processing bite case for vaccination data:', biteCase);
+              
+              // Extract vaccination data from bite case
+              const scheduleData = [
+                { day: 'Day 0', date: biteCase.day0Date, status: biteCase.d0Status },
+                { day: 'Day 3', date: biteCase.day3Date, status: biteCase.d3Status },
+                { day: 'Day 7', date: biteCase.day7Date, status: biteCase.d7Status },
+                { day: 'Day 14', date: biteCase.day14Date, status: biteCase.d14Status },
+                { day: 'Day 28', date: biteCase.day28Date, status: biteCase.d28Status }
+              ];
+              
+              scheduleData.forEach(schedule => {
+                if (schedule.date || schedule.status) {
+                  const record = {
+                    day: schedule.day,
+                    date: schedule.date ? new Date(schedule.date).toLocaleDateString() : 'Not scheduled',
+                    status: schedule.status || 'scheduled',
+                    vaccineType: biteCase.vaccineType || 'Anti-Rabies',
+                    center: biteCase.center || biteCase.centerName || 'Unknown Center',
+                    patientName: `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
+                    notes: biteCase.notes || '',
+                    biteCaseId: biteCase._id,
+                    createdAt: biteCase.createdAt
+                  };
+                  
+                  // Only add records that have been completed, missed, or scheduled
+                  if (record.status === 'completed' || record.status === 'missed' || record.status === 'scheduled') {
+                    historyRecords.push(record);
+                  }
+                }
+              });
+            });
+            
+            setVaccinationHistory(historyRecords);
+            console.log('Processed vaccination history from bite cases:', historyRecords);
+          } else {
+            console.log('No bite cases data found either');
+            setVaccinationHistory([]);
+          }
+        } catch (error) {
+          console.error('Error fetching bite cases for vaccination fallback:', error);
+          setVaccinationHistory([]);
+        }
       }
     } catch (error) {
       console.error('Error loading vaccination history:', error);
