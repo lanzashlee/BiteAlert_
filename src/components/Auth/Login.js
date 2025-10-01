@@ -123,10 +123,13 @@ const Login = () => {
           if (data.token) localStorage.setItem('token', data.token);
           localStorage.setItem('rememberMe', 'true');
         } else {
-          sessionStorage.setItem('userData', JSON.stringify(data.user));
-          if (data.token) sessionStorage.setItem('token', data.token);
           localStorage.removeItem('rememberMe');
         }
+        // Always keep a sessionStorage copy so refresh stays logged in
+        try {
+          sessionStorage.setItem('userData', JSON.stringify(data.user));
+          if (data.token) sessionStorage.setItem('token', data.token);
+        } catch {}
         // Keep a mirror in currentUser for legacy reads
         try { localStorage.setItem('currentUser', JSON.stringify(data.user)); } catch {}
         

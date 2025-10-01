@@ -11,11 +11,12 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     const checkAuthentication = async () => {
       try {
         // Check if user data exists in storage (token optional)
+        // Prefer sessionStorage (survives refresh), fall back to localStorage
         const userData =
-          localStorage.getItem('userData') ||
           sessionStorage.getItem('userData') ||
-          localStorage.getItem('currentUser') ||
-          sessionStorage.getItem('currentUser');
+          localStorage.getItem('userData') ||
+          sessionStorage.getItem('currentUser') ||
+          localStorage.getItem('currentUser');
 
         if (!userData) {
           console.log('No user data found, redirecting to login');
