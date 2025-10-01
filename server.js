@@ -3066,11 +3066,12 @@ app.get('/api/vaccinationdates', async (req, res) => {
     try {
         const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        const { patientId, biteCaseId, center } = req.query;
+        const { patientId, biteCaseId, center, registrationNumber, name } = req.query;
         
         let filter = {};
         if (patientId) filter.patientId = patientId;
         if (biteCaseId) filter.biteCaseId = biteCaseId;
+        if (registrationNumber) filter.registrationNumber = registrationNumber;
         
         // If center filtering is requested, we need to join with bite cases
         if (center) {

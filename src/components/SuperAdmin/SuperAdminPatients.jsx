@@ -997,18 +997,89 @@ const SuperAdminPatients = () => {
     
     try {
       const patientId = patient._id || patient.patientId || patient.patientID || patient.id;
+      const registrationNumber = patient.registrationNumber || patient.regNo || '';
+      const patientName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+      
       console.log('Loading vaccination history for patient:', patientId);
+      console.log('Patient registration number:', registrationNumber);
+      console.log('Patient name:', patientName);
       
-      // Fetch vaccination dates from the vaccination schedule
-      console.log('Fetching vaccination data for patientId:', patientId);
-      console.log('API endpoint:', `${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(patientId)}`);
+      // Try multiple approaches to find vaccination data
+      let data = [];
       
-      const response = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(patientId)}`);
-      console.log('API response status:', response.status);
-      console.log('API response ok:', response.ok);
+      // Approach 1: Try with patientId
+      try {
+        console.log('Trying with patientId:', patientId);
+        const response1 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(patientId)}`);
+        const data1 = await response1.json();
+        console.log('Vaccination data with patientId:', data1);
+        if (Array.isArray(data1) && data1.length > 0) {
+          data = data1;
+        }
+      } catch (error) {
+        console.log('Error with patientId approach:', error);
+      }
       
-      const data = await response.json();
-      console.log('Vaccination schedule data:', data);
+      // Approach 2: Try with registration number
+      if (data.length === 0 && registrationNumber) {
+        try {
+          console.log('Trying with registration number:', registrationNumber);
+          const response2 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?registrationNumber=${encodeURIComponent(registrationNumber)}`);
+          const data2 = await response2.json();
+          console.log('Vaccination data with registration number:', data2);
+          if (Array.isArray(data2) && data2.length > 0) {
+            data = data2;
+          }
+        } catch (error) {
+          console.log('Error with registration number approach:', error);
+        }
+      }
+      
+      // Approach 3: Try with patient name
+      if (data.length === 0 && patientName) {
+        try {
+          console.log('Trying with patient name:', patientName);
+          const response3 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?name=${encodeURIComponent(patientName)}`);
+          const data3 = await response3.json();
+          console.log('Vaccination data with patient name:', data3);
+          if (Array.isArray(data3) && data3.length > 0) {
+            data = data3;
+          }
+        } catch (error) {
+          console.log('Error with patient name approach:', error);
+        }
+      }
+      
+      // Approach 4: Get all vaccination dates and filter client-side
+      if (data.length === 0) {
+        try {
+          console.log('Trying to get all vaccination dates and filter client-side');
+          const response4 = await apiFetch(apiConfig.endpoints.vaccinationDates);
+          const allData = await response4.json();
+          console.log('All vaccination dates:', allData);
+          
+          if (Array.isArray(allData)) {
+            // Filter by patientId, registrationNumber, or name
+            data = allData.filter(vaccination => {
+              const vPatientId = vaccination.patientId || '';
+              const vRegistrationNumber = vaccination.registrationNumber || '';
+              
+              // Check if patientId matches
+              if (patientId && vPatientId && vPatientId === patientId) return true;
+              
+              // Check if registration number matches
+              if (registrationNumber && vRegistrationNumber && vRegistrationNumber === registrationNumber) return true;
+              
+              return false;
+            });
+            console.log('Filtered vaccination data:', data);
+          }
+        } catch (error) {
+          console.log('Error with client-side filtering approach:', error);
+        }
+      }
+      
+      console.log('Final vaccination schedule data:', data);
       
       // Also try fetching all vaccination dates to see if there's any data
       try {
