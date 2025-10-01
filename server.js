@@ -4265,11 +4265,55 @@ app.get('/api/reports/demographic', async (req, res) => {
   }
 });
 
-// --- General Report (NEW ENDPOINT) ---
+// --- Centralized Report Generator API Endpoints ---
+
+// General Report
 app.get('/api/reports/general', async (req, res) => {
   try {
+    const { startDate, endDate, center, barangay, sex, status, search } = req.query;
+    let query = {};
+
+    // Date range filter
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Center filter
+    if (center && center !== 'all') {
+      query.center = center;
+    }
+
+    // Barangay filter
+    if (barangay && barangay !== 'all') {
+      query.barangay = barangay;
+    }
+
+    // Sex filter
+    if (sex && sex !== 'all') {
+      query.sex = sex;
+    }
+
+    // Status filter
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { patientName: { $regex: search, $options: 'i' } },
+        { barangay: { $regex: search, $options: 'i' } }
+      ];
+    }
+
     const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const cases = await BiteCase.find({}).sort({ createdAt: 1 });
+    const cases = await BiteCase.find(query).sort({ createdAt: -1 });
+    
     const report = cases.map((c, idx) => ({
       registrationNo: c.registrationNumber || '',
       registrationDate: c.dateRegistered || (c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''),
@@ -4284,12 +4328,396 @@ app.get('/api/reports/general', async (req, res) => {
       biteSite: c.biteSite || '',
       exposureDate: c.exposureDate || '',
       status: c.status || '',
-      createdAt: c.createdAt || '',
-      // Add any other fields you want to include
+      createdAt: c.createdAt || ''
     }));
+
     res.json({ success: true, data: report });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to generate general report', error: err.message });
+  }
+});
+
+// Patients Report
+app.get('/api/reports/patients', async (req, res) => {
+  try {
+    const { startDate, endDate, sex, ageGroup, barangay, status, search } = req.query;
+    let query = {};
+
+    // Date range filter
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Sex filter
+    if (sex && sex !== 'all') {
+      query.sex = sex;
+    }
+
+    // Age group filter
+    if (ageGroup && ageGroup !== 'all') {
+      const ageRanges = {
+        '0-12': { $gte: 0, $lte: 12 },
+        '13-17': { $gte: 13, $lte: 17 },
+        '18-30': { $gte: 18, $lte: 30 },
+        '31-50': { $gte: 31, $lte: 50 },
+        '51-65': { $gte: 51, $lte: 65 },
+        '65+': { $gte: 65 }
+      };
+      if (ageRanges[ageGroup]) {
+        query.age = ageRanges[ageGroup];
+      }
+    }
+
+    // Barangay filter
+    if (barangay && barangay !== 'all') {
+      query.barangay = barangay;
+    }
+
+    // Status filter
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { patientName: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
+    const patients = await Patient.find(query).sort({ createdAt: -1 });
+    
+    const report = patients.map(p => ({
+      patientId: p.patientId || '',
+      name: p.lastName && p.firstName ? `${p.lastName}, ${p.firstName}${p.middleName ? ' ' + p.middleName : ''}`.trim() : '',
+      sex: p.sex || '',
+      age: p.age || '',
+      birthdate: p.birthdate || '',
+      phone: p.phone || '',
+      email: p.email || '',
+      barangay: p.barangay || '',
+      address: p.address || '',
+      registrationDate: p.createdAt || '',
+      status: p.status || 'active'
+    }));
+
+    res.json({ success: true, data: report });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to generate patients report', error: err.message });
+  }
+});
+
+// Vaccination Report
+app.get('/api/reports/vaccination', async (req, res) => {
+  try {
+    const { startDate, endDate, day, center, status, search } = req.query;
+    let query = {};
+
+    // Date range filter
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Day filter
+    if (day && day !== 'all') {
+      query.day = day;
+    }
+
+    // Center filter
+    if (center && center !== 'all') {
+      query.center = center;
+    }
+
+    // Status filter
+    if (status && status !== 'all') {
+      query.treatmentStatus = status;
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { patientName: { $regex: search, $options: 'i' } },
+        { registrationNumber: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
+    const vaccinations = await VaccinationDate.find(query).sort({ createdAt: -1 });
+    
+    const report = vaccinations.map(v => ({
+      registrationNumber: v.registrationNumber || '',
+      patientName: v.patientName || '',
+      d0Date: v.d0Date || '',
+      d3Date: v.d3Date || '',
+      d7Date: v.d7Date || '',
+      d14Date: v.d14Date || '',
+      d28Date: v.d28Date || '',
+      treatmentStatus: v.treatmentStatus || '',
+      exposureCategory: v.exposureCategory || '',
+      lastTreatmentDate: v.lastTreatmentDate || '',
+      center: v.center || ''
+    }));
+
+    res.json({ success: true, data: report });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to generate vaccination report', error: err.message });
+  }
+});
+
+// Staff Report
+app.get('/api/reports/staff', async (req, res) => {
+  try {
+    const { startDate, endDate, center, search } = req.query;
+    let query = {};
+
+    // Date range filter
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Center filter
+    if (center && center !== 'all') {
+      query.center = center;
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const Staff = mongoose.connection.model('Staff', new mongoose.Schema({}, { strict: false }), 'staff');
+    const staff = await Staff.find(query).sort({ createdAt: -1 });
+    
+    const report = staff.map(s => ({
+      staffId: s.staffId || '',
+      name: s.lastName && s.firstName ? `${s.lastName}, ${s.firstName}${s.middleName ? ' ' + s.middleName : ''}`.trim() : '',
+      email: s.email || '',
+      phone: s.phone || '',
+      position: s.position || '',
+      center: s.center || '',
+      officeAddress: s.officeAddress || '',
+      registrationDate: s.createdAt || '',
+      status: s.status || 'active'
+    }));
+
+    res.json({ success: true, data: report });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to generate staff report', error: err.message });
+  }
+});
+
+// Barangay Report
+app.get('/api/reports/barangay', async (req, res) => {
+  try {
+    const { startDate, endDate, riskLevel, search } = req.query;
+    let query = {};
+
+    // Date range filter
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Risk level filter
+    if (riskLevel && riskLevel !== 'all') {
+      query.riskLevel = riskLevel;
+    }
+
+    // Search filter
+    if (search) {
+      query.barangay = { $regex: search, $options: 'i' };
+    }
+
+    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+    const cases = await BiteCase.find(query).sort({ barangay: 1 });
+    
+    // Group by barangay
+    const barangayStats = {};
+    cases.forEach(c => {
+      const barangay = c.barangay || 'Unknown';
+      if (!barangayStats[barangay]) {
+        barangayStats[barangay] = {
+          barangay: barangay,
+          totalCases: 0,
+          pendingCases: 0,
+          completedCases: 0,
+          riskLevel: 'Low'
+        };
+      }
+      barangayStats[barangay].totalCases++;
+      if (c.status === 'pending') barangayStats[barangay].pendingCases++;
+      if (c.status === 'completed') barangayStats[barangay].completedCases++;
+    });
+
+    const report = Object.values(barangayStats);
+
+    res.json({ success: true, data: report });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to generate barangay report', error: err.message });
+  }
+});
+
+// Demographics Report
+app.get('/api/reports/demographics', async (req, res) => {
+  try {
+    const { startDate, endDate, sex, ageGroup, barangay, search } = req.query;
+    let query = {};
+
+    // Date range filter
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Sex filter
+    if (sex && sex !== 'all') {
+      query.sex = sex;
+    }
+
+    // Age group filter
+    if (ageGroup && ageGroup !== 'all') {
+      const ageRanges = {
+        '0-12': { $gte: 0, $lte: 12 },
+        '13-17': { $gte: 13, $lte: 17 },
+        '18-30': { $gte: 18, $lte: 30 },
+        '31-50': { $gte: 31, $lte: 50 },
+        '51-65': { $gte: 51, $lte: 65 },
+        '65+': { $gte: 65 }
+      };
+      if (ageRanges[ageGroup]) {
+        query.age = ageRanges[ageGroup];
+      }
+    }
+
+    // Barangay filter
+    if (barangay && barangay !== 'all') {
+      query.barangay = barangay;
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { barangay: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+    const cases = await BiteCase.find(query);
+    
+    // Generate demographics statistics
+    const demographics = {
+      totalCases: cases.length,
+      bySex: {},
+      byAgeGroup: {},
+      byBarangay: {},
+      byStatus: {}
+    };
+
+    cases.forEach(c => {
+      // By sex
+      const sex = c.sex || 'Unknown';
+      demographics.bySex[sex] = (demographics.bySex[sex] || 0) + 1;
+
+      // By age group
+      const age = parseInt(c.age) || 0;
+      let ageGroup = 'Unknown';
+      if (age >= 0 && age <= 12) ageGroup = '0-12';
+      else if (age >= 13 && age <= 17) ageGroup = '13-17';
+      else if (age >= 18 && age <= 30) ageGroup = '18-30';
+      else if (age >= 31 && age <= 50) ageGroup = '31-50';
+      else if (age >= 51 && age <= 65) ageGroup = '51-65';
+      else if (age > 65) ageGroup = '65+';
+      
+      demographics.byAgeGroup[ageGroup] = (demographics.byAgeGroup[ageGroup] || 0) + 1;
+
+      // By barangay
+      const barangay = c.barangay || 'Unknown';
+      demographics.byBarangay[barangay] = (demographics.byBarangay[barangay] || 0) + 1;
+
+      // By status
+      const status = c.status || 'Unknown';
+      demographics.byStatus[status] = (demographics.byStatus[status] || 0) + 1;
+    });
+
+    res.json({ success: true, data: demographics });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to generate demographics report', error: err.message });
+  }
+});
+
+// Vaccine Utilization Report
+app.get('/api/reports/utilization', async (req, res) => {
+  try {
+    const { startDate, endDate, center, vaccineType, search } = req.query;
+    let query = {};
+
+    // Date range filter
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Center filter
+    if (center && center !== 'all') {
+      query.center = center;
+    }
+
+    // Vaccine type filter
+    if (vaccineType && vaccineType !== 'all') {
+      query.vaccineType = vaccineType;
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { vaccineName: { $regex: search, $options: 'i' } },
+        { center: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const VaccineStock = mongoose.connection.model('VaccineStock', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
+    const stocks = await VaccineStock.find(query).sort({ createdAt: -1 });
+    
+    const report = stocks.map(s => ({
+      center: s.centerName || '',
+      vaccineName: s.vaccineName || '',
+      vaccineType: s.vaccineType || '',
+      brand: s.brand || '',
+      quantity: s.quantity || 0,
+      expiryDate: s.expiryDate || '',
+      batchNumber: s.batchNumber || '',
+      minThreshold: s.minThreshold || 0,
+      status: s.quantity > s.minThreshold ? 'In Stock' : 'Low Stock',
+      lastUpdated: s.updatedAt || s.createdAt || ''
+    }));
+
+    res.json({ success: true, data: report });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to generate utilization report', error: err.message });
   }
 });
 

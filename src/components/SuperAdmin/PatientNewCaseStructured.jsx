@@ -140,7 +140,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
   // Current anti-rabies immunization
   const [current, setCurrent] = useState({ 
     active:true, post:true, pre:false, prevImm:false, pvrv:false, pcec:false, id:false, im:false, 
-    passive:false, skinTest:false, skinTime:'', skinRead:'', skinResult:'', skinDose:'', skinDate:'', 
+    passive:false, toxoid:false, skinTest:false, skinTime:'', skinRead:'', skinResult:'', skinDose:'', skinDate:'', 
     tig:false, tigDose:'', tigDate:'', toxoidDate1:'', toxoidDate2:'', toxoidDate3:'',
     hrig:false, hrigDose:'', hrigDate:'', localInfiltration:false, structured:false, unstructured:false 
   });
@@ -263,9 +263,9 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     if (current.active && !current.pvrv && !current.pcec) return 'Please select vaccine name (SPEEDA or VAXIRAB)';
     if (current.active && !current.id && !current.im) return 'Please select route of administration (ID or IM)';
     
-    if (current.passive && !current.skinTest && !current.hrig) return 'Please select passive immunization type (SKIN TEST or HRIG)';
-    if (current.skinTest && (!current.skinTime || !current.skinRead || !current.skinResult.trim())) return 'Please complete SKIN TEST details';
-    if (current.hrig && !current.hrigDose.trim()) return 'Please specify HRIG dose';
+    if (current.passive && !current.skinTest && !current.tig) return 'Please select passive immunization type (SKIN TEST or TIG)';
+    if (current.skinTest && (!current.skinTime || !current.skinRead || !current.skinResult.trim() || !current.skinDate)) return 'Please complete SKIN TEST details';
+    if (current.tig && (!current.tigDose.trim() || !current.tigDate)) return 'Please specify TIG dose and date';
     
     // Schedule dates validation
     if (!schedule.d0 || !schedule.d3 || !schedule.d7 || !schedule.d14 || !schedule.d28) return 'Please complete all vaccination schedule dates';
@@ -1133,19 +1133,79 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           
           {current.active && (
             <div style={{ marginLeft: 24 }}>
-              {/* Toxoid Section */}
+              {/* Exposure/Immunization Type */}
               <div style={{ marginBottom: 16 }}>
-                <h4 style={{ ...h3Style, fontSize: '16px', marginBottom: 12 }}>Toxoid</h4>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.post} onChange={e=>setCurrent(s=>({ ...s, post:e.target.checked, pre:e.target.checked?false:s.pre, prevImm:e.target.checked?false:s.prevImm }))} />
+                    Post Exposure
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.pre} onChange={e=>setCurrent(s=>({ ...s, pre:e.target.checked, post:e.target.checked?false:s.post, prevImm:e.target.checked?false:s.prevImm }))} />
+                    Pre-Exposure Prophylaxis
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.prevImm} onChange={e=>setCurrent(s=>({ ...s, prevImm:e.target.checked, post:false, pre:false }))} />
+                    (Previously Immunized/PEP)
+                  </label>
+                </div>
+              </div>
+
+              {/* Vaccine Name */}
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Vaccine Name:</p>
                 <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                  <Labeled labelText="TT1:">
-                    <input type="date" style={inputCss} value={tt.tt1} onChange={e=>setTt(s=>({ ...s, tt1:e.target.value }))} />
-                  </Labeled>
-                  <Labeled labelText="TT2:">
-                    <input type="date" style={inputCss} value={tt.tt2} onChange={e=>setTt(s=>({ ...s, tt2:e.target.value }))} />
-                  </Labeled>
-                  <Labeled labelText="TT3:">
-                    <input type="date" style={inputCss} value={tt.tt3} onChange={e=>setTt(s=>({ ...s, tt3:e.target.value }))} />
-                  </Labeled>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.pvrv} onChange={e=>setCurrent(s=>({ ...s, pvrv:e.target.checked, pcec:e.target.checked?false:s.pcec }))} />
+                    SPEEDA (PVRV)
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.pcec} onChange={e=>setCurrent(s=>({ ...s, pcec:e.target.checked, pvrv:e.target.checked?false:s.pvrv }))} />
+                    VAXIRAB (PCEC)
+                  </label>
+                </div>
+              </div>
+
+              {/* Route of Administration */}
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Route of Administration:</p>
+                <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.id} onChange={e=>setCurrent(s=>({ ...s, id:e.target.checked, im:e.target.checked?false:s.im }))} />
+                    Intradermal (ID)
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.im} onChange={e=>setCurrent(s=>({ ...s, im:e.target.checked, id:e.target.checked?false:s.id }))} />
+                    Intramuscular (IM)
+                  </label>
+                </div>
+              </div>
+
+              {/* Schedule Dates */}
+              <div style={{ marginBottom: 16 }}>
+                <h4 style={{ ...h3Style, fontSize: '16px', marginBottom: 8 }}>SCHEDULE DATES OF IMMUNIZATION</h4>
+                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>DATE</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D0:</span>
+                    <input type="date" style={inputCss} value={schedule.d0} onChange={e=>setSchedule(s=>({ ...s, d0:e.target.value }))} />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D3:</span>
+                    <input type="date" style={inputCss} value={schedule.d3} onChange={e=>setSchedule(s=>({ ...s, d3:e.target.value }))} />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D7:</span>
+                    <input type="date" style={inputCss} value={schedule.d7} onChange={e=>setSchedule(s=>({ ...s, d7:e.target.value }))} />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D14:</span>
+                    <input type="date" style={inputCss} value={schedule.d14} onChange={e=>setSchedule(s=>({ ...s, d14:e.target.value }))} />
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D28:</span>
+                    <input type="date" style={inputCss} value={schedule.d28} onChange={e=>setSchedule(s=>({ ...s, d28:e.target.value }))} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1196,17 +1256,17 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
               {/* TIG */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display:'flex', alignItems:'center', gap:8, marginBottom: 8 }}>
-                  <input type="checkbox" checked={current.hrig} onChange={e=>setCurrent(s=>({ ...s, hrig:e.target.checked }))} />
+                  <input type="checkbox" checked={current.tig} onChange={e=>setCurrent(s=>({ ...s, tig:e.target.checked }))} />
                   <span style={{ fontWeight: 'bold' }}>TIG</span>
                 </label>
                 
-                {current.hrig && (
+                {current.tig && (
                   <div style={{ marginLeft: 24, display:'flex', gap:16, flexWrap:'wrap' }}>
                     <Labeled labelText="Dose:">
-                      <input style={inputCss} value={current.hrigDose || 'U'} onChange={e=>setCurrent(s=>({ ...s, hrigDose:e.target.value }))} />
+                      <input style={inputCss} value={current.tigDose || 'U'} onChange={e=>setCurrent(s=>({ ...s, tigDose:e.target.value }))} />
                     </Labeled>
                     <Labeled labelText="Date Given:">
-                      <input type="date" style={inputCss} value={current.hrigDate} onChange={e=>setCurrent(s=>({ ...s, hrigDate:e.target.value }))} />
+                      <input type="date" style={inputCss} value={current.tigDate} onChange={e=>setCurrent(s=>({ ...s, tigDate:e.target.value }))} />
                     </Labeled>
                   </div>
                 )}

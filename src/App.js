@@ -16,6 +16,7 @@ import SuperAdminDashboard from './components/SuperAdmin/SuperAdminDashboard';
 import SuperAdminProfile from './components/SuperAdmin/SuperAdminProfile';
 import SuperAdminStock from './components/SuperAdmin/SuperAdminStock';
 import SuperAdminGenerate from './components/SuperAdmin/SuperAdminGenerate';
+import CentralizedReportGenerator from './components/SuperAdmin/CentralizedReportGenerator';
 import SuperAdminCreateAccount from './components/SuperAdmin/SuperAdminCreateAccount';
 import SuperAdminAuditTrail from './components/SuperAdmin/SuperAdminAuditTrail';
 import SuperAdminAccountManagement from './components/SuperAdmin/SuperAdminAccountManagement';
@@ -55,7 +56,7 @@ const App = () => {
         <Route path="/admin/center" element={<ProtectedRoute requiredRole="admin"><SuperAdminCenter /></ProtectedRoute>} />
         <Route path="/admin/center-archive" element={<ProtectedRoute requiredRole="admin"><SuperAdminCenterArchive /></ProtectedRoute>} />
         <Route path="/admin/audit-trail" element={<ProtectedRoute requiredRole="admin"><SuperAdminAuditTrail /></ProtectedRoute>} />
-        <Route path="/admin/generate-report" element={<ProtectedRoute requiredRole="admin"><SuperAdminGenerate /></ProtectedRoute>} />
+        <Route path="/admin/generate-report" element={<ProtectedRoute requiredRole="admin"><CentralizedReportGenerator /></ProtectedRoute>} />
         <Route path="/admin/center-hours" element={<ProtectedRoute requiredRole="admin"><SuperAdminCenterHours /></ProtectedRoute>} />
         <Route path="/admin/patients" element={<ProtectedRoute requiredRole="admin"><SuperAdminPatients /></ProtectedRoute>} />
         <Route path="/admin/patient-management" element={<ProtectedRoute requiredRole="admin"><SuperAdminPatientManagement /></ProtectedRoute>} />
@@ -68,7 +69,7 @@ const App = () => {
         <Route path="/superadmin/dashboard" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminDashboard /></ProtectedRoute>} />
         <Route path="/superadmin/profile" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminProfile /></ProtectedRoute>} />
         <Route path="/superadmin/stock" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminStock /></ProtectedRoute>} />
-        <Route path="/superadmin/generate" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminGenerate /></ProtectedRoute>} />
+        <Route path="/superadmin/generate" element={<ProtectedRoute requiredRole="superadmin"><CentralizedReportGenerator /></ProtectedRoute>} />
         <Route path="/superadmin/create-account" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminCreateAccount /></ProtectedRoute>} />
         <Route path="/superadmin/audit-trail" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminAuditTrail /></ProtectedRoute>} />
         <Route path="/superadmin/account-management" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminAccountManagement /></ProtectedRoute>} />
