@@ -5,7 +5,7 @@ import LoadingSpinner from './DogLoadingSpinner';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminPatients.css';
-import PatientDiagnosisManagement from './PatientDiagnosisManagement.jsx';
+import PatientNewCaseStructured from './PatientNewCaseStructured.jsx';
 import { apiFetch, apiConfig } from '../../config/api';
 
 const PAGE_SIZE = 20;
@@ -2058,7 +2058,13 @@ const SuperAdminPatients = () => {
             <div className="patient-modal-body">
               {showCaseForm ? (
                 <div>
-                  <PatientDiagnosisManagement selectedPatient={selectedPatient} />
+                  <PatientNewCaseStructured 
+                    selectedPatient={selectedPatient}
+                    onSaved={() => {
+                      try { setShowPatientModal(false); } catch(e) {}
+                    }}
+                    onCancel={() => setShowPatientModal(false)}
+                  />
                 </div>
               ) : showHistory ? (
                 <div>
