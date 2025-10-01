@@ -3,3 +3,8 @@
 [33m8006a39[m Add vaccination history to patient management: show completed/missed vaccinations from vaccination scheduler in patient case history
 [33m93c5c79[m Fix Animal Bite Exposure Report: load directly from bitecases API, add sample data fallback, and improve debugging
 [33mb951055[m Fix Generate Report data loading: use apiFetch for staff/admin data, add sample data fallback, and improve debugging
+[33mb15ab7b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add missing staff password change endpoints: /api/change-staff-password and /api/get-staff-password
+[33m9fa1ad9[m Enhance patient case history display with improved UI, additional columns, and better visual indicators
+[33m8036306[m Fix authentication issues: add token generation to login endpoints, fix localStorage key order, remove artificial delays, and add debugging logs
+[33m7c5bea4[m Fix ESLint import order error in api.js to resolve build failure
+[33me827f24[m Optimize login and loading performance: remove artificial delays, add caching, parallel API calls, and improve loading states

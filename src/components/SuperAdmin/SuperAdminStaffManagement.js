@@ -99,7 +99,7 @@ const SuperAdminStaffManagement = () => {
     if (value.length > 0 && newPassword.length > 0) {
       if (value !== newPassword) {
         setPasswordError('Passwords do not match');
-      } else {
+        } else {
         // Check if new password meets requirements
         const validation = validatePassword(newPassword);
         if (validation) {
@@ -184,10 +184,10 @@ const SuperAdminStaffManagement = () => {
       
       // Close modal after 2 seconds
       setTimeout(() => {
-        setShowPasswordModal(false);
-        setNewPassword('');
-        setConfirmPassword('');
-        setSelectedStaff(null);
+      setShowPasswordModal(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setSelectedStaff(null);
       }, 2000);
       
     } catch (error) {

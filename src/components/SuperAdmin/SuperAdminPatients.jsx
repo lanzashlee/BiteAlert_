@@ -408,9 +408,6 @@ const SuperAdminPatients = () => {
   const [caseHistory, setCaseHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
-  const [vaccinationHistory, setVaccinationHistory] = useState([]);
-  const [vaccinationLoading, setVaccinationLoading] = useState(false);
-  const [vaccinationError, setVaccinationError] = useState('');
   const [biteCases, setBiteCases] = useState([]);
   const [biteCasesLoading, setBiteCasesLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
@@ -884,9 +881,8 @@ const SuperAdminPatients = () => {
     setShowCaseDetails(false);
     setSelectedCase(null);
     
-    // Automatically load case history and vaccination history when opening patient modal
+    // Automatically load case history when opening patient modal
     await loadCaseHistoryForPatient(patient);
-    await loadVaccinationHistory();
   };
 
   // Load case history for a specific patient
@@ -986,121 +982,6 @@ const SuperAdminPatients = () => {
     }
   };
 
-  // Load vaccination history for selected patient
-  const loadVaccinationHistory = async (patient = null) => {
-    const targetPatient = patient || selectedPatient;
-    if (!targetPatient) return;
-    
-    setVaccinationLoading(true);
-    setVaccinationError('');
-    
-    try {
-      // Fetch bite cases which contain vaccination data (like vaccination schedule does)
-      const patientId = targetPatient._id || targetPatient.patientId || targetPatient.patientID || targetPatient.id;
-      const registrationNumber = targetPatient.registrationNumber || targetPatient.regNo || '';
-      const patientName = `${targetPatient.firstName || ''} ${targetPatient.lastName || ''}`.trim();
-      
-      // Try to find bite cases for this patient
-      let biteCases = [];
-      try {
-        const response = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${patientId}`);
-        const data = await response.json();
-        
-        if (Array.isArray(data)) {
-          biteCases = data;
-        } else if (data.success && data.data) {
-          biteCases = data.data;
-        } else if (data.biteCases) {
-          biteCases = data.biteCases;
-        }
-      } catch (error) {
-        console.log('No bite cases found for patient ID, trying name search...');
-        // Fallback: search by name
-        const response = await apiFetch(`${apiConfig.endpoints.bitecases}?name=${encodeURIComponent(patientName)}`);
-        const data = await response.json();
-        
-        if (Array.isArray(data)) {
-          biteCases = data;
-        } else if (data.success && data.data) {
-          biteCases = data.data;
-        }
-      }
-      // Client-side match to ensure we only use the current patient's cases
-      try {
-        const pid = patientId && String(patientId).trim();
-        const regNo = registrationNumber && String(registrationNumber).trim();
-        const pnameLower = patientName.toLowerCase();
-        biteCases = (biteCases || []).filter(c => {
-          const cid = String(c.patientId || c.patientID || '').trim();
-          const cname = String(c.patientName || '').trim().toLowerCase();
-          const creg = String(c.registrationNumber || '').trim();
-          if (pid && cid && pid === cid) return true;
-          if (regNo && creg && regNo === creg) return true;
-          if (pnameLower && cname) {
-            if (cname === pnameLower) return true;
-            return cname.includes(pnameLower) || pnameLower.includes(cname);
-          }
-          return false;
-        });
-      } catch (_) {}
-
-      // Extract vaccination data from bite cases (completed, missed, scheduled)
-      const vaccinationHistory = [];
-      const dayLabels = ['Day 0', 'Day 3', 'Day 7', 'Day 14', 'Day 28'];
-      biteCases.forEach(biteCase => {
-        const scheduleArr = Array.isArray(biteCase.scheduleDates) ? biteCase.scheduleDates : [];
-        const dayEntries = [
-          { key: 'd0',   date: biteCase.day0Date || biteCase.day0_date || biteCase.d0Date,   status: biteCase.d0Status },
-          { key: 'd3',   date: biteCase.day3Date || biteCase.day3_date || biteCase.d3Date,   status: biteCase.d3Status },
-          { key: 'd7',   date: biteCase.day7Date || biteCase.day7_date || biteCase.d7Date,   status: biteCase.d7Status },
-          { key: 'd14',  date: biteCase.day14Date || biteCase.day14_date || biteCase.d14Date, status: biteCase.d14Status },
-          { key: 'd28',  date: biteCase.day28Date || biteCase.day28_date || biteCase.d28Date, status: biteCase.d28Status }
-        ];
-
-        dayEntries.forEach((entry, idx) => {
-          let scheduled = scheduleArr[idx] || null;
-          let completed = entry.date || null;
-          let status = (entry.status || '').toLowerCase();
-          // determine status
-          if (completed) status = 'completed';
-          else if (status === 'missed') status = 'missed';
-          else if (scheduled) status = 'scheduled';
-          else status = '';
-
-          // build record only if we have either a date/status or scheduled
-          if (completed || scheduled || status === 'missed') {
-            // normalize dates
-            const toDateString = (val) => {
-              if (!val) return '';
-              let v = val;
-              if (typeof v === 'object' && v.$date) v = v.$date;
-              try { return new Date(v).toLocaleDateString(); } catch { return String(v); }
-            };
-            const record = {
-              date: completed ? toDateString(completed) : (scheduled ? toDateString(scheduled) : '—'),
-              center: biteCase.center || biteCase.healthCenter || biteCase.centerName || 'Unknown Center',
-              patientName: patientName || biteCase.patientName || 'Unknown Patient',
-              vaccineUsed: 'Anti-Rabies',
-              status,
-              vaccinationDay: dayLabels[idx],
-              notes: biteCase.notes || ''
-            };
-            vaccinationHistory.push(record);
-          }
-        });
-      });
-      
-      // Sort by date (most recent first)
-      vaccinationHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-      
-      setVaccinationHistory(vaccinationHistory);
-    } catch (error) {
-      console.error('Error loading vaccination history:', error);
-      setVaccinationError('Failed to load vaccination history');
-    } finally {
-      setVaccinationLoading(false);
-    }
-  };
 
   // Handle sign out
   const handleSignOut = () => {
@@ -2214,7 +2095,7 @@ const SuperAdminPatients = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h5 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <i className="fa fa-history" style={{ color: '#3b82f6' }}></i>
-                      <span>Case History</span>
+                    <span>Case History</span>
                       {caseHistory.length > 0 && (
                         <span style={{ 
                           background: '#3b82f6', 
@@ -2227,7 +2108,7 @@ const SuperAdminPatients = () => {
                           {caseHistory.length} case{caseHistory.length !== 1 ? 's' : ''}
                         </span>
                       )}
-                    </h5>
+                  </h5>
                     {caseHistory.length > 0 && (
                       <button
                         onClick={loadCaseHistory}
@@ -2308,7 +2189,7 @@ const SuperAdminPatients = () => {
                               <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                   <span style={{ fontWeight: '500' }}>
-                                    {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : (c.incidentDate ? new Date(c.incidentDate).toLocaleDateString() : 'N/A')}
+                                {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : (c.incidentDate ? new Date(c.incidentDate).toLocaleDateString() : 'N/A')}
                                   </span>
                                   {c.incidentDate && c.createdAt && new Date(c.incidentDate).toLocaleDateString() !== new Date(c.createdAt).toLocaleDateString() && (
                                     <small style={{ color: '#6b7280', fontSize: '0.7rem' }}>
@@ -2329,19 +2210,19 @@ const SuperAdminPatients = () => {
                                   {c.typeOfExposure && c.typeOfExposure.includes('BITE') ? 'Bite' : 
                                    c.typeOfExposure && c.typeOfExposure.includes('NON-BITE') ? 'Non-Bite' : 'Unknown'}
                                 </span>
-                              </td>
+                                </td>
                               <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <i className={`fa ${c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'fa-dog' : 
                                                    c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'fa-cat' : 'fa-paw'}`} 
                                      style={{ color: '#6b7280', fontSize: '0.8rem' }}></i>
                                   <span>
-                                    {c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'Dog' : 
-                                     c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'Cat' : 
-                                     c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Others') ? (c.animalProfile.othersSpecify || 'Other') : 'Unknown'}
+                                  {c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'Dog' : 
+                                   c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'Cat' : 
+                                   c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Others') ? (c.animalProfile.othersSpecify || 'Other') : 'Unknown'}
                                   </span>
                                 </div>
-                              </td>
+                                </td>
                               <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
                                 <span style={{
                                   padding: '2px 6px',
@@ -2357,7 +2238,7 @@ const SuperAdminPatients = () => {
                                    c.management && c.management.category && c.management.category.includes('Category 2') ? 'Cat 2' : 
                                    c.management && c.management.category && c.management.category.includes('Category 3') ? 'Cat 3' : 'Unknown'}
                                 </span>
-                              </td>
+                                </td>
                               <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
                                 <span style={{
                                   padding: '2px 6px',
@@ -2378,32 +2259,32 @@ const SuperAdminPatients = () => {
                                 </span>
                               </td>
                               <td style={{ padding: '12px 8px' }}>
-                                <button 
-                                  style={{
+                                  <button 
+                                    style={{
                                     background: '#3b82f6',
-                                    border: 'none',
-                                    color: 'white',
+                                      border: 'none',
+                                      color: 'white',
                                     padding: '6px 12px',
                                     borderRadius: '6px',
                                     fontSize: '0.75rem',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.3s ease',
                                     fontWeight: '500',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '4px'
-                                  }}
-                                  onMouseOver={(e) => {
+                                    }}
+                                    onMouseOver={(e) => {
                                     e.target.style.backgroundColor = '#2563eb';
-                                  }}
-                                  onMouseOut={(e) => {
+                                    }}
+                                    onMouseOut={(e) => {
                                     e.target.style.backgroundColor = '#3b82f6';
-                                  }}
-                                >
+                                    }}
+                                  >
                                   <i className="fa fa-eye"></i>
-                                  View
-                                </button>
-                              </td>
+                                    View
+                                  </button>
+                                </td>
                             </tr>
                           ))}
                         </tbody>
@@ -2413,77 +2294,6 @@ const SuperAdminPatients = () => {
                   )}
                 </div>
 
-                <div className="info-section">
-                  <h5>
-                    <span>Vaccination History</span>
-                  </h5>
-                  {vaccinationLoading && (
-                    <div className="loading-state" style={{ marginBottom: '1rem' }}>
-                      <LoadingSpinner />
-                    </div>
-                  )}
-                  {vaccinationError && (
-                    <div className="error-state" style={{ marginBottom: '1rem' }}>
-                      {vaccinationError}
-                    </div>
-                  )}
-                  {!vaccinationLoading && !vaccinationError && (
-                    vaccinationHistory.length === 0 ? (
-                      <div className="empty-state" style={{ padding:'1rem 0' }}>
-                        <i className="fa fa-syringe" style={{ fontSize: '2rem', color: '#9ca3af', marginBottom: '0.5rem' }}></i>
-                        <p style={{ margin: '0', fontSize: '1rem', color: '#6b7280' }}>No vaccination history found</p>
-                        <small style={{ color: '#9ca3af' }}>This patient has no recorded vaccinations yet.</small>
-                      </div>
-                    ) : (
-                      <div className="vaccination-table-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                        <table className="vaccination-table" style={{ 
-                          width: '100%', 
-                          borderCollapse: 'collapse',
-                          fontSize: '0.9rem'
-                        }}>
-                          <thead>
-                            <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>DATE</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>CENTER</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>PATIENT NAME</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>VACCINE USED</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {vaccinationHistory.map((vaccination, index) => {
-                              return (
-                                <tr key={index} style={{ 
-                                  borderBottom: '1px solid #dee2e6',
-                                  backgroundColor: vaccination.status === 'completed' ? '#f8fff8' : 
-                                                 vaccination.status === 'missed' ? '#fff8f8' : '#fafafa'
-                                }}>
-                                  <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
-                                    {vaccination.date}
-                                  </td>
-                                  <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
-                                    {vaccination.center}
-                                  </td>
-                                  <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
-                                    {vaccination.patientName}
-                                  </td>
-                                  <td style={{ padding: '0.75rem', borderBottom: '1px solid #dee2e6' }}>
-                                    <span style={{
-                                      color: vaccination.status === 'completed' ? '#059669' : 
-                                             vaccination.status === 'missed' ? '#dc2626' : '#6b7280',
-                                      fontWeight: '500'
-                                    }}>
-                                      {vaccination.vaccineUsed}
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )
-                  )}
-                </div>
               </div>
               )}
             </div>
