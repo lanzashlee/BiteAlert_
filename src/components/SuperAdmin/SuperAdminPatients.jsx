@@ -1007,63 +1007,48 @@ const SuperAdminPatients = () => {
       // Get vaccination data from bite cases (same as vaccination scheduler)
       let biteCases = [];
       
-      // Try multiple approaches to find bite cases with vaccination data
-      
-      // Approach 1: Try with patientId
       try {
-        console.log('Trying with patientId:', patientId);
-        const response1 = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
-        const data1 = await response1.json();
-        console.log('Bite cases data with patientId:', data1);
-        if (Array.isArray(data1) && data1.length > 0) {
-          biteCases = data1;
+        console.log('Fetching all bite cases (same as vaccination scheduler)');
+        const response = await apiFetch(apiConfig.endpoints.bitecases);
+        console.log('Bite cases response status:', response.status);
+        console.log('Bite cases response ok:', response.ok);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch bite cases: ${response.status}`);
+        }
+        
+        const allData = await response.json();
+        console.log('All bite cases data:', allData);
+        
+        if (Array.isArray(allData)) {
+          // Filter by patientId or registrationNumber (same logic as vaccination scheduler)
+          biteCases = allData.filter(biteCase => {
+            const bcPatientId = biteCase.patientId || '';
+            const bcRegistrationNumber = biteCase.registrationNumber || '';
+            
+            // Check if patientId matches
+            if (patientId && bcPatientId && bcPatientId === patientId) return true;
+            
+            // Check if registration number matches
+            if (registrationNumber && bcRegistrationNumber && bcRegistrationNumber === registrationNumber) return true;
+            
+            return false;
+          });
+          
+          // Only include bite cases that already have an assigned schedule (same as vaccination scheduler)
+          const hasAssignedSchedule = (bc) => {
+            const perDay = [bc.d0Date, bc.d3Date, bc.d7Date, bc.d14Date, bc.d28Date].some(Boolean);
+            const arraySched = Array.isArray(bc.scheduleDates) && bc.scheduleDates.some(Boolean);
+            return perDay || arraySched;
+          };
+          biteCases = biteCases.filter(hasAssignedSchedule);
+          
+          console.log('Filtered bite cases for patient:', biteCases);
         }
       } catch (error) {
-        console.log('Error with patientId approach:', error);
-      }
-      
-      // Approach 2: Try with registration number
-      if (biteCases.length === 0 && registrationNumber) {
-        try {
-          console.log('Trying with registration number:', registrationNumber);
-          const response2 = await apiFetch(`${apiConfig.endpoints.bitecases}?registrationNumber=${encodeURIComponent(registrationNumber)}`);
-          const data2 = await response2.json();
-          console.log('Bite cases data with registration number:', data2);
-          if (Array.isArray(data2) && data2.length > 0) {
-            biteCases = data2;
-          }
-        } catch (error) {
-          console.log('Error with registration number approach:', error);
-        }
-      }
-      
-      // Approach 3: Get all bite cases and filter client-side
-      if (biteCases.length === 0) {
-        try {
-          console.log('Trying to get all bite cases and filter client-side');
-          const response3 = await apiFetch(apiConfig.endpoints.bitecases);
-          const allData = await response3.json();
-          console.log('All bite cases:', allData);
-          
-          if (Array.isArray(allData)) {
-            // Filter by patientId or registrationNumber
-            biteCases = allData.filter(biteCase => {
-              const bcPatientId = biteCase.patientId || '';
-              const bcRegistrationNumber = biteCase.registrationNumber || '';
-              
-              // Check if patientId matches
-              if (patientId && bcPatientId && bcPatientId === patientId) return true;
-              
-              // Check if registration number matches
-              if (registrationNumber && bcRegistrationNumber && bcRegistrationNumber === registrationNumber) return true;
-              
-              return false;
-            });
-            console.log('Filtered bite cases:', biteCases);
-          }
-        } catch (error) {
-          console.log('Error with client-side filtering approach:', error);
-        }
+        console.error('Error fetching bite cases:', error);
+        setVaccinationError('Failed to load vaccination data');
+        return;
       }
       
       console.log('Final bite cases data:', biteCases);
