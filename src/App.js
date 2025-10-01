@@ -4,6 +4,7 @@ import './App.css';
 
 // Auth
 import Login from './components/Auth/Login';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Dashboards
 import Dashboard from './components/Dashboard/Dashboard';
@@ -42,44 +43,44 @@ const App = () => {
         <Route path="/login" element={<Login />} />
 
         {/* General dashboard */}
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
         {/* Admin - Using SuperAdmin Components with Role-Based Access */}
-        <Route path="/admin" element={<SuperAdminDashboard />} />
-        <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
-        <Route path="/admin/management" element={<SuperAdminStaffManagement />} />
-        <Route path="/admin/staff-management" element={<SuperAdminStaffManagement />} />
-        <Route path="/admin/profile" element={<SuperAdminProfile />} />
-        <Route path="/admin/stock" element={<SuperAdminStock />} />
-        <Route path="/admin/center" element={<SuperAdminCenter />} />
-        <Route path="/admin/center-archive" element={<SuperAdminCenterArchive />} />
-        <Route path="/admin/audit-trail" element={<SuperAdminAuditTrail />} />
-        <Route path="/admin/generate-report" element={<SuperAdminGenerate />} />
-        <Route path="/admin/center-hours" element={<SuperAdminCenterHours />} />
-        <Route path="/admin/patients" element={<SuperAdminPatients />} />
-        <Route path="/admin/patient-management" element={<SuperAdminPatientManagement />} />
-        <Route path="/admin/vaccination-schedule" element={<SuperAdminVaccinationSchedule />} />
-        <Route path="/admin/create-account" element={<SuperAdminCreateAccount />} />
-        <Route path="/admin/prescriptive-analytics" element={<SuperAdminPrescriptiveAnalytics />} />
+        <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><SuperAdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><SuperAdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/management" element={<ProtectedRoute requiredRole="admin"><SuperAdminStaffManagement /></ProtectedRoute>} />
+        <Route path="/admin/staff-management" element={<ProtectedRoute requiredRole="admin"><SuperAdminStaffManagement /></ProtectedRoute>} />
+        <Route path="/admin/profile" element={<ProtectedRoute requiredRole="admin"><SuperAdminProfile /></ProtectedRoute>} />
+        <Route path="/admin/stock" element={<ProtectedRoute requiredRole="admin"><SuperAdminStock /></ProtectedRoute>} />
+        <Route path="/admin/center" element={<ProtectedRoute requiredRole="admin"><SuperAdminCenter /></ProtectedRoute>} />
+        <Route path="/admin/center-archive" element={<ProtectedRoute requiredRole="admin"><SuperAdminCenterArchive /></ProtectedRoute>} />
+        <Route path="/admin/audit-trail" element={<ProtectedRoute requiredRole="admin"><SuperAdminAuditTrail /></ProtectedRoute>} />
+        <Route path="/admin/generate-report" element={<ProtectedRoute requiredRole="admin"><SuperAdminGenerate /></ProtectedRoute>} />
+        <Route path="/admin/center-hours" element={<ProtectedRoute requiredRole="admin"><SuperAdminCenterHours /></ProtectedRoute>} />
+        <Route path="/admin/patients" element={<ProtectedRoute requiredRole="admin"><SuperAdminPatients /></ProtectedRoute>} />
+        <Route path="/admin/patient-management" element={<ProtectedRoute requiredRole="admin"><SuperAdminPatientManagement /></ProtectedRoute>} />
+        <Route path="/admin/vaccination-schedule" element={<ProtectedRoute requiredRole="admin"><SuperAdminVaccinationSchedule /></ProtectedRoute>} />
+        <Route path="/admin/create-account" element={<ProtectedRoute requiredRole="admin"><SuperAdminCreateAccount /></ProtectedRoute>} />
+        <Route path="/admin/prescriptive-analytics" element={<ProtectedRoute requiredRole="admin"><SuperAdminPrescriptiveAnalytics /></ProtectedRoute>} />
 
         {/* Super Admin */}
-        <Route path="/superadmin" element={<SuperAdminDashboard />} />
-        <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
-        <Route path="/superadmin/profile" element={<SuperAdminProfile />} />
-        <Route path="/superadmin/stock" element={<SuperAdminStock />} />
-        <Route path="/superadmin/generate" element={<SuperAdminGenerate />} />
-        <Route path="/superadmin/create-account" element={<SuperAdminCreateAccount />} />
-        <Route path="/superadmin/audit-trail" element={<SuperAdminAuditTrail />} />
-        <Route path="/superadmin/account-management" element={<SuperAdminAccountManagement />} />
-        <Route path="/superadmin/center" element={<SuperAdminCenter />} />
-        <Route path="/superadmin/center-archive" element={<SuperAdminCenterArchive />} />
-        <Route path="/superadmin/center-hours" element={<SuperAdminCenterHours />} />
-        <Route path="/superadmin/staff-management" element={<SuperAdminStaffManagement />} />
-        <Route path="/superadmin/patient-management" element={<SuperAdminPatientManagement />} />
-        <Route path="/superadmin/vaccination-schedule" element={<SuperAdminVaccinationSchedule />} />
-        <Route path="/superadmin/patients" element={<SuperAdminPatients />} />
-        <Route path="/superadmin/prescriptive-analytics" element={<SuperAdminPrescriptiveAnalytics />} />
-        <Route path="/superadmin/diagnosis" element={<PatientDiagnosisManagement />} />
+        <Route path="/superadmin" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminDashboard /></ProtectedRoute>} />
+        <Route path="/superadmin/dashboard" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminDashboard /></ProtectedRoute>} />
+        <Route path="/superadmin/profile" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminProfile /></ProtectedRoute>} />
+        <Route path="/superadmin/stock" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminStock /></ProtectedRoute>} />
+        <Route path="/superadmin/generate" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminGenerate /></ProtectedRoute>} />
+        <Route path="/superadmin/create-account" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminCreateAccount /></ProtectedRoute>} />
+        <Route path="/superadmin/audit-trail" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminAuditTrail /></ProtectedRoute>} />
+        <Route path="/superadmin/account-management" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminAccountManagement /></ProtectedRoute>} />
+        <Route path="/superadmin/center" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminCenter /></ProtectedRoute>} />
+        <Route path="/superadmin/center-archive" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminCenterArchive /></ProtectedRoute>} />
+        <Route path="/superadmin/center-hours" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminCenterHours /></ProtectedRoute>} />
+        <Route path="/superadmin/staff-management" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminStaffManagement /></ProtectedRoute>} />
+        <Route path="/superadmin/patient-management" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminPatientManagement /></ProtectedRoute>} />
+        <Route path="/superadmin/vaccination-schedule" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminVaccinationSchedule /></ProtectedRoute>} />
+        <Route path="/superadmin/patients" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminPatients /></ProtectedRoute>} />
+        <Route path="/superadmin/prescriptive-analytics" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminPrescriptiveAnalytics /></ProtectedRoute>} />
+        <Route path="/superadmin/diagnosis" element={<ProtectedRoute requiredRole="superadmin"><PatientDiagnosisManagement /></ProtectedRoute>} />
 
         {/* Analytics - Removed non-existent route */}
 

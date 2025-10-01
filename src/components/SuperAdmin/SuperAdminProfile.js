@@ -114,8 +114,9 @@ const SuperAdminProfile = () => {
       console.log('Resolved user from storage:', user);
       
       if (!user) {
-        console.log('No user found in storage, redirecting to login');
-        window.location.href = '/login';
+        console.log('No user found in storage');
+        setUserData(null);
+        setLoading(false);
         return;
       }
 
