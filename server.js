@@ -3230,8 +3230,8 @@ app.post('/api/bitecases', async (req, res) => {
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         const payload = req.body || {};
         
-        // Validate required fields
-        const requiredFields = ['patientId', 'firstName', 'lastName', 'center'];
+        // Validate required fields (more lenient validation)
+        const requiredFields = ['firstName', 'lastName', 'center'];
         const missingFields = requiredFields.filter(field => !payload[field] || payload[field].toString().trim() === '');
         
         if (missingFields.length > 0) {
@@ -3242,7 +3242,13 @@ app.post('/api/bitecases', async (req, res) => {
             });
         }
         
-        // Clean and validate data
+        // Ensure patientId exists (use patient ID from payload or generate one)
+        if (!payload.patientId) {
+            console.warn('No patientId provided, using patient name as fallback');
+            payload.patientId = `${payload.firstName}_${payload.lastName}_${Date.now()}`;
+        }
+        
+        // Clean and validate data with better error handling
         const cleanPayload = {
             ...payload,
             // Ensure dates are properly formatted
@@ -3256,16 +3262,32 @@ app.post('/api/bitecases', async (req, res) => {
             natureOfInjury: Array.isArray(payload.natureOfInjury) ? payload.natureOfInjury : [],
             externalCause: Array.isArray(payload.externalCause) ? payload.externalCause : [],
             placeOfOccurrence: Array.isArray(payload.placeOfOccurrence) ? payload.placeOfOccurrence : [],
-            scheduleDates: Array.isArray(payload.scheduleDates) ? payload.scheduleDates : []
+            scheduleDates: Array.isArray(payload.scheduleDates) ? payload.scheduleDates : [],
+            // Ensure required fields have default values
+            status: payload.status || 'in_progress',
+            registrationNumber: payload.registrationNumber || '',
+            philhealthNo: payload.philhealthNo || '',
+            // Ensure numeric fields are properly formatted
+            age: payload.age ? parseInt(payload.age) : null,
+            weight: payload.weight ? parseFloat(payload.weight) : null
         };
         
         console.log('Creating bite case with clean payload:', cleanPayload);
         
-        const doc = new BiteCase(cleanPayload);
-        await doc.save();
-        
-        console.log('Bite case created successfully:', doc._id);
-        return res.status(201).json({ success: true, data: doc });
+        try {
+            const doc = new BiteCase(cleanPayload);
+            const savedDoc = await doc.save();
+            
+            console.log('Bite case created successfully:', savedDoc._id);
+            return res.status(201).json({ success: true, data: savedDoc });
+        } catch (saveError) {
+            console.error('Error saving bite case:', saveError);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Failed to save bite case to database',
+                error: saveError.message 
+            });
+        }
     } catch (error) {
         console.error('Error creating bitecase:', error);
         return res.status(500).json({ 

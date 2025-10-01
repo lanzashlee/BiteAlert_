@@ -754,6 +754,16 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
         }
       }
       
+      // Validate center is not empty
+      if (!formData.center || formData.center.trim() === '') {
+        validationErrors.push('Please select a center for this case.');
+      }
+      
+      // Validate patient ID exists
+      if (!selectedPatient || (!selectedPatient._id && !selectedPatient.patientId)) {
+        validationErrors.push('Patient information is missing. Please select a valid patient.');
+      }
+      
       // Validate date format
       if (formData.arrivalDate) {
         const arrivalDate = new Date(formData.arrivalDate);
@@ -781,7 +791,7 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
       
       // Convert form data to match the database structure
       const submitData = {
-        patientId: selectedPatient._id || selectedPatient.patientId,
+        patientId: selectedPatient._id || selectedPatient.patientId || selectedPatient.patientID || selectedPatient.id,
         registrationNumber: formData.registrationNumber,
         philhealthNo: formData.philhealthNo,
         dateRegistered: new Date().toISOString(),
