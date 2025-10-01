@@ -3566,38 +3566,146 @@ app.get('/api/reports/rabies-utilization', async (req, res) => {
 // If you have a patient registration endpoint, add audit logging like this:
 app.post('/api/patients', async (req, res) => {
     try {
-        const { firstName, middleName, lastName, birthdate, gender, contactNumber, address, ...rest } = req.body;
-        // Validate required fields (add as needed)
-        if (!firstName || !lastName || !birthdate || !gender || !contactNumber || !address) {
-            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        console.log('Creating patient with payload:', req.body);
+        
+        const { 
+            firstName, 
+            middleName, 
+            lastName, 
+            email, 
+            phone, 
+            birthdate, 
+            sex, 
+            password, 
+            houseNo, 
+            street, 
+            barangay, 
+            subdivision, 
+            city, 
+            province, 
+            zipCode, 
+            birthPlace, 
+            religion, 
+            occupation, 
+            nationality, 
+            civilStatus,
+            role = 'Patient',
+            isVerified = true,
+            ...rest 
+        } = req.body;
+        
+        // Validate required fields
+        const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'sex', 'password'];
+        const missingFields = requiredFields.filter(field => !req.body[field] || req.body[field].toString().trim() === '');
+        
+        if (missingFields.length > 0) {
+            console.error('Missing required fields:', missingFields);
+            return res.status(400).json({ 
+                success: false, 
+                message: `Missing required fields: ${missingFields.join(', ')}` 
+            });
         }
-        // Create new patient (assuming you have a Patient model)
+        
+        // Check if email already exists
         const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
+        const existingPatient = await Patient.findOne({ email: email.toLowerCase() });
+        
+        if (existingPatient) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'This email address is already registered' 
+            });
+        }
+        
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Generate patient ID as PAT-<initials><year><4-digit sequence>
+        const yearNow = new Date().getFullYear();
+        const initials = [firstName, middleName, lastName]
+          .filter(Boolean)
+          .map(v => String(v).trim()[0] || '')
+          .join('')
+          .toUpperCase() || 'PTN';
+        let patientId = '';
+        try {
+          const seqPrefix = `PAT-${initials}${yearNow}`;
+          const countSamePrefix = await Patient.countDocuments({ patientId: { $regex: `^${seqPrefix}` } });
+          const nextSeq = String(countSamePrefix + 1).padStart(4, '0');
+          patientId = `${seqPrefix}${nextSeq}`;
+        } catch (_) {
+          patientId = `PAT-${initials}${yearNow}${String(Date.now()).slice(-4)}`;
+        }
+        
+        // Create new patient
         const newPatient = new Patient({
             firstName,
             middleName,
             lastName,
-            birthdate,
-            gender,
-            contactNumber,
-            address,
-            ...rest,
+            email: email.toLowerCase(),
+            phone,
+            birthdate: birthdate ? new Date(birthdate) : null,
+            sex,
+            password: hashedPassword,
+            houseNo,
+            street,
+            barangay,
+            subdivision,
+            city: city || 'San Juan City',
+            province: province || 'Metro Manila',
+            zipCode: zipCode || '1500',
+            birthPlace,
+            religion,
+            occupation,
+            nationality: nationality || 'Filipino',
+            civilStatus,
+            role,
+            isVerified,
+            patientId,
             createdAt: new Date(),
-            status: 'active'
+            updatedAt: new Date(),
+            status: 'active',
+            ...rest
         });
+        
         await newPatient.save();
+        
+        console.log('Patient created successfully:', newPatient._id);
+        
         // Log audit trail for patient registration
-        await logAuditTrail(
-            newPatient._id,
-            'patient',
-            newPatient.firstName,
-            newPatient.middleName,
-            newPatient.lastName,
-            'Registered'
-        );
-        res.status(201).json({ success: true, patient: newPatient });
+        try {
+            await logAuditTrail(
+                newPatient._id,
+                'patient',
+                newPatient.firstName,
+                newPatient.middleName,
+                newPatient.lastName,
+                'Registered'
+            );
+        } catch (auditError) {
+            console.warn('Audit logging failed:', auditError.message);
+        }
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'Patient created successfully',
+            patient: {
+                _id: newPatient._id,
+                patientId: newPatient.patientId,
+                firstName: newPatient.firstName,
+                lastName: newPatient.lastName,
+                email: newPatient.email,
+                phone: newPatient.phone,
+                sex: newPatient.sex,
+                createdAt: newPatient.createdAt
+            }
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Error creating patient:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to create patient: ' + error.message 
+        });
     }
 });
 

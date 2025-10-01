@@ -172,7 +172,7 @@ const SuperAdminPatientManagement = () => {
     if (value.length > 0 && newPassword.length > 0) {
       if (value !== newPassword) {
         setPasswordError('Passwords do not match');
-      } else {
+        } else {
         // Check if new password meets requirements
         const validation = validatePassword(newPassword);
         if (validation) {
@@ -229,14 +229,14 @@ const SuperAdminPatientManagement = () => {
   const confirmPasswordChange = async () => {
     try {
       setPasswordError('');
-      
+
       // Validate passwords
       const passwordValidation = validatePassword(newPassword);
       if (passwordValidation) {
         setPasswordError(passwordValidation);
         return;
       }
-      
+
       if (newPassword !== confirmPassword) {
         setPasswordError('Passwords do not match');
         return;
@@ -279,13 +279,13 @@ const SuperAdminPatientManagement = () => {
 
       // Show success message
       showNotification('Password changed successfully', 'success');
-      
+
       // Close modal after 2 seconds
       setTimeout(() => {
-        setShowPasswordModal(false);
-        setNewPassword('');
-        setConfirmPassword('');
-        setSelectedPatient(null);
+      setShowPasswordModal(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setSelectedPatient(null);
       }, 2000);
 
       
@@ -856,7 +856,7 @@ const SuperAdminPatientManagement = () => {
 
                     <th>Phone</th>
 
-                    <th>Center</th>
+                    <th>Barangay</th>
 
                     <th>Status</th>
 
@@ -892,7 +892,7 @@ const SuperAdminPatientManagement = () => {
 
                         <td>{p.phone || '-'}</td>
 
-                        <td>{p.center || p.centerName || '-'}</td>
+                        <td>{p.barangay || p.barangayName || p.addressBarangay || '-'}</td>
 
                         <td>
 

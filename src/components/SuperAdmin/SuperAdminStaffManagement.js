@@ -321,7 +321,11 @@ const SuperAdminStaffManagement = () => {
           const mappedStaff = allStaff.map(staff => ({
             ...staff,
             fullName: staff.fullName || `${staff.firstName || ''} ${staff.lastName || ''}`.trim(),
-            center: staff.center || staff.centerName
+            center: staff.center || staff.centerName,
+            // Prefer officeAddress array/string for display in the Center column
+            officeAddressString: Array.isArray(staff.officeAddress)
+              ? staff.officeAddress.filter(Boolean).join(', ')
+              : (staff.officeAddress || '')
           }));
           
           const filteredStaff = filterByCenter(mappedStaff, 'center');
@@ -397,9 +401,10 @@ const SuperAdminStaffManagement = () => {
 
     // Center filter
     if (centerFilter) {
-      filteredStaff = filteredStaff.filter(s => 
-        s.center && s.center.toLowerCase().includes(centerFilter.toLowerCase())
-      );
+      filteredStaff = filteredStaff.filter(s => {
+        const haystack = `${s.officeAddressString || ''} ${s.center || ''}`.toLowerCase();
+        return haystack.includes(centerFilter.toLowerCase());
+      });
     }
 
     return filteredStaff;
@@ -552,7 +557,7 @@ const SuperAdminStaffManagement = () => {
                         <td>{s.staffId || '-'}</td>
                         <td>{s.fullName || `${s.firstName || ''} ${s.middleName || ''} ${s.lastName || ''}`.trim()}</td>
                         <td>{s.role || '-'}</td>
-                        <td>{s.center || '-'}</td>
+                        <td>{(s.officeAddressString && s.officeAddressString.trim()) || s.center || '-'}</td>
                         <td>{s.phone || '-'}</td>
                         <td>
                           <span className={`status-badge ${statusClass}`}>

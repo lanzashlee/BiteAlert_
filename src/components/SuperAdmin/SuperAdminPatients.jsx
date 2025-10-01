@@ -414,6 +414,11 @@ const SuperAdminPatients = () => {
   const [showCaseDetails, setShowCaseDetails] = useState(false);
   const [expandedCases, setExpandedCases] = useState(new Set());
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
   
   // Vaccination history states
   const [vaccinationHistory, setVaccinationHistory] = useState([]);
@@ -555,6 +560,35 @@ const SuperAdminPatients = () => {
     fetchPatients();
     return () => controller.abort();
   }, [params]);
+
+  // Client-side real-time filtering derived from raw patients
+  const visiblePatients = useMemo(() => {
+    const norm = (v) => String(v || '').toLowerCase();
+    return patients.filter(p => {
+      // text search across name, contact, address
+      if (query) {
+        const hay = [
+          p.firstName, p.middleName, p.lastName, p.email, p.phone,
+          p.houseNo, p.street, p.barangay, p.subdivision, p.city, p.province, p.zipCode
+        ].map(norm).join(' ');
+        if (!hay.includes(norm(query))) return false;
+      }
+      if (sexFilter && norm(p.sex) !== norm(sexFilter)) return false;
+      if (barangay && norm(p.barangay) !== norm(barangay)) return false;
+      if (dateFilter) {
+        const d = p.createdAt || p.registrationDate || p.dateRegistered;
+        if (d) {
+          const only = new Date(d);
+          const [yyyy,mm,dd] = new Date(dateFilter).toISOString().slice(0,10).split('-');
+          const pick = `${yyyy}-${mm}-${dd}`;
+          if (only.toISOString().slice(0,10) !== pick) return false;
+        } else {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [patients, query, sexFilter, barangay, dateFilter]);
 
   useEffect(() => {
     const first = (newPatientData.firstName || '').trim().toLowerCase();
@@ -1292,8 +1326,22 @@ const SuperAdminPatients = () => {
       return;
     }
 
-    if (!newPatientData.firstName || !newPatientData.lastName || !newPatientData.email || !newPatientData.phone) {
-      setAddPatientError('Please fill in all required fields');
+    // Check all required fields
+    const requiredFields = {
+      firstName: newPatientData.firstName,
+      lastName: newPatientData.lastName,
+      sex: newPatientData.sex,
+      email: newPatientData.email,
+      phone: newPatientData.phone,
+      password: newPatientData.password
+    };
+    
+    const missingFields = Object.entries(requiredFields)
+      .filter(([key, value]) => !value || value.trim() === '')
+      .map(([key]) => key);
+    
+    if (missingFields.length > 0) {
+      setAddPatientError(`Missing required fields: ${missingFields.join(', ')}`);
       setAddPatientLoading(false);
       return;
     }
@@ -1373,6 +1421,10 @@ const SuperAdminPatients = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Optimistically add to list
+        if (data.patient) {
+          setPatients(prev => [data.patient, ...prev]);
+        }
         // Reset form
         setNewPatientData({
           firstName: '',
@@ -1398,14 +1450,14 @@ const SuperAdminPatients = () => {
           confirmPassword: ''
         });
         setShowAddPatientModal(false);
-        
-        // Refresh the patients list
-        window.location.reload();
+        showToast('Patient created successfully');
       } else {
         setAddPatientError(data.message || 'Failed to add patient');
+        showToast(data.message || 'Failed to add patient', 'error');
       }
     } catch (error) {
       setAddPatientError('Error adding patient: ' + error.message);
+      showToast('Error adding patient: ' + error.message, 'error');
     } finally {
       setAddPatientLoading(false);
     }
@@ -1881,12 +1933,15 @@ const SuperAdminPatients = () => {
             )}
             <button
               onClick={() => {
+                // Reset all filters to defaults
                 setQuery('');
                 setStatus('');
                 setCenterFilter('');
                 setDateFilter('');
                 setVaccinationDate('');
                 setSexFilter('');
+                setBarangay('');
+                setPage(1);
               }}
               style={{
                 backgroundColor: '#6b7280',
@@ -1937,7 +1992,7 @@ const SuperAdminPatients = () => {
                     </td>
                   </tr>
                 ) : (
-                  sortedPatients.map((p) => {
+                  visiblePatients.map((p) => {
                     const name = [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ');
                     const dateRegistered = getPatientDateRegistered(p);
                     const vaccinationDay = getLastCompletedVaccinationDay(p);
@@ -2782,7 +2837,7 @@ const SuperAdminPatients = () => {
             </div>
             <div className="patient-modal-body">
               <form onSubmit={handleAddPatient}>
-                {addPatientError && (
+                {(addPatientError || toast) && (
                   <div style={{
                     backgroundColor: '#fef2f2',
                     border: '1px solid #fecaca',
@@ -2792,7 +2847,11 @@ const SuperAdminPatients = () => {
                     marginBottom: '20px',
                     fontSize: '14px'
                   }}>
-                    {addPatientError}
+                    {toast ? (
+                      <span style={{ color: toast.type === 'success' ? '#16a34a' : '#dc2626' }}>
+                        {toast.message}
+                      </span>
+                    ) : addPatientError}
                   </div>
                 )}
 

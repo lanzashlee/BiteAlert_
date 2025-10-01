@@ -17,9 +17,12 @@ const SuperAdminStock = () => {
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [centers, setCenters] = useState([]);
+  const [availableVaccines, setAvailableVaccines] = useState([]);
   const [formData, setFormData] = useState({
     center: '',
     vaccineName: '',
+    vaccineType: '',
+    brand: '',
     quantity: '',
     expiryDate: '',
     batchNumber: '',
@@ -29,41 +32,14 @@ const SuperAdminStock = () => {
   const [expandedCenters, setExpandedCenters] = useState(new Set());
   const [expandedVaccines, setExpandedVaccines] = useState(new Set());
 
-  // San Juan City Health Centers
-  const sanJuanCenters = [
-    "San Juan City Health Center",
-    "Addition Hills Health Center",
-    "Balong-Bato Health Center", 
-    "Batis Health Center",
-    "Corazon de Jesus Health Center",
-    "Ermitaño Health Center",
-    "Greenhills Medical Center",
-    "Isabelita Health Center",
-    "Kabayanan Health Center",
-    "Little Baguio Health Center",
-    "Maytunas Health Center",
-    "Onse Health Center",
-    "Pasadena Health Center",
-    "Pedro Cruz Health Center",
-    "Progreso Health Center",
-    "Rivera Health Center",
-    "Salapan Health Center",
-    "San Perfecto Health Center",
-    "Santa Lucia Health Center",
-    "Tibagan Health Center",
-    "West Crame Health Center",
-    "San Juan Medical Center",
-    "San Juan General Hospital",
-    "San Juan City Hospital"
-  ];
+  // Centers will be loaded from Center Data Management
 
-  // Available Vaccines
-  const availableVaccines = [
-    "VAXIRAB",
-    "SPEEDA", 
-    "Tetanus Toxoid-Containing Vaccine",
-    "Equine Rabies Immunoglobulin"
-  ];
+  // Load centers on component mount
+  useEffect(() => {
+    loadCenters();
+  }, []);
+
+  // Available vaccines will be loaded dynamically based on selected center
 
   // Handle sign out
   const handleSignOut = () => {
@@ -215,10 +191,38 @@ const SuperAdminStock = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    if (name === 'center') {
+      // When center changes, load vaccines for that center and reset vaccine fields
+      const selectedCenter = centers.find(c => c.centerName === value);
+      if (selectedCenter && selectedCenter.vaccines) {
+        setAvailableVaccines(selectedCenter.vaccines);
+      } else {
+        setAvailableVaccines([]);
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        vaccineName: '',
+        vaccineType: '',
+        brand: ''
+      }));
+    } else if (name === 'vaccineName') {
+      // When vaccine changes, set the type and brand
+      const selectedVaccine = availableVaccines.find(v => v.name === value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        vaccineType: selectedVaccine ? selectedVaccine.type : '',
+        brand: selectedVaccine ? selectedVaccine.brand : ''
+      }));
+    } else {
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -226,12 +230,24 @@ const SuperAdminStock = () => {
     setFormLoading(true);
     
     try {
+      // Prepare data in the new structure
+      const stockData = {
+        centerName: formData.center,
+        vaccineName: formData.vaccineName,
+        vaccineType: formData.vaccineType,
+        brand: formData.brand,
+        quantity: parseInt(formData.quantity),
+        expiryDate: formData.expiryDate,
+        batchNumber: formData.batchNumber,
+        minThreshold: parseInt(formData.minThreshold)
+      };
+      
       const response = await apiFetch('/api/vaccinestocks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(stockData),
       });
       
       const result = await response.json();
@@ -242,11 +258,14 @@ const SuperAdminStock = () => {
         setFormData({
           center: '',
           vaccineName: '',
+          vaccineType: '',
+          brand: '',
           quantity: '',
           expiryDate: '',
           batchNumber: '',
           minThreshold: '10'
         });
+        setAvailableVaccines([]);
         loadData(); // Reload data
       } else {
         alert(result.message || 'Failed to add vaccine stock');
@@ -276,11 +295,14 @@ const SuperAdminStock = () => {
     setFormData({
       center: '',
       vaccineName: '',
+      vaccineType: '',
+      brand: '',
       quantity: '',
       expiryDate: '',
       batchNumber: '',
       minThreshold: '10'
     });
+    setAvailableVaccines([]);
   };
 
   const toggleCenterExpansion = (centerName) => {
@@ -852,9 +874,9 @@ const SuperAdminStock = () => {
                                       <div className="vaccine-info" onClick={() => toggleVaccineExpansion(center.centerName, vaccine.name)} style={{cursor:'pointer'}}>
                                         <i className={`fa-solid fa-chevron-${vExpanded ? 'down' : 'right'}`} style={{ marginRight: '8px' }} />
                                         <div>
-                                          <div className="vaccine-name">{vaccine.name}</div>
-                                          <div className="vaccine-type">{vaccine.type}</div>
-                                          <div className="vaccine-brand">{vaccine.brand}</div>
+                                        <div className="vaccine-name">{vaccine.name}</div>
+                                        <div className="vaccine-type">{vaccine.type}</div>
+                                        <div className="vaccine-brand">{vaccine.brand}</div>
                                         </div>
                                       </div>
                                       <div className="vaccine-stock-info">
@@ -892,7 +914,7 @@ const SuperAdminStock = () => {
                                                 </div>
                                                 <div className="stock-entry-right">
                                                   <span className="stock-entry-qty">{isNaN(qty) ? '0' : qty}</span>
-                                                </div>
+                                      </div>
                                               </div>
                                             );
                                           })}
@@ -947,9 +969,9 @@ const SuperAdminStock = () => {
                   disabled={getUserCenter() && getUserCenter() !== 'all'}
                 >
                   <option value="">Select a center</option>
-                  {sanJuanCenters.map(center => (
-                    <option key={center} value={center}>
-                      {center}
+                  {centers.map(center => (
+                    <option key={center._id} value={center.centerName}>
+                      {center.centerName}
                     </option>
                   ))}
                 </select>
@@ -972,12 +994,42 @@ const SuperAdminStock = () => {
                 >
                   <option value="">Select a vaccine</option>
                   {availableVaccines.map(vaccine => (
-                    <option key={vaccine} value={vaccine}>
-                      {vaccine}
+                    <option key={vaccine._id} value={vaccine.name}>
+                      {vaccine.name} ({vaccine.brand})
                     </option>
                   ))}
                 </select>
               </div>
+
+              {/* Show vaccine type and brand when vaccine is selected */}
+              {formData.vaccineName && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="vaccineType">Vaccine Type</label>
+                    <input
+                      type="text"
+                      id="vaccineType"
+                      name="vaccineType"
+                      value={formData.vaccineType}
+                      readOnly
+                      className="form-control"
+                      style={{ backgroundColor: '#f8f9fa' }}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="brand">Brand</label>
+                    <input
+                      type="text"
+                      id="brand"
+                      name="brand"
+                      value={formData.brand}
+                      readOnly
+                      className="form-control"
+                      style={{ backgroundColor: '#f8f9fa' }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="form-row">
                 <div className="form-group">
