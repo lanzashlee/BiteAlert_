@@ -35,9 +35,10 @@ const SuperAdminStock = () => {
 
   // Centers will be loaded from Center Data Management
 
-  // Load centers on component mount
+  // Load centers and vaccines on component mount
   useEffect(() => {
     loadCenters();
+    loadAvailableVaccines();
   }, []);
 
   // Available vaccines will be loaded dynamically based on selected center
@@ -50,7 +51,7 @@ const SuperAdminStock = () => {
   // Confirm sign out
   const confirmSignOut = async () => {
     try { await fullLogout(apiFetch); } catch {}
-    setShowSignoutModal(false);
+      setShowSignoutModal(false);
   };
 
   useEffect(() => {
@@ -136,6 +137,41 @@ const SuperAdminStock = () => {
     }
   };
 
+  const loadAvailableVaccines = async () => {
+    try {
+      console.log('Loading available vaccines...');
+      // Try to load vaccines from API
+      const response = await apiFetch('/api/vaccines');
+      const result = await response.json();
+      
+      if (result.success && Array.isArray(result.data)) {
+        setAvailableVaccines(result.data);
+        console.log('Vaccines loaded from API:', result.data.length);
+      } else if (Array.isArray(result)) {
+        setAvailableVaccines(result);
+        console.log('Vaccines loaded from API (direct array):', result.length);
+      } else {
+        // Fallback: Use default vaccines
+        console.log('API failed, using default vaccines');
+        setAvailableVaccines([
+          { _id: '1', name: 'VAXIRAB', brand: 'PCEC', type: 'Anti-Rabies Vaccine' },
+          { _id: '2', name: 'SPEEDA', brand: 'PVRV', type: 'Anti-Rabies Vaccine' },
+          { _id: '3', name: 'Tetanus Toxoid-Containing Vaccine', brand: 'TCV', type: 'Tetanus Toxoid-Containing Vaccine' },
+          { _id: '4', name: 'Equine Rabies Immunoglobulin', brand: 'ERIG', type: 'Equine Rabies Immunoglobulin' }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading vaccines, using defaults:', error);
+      // Fallback: Use default vaccines
+      setAvailableVaccines([
+        { _id: '1', name: 'VAXIRAB', brand: 'PCEC', type: 'Anti-Rabies Vaccine' },
+        { _id: '2', name: 'SPEEDA', brand: 'PVRV', type: 'Anti-Rabies Vaccine' },
+        { _id: '3', name: 'Tetanus Toxoid-Containing Vaccine', brand: 'TCV', type: 'Tetanus Toxoid-Containing Vaccine' },
+        { _id: '4', name: 'Equine Rabies Immunoglobulin', brand: 'ERIG', type: 'Equine Rabies Immunoglobulin' }
+      ]);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
@@ -145,7 +181,9 @@ const SuperAdminStock = () => {
       if (selectedCenter && selectedCenter.vaccines) {
         setAvailableVaccines(selectedCenter.vaccines);
       } else {
-        setAvailableVaccines([]);
+        // Keep the current vaccines if no center-specific vaccines are found
+        // Don't clear the vaccines array
+        console.log('No center-specific vaccines found, keeping current vaccines');
       }
       
       setFormData(prev => ({
@@ -940,12 +978,21 @@ const SuperAdminStock = () => {
                   className="form-control"
                 >
                   <option value="">Select a vaccine</option>
-                  {availableVaccines.map(vaccine => (
-                    <option key={vaccine._id} value={vaccine.name}>
-                      {vaccine.name} ({vaccine.brand})
+                  {availableVaccines.length > 0 ? (
+                    availableVaccines.map(vaccine => (
+                      <option key={vaccine._id || vaccine.name} value={vaccine.name}>
+                        {vaccine.name} ({vaccine.brand})
                     </option>
-                  ))}
+                    ))
+                  ) : (
+                    <option value="" disabled>Loading vaccines...</option>
+                  )}
                 </select>
+                {availableVaccines.length === 0 && (
+                  <small style={{ color: '#dc2626', marginTop: '4px', display: 'block' }}>
+                    No vaccines available. Please check your connection or contact administrator.
+                  </small>
+                )}
               </div>
 
               {/* Show vaccine type and brand when vaccine is selected */}

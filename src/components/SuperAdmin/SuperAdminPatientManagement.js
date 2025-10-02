@@ -524,9 +524,13 @@ const SuperAdminPatientManagement = () => {
           apiUrl += `&center=${encodeURIComponent(userCenter)}`;
         }
 
+        console.log('Fetching patients from:', apiUrl);
         const res = await apiFetch(apiUrl);
+        console.log('API response status:', res.status);
+        console.log('API response ok:', res.ok);
 
         const data = await res.json();
+        console.log('API response data:', data);
 
         if (data.success) {
 
@@ -568,9 +572,26 @@ const SuperAdminPatientManagement = () => {
           }
 
         } else {
-
-          showNotification('Failed to load patient data', 'error');
-
+          console.log('API response not successful, trying fallback');
+          // Try fallback API call without center filter
+          try {
+            const fallbackRes = await apiFetch(`${apiConfig.endpoints.patients}?page=1&limit=1000`);
+            const fallbackData = await fallbackRes.json();
+            console.log('Fallback API response:', fallbackData);
+            
+            if (fallbackData.success && Array.isArray(fallbackData.data)) {
+              setPatients(fallbackData.data);
+              console.log('Fallback successful, loaded patients:', fallbackData.data.length);
+            } else if (Array.isArray(fallbackData)) {
+              setPatients(fallbackData);
+              console.log('Fallback successful (direct array), loaded patients:', fallbackData.length);
+            } else {
+              showNotification('Failed to load patient data', 'error');
+            }
+          } catch (fallbackError) {
+            console.error('Fallback also failed:', fallbackError);
+            showNotification('Failed to load patient data', 'error');
+          }
         }
 
       } catch (error) {
@@ -616,7 +637,7 @@ const SuperAdminPatientManagement = () => {
   // Filtered patient data
 
   const filteredPatients = useMemo(() => {
-
+    console.log('Calculating filtered patients from:', patients.length, 'total patients');
     let filteredPatients = patients;
 
 
@@ -673,6 +694,7 @@ const SuperAdminPatientManagement = () => {
 
 
 
+    console.log('Final filtered patients count:', filteredPatients.length);
     return filteredPatients;
 
   }, [searchTerm, statusFilter, centerFilter, patients]);
