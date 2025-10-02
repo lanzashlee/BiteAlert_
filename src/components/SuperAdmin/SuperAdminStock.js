@@ -35,6 +35,12 @@ const SuperAdminStock = () => {
   const [quickAdd, setQuickAdd] = useState({});
   // Small modal for per‑vaccine add
   const [quickModal, setQuickModal] = useState({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' });
+  // Lightweight toast notification for real-time feedback
+  const [toast, setToast] = useState({ show:false, message:'', type:'info' });
+  const showToast = (message, type='info') => {
+    setToast({ show:true, message, type });
+    setTimeout(() => setToast({ show:false, message:'', type:'info' }), 2500);
+  };
 
   const updateQuickAdd = (key, field, value) => {
     setQuickAdd(prev => ({
@@ -53,6 +59,22 @@ const SuperAdminStock = () => {
     }
     try {
       setFormLoading(true);
+      // Determine merge vs create in UI first (optimistic behavior)
+      const normalizeDate = (d) => {
+        if (!d) return '';
+        const date = new Date(d);
+        if (isNaN(date.getTime())) return '';
+        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      };
+      const desiredBatch = String(qa.batchNumber || '').trim();
+      const desiredExpiry = qa.expiryDate ? normalizeDate(qa.expiryDate) : '';
+      const entries = Array.isArray(vaccine.stockEntries) ? vaccine.stockEntries : [];
+      const foundSameBatchSameExpiry = entries.find(en => {
+        const enBatch = String(en.branchNo || '').trim();
+        const enExpiry = en.expirationDate ? normalizeDate(en.expirationDate) : '';
+        return enBatch.toLowerCase() === desiredBatch.toLowerCase() && enExpiry === desiredExpiry;
+      });
+
       const payload = {
         center: centerName,
         centerName: centerName,
@@ -70,16 +92,45 @@ const SuperAdminStock = () => {
       });
       const result = await res.json();
       if (result.success) {
-        // Clear and reload
+        // Optimistic UI update: merge or create locally for instant feedback
+        setData(prevData => {
+          const copy = JSON.parse(JSON.stringify(prevData || []));
+          const center = copy.find(c => (c.centerName || '') === centerName);
+          if (!center) return prevData; 
+          const vac = (center.vaccines || []).find(v => (v.name || '') === vaccine.name);
+          if (!vac) return prevData;
+          if (!Array.isArray(vac.stockEntries)) vac.stockEntries = [];
+          if (foundSameBatchSameExpiry) {
+            // Merge quantities
+            const target = vac.stockEntries.find(en => {
+              const enBatch = String(en.branchNo || '').trim();
+              const enExpiry = en.expirationDate ? normalizeDate(en.expirationDate) : '';
+              return enBatch.toLowerCase() === desiredBatch.toLowerCase() && enExpiry === desiredExpiry;
+            });
+            if (target) {
+              let cur = Number(target.stock || 0);
+              cur = isNaN(cur) ? 0 : cur;
+              target.stock = cur + (isNaN(qty) ? 0 : qty);
+            }
+            showToast('Added to existing batch', 'success');
+          } else {
+            // Create new entry (even if same batch but different expiry)
+            vac.stockEntries.push({ branchNo: desiredBatch, stock: qty, expirationDate: qa.expiryDate || '' });
+            showToast('New batch created', 'success');
+          }
+          return copy;
+        });
+        // Clear inputs and close modal
         setQuickAdd(prev => ({ ...prev, [key]: { quantity: '', batchNumber: '', expiryDate: '' } }));
         setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' });
-        await loadData();
+        // Background refresh to stay accurate with server
+        loadData();
       } else {
-        alert(result.message || 'Failed to add vaccine stock');
+        showToast(result.message || 'Failed to add vaccine stock', 'error');
       }
     } catch (e) {
       console.error('Quick add failed:', e);
-      alert('Error adding vaccine stock. Please try again.');
+      showToast('Error adding vaccine stock. Please try again.', 'error');
     } finally {
       setFormLoading(false);
     }
@@ -696,6 +747,14 @@ const SuperAdminStock = () => {
 
   return (
     <div className="superadmin-stock-container">
+      {/* Toast */}
+      {toast.show && (
+        <div className="toast-container" style={{ position:'fixed', top:16, right:16, zIndex:9999 }}>
+          <div className={`toast ${toast.type}`} style={{ background: toast.type==='success' ? '#ecfdf5' : toast.type==='error' ? '#fef2f2' : '#eff6ff', color:'#111827', padding:'10px 12px', borderRadius:8, boxShadow:'0 4px 10px rgba(0,0,0,0.1)', border:'1px solid #e5e7eb' }}>
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
       <ResponsiveSidebar onSignOut={handleSignOut} />
 
       <main className="main-content">
