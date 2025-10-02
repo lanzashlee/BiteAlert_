@@ -418,7 +418,7 @@ const SuperAdminStock = () => {
       const result = await response.json();
       
       if (result.success) {
-        alert('Vaccine stock added successfully!');
+        showToast(result.message || 'Vaccine stock added successfully!', 'success');
         setShowAddModal(false);
         setFormData({
           center: '',
@@ -432,11 +432,11 @@ const SuperAdminStock = () => {
         setAvailableVaccines([]);
         loadData(); // Reload data
       } else {
-        alert(result.message || 'Failed to add vaccine stock');
+        showToast(result.message || 'Failed to add vaccine stock', 'error');
       }
     } catch (error) {
       console.error('Error adding vaccine stock:', error);
-      alert('Error adding vaccine stock. Please try again.');
+      showToast('Error adding vaccine stock. Please try again.', 'error');
     } finally {
       setFormLoading(false);
     }
