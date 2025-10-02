@@ -736,9 +736,25 @@ const SuperAdminPatientManagement = () => {
   useEffect(() => {
     const fetchCenters = async () => {
       try {
-        const res = await apiFetch('/api/centers');
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+        const fetchAllPages = async () => {
+          let page = 1;
+          const pageSize = 100;
+          let all = [];
+          while (true) {
+            const res = await apiFetch(`/api/centers?page=${page}&limit=${pageSize}`);
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+            if (!list || list.length === 0) break;
+            all = all.concat(list);
+            const totalPages = data.totalPages || data.pages || null;
+            if (totalPages && page >= totalPages) break;
+            if (!totalPages && list.length < pageSize) break;
+            page += 1;
+          }
+          return all;
+        };
+
+        const list = await fetchAllPages();
         const names = Array.from(new Set((list || [])
           .filter(c => !c.isArchived)
           .map(c => String(c.centerName || c.name || '').trim())

@@ -24,22 +24,46 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     const loadCenters = async () => {
       try {
         console.log('Loading centers...');
-        // Try multiple possible endpoints
         const endpoints = ['/api/centers', '/api/center', '/api/health-centers'];
-        
+
+        const fetchAllPages = async (baseEndpoint) => {
+          let page = 1;
+          const pageSize = 100;
+          let all = [];
+          while (true) {
+            const url = baseEndpoint.includes('?')
+              ? `${baseEndpoint}&page=${page}&limit=${pageSize}`
+              : `${baseEndpoint}?page=${page}&limit=${pageSize}`;
+            try {
+              const res = await apiFetch(url);
+              const json = await res.json();
+              const list = Array.isArray(json) ? json : (json.data || json.centers || []);
+              if (!list || list.length === 0) break;
+              all = all.concat(list);
+              const totalPages = json.totalPages || json.pages || null;
+              if (totalPages && page >= totalPages) break;
+              if (!totalPages && list.length < pageSize) break;
+              page += 1;
+            } catch (e) {
+              console.log('Centers paging fetch failed for', url, e);
+              break;
+            }
+          }
+          return all;
+        };
+
         for (const endpoint of endpoints) {
           try {
             console.log(`Trying endpoint: ${endpoint}`);
-            const response = await apiFetch(endpoint);
-            console.log(`${endpoint} response:`, response);
-            
-            if (response.success && response.data && Array.isArray(response.data)) {
-              setCenters(response.data);
-              console.log('Centers loaded successfully from:', endpoint);
-              return;
-            } else if (Array.isArray(response)) {
-              setCenters(response);
-              console.log('Centers loaded successfully from:', endpoint);
+            const list = await fetchAllPages(endpoint);
+            if (Array.isArray(list) && list.length) {
+              const cleaned = list
+                .filter(c => !c.isArchived)
+                .map(c => ({ _id: c._id || c.id || String(c.name || c.centerName), name: String(c.centerName || c.name || '').trim() }))
+                .filter(c => c.name)
+                .sort((a,b)=>a.name.localeCompare(b.name));
+              setCenters(cleaned);
+              console.log('Centers loaded successfully from:', endpoint, 'count:', cleaned.length);
               return;
             }
           } catch (endpointError) {
@@ -47,18 +71,16 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             continue;
           }
         }
-        
+
         console.log('All center endpoints failed, using fallback data');
-        // Fallback: Use some default centers if API fails
         setCenters([
           { _id: '1', name: 'Balong-Bato Center' },
           { _id: '2', name: 'Salapan Center' },
           { _id: '3', name: 'San Juan Center' }
         ]);
-        
+
       } catch (error) {
         console.error('Error loading centers:', error);
-        // Fallback data
         setCenters([
           { _id: '1', name: 'Balong-Bato Center' },
           { _id: '2', name: 'Salapan Center' },
