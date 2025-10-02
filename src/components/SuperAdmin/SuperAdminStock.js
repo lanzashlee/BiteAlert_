@@ -959,17 +959,14 @@ const SuperAdminStock = () => {
                                           title="Quick add stock"
                                           onClick={(e)=>{ 
                                             e.stopPropagation(); 
-                                            // Get the most recent batch info from this vaccine
-                                            const latestEntry = vaccine.stockEntries && vaccine.stockEntries.length > 0 
-                                              ? vaccine.stockEntries[vaccine.stockEntries.length - 1] 
-                                              : null;
+                                            // Open empty; user can type an existing Batch No. to auto-fill expiry
                                             setQuickModal({ 
                                               open:true, 
                                               centerName:center.centerName, 
                                               vaccine, 
                                               quantity:'', 
-                                              batchNumber: latestEntry?.branchNo || '', 
-                                              expiryDate: latestEntry?.expirationDate || ''
+                                              batchNumber:'', 
+                                              expiryDate:''
                                             }); 
                                           }}
                                           style={{
@@ -1251,16 +1248,31 @@ const SuperAdminStock = () => {
                   <input type="number" min="0" className="form-control" value={quickModal.quantity} onChange={e=>setQuickModal(m=>({ ...m, quantity:e.target.value }))} />
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Batch No.</label>
-                  <input type="text" className="form-control" value={quickModal.batchNumber} onChange={e=>setQuickModal(m=>({ ...m, batchNumber:e.target.value }))} />
-                </div>
-                <div className="form-group">
-                  <label>Expiry Date</label>
-                  <input type="date" className="form-control" value={quickModal.expiryDate} onChange={e=>setQuickModal(m=>({ ...m, expiryDate:e.target.value }))} />
-                </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Batch No.</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={quickModal.batchNumber}
+                  onChange={e=>{
+                    const inputVal = e.target.value;
+                    const entries = quickModal.vaccine?.stockEntries || [];
+                    const match = entries.find(en => String(en.branchNo || '').trim().toLowerCase() === String(inputVal || '').trim().toLowerCase());
+                    setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: match?.expirationDate || '' }));
+                  }}
+                />
               </div>
+              <div className="form-group">
+                <label>Expiry Date</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={quickModal.expiryDate}
+                  onChange={e=>setQuickModal(m=>({ ...m, expiryDate:e.target.value }))}
+                />
+              </div>
+            </div>
             </div>
             <div className="add-modal-footer">
               <button className="cancel-btn" onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' })} disabled={formLoading}>Cancel</button>
