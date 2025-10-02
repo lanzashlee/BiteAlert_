@@ -2673,11 +2673,7 @@ const SuperAdminGenerate = () => {
       </main>
 
       {/* Loading Overlay */}
-      {loading && (
-        <div className="loading-overlay" style={{display: 'flex'}}>
-          <LoadingSpinner />
-        </div>
-      )}
+      {/* Removed full-screen loading overlay per request */}
 
       {/* Logout Modal */}
       {showSignoutModal && (

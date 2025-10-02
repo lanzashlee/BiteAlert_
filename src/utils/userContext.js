@@ -13,7 +13,10 @@ export const getUserCenter = () => {
     }
     
     // Regular admins are restricted to their assigned center
-    return currentUser.centerName || null;
+    const center = currentUser.centerName || null;
+    // Normalize Balong-Bato → Batis mapping
+    if (center === 'Balong-Bato' || center === 'Balong-Bato Center') return 'Batis';
+    return center;
   } catch (error) {
     console.error('Error getting user center:', error);
     return null;

@@ -456,9 +456,9 @@ const SuperAdminPatients = () => {
     const usp = new URLSearchParams();
     if (query) usp.set('q', query);
     // vaccination day removed
-    if (barangay) usp.set('barangay', barangay);
-    if (centerFilter) usp.set('center', centerFilter);
-    if (sexFilter) usp.set('sex', sexFilter);
+    if (barangay && barangay !== 'all') usp.set('barangay', barangay);
+    if (centerFilter && centerFilter !== 'all') usp.set('center', centerFilter);
+    if (sexFilter && sexFilter !== 'all') usp.set('sex', sexFilter);
     if (dateFilter) usp.set('dateFilter', dateFilter);
     if (vaccinationDate) usp.set('vaccinationDate', vaccinationDate);
     usp.set('page', String(page));
@@ -551,7 +551,7 @@ const SuperAdminPatients = () => {
           .replace(/\s*center$/i,'')
           .replace(/-/g,' ')
           .trim();
-        const byCenter = centerFilter 
+        const byCenter = (centerFilter && centerFilter !== 'all') 
           ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
           : filteredPatients;
         setPatients(byCenter);
@@ -578,8 +578,8 @@ const SuperAdminPatients = () => {
         ].map(norm).join(' ');
         if (!hay.includes(norm(query))) return false;
       }
-      if (sexFilter && norm(p.sex) !== norm(sexFilter)) return false;
-      if (barangay && norm(p.barangay) !== norm(barangay)) return false;
+      if (sexFilter && sexFilter !== 'all' && norm(p.sex) !== norm(sexFilter)) return false;
+      if (barangay && barangay !== 'all' && norm(p.barangay) !== norm(barangay)) return false;
       if (dateFilter) {
         const d = p.createdAt || p.registrationDate || p.dateRegistered;
         if (d) {
