@@ -957,7 +957,21 @@ const SuperAdminStock = () => {
                                         </div>
                                         <button
                                           title="Quick add stock"
-                                          onClick={(e)=>{ e.stopPropagation(); setQuickModal({ open:true, centerName:center.centerName, vaccine, quantity:'', batchNumber:'', expiryDate:'', minThreshold:'10' }); }}
+                                          onClick={(e)=>{ 
+                                            e.stopPropagation(); 
+                                            // Get the most recent batch info from this vaccine
+                                            const latestEntry = vaccine.stockEntries && vaccine.stockEntries.length > 0 
+                                              ? vaccine.stockEntries[vaccine.stockEntries.length - 1] 
+                                              : null;
+                                            setQuickModal({ 
+                                              open:true, 
+                                              centerName:center.centerName, 
+                                              vaccine, 
+                                              quantity:'', 
+                                              batchNumber: latestEntry?.branchNo || '', 
+                                              expiryDate: latestEntry?.expirationDate || ''
+                                            }); 
+                                          }}
                                           style={{
                                             border:'none', background:'#eafaf1', color:'#10b981', width:28, height:28, borderRadius:14,
                                             display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer'
@@ -1202,7 +1216,7 @@ const SuperAdminStock = () => {
       {/* Small Quick Add Modal */}
       {quickModal.open && (
         <div className="add-modal active">
-          <div className="add-modal-overlay" onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'', minThreshold:'10' })}></div>
+          <div className="add-modal-overlay" onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' })}></div>
           <div className="add-modal-content" style={{ maxWidth: 520 }}>
             <div className="add-modal-header">
               <div className="add-icon-wrapper">
