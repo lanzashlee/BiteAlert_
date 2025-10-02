@@ -525,21 +525,24 @@ const SuperAdminPatients = () => {
       setError('');
       try {
         const userCenter = getUserCenter();
-        
+        // Normalize Balong-Bato → Batis mapping used elsewhere
+        const finalUserCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
+
         // Build API URL with center/barangay filter for non-superadmin users
-        let apiParams = params || 'page=1&limit=20';
-        if (userCenter && userCenter !== 'all') {
-          apiParams += `&center=${encodeURIComponent(userCenter)}`;
-          apiParams += `&barangay=${encodeURIComponent(userCenter)}`;
+        let apiParams = params || 'page=1&limit=1000';
+        if (finalUserCenter && finalUserCenter !== 'all') {
+          apiParams += `&center=${encodeURIComponent(finalUserCenter)}`;
+          apiParams += `&barangay=${encodeURIComponent(finalUserCenter)}`;
         }
-        
+
         const res = await apiFetch(`${apiConfig.endpoints.patients}?${apiParams}`, { signal: controller.signal });
         const data = await res.json();
-        
-        if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load patients');
-        
+
+        // Be resilient to different payload shapes
+        const allPatients = Array.isArray(data) ? data : (data.data || []);
+        if (!res.ok) throw new Error(data.message || 'Failed to load patients');
+
         // Apply additional client-side filtering if needed
-        const allPatients = data.data || [];
         const filteredPatients = filterByCenter(allPatients, 'center');
         // Apply explicit center filter if chosen
         const norm = (v) => String(v || '')

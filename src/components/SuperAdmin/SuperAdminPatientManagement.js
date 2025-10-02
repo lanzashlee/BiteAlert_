@@ -517,6 +517,7 @@ const SuperAdminPatientManagement = () => {
         setLoading(true);
 
         const userCenter = getUserCenter();
+        const finalUserCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
         console.log('User center from getUserCenter():', userCenter);
         
         // Debug: Check what's in localStorage
@@ -544,10 +545,8 @@ const SuperAdminPatientManagement = () => {
           console.log('Updated user center to:', updatedUserCenter);
         }
         
-        // Build API URL with center/barangay filter for non-superadmin users
+        // Build API URL with center/barangay filter for non-superadmin users (aligned with scheduler)
         let apiUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
-        const finalUserCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
-        
         if (finalUserCenter && finalUserCenter !== 'all') {
           // Try both center and barangay filtering
           apiUrl += `&center=${encodeURIComponent(finalUserCenter)}`;
@@ -566,10 +565,10 @@ const SuperAdminPatientManagement = () => {
         const data = await res.json();
         console.log('API response data:', data);
 
-        if (data.success) {
+        if (data.success || Array.isArray(data)) {
 
           // Apply additional client-side filtering if needed
-          const allPatients = data.data || [];
+          const allPatients = Array.isArray(data) ? data : (data.data || []);
           console.log('Total patients from API:', allPatients.length);
           
           // Filter by center/barangay on client side as well
