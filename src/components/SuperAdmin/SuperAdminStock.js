@@ -234,13 +234,13 @@ const SuperAdminStock = () => {
         brand: ''
       }));
     } else if (name === 'vaccineName') {
-      // When vaccine changes, set the type and brand
+      // When vaccine changes, set the type only; brand should be chosen manually
       const selectedVaccine = availableVaccines.find(v => v.name === value);
       setFormData(prev => ({
         ...prev,
         [name]: value,
         vaccineType: selectedVaccine ? selectedVaccine.type : '',
-        brand: selectedVaccine ? selectedVaccine.brand : ''
+        brand: ''
       }));
     } else {
     setFormData(prev => ({
@@ -257,7 +257,8 @@ const SuperAdminStock = () => {
     try {
       // Prepare data in the new structure
       const stockData = {
-        centerName: formData.center,
+        center: formData.center,
+        centerName: formData.center, // keep for backward compatibility
         vaccineName: formData.vaccineName,
         vaccineType: formData.vaccineType,
         brand: formData.brand,
@@ -1057,9 +1058,9 @@ const SuperAdminStock = () => {
                       id="brand"
                       name="brand"
                       value={formData.brand}
-                      readOnly
+                      onChange={handleInputChange}
                       className="form-control"
-                      style={{ backgroundColor: '#f8f9fa' }}
+                      placeholder="Enter brand (optional)"
                     />
                   </div>
                 </div>
