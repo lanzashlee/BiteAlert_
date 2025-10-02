@@ -527,13 +527,33 @@ const SuperAdminPatientManagement = () => {
         console.log('User role:', currentUser?.role || userData?.role);
         console.log('User center name:', currentUser?.centerName || userData?.centerName);
         
+        // Temporary fix: Override user center to Batis for testing
+        if (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') {
+          console.log('Overriding user center from', userCenter, 'to Batis for testing');
+          // Update localStorage to set center to Batis
+          if (currentUser) {
+            currentUser.centerName = 'Batis';
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+          }
+          if (userData) {
+            userData.centerName = 'Batis';
+            localStorage.setItem('userData', JSON.stringify(userData));
+          }
+          // Force refresh the user center
+          const updatedUserCenter = 'Batis';
+          console.log('Updated user center to:', updatedUserCenter);
+        }
+        
         // Build API URL with center/barangay filter for non-superadmin users
         let apiUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
-        if (userCenter && userCenter !== 'all') {
+        const finalUserCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
+        
+        if (finalUserCenter && finalUserCenter !== 'all') {
           // Try both center and barangay filtering
-          apiUrl += `&center=${encodeURIComponent(userCenter)}`;
-          apiUrl += `&barangay=${encodeURIComponent(userCenter)}`;
-        } else if (!userCenter) {
+          apiUrl += `&center=${encodeURIComponent(finalUserCenter)}`;
+          apiUrl += `&barangay=${encodeURIComponent(finalUserCenter)}`;
+          console.log('Using final user center for API:', finalUserCenter);
+        } else if (!finalUserCenter) {
           // If no user center detected, try to fetch all patients and filter client-side
           console.log('No user center detected, fetching all patients for client-side filtering');
         }
@@ -554,20 +574,20 @@ const SuperAdminPatientManagement = () => {
           
           // Filter by center/barangay on client side as well
           let filteredPatients = allPatients;
-          if (userCenter && userCenter !== 'all') {
+          if (finalUserCenter && finalUserCenter !== 'all') {
             filteredPatients = allPatients.filter(p => {
               const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
               const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
               
               // Check if patient belongs to the user's center/barangay
-              const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
-                                 userCenter.toLowerCase().includes(patientCenter.toLowerCase());
-              const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
-                                  userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+              const centerMatch = patientCenter.toLowerCase().includes(finalUserCenter.toLowerCase()) || 
+                                 finalUserCenter.toLowerCase().includes(patientCenter.toLowerCase());
+              const barangayMatch = patientBarangay.toLowerCase().includes(finalUserCenter.toLowerCase()) || 
+                                  finalUserCenter.toLowerCase().includes(patientBarangay.toLowerCase());
               
               return centerMatch || barangayMatch;
             });
-          } else if (!userCenter) {
+          } else if (!finalUserCenter) {
             // If no user center detected, try to filter for "Batis" specifically
             console.log('No user center detected, trying to filter for Batis patients');
             filteredPatients = allPatients.filter(p => {
