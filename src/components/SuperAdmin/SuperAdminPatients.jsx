@@ -526,11 +526,14 @@ const SuperAdminPatients = () => {
       try {
         const userCenter = getUserCenter();
         
+        // Normalize center for backends using Balong-Bato instead of Batis
+        const finalCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
+        
         // Build API URL with center/barangay filter for non-superadmin users
         let apiParams = params || 'page=1&limit=20';
-        if (userCenter && userCenter !== 'all') {
-          apiParams += `&center=${encodeURIComponent(userCenter)}`;
-          apiParams += `&barangay=${encodeURIComponent(userCenter)}`;
+        if (finalCenter && finalCenter !== 'all') {
+          apiParams += `&center=${encodeURIComponent(finalCenter)}`;
+          apiParams += `&barangay=${encodeURIComponent(finalCenter)}`;
         }
         
         const res = await apiFetch(`${apiConfig.endpoints.patients}?${apiParams}`, { signal: controller.signal });
