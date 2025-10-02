@@ -18,7 +18,7 @@ import {
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import ResponsiveSidebar from './ResponsiveSidebar';
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
 import SmallLoadingSpinner from './SmallDogLoading';
 import './SuperAdminDashboard.css';
