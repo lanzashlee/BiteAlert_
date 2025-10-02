@@ -545,15 +545,14 @@ const SuperAdminPatientManagement = () => {
           console.log('Updated user center to:', updatedUserCenter);
         }
         
-        // Build API URL with center/barangay filter for non-superadmin users (aligned with scheduler)
+        // Build API URL WITHOUT server-side center/barangay filtering.
+        // We fetch broadly, then apply robust client-side filtering by center/barangay
+        // to avoid missing data when backend fields vary across records.
         let apiUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
         if (finalUserCenter && finalUserCenter !== 'all') {
-          // Try both center and barangay filtering
-          apiUrl += `&center=${encodeURIComponent(finalUserCenter)}`;
-          apiUrl += `&barangay=${encodeURIComponent(finalUserCenter)}`;
-          console.log('Using final user center for API:', finalUserCenter);
+          console.log('Admin center detected, using client-side filtering for center:', finalUserCenter);
         } else if (!finalUserCenter) {
-          // If no user center detected, try to fetch all patients and filter client-side
+          // If no user center detected, fetch all then attempt a sensible default client-side
           console.log('No user center detected, fetching all patients for client-side filtering');
         }
 
