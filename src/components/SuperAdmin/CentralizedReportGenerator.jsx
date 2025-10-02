@@ -396,7 +396,7 @@ const CentralizedReportGenerator = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.slice(0, 10).map((row, index) => (
+                  {data.map((row, index) => (
                     <tr key={index}>
                       {Object.values(row).map((value, cellIndex) => (
                         <td key={cellIndex}>{value || '-'}</td>
@@ -405,9 +405,7 @@ const CentralizedReportGenerator = () => {
                   ))}
                 </tbody>
               </table>
-              {data.length > 10 && (
-                <p className="preview-note">Showing first 10 records of {data.length} total</p>
-              )}
+              
             </div>
           </div>
         )}
