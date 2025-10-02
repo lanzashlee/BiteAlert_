@@ -517,7 +517,7 @@ const SuperAdminPatientManagement = () => {
         setLoading(true);
 
         const userCenter = getUserCenter();
-        const finalUserCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
+        const finalUserCenter = userCenter; // use exact center
         console.log('User center from getUserCenter():', userCenter);
         
         // Debug: Check what's in localStorage
@@ -565,10 +565,10 @@ const SuperAdminPatientManagement = () => {
         const data = await res.json();
         console.log('API response data:', data);
 
-        if (data.success || Array.isArray(data)) {
+        if (data.success || Array.isArray(data) || Array.isArray(data?.patients) || Array.isArray(data?.data)) {
 
           // Apply additional client-side filtering if needed
-          const allPatients = Array.isArray(data) ? data : (data.data || []);
+          const allPatients = Array.isArray(data) ? data : (data.patients || data.data || data.items || data.rows || []);
           console.log('Total patients from API:', allPatients.length);
           
           // Filter by center/barangay on client side as well

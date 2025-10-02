@@ -525,8 +525,7 @@ const SuperAdminPatients = () => {
       setError('');
       try {
         const userCenter = getUserCenter();
-        // Normalize Balong-Bato → Batis mapping used elsewhere
-        const finalUserCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
+        const finalUserCenter = userCenter; // use exact center as stored (no remap)
 
         // Build API URL with center/barangay filter for non-superadmin users
         let apiParams = params || 'page=1&limit=1000';
@@ -538,8 +537,11 @@ const SuperAdminPatients = () => {
         const res = await apiFetch(`${apiConfig.endpoints.patients}?${apiParams}`, { signal: controller.signal });
         const data = await res.json();
 
-        // Be resilient to different payload shapes
-        const allPatients = Array.isArray(data) ? data : (data.data || []);
+        // Be resilient to different payload shapes from Patients collection
+        // Accept: Array | {data:[]} | {patients:[]} | {items:[]} | {rows:[]}
+        const allPatients = Array.isArray(data) 
+          ? data 
+          : (data.data || data.patients || data.items || data.rows || []);
         if (!res.ok) throw new Error(data.message || 'Failed to load patients');
 
         // Apply additional client-side filtering if needed
@@ -555,7 +557,7 @@ const SuperAdminPatients = () => {
           ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
           : filteredPatients;
         setPatients(byCenter);
-        setTotalPages(data.totalPages || 1);
+        setTotalPages(data.totalPages || data.pages || 1);
       } catch (e) {
         if (e.name !== 'AbortError') setError(e.message);
       } finally {
@@ -579,7 +581,11 @@ const SuperAdminPatients = () => {
         if (!hay.includes(norm(query))) return false;
       }
       if (sexFilter && sexFilter !== 'all' && norm(p.sex) !== norm(sexFilter)) return false;
-      if (barangay && barangay !== 'all' && norm(p.barangay) !== norm(barangay)) return false;
+      if (barangay && barangay !== 'all') {
+        const bSel = norm(barangay);
+        const bVal = norm(p.barangay);
+        if (!(bVal === bSel || bVal.includes(bSel) || bSel.includes(bVal))) return false;
+      }
       if (dateFilter) {
         const d = p.createdAt || p.registrationDate || p.dateRegistered;
         if (d) {

@@ -12,11 +12,8 @@ export const getUserCenter = () => {
       return 'all';
     }
     
-    // Regular admins are restricted to their assigned center
-    const center = currentUser.centerName || null;
-    // Normalize Balong-Bato → Batis mapping
-    if (center === 'Balong-Bato' || center === 'Balong-Bato Center') return 'Batis';
-    return center;
+    // Regular admins are restricted to their assigned center (use as-is)
+    return currentUser.centerName || null;
   } catch (error) {
     console.error('Error getting user center:', error);
     return null;
@@ -68,18 +65,11 @@ export const filterByCenter = (data, centerField = 'center') => {
       const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || '';
       
       // Handle center name variations (e.g., "Balong-Bato" vs "Balong-Bato Center")
-      const centerMatch = itemCenter === userCenter || 
-                         itemCenter === userCenter + ' Center' || 
-                         itemCenter === userCenter + ' Health Center' ||
-                         itemCenter.replace(' Center', '') === userCenter ||
-                         itemCenter.replace(' Health Center', '') === userCenter ||
-                         itemCenter.toLowerCase().includes(userCenter.toLowerCase()) ||
-                         userCenter.toLowerCase().includes(itemCenter.toLowerCase());
+      const norm = (v) => String(v||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+      const centerMatch = norm(itemCenter) === norm(userCenter) || norm(userCenter).includes(norm(itemCenter)) || norm(itemCenter).includes(norm(userCenter));
       
       // Handle barangay matching
-      const barangayMatch = itemBarangay === userCenter ||
-                           itemBarangay.toLowerCase().includes(userCenter.toLowerCase()) ||
-                           userCenter.toLowerCase().includes(itemBarangay.toLowerCase());
+      const barangayMatch = norm(itemBarangay) === norm(userCenter) || norm(itemBarangay).includes(norm(userCenter)) || norm(userCenter).includes(norm(itemBarangay));
       
       return centerMatch || barangayMatch;
     });
