@@ -32,6 +32,57 @@ const SuperAdminStock = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [expandedCenters, setExpandedCenters] = useState(new Set());
   const [expandedVaccines, setExpandedVaccines] = useState(new Set());
+  // Inline quick add state keyed by `${centerName}::${vaccineName}`
+  const [quickAdd, setQuickAdd] = useState({});
+
+  const updateQuickAdd = (key, field, value) => {
+    setQuickAdd(prev => ({
+      ...prev,
+      [key]: { ...(prev[key] || { quantity: '', batchNumber: '', expiryDate: '', minThreshold: '10' }), [field]: value }
+    }));
+  };
+
+  const submitQuickAdd = async (centerName, vaccine) => {
+    const key = `${centerName}::${vaccine.name}`;
+    const qa = quickAdd[key] || {};
+    const qty = parseInt(qa.quantity);
+    if (!centerName || !vaccine?.name || isNaN(qty)) {
+      alert('Center, vaccine name, and quantity are required');
+      return;
+    }
+    try {
+      setFormLoading(true);
+      const payload = {
+        center: centerName,
+        centerName: centerName,
+        vaccineName: vaccine.name,
+        vaccineType: vaccine.type || '',
+        brand: vaccine.brand || '',
+        quantity: qty,
+        expiryDate: qa.expiryDate || '',
+        batchNumber: qa.batchNumber || '',
+        minThreshold: parseInt(qa.minThreshold || '10')
+      };
+      const res = await apiFetch('/api/vaccinestocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if (result.success) {
+        // Clear inline inputs and reload
+        setQuickAdd(prev => ({ ...prev, [key]: { quantity: '', batchNumber: '', expiryDate: '', minThreshold: '10' } }));
+        await loadData();
+      } else {
+        alert(result.message || 'Failed to add vaccine stock');
+      }
+    } catch (e) {
+      console.error('Quick add failed:', e);
+      alert('Error adding vaccine stock. Please try again.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
 
   // Centers will be loaded from Center Data Management
 
@@ -940,10 +991,31 @@ const SuperAdminStock = () => {
                                                 </div>
                                                 <div className="stock-entry-right">
                                                   <span className="stock-entry-qty">{isNaN(qty) ? '0' : qty}</span>
-                                      </div>
+                                                </div>
                                               </div>
                                             );
                                           })}
+
+                                          {/* Quick add row */}
+                                          {(() => {
+                                            const key = `${center.centerName}::${vaccine.name}`;
+                                            const qa = quickAdd[key] || { quantity: '', batchNumber: '', expiryDate: '', minThreshold: '10' };
+                                            return (
+                                              <div className="stock-entry quick-add" style={{ display:'grid', gridTemplateColumns:'100px 160px 160px 140px 120px', gap:8, alignItems:'center', marginTop:12 }}>
+                                                <input type="number" min="0" placeholder="Qty" value={qa.quantity}
+                                                  onChange={e=>updateQuickAdd(key,'quantity', e.target.value)} className="form-control" />
+                                                <input type="text" placeholder="Batch No." value={qa.batchNumber}
+                                                  onChange={e=>updateQuickAdd(key,'batchNumber', e.target.value)} className="form-control" />
+                                                <input type="date" value={qa.expiryDate}
+                                                  onChange={e=>updateQuickAdd(key,'expiryDate', e.target.value)} className="form-control" />
+                                                <input type="number" min="0" placeholder="Min Threshold" value={qa.minThreshold}
+                                                  onChange={e=>updateQuickAdd(key,'minThreshold', e.target.value)} className="form-control" />
+                                                <button className="btn btn-success" onClick={()=>submitQuickAdd(center.centerName, vaccine)} disabled={formLoading}>
+                                                  {formLoading ? 'Adding...' : 'Add Stock'}
+                                                </button>
+                                              </div>
+                                            );
+                                          })()}
                                         </div>
                                       )}
                                     </div>
