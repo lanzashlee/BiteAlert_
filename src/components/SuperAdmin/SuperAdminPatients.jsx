@@ -526,10 +526,11 @@ const SuperAdminPatients = () => {
       try {
         const userCenter = getUserCenter();
         
-        // Build API URL with center filter for non-superadmin users
+        // Build API URL with center/barangay filter for non-superadmin users
         let apiParams = params || 'page=1&limit=20';
         if (userCenter && userCenter !== 'all') {
           apiParams += `&center=${encodeURIComponent(userCenter)}`;
+          apiParams += `&barangay=${encodeURIComponent(userCenter)}`;
         }
         
         const res = await apiFetch(`/api/patients?${apiParams}`, { signal: controller.signal });

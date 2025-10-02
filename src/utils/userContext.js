@@ -61,16 +61,24 @@ export const filterByCenter = (data, centerField = 'center') => {
   // Regular admins only see their center's data
   if (userCenter) {
     return data.filter(item => {
-      const itemCenter = item[centerField] || item.centerName;
+      const itemCenter = item[centerField] || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || '';
+      const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || '';
       
       // Handle center name variations (e.g., "Balong-Bato" vs "Balong-Bato Center")
-      if (itemCenter === userCenter) return true;
-      if (itemCenter === userCenter + ' Center') return true;
-      if (itemCenter === userCenter + ' Health Center') return true;
-      if (itemCenter.replace(' Center', '') === userCenter) return true;
-      if (itemCenter.replace(' Health Center', '') === userCenter) return true;
+      const centerMatch = itemCenter === userCenter || 
+                         itemCenter === userCenter + ' Center' || 
+                         itemCenter === userCenter + ' Health Center' ||
+                         itemCenter.replace(' Center', '') === userCenter ||
+                         itemCenter.replace(' Health Center', '') === userCenter ||
+                         itemCenter.toLowerCase().includes(userCenter.toLowerCase()) ||
+                         userCenter.toLowerCase().includes(itemCenter.toLowerCase());
       
-      return false;
+      // Handle barangay matching
+      const barangayMatch = itemBarangay === userCenter ||
+                           itemBarangay.toLowerCase().includes(userCenter.toLowerCase()) ||
+                           userCenter.toLowerCase().includes(itemBarangay.toLowerCase());
+      
+      return centerMatch || barangayMatch;
     });
   }
   
@@ -89,7 +97,7 @@ export const addCenterFilterToRequest = (url, params = {}) => {
   
   // Regular admins need center filtering
   if (userCenter) {
-    const newParams = { ...params, center: userCenter };
+    const newParams = { ...params, center: userCenter, barangay: userCenter };
     return { url, params: newParams };
   }
   

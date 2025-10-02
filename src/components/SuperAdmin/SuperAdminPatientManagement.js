@@ -517,11 +517,14 @@ const SuperAdminPatientManagement = () => {
         setLoading(true);
 
         const userCenter = getUserCenter();
+        console.log('User center from getUserCenter():', userCenter);
         
-        // Build API URL with center filter for non-superadmin users
+        // Build API URL with center/barangay filter for non-superadmin users
         let apiUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
         if (userCenter && userCenter !== 'all') {
+          // Try both center and barangay filtering
           apiUrl += `&center=${encodeURIComponent(userCenter)}`;
+          apiUrl += `&barangay=${encodeURIComponent(userCenter)}`;
         }
 
         console.log('Fetching patients from:', apiUrl);
@@ -536,7 +539,26 @@ const SuperAdminPatientManagement = () => {
 
           // Apply additional client-side filtering if needed
           const allPatients = data.data || [];
-          const filteredPatients = filterByCenter(allPatients, 'center');
+          console.log('Total patients from API:', allPatients.length);
+          
+          // Filter by center/barangay on client side as well
+          let filteredPatients = allPatients;
+          if (userCenter && userCenter !== 'all') {
+            filteredPatients = allPatients.filter(p => {
+              const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
+              const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+              
+              // Check if patient belongs to the user's center/barangay
+              const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                 userCenter.toLowerCase().includes(patientCenter.toLowerCase());
+              const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                  userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+              
+              return centerMatch || barangayMatch;
+            });
+          }
+
+          console.log('Filtered patients count:', filteredPatients.length);
 
           // Derive center directly from common fields
           const withCenterDerived = filteredPatients.map(p => ({
@@ -580,11 +602,41 @@ const SuperAdminPatientManagement = () => {
             console.log('Fallback API response:', fallbackData);
             
             if (fallbackData.success && Array.isArray(fallbackData.data)) {
-              setPatients(fallbackData.data);
-              console.log('Fallback successful, loaded patients:', fallbackData.data.length);
+              // Apply client-side filtering even for fallback
+              let fallbackPatients = fallbackData.data;
+              if (userCenter && userCenter !== 'all') {
+                fallbackPatients = fallbackData.data.filter(p => {
+                  const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
+                  const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+                  
+                  const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                     userCenter.toLowerCase().includes(patientCenter.toLowerCase());
+                  const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                      userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+                  
+                  return centerMatch || barangayMatch;
+                });
+              }
+              setPatients(fallbackPatients);
+              console.log('Fallback successful, loaded patients:', fallbackPatients.length);
             } else if (Array.isArray(fallbackData)) {
-              setPatients(fallbackData);
-              console.log('Fallback successful (direct array), loaded patients:', fallbackData.length);
+              // Apply client-side filtering even for direct array fallback
+              let fallbackPatients = fallbackData;
+              if (userCenter && userCenter !== 'all') {
+                fallbackPatients = fallbackData.filter(p => {
+                  const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
+                  const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+                  
+                  const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                     userCenter.toLowerCase().includes(patientCenter.toLowerCase());
+                  const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                      userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+                  
+                  return centerMatch || barangayMatch;
+                });
+              }
+              setPatients(fallbackPatients);
+              console.log('Fallback successful (direct array), loaded patients:', fallbackPatients.length);
             } else {
               showNotification('Failed to load patient data', 'error');
             }
