@@ -1355,7 +1355,26 @@ const SuperAdminStock = () => {
                     const inputVal = e.target.value;
                     const entries = quickModal.vaccine?.stockEntries || [];
                     const match = entries.find(en => String(en.branchNo || '').trim().toLowerCase() === String(inputVal || '').trim().toLowerCase());
-                    setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: match?.expirationDate || '' }));
+                    const toInputDate = (val) => {
+                      if (!val) return '';
+                      const d = new Date(val);
+                      if (isNaN(d.getTime())) {
+                        // Try parsing mm/dd/yyyy
+                        const parts = String(val).split(/[\/\-]/);
+                        if (parts.length === 3) {
+                          const m = parts[0].padStart(2,'0');
+                          const day = parts[1].padStart(2,'0');
+                          const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                          return `${y}-${m}-${day}`;
+                        }
+                        return '';
+                      }
+                      const yyyy = d.getFullYear();
+                      const mm = String(d.getMonth()+1).padStart(2,'0');
+                      const dd = String(d.getDate()).padStart(2,'0');
+                      return `${yyyy}-${mm}-${dd}`;
+                    };
+                    setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: toInputDate(match?.expirationDate) }));
                   }}
                 />
               </div>
