@@ -230,24 +230,6 @@ const CentralizedReportGenerator = () => {
           <p className="subtitle">Generate comprehensive reports with advanced filtering</p>
         </div>
 
-        {/* Report Type Selection */}
-        <div className="report-type-selector">
-          <h3>Select Report Type</h3>
-          <div className="report-type-grid">
-            {reportTypes.map((type) => (
-              <div
-                key={type.value}
-                className={`report-type-card ${reportType === type.value ? 'active' : ''}`}
-                onClick={() => setReportType(type.value)}
-              >
-                <i className={type.icon}></i>
-                <h4>{type.label}</h4>
-                <p>{type.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Universal Filters */}
         <div className="filters-section">
           <div className="filters-header">
@@ -444,3 +426,5 @@ const CentralizedReportGenerator = () => {
 };
 
 export default CentralizedReportGenerator;
+
+
