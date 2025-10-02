@@ -2864,15 +2864,16 @@ app.get('/api/cases-per-barangay', async (req, res) => {
       {
         $group: {
           _id: {
-            $toUpper: { $trim: { input: {
+            $toUpper: {
               $ifNull: [
                 '$barangay',
-                { $ifNull: ['$addressBarangay',
-                  { $ifNull: ['$patientBarangay',
-                    { $ifNull: ['$locationBarangay', '$barangayName'] }
+                { $ifNull: [ '$addressBarangay',
+                  { $ifNull: [ '$patientBarangay',
+                    { $ifNull: [ '$locationBarangay', '$barangayName' ] }
                   ] }
                 ] }
-            } } }
+              ]
+            }
           },
           count: { $sum: 1 }
         }
