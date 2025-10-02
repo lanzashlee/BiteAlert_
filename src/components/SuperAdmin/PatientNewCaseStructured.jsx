@@ -263,12 +263,29 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     if (current.active && !current.pvrv && !current.pcec) return 'Please select vaccine name (SPEEDA or VAXIRAB)';
     if (current.active && !current.id && !current.im) return 'Please select route of administration (ID or IM)';
     
-    if (current.passive && !current.skinTest && !current.tig) return 'Please select passive immunization type (SKIN TEST or TIG)';
+    if (current.passive && !current.skinTest && !current.hrig) return 'Please select passive immunization type (SKIN TEST or HRIG)';
     if (current.skinTest && (!current.skinTime || !current.skinRead || !current.skinResult.trim() || !current.skinDate)) return 'Please complete SKIN TEST details';
-    if (current.tig && (!current.tigDose.trim() || !current.tigDate)) return 'Please specify TIG dose and date';
+    if (current.hrig && (!current.hrigDose.trim() || !current.hrigDate)) return 'Please specify HRIG dose and date';
     
     // Schedule dates validation
     if (!schedule.d0 || !schedule.d3 || !schedule.d7 || !schedule.d14 || !schedule.d28) return 'Please complete all vaccination schedule dates';
+    
+    // Date sequence validation
+    const d0Date = new Date(schedule.d0);
+    const d3Date = new Date(schedule.d3);
+    const d7Date = new Date(schedule.d7);
+    const d14Date = new Date(schedule.d14);
+    const d28Date = new Date(schedule.d28);
+    
+    if (d0Date >= d3Date) return 'D3 date must be after D0 date';
+    if (d3Date >= d7Date) return 'D7 date must be after D3 date';
+    if (d7Date >= d14Date) return 'D14 date must be after D7 date';
+    if (d14Date >= d28Date) return 'D28 date must be after D14 date';
+    
+    // Check for past dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    if (d0Date < today) return 'D0 date cannot be in the past';
     
     return '';
   };
@@ -1188,23 +1205,67 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D0:</span>
-                    <input type="date" style={inputCss} value={schedule.d0} onChange={e=>setSchedule(s=>({ ...s, d0:e.target.value }))} />
+                    <input 
+                      type="date" 
+                      style={inputCss} 
+                      value={schedule.d0} 
+                      min={toISO(new Date())} // Cannot select past dates
+                      onChange={e => {
+                        const d0Date = e.target.value;
+                        if (d0Date) {
+                          const baseDate = new Date(d0Date);
+                          setSchedule({
+                            d0: d0Date,
+                            d3: toISO(new Date(baseDate.getTime() + 3 * 86400000)),
+                            d7: toISO(new Date(baseDate.getTime() + 7 * 86400000)),
+                            d14: toISO(new Date(baseDate.getTime() + 14 * 86400000)),
+                            d28: toISO(new Date(baseDate.getTime() + 28 * 86400000))
+                          });
+                        } else {
+                          setSchedule(s => ({ ...s, d0: '' }));
+                        }
+                      }}
+                    />
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D3:</span>
-                    <input type="date" style={inputCss} value={schedule.d3} onChange={e=>setSchedule(s=>({ ...s, d3:e.target.value }))} />
+                    <input 
+                      type="date" 
+                      style={inputCss} 
+                      value={schedule.d3} 
+                      min={schedule.d0 || toISO(new Date())} // Cannot be before D0
+                      onChange={e=>setSchedule(s=>({ ...s, d3:e.target.value }))} 
+                    />
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D7:</span>
-                    <input type="date" style={inputCss} value={schedule.d7} onChange={e=>setSchedule(s=>({ ...s, d7:e.target.value }))} />
+                    <input 
+                      type="date" 
+                      style={inputCss} 
+                      value={schedule.d7} 
+                      min={schedule.d3 || schedule.d0 || toISO(new Date())} // Cannot be before D3
+                      onChange={e=>setSchedule(s=>({ ...s, d7:e.target.value }))} 
+                    />
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D14:</span>
-                    <input type="date" style={inputCss} value={schedule.d14} onChange={e=>setSchedule(s=>({ ...s, d14:e.target.value }))} />
+                    <input 
+                      type="date" 
+                      style={inputCss} 
+                      value={schedule.d14} 
+                      min={schedule.d7 || schedule.d3 || schedule.d0 || toISO(new Date())} // Cannot be before D7
+                      onChange={e=>setSchedule(s=>({ ...s, d14:e.target.value }))} 
+                    />
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <span style={{ minWidth: '30px', fontWeight: 'bold' }}>D28:</span>
-                    <input type="date" style={inputCss} value={schedule.d28} onChange={e=>setSchedule(s=>({ ...s, d28:e.target.value }))} />
+                    <input 
+                      type="date" 
+                      style={inputCss} 
+                      value={schedule.d28} 
+                      min={schedule.d14 || schedule.d7 || schedule.d3 || schedule.d0 || toISO(new Date())} // Cannot be before D14
+                      onChange={e=>setSchedule(s=>({ ...s, d28:e.target.value }))} 
+                    />
                   </div>
                 </div>
               </div>
@@ -1253,23 +1314,45 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
                 )}
               </div>
 
-              {/* TIG */}
+              {/* HRIG */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display:'flex', alignItems:'center', gap:8, marginBottom: 8 }}>
-                  <input type="checkbox" checked={current.tig} onChange={e=>setCurrent(s=>({ ...s, tig:e.target.checked }))} />
-                  <span style={{ fontWeight: 'bold' }}>TIG</span>
+                  <input type="checkbox" checked={current.hrig} onChange={e=>setCurrent(s=>({ ...s, hrig:e.target.checked }))} />
+                  <span style={{ fontWeight: 'bold' }}>HRIG</span>
                 </label>
                 
-                {current.tig && (
+                {current.hrig && (
                   <div style={{ marginLeft: 24, display:'flex', gap:16, flexWrap:'wrap' }}>
                     <Labeled labelText="Dose:">
-                      <input style={inputCss} value={current.tigDose || 'U'} onChange={e=>setCurrent(s=>({ ...s, tigDose:e.target.value }))} />
+                      <input style={inputCss} value={current.hrigDose || 'U'} onChange={e=>setCurrent(s=>({ ...s, hrigDose:e.target.value }))} />
                     </Labeled>
                     <Labeled labelText="Date Given:">
-                      <input type="date" style={inputCss} value={current.tigDate} onChange={e=>setCurrent(s=>({ ...s, tigDate:e.target.value }))} />
+                      <input type="date" style={inputCss} value={current.hrigDate} onChange={e=>setCurrent(s=>({ ...s, hrigDate:e.target.value }))} />
                     </Labeled>
                   </div>
                 )}
+              </div>
+
+              {/* Local Infiltration */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display:'flex', alignItems:'center', gap:8, marginBottom: 8 }}>
+                  <input type="checkbox" checked={current.localInfiltration} onChange={e=>setCurrent(s=>({ ...s, localInfiltration:e.target.checked }))} />
+                  <span>Local Infiltration done</span>
+                </label>
+              </div>
+
+              {/* Structured/Unstructured */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.structured} onChange={e=>setCurrent(s=>({ ...s, structured:e.target.checked }))} />
+                    <span>Structured</span>
+                  </label>
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="checkbox" checked={current.unstructured} onChange={e=>setCurrent(s=>({ ...s, unstructured:e.target.checked }))} />
+                    <span>Unstructured</span>
+                  </label>
+                </div>
               </div>
             </div>
           )}
