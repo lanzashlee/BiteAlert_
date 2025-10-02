@@ -282,30 +282,67 @@ const SuperAdminStock = () => {
 
   const loadAvailableVaccines = async () => {
     try {
-      console.log('Loading available vaccines...');
-      // Try to load vaccines from API
-      const response = await apiFetch('/api/vaccines');
-      const result = await response.json();
-      
-      if (result.success && Array.isArray(result.data)) {
-        setAvailableVaccines(result.data);
-        console.log('Vaccines loaded from API:', result.data.length);
-      } else if (Array.isArray(result)) {
-        setAvailableVaccines(result);
-        console.log('Vaccines loaded from API (direct array):', result.length);
-      } else {
-        // Fallback: Use default vaccines
-        console.log('API failed, using default vaccines');
-        setAvailableVaccines([
-          { _id: '1', name: 'VAXIRAB', brand: 'PCEC', type: 'Anti-Rabies Vaccine' },
-          { _id: '2', name: 'SPEEDA', brand: 'PVRV', type: 'Anti-Rabies Vaccine' },
-          { _id: '3', name: 'Tetanus Toxoid-Containing Vaccine', brand: 'TCV', type: 'Tetanus Toxoid-Containing Vaccine' },
-          { _id: '4', name: 'Equine Rabies Immunoglobulin', brand: 'ERIG', type: 'Equine Rabies Immunoglobulin' }
-        ]);
+      // 1) Try to derive from already loaded grouped `data`
+      const fromState = [];
+      (data || []).forEach(center => {
+        (center.vaccines || []).forEach(v => {
+          fromState.push({ name: v.name, brand: v.brand, type: v.type });
+        });
+      });
+      if (fromState.length) {
+        const uniq = Array.from(new Map(fromState.map(v => [v.name, v])).values());
+        setAvailableVaccines(uniq);
+        return;
       }
+
+      // 2) Derive from vaccinestocks endpoint (flat format)
+      let page = 1;
+      const limit = 200;
+      const flat = [];
+      while (true) {
+        let url = `/api/vaccinestocks?page=${page}&limit=${limit}`;
+        try {
+          const res = await apiFetch(url);
+          if (!res.ok) break; // stop on HTTP errors (like 404) to avoid HTML parsing
+          // Defensive: only parse as JSON if response looks like JSON
+          let text = await res.text();
+          try {
+            const json = JSON.parse(text);
+            const list = Array.isArray(json) ? json : (json.data || []);
+            if (!list || list.length === 0) break;
+            flat.push(...list);
+            const totalPages = json.totalPages || json.pages || null;
+            if (totalPages && page >= totalPages) break;
+            if (!totalPages && list.length < limit) break;
+            page += 1;
+          } catch (_) {
+            break; // not JSON (likely HTML), stop loop
+          }
+        } catch (_) {
+          break;
+        }
+      }
+
+      if (flat.length) {
+        const mapped = flat.map(s => ({
+          name: s.vaccineName,
+          brand: s.vaccineType,
+          type: s.category
+        })).filter(v => v.name);
+        const uniq = Array.from(new Map(mapped.map(v => [v.name, v])).values());
+        setAvailableVaccines(uniq);
+        return;
+      }
+
+      // 3) Final fallback to defaults
+      setAvailableVaccines([
+        { _id: '1', name: 'VAXIRAB', brand: 'PCEC', type: 'Anti-Rabies Vaccine' },
+        { _id: '2', name: 'SPEEDA', brand: 'PVRV', type: 'Anti-Rabies Vaccine' },
+        { _id: '3', name: 'Tetanus Toxoid-Containing Vaccine', brand: 'TCV', type: 'Tetanus Toxoid-Containing Vaccine' },
+        { _id: '4', name: 'Equine Rabies Immunoglobulin', brand: 'ERIG', type: 'Equine Rabies Immunoglobulin' }
+      ]);
     } catch (error) {
       console.error('Error loading vaccines, using defaults:', error);
-      // Fallback: Use default vaccines
       setAvailableVaccines([
         { _id: '1', name: 'VAXIRAB', brand: 'PCEC', type: 'Anti-Rabies Vaccine' },
         { _id: '2', name: 'SPEEDA', brand: 'PVRV', type: 'Anti-Rabies Vaccine' },
