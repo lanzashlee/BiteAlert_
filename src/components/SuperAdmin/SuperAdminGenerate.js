@@ -31,8 +31,14 @@ const SuperAdminGenerate = () => {
     from: '',
     to: '',
     barangay: 'all',
-    animalType: 'all',
-    severity: 'all',
+    sex: 'all',           // Male | Female
+    ageBand: 'all',       // lt15 | gt15
+    species: 'all',       // Dog | Cat
+    ownership: 'all',     // Pet | Stray
+    category: 'all',      // 1 | 2 | 3
+    completion: 'all',    // Complete | Incomplete | Not Given
+    erig: 'all',          // Given | Not Given
+    booster: 'all',       // Booster | No Booster
     status: 'all',
     search: ''
   });
@@ -163,35 +169,53 @@ const SuperAdminGenerate = () => {
       console.log('Animal bite API response:', result);
       
       let normalized = [];
-      if (Array.isArray(result)) {
-        // Direct array response
-        normalized = result.map((it) => ({
+      const derive = (it) => {
+        const sex = (it.sex || it.gender || it.patientSex || '').toString();
+        const ageVal = Number(it.age || it.patientAge || it.ageYears);
+        const animalType = (it.animalType || it.animal || it.animal_type || it.type || '').toString();
+        const species = /cat/i.test(animalType) ? 'Cat' : /dog/i.test(animalType) ? 'Dog' : '';
+        const ownershipSource = (it.animalStatus || it.ownership || it.petType || '').toString();
+        const ownership = /pet/i.test(ownershipSource) ? 'Pet' : /stray/i.test(ownershipSource) ? 'Stray' : '';
+        const categoryRaw = (it.category || (it.management && it.management.category) || it.caseCategory || '').toString();
+        const categoryMatch = categoryRaw.match(/(1|2|3)/);
+        const category = categoryMatch ? categoryMatch[1] : '';
+        const completionRaw = (it.vaccinationStatus || it.seriesStatus || it.completion || '').toString();
+        let completion = '';
+        if (/complete/i.test(completionRaw)) completion = 'Complete';
+        else if (/incomplete/i.test(completionRaw)) completion = 'Incomplete';
+        else if (/not\s?given/i.test(completionRaw)) completion = 'Not Given';
+        const erigGiven = !!(it.erig || it.erigGiven || it.immunoglobulin || it.rigGiven);
+        const boosterGiven = !!(it.booster || it.boosterGiven);
+        const barangay = it.barangay || it.patientBarangay || it.addressBarangay || '';
+        return {
           caseNo: it.caseNo || it.case_no || it.case || '',
           name: it.patientName || it.name || it.patient_name || '',
           date: it.date || it.createdAt || it.created_at || it.dateReported || '',
           age: it.age || it.patientAge || '',
-          sex: it.sex || it.gender || it.patientSex || '',
+          sex,
           address: it.address || it.patientAddress || it.location || '',
-          animalType: it.animalType || it.animal || it.animal_type || it.type || '',
+          animalType,
           biteSite: it.biteSite || it.bite_site || it.biteLocation || it.bite_location || it.location || '',
           status: it.status || it.caseStatus || 'Active',
-          barangay: it.barangay || it.patientBarangay || ''
-        }));
+          barangay,
+          // derived fields for filtering
+          _ageNumber: isNaN(ageVal) ? null : ageVal,
+          _species: species,
+          _ownership: ownership,
+          _category: category,
+          _completion: completion,
+          _erig: erigGiven ? 'Given' : 'Not Given',
+          _booster: boosterGiven ? 'Booster' : 'No Booster'
+        };
+      };
+
+      if (Array.isArray(result)) {
+        // Direct array response
+        normalized = result.map(derive);
       } else if (result.success && result.data) {
         // Success response with data
         const raw = Array.isArray(result.data) ? result.data : (result.data?.table?.body || []);
-        normalized = (raw || []).map((it) => ({
-          caseNo: it.caseNo || it.case_no || it.case || '',
-          name: it.patientName || it.name || it.patient_name || '',
-          date: it.date || it.createdAt || it.created_at || it.dateReported || '',
-          age: it.age || it.patientAge || '',
-          sex: it.sex || it.gender || it.patientSex || '',
-          address: it.address || it.patientAddress || it.location || '',
-          animalType: it.animalType || it.animal || it.animal_type || it.type || '',
-          biteSite: it.biteSite || it.bite_site || it.biteLocation || it.bite_location || it.location || '',
-          status: it.status || it.caseStatus || 'Active',
-          barangay: it.barangay || it.patientBarangay || ''
-        }));
+        normalized = (raw || []).map(derive);
       } else {
         console.log('No animal bite data found or API returned empty result');
         // Add some sample data for testing if no real data exists
@@ -540,7 +564,7 @@ const SuperAdminGenerate = () => {
 
   const filterAnimalBiteData = () => {
     let filtered = animalBiteData;
-    const { from, to, barangay, animalType, severity, status, search } = animalBiteFilters;
+    const { from, to, barangay, sex, ageBand, species, ownership, category, completion, erig, booster, status, search } = animalBiteFilters;
 
     if (from) {
       filtered = filtered.filter(row => row.date && new Date(row.date) >= new Date(from));
@@ -554,12 +578,42 @@ const SuperAdminGenerate = () => {
       filtered = filtered.filter(row => row.barangay === barangay);
     }
 
-    if (animalType && animalType !== 'all') {
-      filtered = filtered.filter(row => row.animalType === animalType);
+    if (sex && sex !== 'all') {
+      filtered = filtered.filter(row => (row.sex || '').toLowerCase() === sex.toLowerCase());
     }
 
-    if (severity && severity !== 'all') {
-      filtered = filtered.filter(row => row.severity === severity);
+    if (ageBand && ageBand !== 'all') {
+      filtered = filtered.filter(row => {
+        const n = row._ageNumber;
+        if (n === null) return false;
+        if (ageBand === 'lt15') return n < 15;
+        if (ageBand === 'gt15') return n >= 15;
+        return true;
+      });
+    }
+
+    if (species && species !== 'all') {
+      filtered = filtered.filter(row => row._species === species);
+    }
+
+    if (ownership && ownership !== 'all') {
+      filtered = filtered.filter(row => row._ownership === ownership);
+    }
+
+    if (category && category !== 'all') {
+      filtered = filtered.filter(row => row._category === category);
+    }
+
+    if (completion && completion !== 'all') {
+      filtered = filtered.filter(row => row._completion === completion);
+    }
+
+    if (erig && erig !== 'all') {
+      filtered = filtered.filter(row => row._erig === erig);
+    }
+
+    if (booster && booster !== 'all') {
+      filtered = filtered.filter(row => row._booster === booster);
     }
 
     if (status && status !== 'all') {
@@ -1511,8 +1565,8 @@ const SuperAdminGenerate = () => {
                       <select
                         id="animalBiteBarangay"
                         className="form-control"
-                        value={animalBiteFilters.barangay}
-                        onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, barangay: e.target.value})}
+                    value={animalBiteFilters.barangay}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, barangay: e.target.value})}
                       >
                         <option value="all">All Barangays</option>
                         {sanJuanBarangays.map(barangay => (
@@ -1520,6 +1574,112 @@ const SuperAdminGenerate = () => {
                         ))}
                       </select>
                     </div>
+                <div className="filter-group">
+                  <label htmlFor="animalBiteSex">SEX:</label>
+                  <select
+                    id="animalBiteSex"
+                    className="form-control"
+                    value={animalBiteFilters.sex}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, sex: e.target.value})}
+                  >
+                    <option value="all">All</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label htmlFor="animalBiteAgeBand">AGE:</label>
+                  <select
+                    id="animalBiteAgeBand"
+                    className="form-control"
+                    value={animalBiteFilters.ageBand}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, ageBand: e.target.value})}
+                  >
+                    <option value="all">All</option>
+                    <option value="lt15">&lt; 15 years old</option>
+                    <option value="gt15">&ge; 15 years old</option>
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label htmlFor="animalBiteSpecies">ANIMAL:</label>
+                  <select
+                    id="animalBiteSpecies"
+                    className="form-control"
+                    value={animalBiteFilters.species}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, species: e.target.value})}
+                  >
+                    <option value="all">All</option>
+                    <option value="Dog">Dog</option>
+                    <option value="Cat">Cat</option>
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label htmlFor="animalBiteOwnership">TYPE:</label>
+                  <select
+                    id="animalBiteOwnership"
+                    className="form-control"
+                    value={animalBiteFilters.ownership}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, ownership: e.target.value})}
+                  >
+                    <option value="all">All</option>
+                    <option value="Pet">Pet</option>
+                    <option value="Stray">Stray</option>
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label htmlFor="animalBiteCategory">CATEGORY:</label>
+                  <select
+                    id="animalBiteCategory"
+                    className="form-control"
+                    value={animalBiteFilters.category}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, category: e.target.value})}
+                  >
+                    <option value="all">All</option>
+                    <option value="1">Category 1</option>
+                    <option value="2">Category 2</option>
+                    <option value="3">Category 3</option>
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label htmlFor="animalBiteCompletion">COMPLETION:</label>
+                  <select
+                    id="animalBiteCompletion"
+                    className="form-control"
+                    value={animalBiteFilters.completion}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, completion: e.target.value})}
+                  >
+                    <option value="all">All</option>
+                    <option value="Complete">Complete</option>
+                    <option value="Incomplete">Incomplete</option>
+                    <option value="Not Given">Not Given</option>
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label htmlFor="animalBiteERIG">ERIG:</label>
+                  <select
+                    id="animalBiteERIG"
+                    className="form-control"
+                    value={animalBiteFilters.erig}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, erig: e.target.value})}
+                  >
+                    <option value="all">All</option>
+                    <option value="Given">ERIG Given</option>
+                    <option value="Not Given">ERIG Not Given</option>
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label htmlFor="animalBiteBooster">BOOSTER:</label>
+                  <select
+                    id="animalBiteBooster"
+                    className="form-control"
+                    value={animalBiteFilters.booster}
+                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, booster: e.target.value})}
+                  >
+                    <option value="all">All</option>
+                    <option value="Booster">Booster</option>
+                    <option value="No Booster">No Booster</option>
+                  </select>
+                </div>
                     <div className="filter-group">
                       <label htmlFor="animalBiteAnimalType">ANIMAL TYPE:</label>
                       <select
