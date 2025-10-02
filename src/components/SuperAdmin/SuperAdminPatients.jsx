@@ -2015,13 +2015,14 @@ const SuperAdminPatients = () => {
                   <th>Gender</th>
                   <th>Address</th>
                   <th>Barangay</th>
+                  <th>Contacts</th>
                   <th>Timestamp</th>
                 </tr>
               </thead>
               <tbody>
                 {patients.length === 0 ? (
                   <tr>
-                    <td colSpan="5">
+                    <td colSpan="7">
                       <div className="empty-state">
                         <i className="fa fa-user-injured"></i>
                         <p>No patients found</p>
@@ -2102,10 +2103,26 @@ const SuperAdminPatients = () => {
                           <span className="barangay-info">{p.barangay || 'N/A'}</span>
                         </td>
                         <td>
-                          {p.createdAt ? new Date(p.createdAt).toLocaleString() : (p.dateRegistered ? new Date(p.dateRegistered).toLocaleString() : '—')}
+                          <div className="contact-info" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {p.phone && (
+                              <div className="contact-item" style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+                                <i className="fa fa-phone" style={{ color: '#10b981', marginRight: '6px', fontSize: '0.8rem' }}></i>
+                                <span style={{ color: '#374151' }}>{p.phone}</span>
+                              </div>
+                            )}
+                            {p.email && (
+                              <div className="contact-item" style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+                                <i className="fa fa-envelope" style={{ color: '#3b82f6', marginRight: '6px', fontSize: '0.8rem' }}></i>
+                                <span style={{ color: '#374151' }}>{p.email}</span>
+                              </div>
+                            )}
+                            {!p.phone && !p.email && (
+                              <span style={{ color: '#9ca3af', fontSize: '0.85rem', fontStyle: 'italic' }}>No contact info</span>
+                            )}
+                          </div>
                         </td>
                         <td>
-                          {getPatientDateRegistered(p)}
+                          {p.createdAt ? new Date(p.createdAt).toLocaleString() : (p.dateRegistered ? new Date(p.dateRegistered).toLocaleString() : '—')}
                         </td>
                       </tr>
                     );
