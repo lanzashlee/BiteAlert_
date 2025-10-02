@@ -91,10 +91,19 @@ export const getApiUrl = (endpoint) => {
 // Helper function for fetch with base URL and caching
 export const apiFetch = async (endpoint, options = {}) => {
   const url = getApiUrl(endpoint);
+
+  // Scope cache by user role/center so admins don't see superadmin cached data
+  let cacheKey = url;
+  try {
+    const user = JSON.parse(localStorage.getItem('currentUser')) || JSON.parse(localStorage.getItem('userData')) || {};
+    const role = user.role || 'guest';
+    const center = user.centerName || 'all';
+    cacheKey = `${url}::${role}::${center}`;
+  } catch (_) {}
   
   // Check cache for GET requests
   if (!options.method || options.method === 'GET') {
-    const cachedData = getCachedData(url);
+    const cachedData = getCachedData(cacheKey);
     if (cachedData) {
       console.log('Using cached data for:', url);
       return {
@@ -119,7 +128,7 @@ export const apiFetch = async (endpoint, options = {}) => {
   if (response.ok && (!options.method || options.method === 'GET')) {
     try {
       const data = await response.clone().json();
-      setCachedData(url, data);
+      setCachedData(cacheKey, data);
     } catch (error) {
       console.warn('Failed to cache response:', error);
     }
