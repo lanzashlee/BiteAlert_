@@ -2183,6 +2183,401 @@ const SuperAdminPatients = () => {
                     </div>
                   </div>
                 </div>
+              ) : showHistory ? (
+                <div>
+                  <div className="info-section">
+                    <h5 style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '1.2rem', fontWeight: 'bold', color: '#374151' }}>
+                      SCHEDULE DATES OF IMMUNIZATION
+                    </h5>
+                    
+                    <div className="table-responsive" style={{ 
+                      border: '2px solid #dc2626', 
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    }}>
+                      <table className="table" style={{ margin: 0, borderCollapse: 'collapse' }}>
+                        <thead style={{ 
+                          background: '#dc2626', 
+                          color: 'white',
+                          textAlign: 'center'
+                        }}>
+                          <tr>
+                            <th style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '600',
+                              border: '1px solid #b91c1c'
+                            }}>
+                              Immunization Day/Type
+                            </th>
+                            <th style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '600',
+                              border: '1px solid #b91c1c'
+                            }}>
+                              Date Taken
+                            </th>
+                            <th style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '600',
+                              border: '1px solid #b91c1c'
+                            }}>
+                              Medicine Used
+                            </th>
+                            <th style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '600',
+                              border: '1px solid #b91c1c'
+                            }}>
+                              Branch No.
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* ERIG Row */}
+                          <tr style={{ backgroundColor: '#fef2f2' }}>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '500',
+                              color: '#dc2626',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              ERIG
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                          </tr>
+                          
+                          {/* D0 Row */}
+                          <tr style={{ backgroundColor: '#f0fdf4' }}>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '500',
+                              color: '#dc2626',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px'
+                            }}>
+                              <span style={{
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#10b981',
+                                borderRadius: '50%',
+                                display: 'inline-block'
+                              }}></span>
+                              D0
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[0] 
+                                ? new Date(caseHistory[0].scheduleDates[0]).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })
+                                : 'September 14, 2025'
+                              }
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              VAXIRAB (BOOSTER)
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              001
+                            </td>
+                          </tr>
+                          
+                          {/* D3 Row */}
+                          <tr style={{ backgroundColor: '#f0fdf4' }}>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '500',
+                              color: '#dc2626',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px'
+                            }}>
+                              <span style={{
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#10b981',
+                                borderRadius: '50%',
+                                display: 'inline-block'
+                              }}></span>
+                              D3
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[1] 
+                                ? new Date(caseHistory[0].scheduleDates[1]).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })
+                                : 'September 17, 2025'
+                              }
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              VAXIRAB (BOOSTER)
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              001
+                            </td>
+                          </tr>
+                          
+                          {/* D7 Row */}
+                          <tr style={{ backgroundColor: '#f0fdf4' }}>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '500',
+                              color: '#dc2626',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px'
+                            }}>
+                              <span style={{
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#10b981',
+                                borderRadius: '50%',
+                                display: 'inline-block'
+                              }}></span>
+                              D7
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[2] 
+                                ? new Date(caseHistory[0].scheduleDates[2]).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })
+                                : 'September 21, 2025'
+                              }
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                          </tr>
+                          
+                          {/* D14 Row */}
+                          <tr style={{ backgroundColor: '#f0fdf4' }}>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '500',
+                              color: '#dc2626',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px'
+                            }}>
+                              <span style={{
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#10b981',
+                                borderRadius: '50%',
+                                display: 'inline-block'
+                              }}></span>
+                              D14
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[3] 
+                                ? new Date(caseHistory[0].scheduleDates[3]).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })
+                                : 'September 28, 2025'
+                              }
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                          </tr>
+                          
+                          {/* D28 Row */}
+                          <tr style={{ backgroundColor: '#f0fdf4' }}>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              fontWeight: '500',
+                              color: '#dc2626',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px'
+                            }}>
+                              <span style={{
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#10b981',
+                                borderRadius: '50%',
+                                display: 'inline-block'
+                              }}></span>
+                              D28
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[4] 
+                                ? new Date(caseHistory[0].scheduleDates[4]).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })
+                                : 'October 12, 2025'
+                              }
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                            <td style={{ 
+                              padding: '12px 16px', 
+                              fontSize: '0.9rem', 
+                              color: '#374151',
+                              border: '1px solid #dc2626',
+                              textAlign: 'center'
+                            }}>
+                              -
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               ) : (
               <div className="patient-info-container">
                 <div className="patient-profile-section">
@@ -2250,358 +2645,7 @@ const SuperAdminPatients = () => {
                 </div>
 
 
-                <div className="info-section">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h5 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="fa fa-history" style={{ color: '#3b82f6' }}></i>
-                    <span>Case History</span>
-                      {caseHistory.length > 0 && (
-                        <span style={{ 
-                          background: '#3b82f6', 
-                          color: 'white', 
-                          padding: '2px 8px', 
-                          borderRadius: '12px', 
-                          fontSize: '0.75rem',
-                          fontWeight: '500'
-                        }}>
-                          {caseHistory.length} case{caseHistory.length !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                  </h5>
-                    {caseHistory.length > 0 && (
-                      <button
-                        onClick={loadCaseHistory}
-                        style={{
-                          background: '#f3f4f6',
-                          border: '1px solid #d1d5db',
-                          color: '#374151',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          fontSize: '0.8rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        <i className="fa fa-refresh"></i>
-                        Refresh
-                      </button>
-                    )}
-                  </div>
-                  
-                  {historyLoading && (
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'center', 
-                      alignItems: 'center', 
-                      padding: '2rem',
-                      color: '#6b7280'
-                    }}>
-                      <i className="fa fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
-                      Loading case history...
-                    </div>
-                  )}
-                  
-                  {historyError && (
-                    <div className="error-state" style={{ marginBottom: '1rem' }}>
-                      <i className="fa fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
-                      {historyError}
-                    </div>
-                  )}
-                  
-                  {!historyLoading && !historyError && (
-                    caseHistory.length === 0 ? (
-                    <div className="empty-state" style={{ padding:'2rem 0', textAlign: 'center' }}>
-                        <i className="fa fa-file-medical" style={{ fontSize: '3rem', color: '#9ca3af', marginBottom: '1rem' }}></i>
-                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#6b7280', fontWeight: '500' }}>No previous cases found</p>
-                        <small style={{ color: '#9ca3af' }}>This patient has no recorded bite cases yet.</small>
-                    </div>
-                  ) : (
-                      <div className="table-responsive" style={{ boxShadow:'none', borderRadius:12, maxHeight: '400px', overflowY: 'auto' }}>
-                      <table className="table" style={{ minWidth: 'auto', tableLayout: 'auto' }}>
-                        <thead style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 1 }}>
-                          <tr>
-                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Date</th>
-                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Type</th>
-                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Animal</th>
-                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Category</th>
-                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Status</th>
-                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Center</th>
-                            <th style={{ width: '10%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {caseHistory.map((c, index)=> (
-                              <tr key={c._id} style={{ 
-                                cursor: 'pointer',
-                                backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
-                                transition: 'background-color 0.2s ease'
-                              }} 
-                              onClick={() => handleCaseClick(c)}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#f0f9ff';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f9fafb';
-                              }}>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                  <span style={{ fontWeight: '500' }}>
-                                {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : (c.incidentDate ? new Date(c.incidentDate).toLocaleDateString() : 'N/A')}
-                                  </span>
-                                  {c.incidentDate && c.createdAt && new Date(c.incidentDate).toLocaleDateString() !== new Date(c.createdAt).toLocaleDateString() && (
-                                    <small style={{ color: '#6b7280', fontSize: '0.7rem' }}>
-                                      Incident: {new Date(c.incidentDate).toLocaleDateString()}
-                                    </small>
-                                  )}
-                                </div>
-                              </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '500',
-                                  backgroundColor: c.typeOfExposure && c.typeOfExposure.includes('BITE') ? '#fef2f2' : '#f0f9ff',
-                                  color: c.typeOfExposure && c.typeOfExposure.includes('BITE') ? '#dc2626' : '#2563eb'
-                                }}>
-                                  {c.typeOfExposure && c.typeOfExposure.includes('BITE') ? 'Bite' : 
-                                   c.typeOfExposure && c.typeOfExposure.includes('NON-BITE') ? 'Non-Bite' : 'Unknown'}
-                                </span>
-                                </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <i className={`fa ${c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'fa-dog' : 
-                                                   c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'fa-cat' : 'fa-paw'}`} 
-                                     style={{ color: '#6b7280', fontSize: '0.8rem' }}></i>
-                                  <span>
-                                  {c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'Dog' : 
-                                   c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'Cat' : 
-                                   c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Others') ? (c.animalProfile.othersSpecify || 'Other') : 'Unknown'}
-                                  </span>
-                                </div>
-                                </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '500',
-                                  backgroundColor: c.management && c.management.category && c.management.category.includes('Category 3') ? '#fef2f2' : 
-                                                  c.management && c.management.category && c.management.category.includes('Category 2') ? '#fef3c7' : '#f0f9ff',
-                                  color: c.management && c.management.category && c.management.category.includes('Category 3') ? '#dc2626' : 
-                                         c.management && c.management.category && c.management.category.includes('Category 2') ? '#d97706' : '#2563eb'
-                                }}>
-                                  {c.management && c.management.category && c.management.category.includes('Category 1') ? 'Cat 1' : 
-                                   c.management && c.management.category && c.management.category.includes('Category 2') ? 'Cat 2' : 
-                                   c.management && c.management.category && c.management.category.includes('Category 3') ? 'Cat 3' : 'Unknown'}
-                                </span>
-                                </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '500',
-                                  backgroundColor: c.status === 'Completed' ? '#f0fdf4' : 
-                                                  c.status === 'Ongoing' ? '#fef3c7' : '#f3f4f6',
-                                  color: c.status === 'Completed' ? '#16a34a' : 
-                                         c.status === 'Ongoing' ? '#d97706' : '#6b7280'
-                                }}>
-                                  {c.status || 'Unknown'}
-                                </span>
-                              </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{ color: '#6b7280' }}>
-                                  {c.center || c.centerName || 'N/A'}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 8px' }}>
-                                  <button 
-                                    style={{
-                                    background: '#3b82f6',
-                                      border: 'none',
-                                      color: 'white',
-                                    padding: '6px 12px',
-                                    borderRadius: '6px',
-                                    fontSize: '0.75rem',
-                                      cursor: 'pointer',
-                                      transition: 'all 0.3s ease',
-                                    fontWeight: '500',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px'
-                                    }}
-                                    onMouseOver={(e) => {
-                                    e.target.style.backgroundColor = '#2563eb';
-                                    }}
-                                    onMouseOut={(e) => {
-                                    e.target.style.backgroundColor = '#3b82f6';
-                                    }}
-                                  >
-                                  <i className="fa fa-eye"></i>
-                                    View
-                                  </button>
-                                </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    )
-                  )}
-                </div>
 
-                {/* Vaccination History Section */}
-                <div className="info-section">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h5 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="fa fa-syringe" style={{ color: '#10b981' }}></i>
-                      <span>Vaccination History</span>
-                      {vaccinationHistory.length > 0 && (
-                        <span style={{ 
-                          background: '#10b981', 
-                          color: 'white', 
-                          padding: '2px 8px', 
-                          borderRadius: '12px', 
-                          fontSize: '0.75rem',
-                          fontWeight: '500'
-                        }}>
-                          {vaccinationHistory.length} record{vaccinationHistory.length !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </h5>
-                    {vaccinationHistory.length > 0 && (
-                      <button
-                        onClick={() => loadVaccinationHistoryFromSchedule(selectedPatient)}
-                        style={{
-                          background: '#f3f4f6',
-                          border: '1px solid #d1d5db',
-                          color: '#374151',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          fontSize: '0.8rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        <i className="fa fa-refresh"></i>
-                        Refresh
-                      </button>
-                    )}
-                  </div>
-                  
-                  {vaccinationLoading && (
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'center', 
-                      alignItems: 'center', 
-                      padding: '2rem',
-                      color: '#6b7280'
-                    }}>
-                      <i className="fa fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
-                      Loading vaccination history...
-                    </div>
-                  )}
-                  
-                  {vaccinationError && (
-                    <div className="error-state" style={{ marginBottom: '1rem' }}>
-                      <i className="fa fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
-                      {vaccinationError}
-                    </div>
-                  )}
-                  
-                  {!vaccinationLoading && !vaccinationError && (
-                    vaccinationHistory.length === 0 ? (
-                    <div className="empty-state" style={{ padding:'2rem 0', textAlign: 'center' }}>
-                        <i className="fa fa-syringe" style={{ fontSize: '3rem', color: '#9ca3af', marginBottom: '1rem' }}></i>
-                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#6b7280', fontWeight: '500' }}>No vaccination history found</p>
-                        <small style={{ color: '#9ca3af' }}>This patient has no recorded vaccinations in the schedule yet.</small>
-                    </div>
-                  ) : (
-                      <div className="table-responsive" style={{ boxShadow:'none', borderRadius:12, maxHeight: '400px', overflowY: 'auto' }}>
-                      <table className="table" style={{ minWidth: 'auto', tableLayout: 'auto' }}>
-                        <thead style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 1 }}>
-                          <tr>
-                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Day</th>
-                            <th style={{ width: '20%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Date</th>
-                            <th style={{ width: '15%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Status</th>
-                            <th style={{ width: '20%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Vaccine</th>
-                            <th style={{ width: '20%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Center</th>
-                            <th style={{ width: '10%', padding: '12px 8px', fontSize: '0.8rem', fontWeight: '600', color: '#374151' }}>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {vaccinationHistory.map((record, index)=> (
-                              <tr key={`${record.day}-${index}`} style={{ 
-                                cursor: 'pointer',
-                                backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
-                                transition: 'background-color 0.2s ease'
-                              }} 
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#f0f9ff';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f9fafb';
-                              }}>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '500',
-                                  backgroundColor: '#e0f2fe',
-                                  color: '#0369a1'
-                                }}>
-                                  {record.day}
-                                </span>
-                              </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{ fontWeight: '500' }}>
-                                  {record.date}
-                                </span>
-                              </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '500',
-                                  backgroundColor: record.status === 'completed' ? '#f0fdf4' : 
-                                                  record.status === 'missed' ? '#fef2f2' : '#fef3c7',
-                                  color: record.status === 'completed' ? '#16a34a' : 
-                                         record.status === 'missed' ? '#dc2626' : '#d97706'
-                                }}>
-                                  {record.status}
-                                </span>
-                              </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <i className="fa fa-syringe" style={{ color: '#10b981', fontSize: '0.8rem' }}></i>
-                                  <span>{record.vaccineType}</span>
-                                </div>
-                              </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{ color: '#6b7280' }}>
-                                  {record.center}
-                                </span>
-                              </td>
-                              <td style={{ fontSize: '0.85rem', padding: '12px 8px' }}>
-                                <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                                  {record.notes || '—'}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    )
-                  )}
-                </div>
 
               </div>
               )}
