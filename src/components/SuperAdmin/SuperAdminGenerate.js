@@ -1090,6 +1090,7 @@ const SuperAdminGenerate = () => {
     
     setLoading(true);
     const filteredData = filterAnimalBiteData();
+    const summaryRows = buildBiteSummaryRows(filteredData);
     
     try {
       const { jsPDF } = window.jspdf;
@@ -1113,24 +1114,14 @@ const SuperAdminGenerate = () => {
         filterLine
       ]);
 
-      const columns = ['Case No.', 'Date', 'Patient Name', 'Age', 'Sex', 'Address', 'Animal Type', 'Bite Site', 'Status'];
-      const rows = filteredData.map(row => [
-        String(row.caseNo || ''),
-        formatDate(row.date),
-        String(row.name || row.patientName || ''),
-        String(row.age || ''),
-        String(row.sex || ''),
-        String(row.address || ''),
-        String(row.animalType || row.animal || ''),
-        String(row.biteSite || row.bite_site || ''),
-        String(row.status || '')
-      ]);
+      const columns = ['Metric', 'Count'];
+      const rows = summaryRows.map(r => [r.label, String(r.count)]);
 
       doc.autoTable({
         startY,
         head: [columns],
         body: rows,
-        styles: { fontSize: 9, cellPadding: 2 },
+        styles: { fontSize: 10, cellPadding: 3 },
         headStyles: { fillColor: [128, 0, 0], textColor: 255, fontStyle: 'bold' },
         theme: 'grid',
         margin: { left: 14, right: 14 },
@@ -1145,6 +1136,44 @@ const SuperAdminGenerate = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Build the single-table summary for Animal Bite report
+  const buildBiteSummaryRows = (list) => {
+    const count = (pred) => list.filter(pred).length;
+    const rows = [];
+    // 1-2 Sex
+    rows.push({ label: 'Male', count: count(r => String(r.sex || '').toLowerCase() === 'male') });
+    rows.push({ label: 'Female', count: count(r => String(r.sex || '').toLowerCase() === 'female') });
+    // 3-4 Age bands
+    rows.push({ label: '< 15 years old', count: count(r => (r._ageNumber ?? 0) < 15) });
+    rows.push({ label: '≥ 15 years old', count: count(r => (r._ageNumber ?? 0) >= 15) });
+    // 5 Dog and sub
+    const dogCount = count(r => r._species === 'Dog');
+    rows.push({ label: 'Dog', count: dogCount });
+    rows.push({ label: '–  Pet Dog', count: count(r => r._species === 'Dog' && r._ownership === 'Pet') });
+    rows.push({ label: '–  Stray Dog', count: count(r => r._species === 'Dog' && r._ownership === 'Stray') });
+    // 6 Cat and sub
+    const catCount = count(r => r._species === 'Cat');
+    rows.push({ label: 'Cat', count: catCount });
+    rows.push({ label: '–  Pet Cat', count: count(r => r._species === 'Cat' && r._ownership === 'Pet') });
+    rows.push({ label: '–  Stray Cat', count: count(r => r._species === 'Cat' && r._ownership === 'Stray') });
+    // 7-9 Categories
+    rows.push({ label: 'Category 1', count: count(r => r._category === '1') });
+    const cat2 = count(r => r._category === '2');
+    rows.push({ label: 'Category 2', count: cat2 });
+    rows.push({ label: '–  Complete', count: count(r => r._category === '2' && r._completion === 'Complete') });
+    rows.push({ label: '–  Incomplete', count: count(r => r._category === '2' && r._completion === 'Incomplete') });
+    rows.push({ label: '–  Not Given', count: count(r => r._category === '2' && r._completion === 'Not Given') });
+    const cat3 = count(r => r._category === '3');
+    rows.push({ label: 'Category 3', count: cat3 });
+    rows.push({ label: '–  Complete', count: count(r => r._category === '3' && r._completion === 'Complete') });
+    rows.push({ label: '–  Incomplete', count: count(r => r._category === '3' && r._completion === 'Incomplete') });
+    rows.push({ label: '–  Not Given', count: count(r => r._category === '3' && r._completion === 'Not Given') });
+    rows.push({ label: '–  ERIG Given', count: count(r => r._category === '3' && r._erig === 'Given') });
+    // 10 Booster
+    rows.push({ label: 'Booster', count: count(r => r._booster === 'Booster') });
+    return rows;
   };
 
   const exportCustomDemoPDF = async () => {
