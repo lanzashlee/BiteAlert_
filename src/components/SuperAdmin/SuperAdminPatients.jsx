@@ -526,95 +526,33 @@ const SuperAdminPatients = () => {
       try {
         const userCenter = getUserCenter();
         
-        // Normalize center for backends using Balong-Bato instead of Batis
-        const finalCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
-        
         // Build API URL with center/barangay filter for non-superadmin users
         let apiParams = params || 'page=1&limit=20';
-        if (finalCenter && finalCenter !== 'all') {
-          apiParams += `&center=${encodeURIComponent(finalCenter)}`;
-          apiParams += `&barangay=${encodeURIComponent(finalCenter)}`;
+        if (userCenter && userCenter !== 'all') {
+          apiParams += `&center=${encodeURIComponent(userCenter)}`;
+          apiParams += `&barangay=${encodeURIComponent(userCenter)}`;
         }
         
         const res = await apiFetch(`${apiConfig.endpoints.patients}?${apiParams}`, { signal: controller.signal });
-        let data;
-        try {
-          data = await res.json();
-        } catch (_) {
-          data = null;
-        }
+        const data = await res.json();
         
-        // Primary success path
-        if (res.ok && (data?.success || Array.isArray(data?.data) || Array.isArray(data))) {
-          const list = Array.isArray(data) ? data : (data.data || []);
-          const allPatients = list;
-          const filteredPatients = filterByCenter(allPatients, 'center');
-          const norm = (v) => String(v || '')
-            .toLowerCase()
-            .replace(/\s*health\s*center$/i,'')
-            .replace(/\s*center$/i,'')
-            .replace(/-/g,' ')
-            .trim();
-          const byCenter = centerFilter 
-            ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
-            : filteredPatients;
-          setPatients(byCenter);
-          setTotalPages(data.totalPages || 1);
-        } else {
-          // Fallback chain on 4xx/5xx or malformed payload
-          console.warn('Primary patient endpoint failed, status:', res.status, 'payload:', data);
-          let loaded = [];
-          // Try alternate endpoints that might exist on older backends
-          const alternates = [
-            '/api/patient',
-            '/api/patient-list',
-            '/api/patients/list',
-            '/api/patients/all'
-          ];
-          for (const ep of alternates) {
-            try {
-              const altRes = await apiFetch(`${ep}?${apiParams}`, { signal: controller.signal });
-              const altJson = await altRes.json();
-              const altList = Array.isArray(altJson) ? altJson : (altJson?.data || []);
-              if (altRes.ok && altList.length) {
-                loaded = altList;
-                break;
-              }
-            } catch (_) { /* continue */ }
-          }
-          
-          // Last resort: derive a patient list from bitecases (already fetched in another effect)
-          if (!loaded.length) {
-            try {
-              const bcRes = await apiFetch(apiConfig.endpoints.bitecases, { signal: controller.signal });
-              const bcJson = await bcRes.json();
-              const cases = Array.isArray(bcJson) ? bcJson : (bcJson?.data || []);
-              const byPid = new Map();
-              cases.forEach(c => {
-                const pid = c.patientId || c.patientID;
-                if (!pid) return;
-                if (!byPid.has(pid)) {
-                  byPid.set(pid, {
-                    _id: pid,
-                    firstName: c.firstName || c.patientFirstName || '',
-                    middleName: c.middleName || c.patientMiddleName || '',
-                    lastName: c.lastName || c.patientLastName || '',
-                    phone: c.contactNo || c.phone || '',
-                    barangay: c.barangay || c.addressBarangay || '',
-                    center: c.center || c.centerName || c.healthCenter || '',
-                    createdAt: c.createdAt || c.dateRegistered || ''
-                  });
-                }
-              });
-              loaded = Array.from(byPid.values());
-            } catch (_) { /* ignore */ }
-          }
-          
-          // Apply center filter and set state if we have anything
-          const filtered = filterByCenter(loaded, 'center');
-          setPatients(filtered);
-          setTotalPages(1);
-        }
+        if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load patients');
+        
+        // Apply additional client-side filtering if needed
+        const allPatients = data.data || [];
+        const filteredPatients = filterByCenter(allPatients, 'center');
+        // Apply explicit center filter if chosen
+        const norm = (v) => String(v || '')
+          .toLowerCase()
+          .replace(/\s*health\s*center$/i,'')
+          .replace(/\s*center$/i,'')
+          .replace(/-/g,' ')
+          .trim();
+        const byCenter = centerFilter 
+          ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
+          : filteredPatients;
+        setPatients(byCenter);
+        setTotalPages(data.totalPages || 1);
       } catch (e) {
         if (e.name !== 'AbortError') setError(e.message);
       } finally {

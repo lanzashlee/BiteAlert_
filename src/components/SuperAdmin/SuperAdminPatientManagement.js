@@ -527,19 +527,32 @@ const SuperAdminPatientManagement = () => {
         console.log('User role:', currentUser?.role || userData?.role);
         console.log('User center name:', currentUser?.centerName || userData?.centerName);
         
-        // Temporary fix: Override user center to Batis when backend reports Balong-Bato
-        let finalUserCenter = userCenter;
+        // Temporary fix: Override user center to Batis for testing
         if (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') {
-          console.log('Overriding user center from', userCenter, 'to Batis');
-          finalUserCenter = 'Batis';
+          console.log('Overriding user center from', userCenter, 'to Batis for testing');
+          // Update localStorage to set center to Batis
+          if (currentUser) {
+            currentUser.centerName = 'Batis';
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+          }
+          if (userData) {
+            userData.centerName = 'Batis';
+            localStorage.setItem('userData', JSON.stringify(userData));
+          }
+          // Force refresh the user center
+          const updatedUserCenter = 'Batis';
+          console.log('Updated user center to:', updatedUserCenter);
         }
         
         // Build API URL with center/barangay filter for non-superadmin users
         let apiUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
+        const finalUserCenter = (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') ? 'Batis' : userCenter;
+        
         if (finalUserCenter && finalUserCenter !== 'all') {
           // Try both center and barangay filtering
           apiUrl += `&center=${encodeURIComponent(finalUserCenter)}`;
           apiUrl += `&barangay=${encodeURIComponent(finalUserCenter)}`;
+          console.log('Using final user center for API:', finalUserCenter);
         } else if (!finalUserCenter) {
           // If no user center detected, try to fetch all patients and filter client-side
           console.log('No user center detected, fetching all patients for client-side filtering');
@@ -659,15 +672,15 @@ const SuperAdminPatientManagement = () => {
             if (fallbackData.success && Array.isArray(fallbackData.data)) {
               // Apply client-side filtering even for fallback
               let fallbackPatients = fallbackData.data;
-              if (finalUserCenter && finalUserCenter !== 'all') {
+              if (userCenter && userCenter !== 'all') {
                 fallbackPatients = fallbackData.data.filter(p => {
                   const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
                   const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
                   
-                  const centerMatch = patientCenter.toLowerCase().includes(finalUserCenter.toLowerCase()) || 
-                                     finalUserCenter.toLowerCase().includes(patientCenter.toLowerCase());
-                  const barangayMatch = patientBarangay.toLowerCase().includes(finalUserCenter.toLowerCase()) || 
-                                      finalUserCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+                  const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                     userCenter.toLowerCase().includes(patientCenter.toLowerCase());
+                  const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                      userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
                   
                   return centerMatch || barangayMatch;
                 });
@@ -677,15 +690,15 @@ const SuperAdminPatientManagement = () => {
             } else if (Array.isArray(fallbackData)) {
               // Apply client-side filtering even for direct array fallback
               let fallbackPatients = fallbackData;
-              if (finalUserCenter && finalUserCenter !== 'all') {
+              if (userCenter && userCenter !== 'all') {
                 fallbackPatients = fallbackData.filter(p => {
                   const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
                   const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
                   
-                  const centerMatch = patientCenter.toLowerCase().includes(finalUserCenter.toLowerCase()) || 
-                                     finalUserCenter.toLowerCase().includes(patientCenter.toLowerCase());
-                  const barangayMatch = patientBarangay.toLowerCase().includes(finalUserCenter.toLowerCase()) || 
-                                      finalUserCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+                  const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                     userCenter.toLowerCase().includes(patientCenter.toLowerCase());
+                  const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
+                                      userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
                   
                   return centerMatch || barangayMatch;
                 });
