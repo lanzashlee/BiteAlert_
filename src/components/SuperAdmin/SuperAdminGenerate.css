@@ -440,12 +440,12 @@ body {
 
 /* Modern horizontal filter/search row styling */
 .modern-filter-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem 0.85rem;
+    align-items: end;
     width: 100%;
-    margin-bottom: 0;
+    margin-bottom: 0.4rem;
 }
 
 .filter-group {
@@ -457,11 +457,11 @@ body {
 }
 
 .filter-group label {
-    font-size: 0.8rem;
-    color: #888;
-    font-weight: 500;
-    margin-bottom: 0.2em;
-    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 0.25em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
 }
 
@@ -479,11 +479,11 @@ body {
 .table-search,
 .table-section .form-control,
 select.form-control {
-    border-radius: 6px;
-    border: 1px solid #ddd;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
     background: #fff;
     font-size: 0.9rem;
-    height: 36px;
+    height: 38px;
     box-shadow: none;
     transition: border-color 0.18s;
     margin: 0;
@@ -505,7 +505,7 @@ select.form-control {
 .table-search:focus,
 .table-section .form-control:focus,
 select.form-control:focus {
-    border-color: #4fc3f7;
+    border-color: #800000;
     outline: none;
     background: #fff;
     box-shadow: none;
@@ -563,7 +563,7 @@ select.form-control:focus {
 }
 
 .export-btn-group .btn {
-    height: 36px;
+    height: 38px;
     border-radius: 6px;
     font-size: 0.9rem;
     padding: 0 1.5em;
@@ -593,11 +593,7 @@ select.form-control:focus {
 }
 
 @media (max-width: 900px) {
-    .modern-filter-row {
-        flex-direction: column;
-        gap: 0.5rem;
-        align-items: stretch;
-    }
+    .modern-filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
     .filter-group, .search-group {
         min-width: 0;
         max-width: 100%;

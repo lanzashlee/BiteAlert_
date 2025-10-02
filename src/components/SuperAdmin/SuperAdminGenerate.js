@@ -1095,7 +1095,23 @@ const SuperAdminGenerate = () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
       await addHeaderLogos(doc);
-      const startY = addCenteredHeading(doc, 'ANIMAL BITE EXPOSURE REPORT', ['NAME OF FACILITY: Animal Bite Treatment Center']);
+      // Build a compact filters summary line
+      const filterLine = [
+        animalBiteFilters.barangay !== 'all' ? `Barangay: ${animalBiteFilters.barangay}` : null,
+        animalBiteFilters.sex !== 'all' ? `Sex: ${animalBiteFilters.sex}` : null,
+        animalBiteFilters.ageBand !== 'all' ? `Age: ${animalBiteFilters.ageBand === 'lt15' ? '<15' : '≥15'}` : null,
+        animalBiteFilters.species !== 'all' ? `Animal: ${animalBiteFilters.species}` : null,
+        animalBiteFilters.ownership !== 'all' ? `Type: ${animalBiteFilters.ownership}` : null,
+        animalBiteFilters.category !== 'all' ? `Category: ${animalBiteFilters.category}` : null,
+        animalBiteFilters.completion !== 'all' ? `Completion: ${animalBiteFilters.completion}` : null,
+        animalBiteFilters.erig !== 'all' ? `ERIG: ${animalBiteFilters.erig}` : null,
+        animalBiteFilters.booster !== 'all' ? `Booster: ${animalBiteFilters.booster}` : null,
+        animalBiteFilters.status !== 'all' ? `Status: ${animalBiteFilters.status}` : null
+      ].filter(Boolean).join('  •  ');
+      const startY = addCenteredHeading(doc, 'ANIMAL BITE EXPOSURE REPORT', [
+        'NAME OF FACILITY: Animal Bite Treatment Center',
+        filterLine
+      ]);
 
       const columns = ['Case No.', 'Date', 'Patient Name', 'Age', 'Sex', 'Address', 'Animal Type', 'Bite Site', 'Status'];
       const rows = filteredData.map(row => [
