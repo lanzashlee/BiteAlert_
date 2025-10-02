@@ -1610,8 +1610,8 @@ const SuperAdminGenerate = () => {
                       <select
                         id="animalBiteBarangay"
                         className="form-control"
-                    value={animalBiteFilters.barangay}
-                    onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, barangay: e.target.value})}
+                        value={animalBiteFilters.barangay}
+                        onChange={(e) => setAnimalBiteFilters({...animalBiteFilters, barangay: e.target.value})}
                       >
                         <option value="all">All Barangays</option>
                         {sanJuanBarangays.map(barangay => (
@@ -1723,8 +1723,8 @@ const SuperAdminGenerate = () => {
                     <option value="all">All</option>
                     <option value="Booster">Booster</option>
                     <option value="No Booster">No Booster</option>
-                  </select>
-                </div>
+                      </select>
+                    </div>
                     <div className="filter-group">
                       <label htmlFor="animalBiteAnimalType">ANIMAL TYPE:</label>
                       <select

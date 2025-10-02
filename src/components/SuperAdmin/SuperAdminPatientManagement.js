@@ -742,8 +742,8 @@ const SuperAdminPatientManagement = () => {
           let all = [];
           while (true) {
             const res = await apiFetch(`/api/centers?page=${page}&limit=${pageSize}`);
-            const data = await res.json();
-            const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
             if (!list || list.length === 0) break;
             all = all.concat(list);
             const totalPages = data.totalPages || data.pages || null;

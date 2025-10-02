@@ -265,7 +265,7 @@ const SuperAdminStock = () => {
       }
 
       // Fallback to centers collection if no stocks yet
-      const response = await apiFetch('/api/centers');
+    const response = await apiFetch('/api/centers');
       const result = await response.json();
       const list = Array.isArray(result) ? result : (result.data || result.centers || []);
       const cleaned = (list || [])
@@ -335,12 +335,12 @@ const SuperAdminStock = () => {
       }
 
       // 3) Final fallback to defaults
-      setAvailableVaccines([
-        { _id: '1', name: 'VAXIRAB', brand: 'PCEC', type: 'Anti-Rabies Vaccine' },
-        { _id: '2', name: 'SPEEDA', brand: 'PVRV', type: 'Anti-Rabies Vaccine' },
-        { _id: '3', name: 'Tetanus Toxoid-Containing Vaccine', brand: 'TCV', type: 'Tetanus Toxoid-Containing Vaccine' },
-        { _id: '4', name: 'Equine Rabies Immunoglobulin', brand: 'ERIG', type: 'Equine Rabies Immunoglobulin' }
-      ]);
+        setAvailableVaccines([
+          { _id: '1', name: 'VAXIRAB', brand: 'PCEC', type: 'Anti-Rabies Vaccine' },
+          { _id: '2', name: 'SPEEDA', brand: 'PVRV', type: 'Anti-Rabies Vaccine' },
+          { _id: '3', name: 'Tetanus Toxoid-Containing Vaccine', brand: 'TCV', type: 'Tetanus Toxoid-Containing Vaccine' },
+          { _id: '4', name: 'Equine Rabies Immunoglobulin', brand: 'ERIG', type: 'Equine Rabies Immunoglobulin' }
+        ]);
     } catch (error) {
       console.error('Error loading vaccines, using defaults:', error);
       setAvailableVaccines([
@@ -1044,12 +1044,12 @@ const SuperAdminStock = () => {
                                     <div key={vaccineIndex} className="vaccine-item">
                                       <div className="vaccine-info" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                                         <div onClick={() => toggleVaccineExpansion(center.centerName, vaccine.name)} style={{display:'flex', cursor:'pointer'}}>
-                                          <i className={`fa-solid fa-chevron-${vExpanded ? 'down' : 'right'}`} style={{ marginRight: '8px' }} />
-                                          <div>
-                                            <div className="vaccine-name">{vaccine.name}</div>
-                                            <div className="vaccine-type">{vaccine.type}</div>
-                                            <div className="vaccine-brand">{vaccine.brand}</div>
-                                          </div>
+                                        <i className={`fa-solid fa-chevron-${vExpanded ? 'down' : 'right'}`} style={{ marginRight: '8px' }} />
+                                        <div>
+                                        <div className="vaccine-name">{vaccine.name}</div>
+                                        <div className="vaccine-type">{vaccine.type}</div>
+                                        <div className="vaccine-brand">{vaccine.brand}</div>
+                                        </div>
                                         </div>
                                         <button
                                           title="Quick add stock"
@@ -1108,7 +1108,7 @@ const SuperAdminStock = () => {
                                                 </div>
                                                 <div className="stock-entry-right">
                                                   <span className="stock-entry-qty">{isNaN(qty) ? '0' : qty}</span>
-                                                </div>
+                                      </div>
                                               </div>
                                             );
                                           })}

@@ -239,11 +239,11 @@ const SuperAdminProfile = () => {
       
       // Single authoritative endpoint
       const response = await apiFetch(`/api/profile/${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
         throw new Error(errJson.message || 'Failed to update profile');
@@ -279,14 +279,14 @@ const SuperAdminProfile = () => {
       
       // Single authoritative endpoint
       const response = await apiFetch(`/api/profile/${encodeURIComponent(id)}/password`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword
-        })
-      });
-      
+            })
+          });
+          
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
         throw new Error(errJson.message || 'Failed to change password');
@@ -359,11 +359,11 @@ const SuperAdminProfile = () => {
           <h2>Profile Settings</h2>
           {/* Hide Back button for admins to avoid navigating back to login history */}
           {(userData?.role !== 'admin') && (
-            <div className="header-actions">
+          <div className="header-actions">
               <button className="btn btn-secondary" type="button" onClick={() => window.history.back()}>
-                <i className="fa-solid fa-arrow-left" /> Back
-              </button>
-            </div>
+              <i className="fa-solid fa-arrow-left" /> Back
+            </button>
+          </div>
           )}
         </div>
 

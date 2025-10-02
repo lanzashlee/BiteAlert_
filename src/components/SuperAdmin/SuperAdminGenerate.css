@@ -45,86 +45,23 @@ body {
     font-weight: 600;
 }
 
-/* Centralized Report Generator Styles */
-.report-type-selector {
-    background: #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    margin: 0 5rem 1.25rem 3rem;
-    padding: 1.5rem 2.5rem;
-}
-
-.report-type-selector h3 {
-    color: #2c3e50;
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-}
-
-.report-type-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-}
-
-.report-type-card {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
-}
-
-.report-type-card:hover {
-    border-color: #7D0C0C;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(125, 12, 12, 0.15);
-}
-
-.report-type-card.active {
-    background: #7D0C0C;
-    border-color: #7D0C0C;
-    color: white;
-}
-
-.report-type-card i {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-    color: #7D0C0C;
-}
-
-.report-type-card.active i {
-    color: white;
-}
-
-.report-type-card h4 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.report-type-card p {
-    font-size: 0.9rem;
-    opacity: 0.8;
-    margin: 0;
-}
+/* Report type selector removed */
 
 /* Filters Section */
 .filters-section {
     background: #ffffff;
     border-radius: 14px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    margin: 0 5rem 1.25rem 3rem;
-    padding: 1.5rem 2.5rem;
+    margin: 0 3rem 1.25rem 3rem;
+    padding: 1.25rem 2rem;
 }
 
 .filters-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
 .filters-header h3 {
@@ -136,8 +73,9 @@ body {
 
 .filters-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap: 1rem 1.25rem;
+    align-items: end;
 }
 
 .filter-group {
@@ -168,7 +106,8 @@ body {
 }
 
 .date-range {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
 }
 
@@ -845,6 +784,18 @@ select.form-control:focus {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   background: #fff;
+}
+
+/* Landscape filters: 3 cols desktop, 2 cols tablet, 1 col mobile */
+@media (min-width: 1024px) {
+  .filters-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 1rem 1.25rem; align-items: end; }
+}
+@media (min-width: 600px) and (max-width: 1023px) {
+  .filters-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; }
+}
+@media (max-width: 599px) {
+  .filters-grid { grid-template-columns: 1fr; }
+  .date-range { grid-template-columns: 1fr; }
 }
 
 
