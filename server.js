@@ -3987,30 +3987,64 @@ app.get('/api/vaccinestocks', async (req, res) => {
 // API: Add new vaccine stock
 app.post('/api/vaccinestocks', async (req, res) => {
   try {
-    const { center, vaccineName, quantity, expiryDate, batchNumber, minThreshold } = req.body;
-    
-    // Validate required fields
+    const { center, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand } = req.body;
+
     if (!center || !vaccineName || quantity === undefined) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Center, vaccine name, and quantity are required' 
-      });
+      return res.status(400).json({ success: false, message: 'Center, vaccine name, and quantity are required' });
     }
 
-    // Create new vaccine stock entry
-    const newStock = new VaccineStock({
-      center,
-      vaccineName,
-      quantity: parseInt(quantity),
-      expiryDate: expiryDate ? new Date(expiryDate) : null,
-      batchNumber: batchNumber || '',
-      minThreshold: minThreshold ? parseInt(minThreshold) : 10,
-      status: quantity <= 0 ? 'out' : quantity <= (minThreshold || 10) ? 'low' : 'active',
-      lastUpdated: new Date()
-    });
+    // Use flexible schema that matches your nested vaccinestocks structure
+    const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
 
-    await newStock.save();
-    res.json({ success: true, data: newStock, message: 'Vaccine stock added successfully' });
+    // Find or create the center document
+    let doc = await VaccineStockDoc.findOne({ $or: [
+      { centerName: center },
+      { centerName: center + ' Center' },
+      { centerName: center + ' Health Center' }
+    ]});
+    if (!doc) {
+      doc = new VaccineStockDoc({ centerName: center, vaccines: [] });
+    }
+
+    if (!Array.isArray(doc.vaccines)) doc.vaccines = [];
+    let vac = doc.vaccines.find(v => (v.name || '').toLowerCase() === String(vaccineName).toLowerCase());
+    if (!vac) {
+      vac = { name: vaccineName, type: vaccineType || '', brand: brand || '', stockEntries: [] };
+      doc.vaccines.push(vac);
+    } else {
+      // keep latest meta if provided
+      if (vaccineType && !vac.type) vac.type = vaccineType;
+      if (brand && !vac.brand) vac.brand = brand;
+      if (!Array.isArray(vac.stockEntries)) vac.stockEntries = [];
+    }
+
+    const qty = Number.parseFloat(quantity);
+    const batch = String(batchNumber || '').trim();
+    const expStr = expiryDate ? String(expiryDate) : '';
+
+    // Match rule: same batch AND same expiry → merge; same batch with different expiry → create new entry
+    const normalize = (v) => {
+      if (!v) return '';
+      const d = new Date(v);
+      if (!isNaN(d.getTime())) return d.toISOString().slice(0,10);
+      return String(v).trim();
+    };
+    const desiredExpiry = normalize(expStr);
+
+    let action = 'created';
+    const match = vac.stockEntries.find(en => String(en.branchNo || '').trim().toLowerCase() === batch.toLowerCase() && normalize(en.expirationDate) === desiredExpiry);
+    if (match) {
+      let current = Number(match.stock || 0);
+      if (Number.isNaN(current)) current = 0;
+      match.stock = current + (Number.isNaN(qty) ? 0 : qty);
+      action = 'merged';
+    } else {
+      vac.stockEntries.push({ branchNo: batch, stock: Number.isNaN(qty) ? 0 : qty, expirationDate: expStr });
+      action = 'created';
+    }
+
+    await doc.save();
+    res.json({ success: true, action, message: action === 'merged' ? 'Added to existing batch' : 'New batch created' });
   } catch (err) {
     console.error('Error adding vaccine stock:', err);
     res.status(500).json({ success: false, message: 'Failed to add vaccine stock', error: err.message });
