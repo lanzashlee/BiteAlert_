@@ -26,14 +26,15 @@ const SuperAdminStock = () => {
     brand: '',
     quantity: '',
     expiryDate: '',
-    batchNumber: '',
-    minThreshold: '10'
+    batchNumber: ''
   });
   const [formLoading, setFormLoading] = useState(false);
   const [expandedCenters, setExpandedCenters] = useState(new Set());
   const [expandedVaccines, setExpandedVaccines] = useState(new Set());
   // Inline quick add state keyed by `${centerName}::${vaccineName}`
   const [quickAdd, setQuickAdd] = useState({});
+  // Small modal for per‑vaccine add
+  const [quickModal, setQuickModal] = useState({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' });
 
   const updateQuickAdd = (key, field, value) => {
     setQuickAdd(prev => ({
@@ -42,9 +43,9 @@ const SuperAdminStock = () => {
     }));
   };
 
-  const submitQuickAdd = async (centerName, vaccine) => {
+  const submitQuickAdd = async (centerName, vaccine, override) => {
     const key = `${centerName}::${vaccine.name}`;
-    const qa = quickAdd[key] || {};
+    const qa = override || quickAdd[key] || {};
     const qty = parseInt(qa.quantity);
     if (!centerName || !vaccine?.name || isNaN(qty)) {
       alert('Center, vaccine name, and quantity are required');
@@ -60,8 +61,7 @@ const SuperAdminStock = () => {
         brand: vaccine.brand || '',
         quantity: qty,
         expiryDate: qa.expiryDate || '',
-        batchNumber: qa.batchNumber || '',
-        minThreshold: parseInt(qa.minThreshold || '10')
+        batchNumber: qa.batchNumber || ''
       };
       const res = await apiFetch('/api/vaccinestocks', {
         method: 'POST',
@@ -70,8 +70,9 @@ const SuperAdminStock = () => {
       });
       const result = await res.json();
       if (result.success) {
-        // Clear inline inputs and reload
-        setQuickAdd(prev => ({ ...prev, [key]: { quantity: '', batchNumber: '', expiryDate: '', minThreshold: '10' } }));
+        // Clear and reload
+        setQuickAdd(prev => ({ ...prev, [key]: { quantity: '', batchNumber: '', expiryDate: '' } }));
+        setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' });
         await loadData();
       } else {
         alert(result.message || 'Failed to add vaccine stock');
@@ -315,8 +316,7 @@ const SuperAdminStock = () => {
         brand: formData.brand,
         quantity: parseInt(formData.quantity),
         expiryDate: formData.expiryDate,
-        batchNumber: formData.batchNumber,
-        minThreshold: parseInt(formData.minThreshold)
+        batchNumber: formData.batchNumber
       };
       
       const response = await apiFetch('/api/vaccinestocks', {
@@ -339,8 +339,7 @@ const SuperAdminStock = () => {
           brand: '',
           quantity: '',
           expiryDate: '',
-          batchNumber: '',
-          minThreshold: '10'
+          batchNumber: ''
         });
         setAvailableVaccines([]);
         loadData(); // Reload data
@@ -376,8 +375,7 @@ const SuperAdminStock = () => {
       brand: '',
       quantity: '',
       expiryDate: '',
-      batchNumber: '',
-      minThreshold: '10'
+      batchNumber: ''
     });
     setAvailableVaccines([]);
   };
@@ -948,13 +946,25 @@ const SuperAdminStock = () => {
                                   const vExpanded = expandedVaccines.has(vKey);
                                   return (
                                     <div key={vaccineIndex} className="vaccine-item">
-                                      <div className="vaccine-info" onClick={() => toggleVaccineExpansion(center.centerName, vaccine.name)} style={{cursor:'pointer'}}>
-                                        <i className={`fa-solid fa-chevron-${vExpanded ? 'down' : 'right'}`} style={{ marginRight: '8px' }} />
-                                        <div>
-                                        <div className="vaccine-name">{vaccine.name}</div>
-                                        <div className="vaccine-type">{vaccine.type}</div>
-                                        <div className="vaccine-brand">{vaccine.brand}</div>
+                                      <div className="vaccine-info" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                                        <div onClick={() => toggleVaccineExpansion(center.centerName, vaccine.name)} style={{display:'flex', cursor:'pointer'}}>
+                                          <i className={`fa-solid fa-chevron-${vExpanded ? 'down' : 'right'}`} style={{ marginRight: '8px' }} />
+                                          <div>
+                                            <div className="vaccine-name">{vaccine.name}</div>
+                                            <div className="vaccine-type">{vaccine.type}</div>
+                                            <div className="vaccine-brand">{vaccine.brand}</div>
+                                          </div>
                                         </div>
+                                        <button
+                                          title="Quick add stock"
+                                          onClick={(e)=>{ e.stopPropagation(); setQuickModal({ open:true, centerName:center.centerName, vaccine, quantity:'', batchNumber:'', expiryDate:'', minThreshold:'10' }); }}
+                                          style={{
+                                            border:'none', background:'#eafaf1', color:'#10b981', width:28, height:28, borderRadius:14,
+                                            display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer'
+                                          }}
+                                        >
+                                          <i className="fa-solid fa-plus"></i>
+                                        </button>
                                       </div>
                                       <div className="vaccine-stock-info">
                                         <div className="stock-details">
@@ -996,26 +1006,7 @@ const SuperAdminStock = () => {
                                             );
                                           })}
 
-                                          {/* Quick add row */}
-                                          {(() => {
-                                            const key = `${center.centerName}::${vaccine.name}`;
-                                            const qa = quickAdd[key] || { quantity: '', batchNumber: '', expiryDate: '', minThreshold: '10' };
-                                            return (
-                                              <div className="stock-entry quick-add" style={{ display:'grid', gridTemplateColumns:'100px 160px 160px 140px 120px', gap:8, alignItems:'center', marginTop:12 }}>
-                                                <input type="number" min="0" placeholder="Qty" value={qa.quantity}
-                                                  onChange={e=>updateQuickAdd(key,'quantity', e.target.value)} className="form-control" />
-                                                <input type="text" placeholder="Batch No." value={qa.batchNumber}
-                                                  onChange={e=>updateQuickAdd(key,'batchNumber', e.target.value)} className="form-control" />
-                                                <input type="date" value={qa.expiryDate}
-                                                  onChange={e=>updateQuickAdd(key,'expiryDate', e.target.value)} className="form-control" />
-                                                <input type="number" min="0" placeholder="Min Threshold" value={qa.minThreshold}
-                                                  onChange={e=>updateQuickAdd(key,'minThreshold', e.target.value)} className="form-control" />
-                                                <button className="btn btn-success" onClick={()=>submitQuickAdd(center.centerName, vaccine)} disabled={formLoading}>
-                                                  {formLoading ? 'Adding...' : 'Add Stock'}
-                                                </button>
-                                              </div>
-                                            );
-                                          })()}
+                                          {/* inline quick-add removed in favor of modal */}
                                         </div>
                                       )}
                                     </div>
@@ -1154,19 +1145,7 @@ const SuperAdminStock = () => {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="minThreshold">Minimum Threshold</label>
-                  <input
-                    type="number"
-                    id="minThreshold"
-                    name="minThreshold"
-                    value={formData.minThreshold}
-                    onChange={handleInputChange}
-                    min="0"
-                    className="form-control"
-                    placeholder="10"
-                  />
-                </div>
+                {/* Min Threshold removed per request; server will default to 10 */}
               </div>
 
               <div className="form-row">
@@ -1214,6 +1193,53 @@ const SuperAdminStock = () => {
                     <i className="fa-solid fa-plus"></i> Add Stock
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Small Quick Add Modal */}
+      {quickModal.open && (
+        <div className="add-modal active">
+          <div className="add-modal-overlay" onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'', minThreshold:'10' })}></div>
+          <div className="add-modal-content" style={{ maxWidth: 520 }}>
+            <div className="add-modal-header">
+              <div className="add-icon-wrapper">
+                <i className="fa-solid fa-plus"></i>
+              </div>
+              <h3>Add Stock - {quickModal.vaccine?.name}</h3>
+            </div>
+            <div className="add-modal-body">
+              <div className="form-group">
+                <label>Center</label>
+                <input className="form-control" value={quickModal.centerName} readOnly />
+              </div>
+              <div className="form-group">
+                <label>Vaccine</label>
+                <input className="form-control" value={quickModal.vaccine?.name || ''} readOnly />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Quantity *</label>
+                  <input type="number" min="0" className="form-control" value={quickModal.quantity} onChange={e=>setQuickModal(m=>({ ...m, quantity:e.target.value }))} />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Batch No.</label>
+                  <input type="text" className="form-control" value={quickModal.batchNumber} onChange={e=>setQuickModal(m=>({ ...m, batchNumber:e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Expiry Date</label>
+                  <input type="date" className="form-control" value={quickModal.expiryDate} onChange={e=>setQuickModal(m=>({ ...m, expiryDate:e.target.value }))} />
+                </div>
+              </div>
+            </div>
+            <div className="add-modal-footer">
+              <button className="cancel-btn" onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' })} disabled={formLoading}>Cancel</button>
+              <button className="confirm-btn" onClick={()=>submitQuickAdd(quickModal.centerName, quickModal.vaccine, { quantity:quickModal.quantity, batchNumber:quickModal.batchNumber, expiryDate:quickModal.expiryDate })} disabled={formLoading}>
+                {formLoading ? (<><i className="fa-solid fa-spinner fa-spin"></i> Adding...</>) : (<><i className="fa-solid fa-plus"></i> Add Stock</>)}
               </button>
             </div>
           </div>
