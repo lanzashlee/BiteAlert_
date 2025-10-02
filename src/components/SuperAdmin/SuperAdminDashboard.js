@@ -619,17 +619,23 @@ const SuperAdminDashboard = () => {
   };
 
   useEffect(() => {
+    // Stagger initial work: summary immediately, others in idle/timeout
     updateDashboardSummary();
-    updatePatientGrowth();
-    updateCasesPerBarangay();
-    updateVaccineStockTrends();
-    updateSeverityChart();
+    const idle = window.requestIdleCallback || ((cb)=>setTimeout(cb, 150));
+    idle(() => {
+      updatePatientGrowth();
+      updateCasesPerBarangay();
+      updateVaccineStockTrends();
+      updateSeverityChart();
+    });
 
-    const summaryInterval = setInterval(updateDashboardSummary, 300000);
-    const patientInterval = setInterval(updatePatientGrowth, 300000);
-    const casesInterval = setInterval(updateCasesPerBarangay, 300000);
-    const vaccineInterval = setInterval(updateVaccineStockTrends, 300000);
-    const severityInterval = setInterval(updateSeverityChart, 300000);
+    const vis = () => document.visibilityState === 'visible';
+    const every = 300000;
+    const summaryInterval = setInterval(() => { if (vis()) updateDashboardSummary(); }, every);
+    const patientInterval = setInterval(() => { if (vis()) updatePatientGrowth(); }, every);
+    const casesInterval = setInterval(() => { if (vis()) updateCasesPerBarangay(); }, every);
+    const vaccineInterval = setInterval(() => { if (vis()) updateVaccineStockTrends(); }, every);
+    const severityInterval = setInterval(() => { if (vis()) updateSeverityChart(); }, every);
 
     return () => {
       clearInterval(summaryInterval);

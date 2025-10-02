@@ -9,13 +9,22 @@
       name="description"
       content="BiteAlert - Animal Bite Management System"
     />
+    <meta name="keywords" content="Animal Bite, Rabies, Vaccination, Health Center, San Juan" />
+    <meta name="robots" content="index,follow" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/img/bite_logo.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
+    <!-- Performance: Preconnect to backend and 3rd parties -->
+    <link rel="preconnect" href="https://bitealert-backend-doga.onrender.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <!-- Google Fonts -->
+    <!-- Google Fonts (swap for CLS) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style> @font-face{ font-family:'Poppins'; font-display:swap; src:local('Poppins'); } </style>
     <!-- Clash Grotesk Font -->
     <link href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&display=swap" rel="stylesheet">
     <!-- Bootstrap -->
