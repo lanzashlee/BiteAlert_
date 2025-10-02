@@ -57,6 +57,8 @@ body {
   margin: 0 5rem 1.25rem 3rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid #e5e7eb;
+  position: relative;
+  z-index: 1;
 }
 
 .content-header h2 {
@@ -96,6 +98,8 @@ body {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e5e7eb;
+  position: relative;
+  z-index: 1;
 }
 
 .section-header h3 {

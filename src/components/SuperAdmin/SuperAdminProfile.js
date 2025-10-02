@@ -357,11 +357,14 @@ const SuperAdminProfile = () => {
       <main className="main-content">
         <div className="content-header">
           <h2>Profile Settings</h2>
-          <div className="header-actions">
-            <button className="btn btn-secondary" onClick={() => window.history.back()}>
-              <i className="fa-solid fa-arrow-left" /> Back
-            </button>
-          </div>
+          {/* Hide Back button for admins to avoid navigating back to login history */}
+          {(userData?.role !== 'admin') && (
+            <div className="header-actions">
+              <button className="btn btn-secondary" type="button" onClick={() => window.history.back()}>
+                <i className="fa-solid fa-arrow-left" /> Back
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="content-body">
