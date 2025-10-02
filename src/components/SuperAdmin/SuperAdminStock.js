@@ -1219,6 +1219,18 @@ const SuperAdminStock = () => {
                 <label>Vaccine</label>
                 <input className="form-control" value={quickModal.vaccine?.name || ''} readOnly />
               </div>
+              {quickModal.vaccine && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Vaccine Type</label>
+                    <input className="form-control" value={quickModal.vaccine?.type || ''} readOnly />
+                  </div>
+                  <div className="form-group">
+                    <label>Brand</label>
+                    <input className="form-control" value={quickModal.vaccine?.brand || ''} readOnly />
+                  </div>
+                </div>
+              )}
               <div className="form-row">
                 <div className="form-group">
                   <label>Quantity *</label>
