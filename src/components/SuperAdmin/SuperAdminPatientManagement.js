@@ -519,12 +519,23 @@ const SuperAdminPatientManagement = () => {
         const userCenter = getUserCenter();
         console.log('User center from getUserCenter():', userCenter);
         
+        // Debug: Check what's in localStorage
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        const userData = JSON.parse(localStorage.getItem('userData') || 'null');
+        console.log('Current user from localStorage:', currentUser);
+        console.log('User data from localStorage:', userData);
+        console.log('User role:', currentUser?.role || userData?.role);
+        console.log('User center name:', currentUser?.centerName || userData?.centerName);
+        
         // Build API URL with center/barangay filter for non-superadmin users
         let apiUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
         if (userCenter && userCenter !== 'all') {
           // Try both center and barangay filtering
           apiUrl += `&center=${encodeURIComponent(userCenter)}`;
           apiUrl += `&barangay=${encodeURIComponent(userCenter)}`;
+        } else if (!userCenter) {
+          // If no user center detected, try to fetch all patients and filter client-side
+          console.log('No user center detected, fetching all patients for client-side filtering');
         }
 
         console.log('Fetching patients from:', apiUrl);
@@ -556,9 +567,46 @@ const SuperAdminPatientManagement = () => {
               
               return centerMatch || barangayMatch;
             });
+          } else if (!userCenter) {
+            // If no user center detected, try to filter for "Batis" specifically
+            console.log('No user center detected, trying to filter for Batis patients');
+            filteredPatients = allPatients.filter(p => {
+              const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
+              const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+              
+              const centerMatch = patientCenter.toLowerCase().includes('batis') || 
+                                 patientCenter.toLowerCase().includes('batis center') ||
+                                 patientCenter.toLowerCase().includes('batis health center');
+              const barangayMatch = patientBarangay.toLowerCase().includes('batis');
+              
+              return centerMatch || barangayMatch;
+            });
+            console.log('Filtered for Batis patients:', filteredPatients.length);
           }
 
           console.log('Filtered patients count:', filteredPatients.length);
+          
+          // Debug: Log some sample patients to see their structure
+          if (filteredPatients.length > 0) {
+            console.log('Sample patient data:', filteredPatients[0]);
+            console.log('Patient center fields:', {
+              center: filteredPatients[0].center,
+              centerName: filteredPatients[0].centerName,
+              healthCenter: filteredPatients[0].healthCenter,
+              facility: filteredPatients[0].facility,
+              treatmentCenter: filteredPatients[0].treatmentCenter
+            });
+            console.log('Patient barangay fields:', {
+              barangay: filteredPatients[0].barangay,
+              addressBarangay: filteredPatients[0].addressBarangay,
+              patientBarangay: filteredPatients[0].patientBarangay,
+              locationBarangay: filteredPatients[0].locationBarangay,
+              barangayName: filteredPatients[0].barangayName
+            });
+          } else {
+            console.log('No patients found after filtering');
+            console.log('All patients from API:', allPatients.slice(0, 3)); // Show first 3 patients
+          }
 
           // Derive center directly from common fields
           const withCenterDerived = filteredPatients.map(p => ({
