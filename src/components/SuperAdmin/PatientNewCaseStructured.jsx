@@ -1451,5 +1451,4 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     </>
   );
 }
-
-
+  
