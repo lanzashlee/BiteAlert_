@@ -43,6 +43,9 @@ const SuperAdminGenerate = () => {
     search: ''
   });
 
+  // UI state: toggle on-screen summary for Animal Bite section
+  const [showBiteSummary, setShowBiteSummary] = useState(false);
+
   const [customDemoFilters, setCustomDemoFilters] = useState({
     from: '',
     to: '',
@@ -1466,6 +1469,165 @@ const SuperAdminGenerate = () => {
         </div>
 
         <div className="reports-container">
+          {/* Animal Bite - Single Table with optional Summary */}
+          <div className="report-card card-fade-in">
+            <div className="report-header">
+              <i className="fas fa-list"></i>
+              <h3>Animal Bite Records</h3>
+              <div className="header-actions">
+                <button className="btn btn-secondary" onClick={()=>setShowBiteSummary(s=>!s)}>
+                  <i className={`fa ${showBiteSummary? 'fa-eye-slash':'fa-eye'}`}></i> {showBiteSummary? 'Hide Summary':'Show Summary'}
+                </button>
+                <button className="btn" onClick={exportAnimalBitePDF}>
+                  <i className="fa fa-download"></i> Export PDF
+                </button>
+              </div>
+            </div>
+            <div className="report-body">
+              <div className="table-section">
+                <div className="table-section-header">
+                  <div className="modern-filter-row">
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteFrom">FROM:</label>
+                      <input type="date" id="animalBiteFrom" className="form-control" value={animalBiteFilters.from} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, from:e.target.value})} />
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteTo">TO:</label>
+                      <input type="date" id="animalBiteTo" className="form-control" value={animalBiteFilters.to} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, to:e.target.value})} />
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteBarangay">BARANGAY:</label>
+                      <select id="animalBiteBarangay" className="form-control" value={animalBiteFilters.barangay} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, barangay:e.target.value})}>
+                        <option value="all">All Barangays</option>
+                        {sanJuanBarangays.map(b=>(<option key={b} value={b}>{b}</option>))}
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteSex">SEX:</label>
+                      <select id="animalBiteSex" className="form-control" value={animalBiteFilters.sex} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, sex:e.target.value})}>
+                        <option value="all">All</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteAgeBand">AGE:</label>
+                      <select id="animalBiteAgeBand" className="form-control" value={animalBiteFilters.ageBand} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, ageBand:e.target.value})}>
+                        <option value="all">All</option>
+                        <option value="lt15">&lt; 15 years old</option>
+                        <option value="gt15">&ge; 15 years old</option>
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteSpecies">ANIMAL:</label>
+                      <select id="animalBiteSpecies" className="form-control" value={animalBiteFilters.species} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, species:e.target.value})}>
+                        <option value="all">All</option>
+                        <option value="Dog">Dog</option>
+                        <option value="Cat">Cat</option>
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteOwnership">TYPE:</label>
+                      <select id="animalBiteOwnership" className="form-control" value={animalBiteFilters.ownership} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, ownership:e.target.value})}>
+                        <option value="all">All</option>
+                        <option value="Pet">Pet</option>
+                        <option value="Stray">Stray</option>
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteCategory">CATEGORY:</label>
+                      <select id="animalBiteCategory" className="form-control" value={animalBiteFilters.category} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, category:e.target.value})}>
+                        <option value="all">All</option>
+                        <option value="1">Category 1</option>
+                        <option value="2">Category 2</option>
+                        <option value="3">Category 3</option>
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteCompletion">COMPLETION:</label>
+                      <select id="animalBiteCompletion" className="form-control" value={animalBiteFilters.completion} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, completion:e.target.value})}>
+                        <option value="all">All</option>
+                        <option value="Complete">Complete</option>
+                        <option value="Incomplete">Incomplete</option>
+                        <option value="Not Given">Not Given</option>
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteERIG">ERIG:</label>
+                      <select id="animalBiteERIG" className="form-control" value={animalBiteFilters.erig} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, erig:e.target.value})}>
+                        <option value="all">All</option>
+                        <option value="Given">ERIG Given</option>
+                        <option value="Not Given">ERIG Not Given</option>
+                      </select>
+                    </div>
+                    <div className="filter-group">
+                      <label htmlFor="animalBiteBooster">BOOSTER:</label>
+                      <select id="animalBiteBooster" className="form-control" value={animalBiteFilters.booster} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, booster:e.target.value})}>
+                        <option value="all">All</option>
+                        <option value="Booster">Booster</option>
+                        <option value="No Booster">No Booster</option>
+                      </select>
+                    </div>
+                    <div className="search-group filter-group">
+                      <label htmlFor="animalBiteSearch" style={{visibility: 'hidden'}}>Search</label>
+                      <div className="search-input-wrapper">
+                        <input type="text" id="animalBiteSearch" className="form-control table-search" placeholder="Search by name, animal, or address..." value={animalBiteFilters.search} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, search:e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {showBiteSummary && (
+                  <div className="table-responsive" style={{marginTop:'0.75rem'}}>
+                    <table className="table">
+                      <thead>
+                        <tr><th>Metric</th><th>Count</th></tr>
+                      </thead>
+                      <tbody>
+                        {buildBiteSummaryRows(filterAnimalBiteData()).map((r,idx)=> (
+                          <tr key={idx}><td>{r.label}</td><td>{r.count}</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="table-responsive" style={{marginTop:'0.75rem'}}>
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Case No.</th>
+                        <th>Date</th>
+                        <th>Patient Name</th>
+                        <th>Age</th>
+                        <th>Sex</th>
+                        <th>Address</th>
+                        <th>Animal Type</th>
+                        <th>Bite Site</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filterAnimalBiteData().map((row, index) => (
+                        <tr key={index}>
+                          <td>{String(row.caseNo || '')}</td>
+                          <td>{formatDate(row.date)}</td>
+                          <td>{String(row.name || row.patientName || '')}</td>
+                          <td>{String(row.age || '')}</td>
+                          <td>{String(row.sex || '')}</td>
+                          <td>{String(row.address || '')}</td>
+                          <td>{String(row.animalType || '')}</td>
+                          <td>{String(row.biteSite || '')}</td>
+                          <td>{String(row.status || '')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Rabies Utilization Report */}
           <div className="report-card card-fade-in">
             <div className="report-header">
@@ -1575,7 +1737,9 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
 
-          {/* Animal Bite Exposure Report */}
+          {/* Animal Bite Exposure Report - consolidated into the single table above (removed duplicate) */}
+          {/* Removed duplicate Animal Bite Exposure Report card to keep one table only */}
+          {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-file-medical-alt"></i>
@@ -1787,47 +1951,10 @@ const SuperAdminGenerate = () => {
                     </div>
                   </div>
                 </div>
-                <div className="table-responsive">
-                  <table className="table table-striped">
-                    <thead>
-                      <tr>
-                        <th>Case No.</th>
-                        <th>Date</th>
-                        <th>Patient Name</th>
-                        <th>Age</th>
-                        <th>Sex</th>
-                        <th>Address</th>
-                        <th>Animal Type</th>
-                        <th>Bite Site</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filterAnimalBiteData().length === 0 ? (
-                        <tr>
-                          <td colSpan={9} style={{textAlign: 'center'}}>No data found</td>
-                        </tr>
-                      ) : (
-                        filterAnimalBiteData().map((row, index) => (
-                          <tr key={index}>
-                            <td>{String(row.caseNo || '')}</td>
-                            <td>{formatDate(row.date)}</td>
-                            <td>{String(row.name || row.patientName || '')}</td>
-                            <td>{String(row.age || '')}</td>
-                            <td>{String(row.sex || '')}</td>
-                            <td>{String(row.address || '')}</td>
-                            <td>{String(row.animalType || '')}</td>
-                            <td>{String(row.biteSite || '')}</td>
-                            <td>{String(row.status || '')}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Custom Demographic Report */}
           <div className="report-card card-fade-in">

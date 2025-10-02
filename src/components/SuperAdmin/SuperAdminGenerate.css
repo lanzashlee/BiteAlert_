@@ -316,6 +316,7 @@ body {
     min-height: 350px;
     padding: 0 1.5rem 1.5rem 1.5rem;
     margin: 1rem auto 1rem auto;
+    position: relative; /* allow export group to pin top-right */
 }
 
 /* Remove card hover effect */
@@ -330,7 +331,7 @@ body {
     width: 100%;
     background: #800000;
     color: #fff;
-    padding: 1.5rem 0 1rem 0;
+    padding: 1.25rem 3rem 1rem 0; /* balanced right padding; actions pinned separately */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -338,6 +339,7 @@ body {
     border-top-right-radius: 20px;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+    position: relative; /* allow header-actions to be placed top-right */
 }
 
 .report-header i {
@@ -356,6 +358,24 @@ body {
     font-weight: 600;
     margin-bottom: 0.2rem;
     text-align: center;
+}
+
+/* Header actions (e.g., Show/Hide Summary, Export) */
+.report-header .header-actions {
+    position: absolute;
+    top: calc(0.5rem + 6px); /* 6px down from base */
+    right: calc(1.5rem + 8px); /* 6px further from edge */
+    transform: none;
+    margin-top: 0;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 3;
+}
+.report-header .header-actions .btn {
+    height: 38px;
+    line-height: 38px;
+    padding: 0 1rem;
+    font-size: 0.9rem;
 }
 
 .report-body {
@@ -380,11 +400,30 @@ body {
 /* Modern horizontal filter/search row styling */
 .modern-filter-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.75rem 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.6rem 0.7rem;
     align-items: end;
     width: 100%;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.3rem;
+}
+
+/* Ensure uniform control sizing inside filter row */
+.modern-filter-row .form-control,
+.modern-filter-row select.form-control,
+.modern-filter-row input.form-control,
+.modern-filter-row .btn {
+    height: 38px;
+    line-height: 38px;
+    font-size: 0.9rem;
+}
+
+.modern-filter-row .btn {
+    padding: 0 1rem;
+}
+
+.modern-filter-row .filter-group .form-control,
+.modern-filter-row .search-group .form-control {
+    width: 100%;
 }
 
 .filter-group {
@@ -456,6 +495,7 @@ select.form-control:focus {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(17, 24, 39, 0.06);
+  padding: 0.25rem;
 }
 
 .table {
@@ -466,7 +506,7 @@ select.form-control:focus {
 
 .table thead th {
   background: #f5f7fb;
-  padding: 10px 12px;
+  padding: 8px 10px;
   text-align: left;
   font-weight: 600;
   color: #2a3342;
@@ -475,7 +515,7 @@ select.form-control:focus {
 }
 
 .table tbody td {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid #eef2f7;
   font-size: 0.9rem;
 }
@@ -495,10 +535,22 @@ select.form-control:focus {
 .export-btn-group {
     display: flex;
     align-items: center;
-    margin-left: auto;
     gap: 0.5rem;
     height: 36px;
-    margin-top: 0;
+    position: absolute; /* pin to card's upper-right, within header area visually */
+    top: calc(0.5rem + 6px); /* 6px down from base */
+    right: calc(0.6rem + 6px); /* 6px further from edge */
+    transform: none;
+    margin: 0;
+    z-index: 2;
+}
+
+@media (max-width: 600px) {
+  .report-header .header-actions,
+  .export-btn-group {
+    top: 0.4rem;
+    right: 0.5rem;
+  }
 }
 
 .export-btn-group .btn {
