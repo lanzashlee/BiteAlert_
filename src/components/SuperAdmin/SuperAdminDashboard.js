@@ -18,6 +18,8 @@ import {
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import React, { Suspense } from 'react';
+const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
 import SmallLoadingSpinner from './SmallDogLoading';
 import './SuperAdminDashboard.css';
 
@@ -853,49 +855,19 @@ const SuperAdminDashboard = () => {
           )}
         </div>
 
-        {/* Charts using react-chartjs-2 */}
-        <div className="row">
-          <div className="col-md-6">
-            <div className="panel panel-default">
-              <div className="panel-heading">
-                <h3 className="panel-title">Patient Growth</h3>
-              </div>
-              <div className="panel-body">
-                <Line data={patientsChartData} options={lineChartOptions} />
-              </div>
-            </div>
-          </div>
-          <div className="col-md-6">
-            <div className="panel panel-default">
-              <div className="panel-heading">
-                <h3 className="panel-title">Case Distribution</h3>
-              </div>
-              <div className="panel-body">
-                <Bar data={casesChartData} options={barChartOptions} />
-              </div>
-            </div>
-          </div>
-          <div className="col-md-6">
-            <div className="panel panel-default">
-              <div className="panel-heading">
-                <h3 className="panel-title">Vaccine Stock Levels</h3>
-              </div>
-              <div className="panel-body">
-                <Line data={vaccinesChartData} options={vaccinesChartOptions} />
-              </div>
-            </div>
-          </div>
-          <div className="col-md-6">
-            <div className="panel panel-default">
-              <div className="panel-heading">
-                <h3 className="panel-title">Case Severity</h3>
-              </div>
-              <div className="panel-body">
-                <Pie data={severityChartData} options={severityChartOptions} />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Charts lazy-loaded */}
+        <Suspense fallback={<div className="row"><div className="col-md-6"><div className="panel" style={{height:300,display:'flex',alignItems:'center',justifyContent:'center'}}>Loading charts…</div></div></div>}>
+          <DashboardCharts
+            patientsChartData={patientsChartData}
+            casesChartData={casesChartData}
+            vaccinesChartData={vaccinesChartData}
+            severityChartData={severityChartData}
+            lineChartOptions={lineChartOptions}
+            barChartOptions={barChartOptions}
+            vaccinesChartOptions={vaccinesChartOptions}
+            severityChartOptions={severityChartOptions}
+          />
+        </Suspense>
       </main>
 
       {/* Logout Modal */}
