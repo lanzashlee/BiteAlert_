@@ -127,13 +127,53 @@ const SuperAdminStock = () => {
 
   const loadCenters = async () => {
     try {
-    const response = await apiFetch('/api/centers');
-      const result = await response.json();
-      if (result.success) {
-        setCenters(result.data);
+      // Prefer deriving centers from existing vaccinestocks so additions map correctly
+      const fetchAllStocks = async () => {
+        let page = 1;
+        const limit = 200;
+        let all = [];
+        while (true) {
+          const url = `/api/vaccinestocks?page=${page}&limit=${limit}`;
+          try {
+            const res = await apiFetch(url);
+            const json = await res.json();
+            const list = Array.isArray(json) ? json : (json.data || []);
+            if (!list || list.length === 0) break;
+            all = all.concat(list);
+            const totalPages = json.totalPages || json.pages || null;
+            if (totalPages && page >= totalPages) break;
+            if (!totalPages && list.length < limit) break;
+            page += 1;
+          } catch (_) { break; }
+        }
+        return all;
+      };
+
+      let stockList = await fetchAllStocks();
+      const namesFromStocks = Array.from(new Set((stockList || [])
+        .map(s => String(s.centerName || s.center || '').trim())
+        .filter(Boolean)))
+        .sort((a,b)=>a.localeCompare(b));
+
+      if (namesFromStocks.length) {
+        const asObjects = namesFromStocks.map((n, idx) => ({ _id: String(idx+1), centerName: n }));
+        setCenters(asObjects);
+        return;
       }
+
+      // Fallback to centers collection if no stocks yet
+      const response = await apiFetch('/api/centers');
+      const result = await response.json();
+      const list = Array.isArray(result) ? result : (result.data || result.centers || []);
+      const cleaned = (list || [])
+        .filter(c => !c.isArchived)
+        .map(c => ({ _id: c._id || c.id || String(c.name || c.centerName), centerName: String(c.centerName || c.name || '').trim() }))
+        .filter(c => c.centerName)
+        .sort((a,b)=>a.centerName.localeCompare(b.centerName));
+      setCenters(cleaned);
     } catch (error) {
       console.error('Error loading centers:', error);
+      setCenters([]);
     }
   };
 
