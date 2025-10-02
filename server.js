@@ -1180,7 +1180,7 @@ app.get('/api/profile/:userId', async (req, res) => {
 app.put('/api/profile/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-        const { firstName, middleName, lastName, email, phoneNumber, birthdate } = req.body;
+    const { firstName, middleName, lastName, email, phoneNumber, birthdate } = req.body;
 
         // Check if email is already in use by another user
         const existingUser = await Admin.findOne({ email, _id: { $ne: userId } });
@@ -1202,13 +1202,15 @@ app.put('/api/profile/:userId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Update user fields
-        user.firstName = firstName;
-        user.middleName = middleName;
-        user.lastName = lastName;
-        user.email = email;
-        user.phoneNumber = phoneNumber;
-        user.birthdate = birthdate;
+    // Update user fields only if provided
+    if (typeof firstName !== 'undefined') user.firstName = firstName;
+    if (typeof middleName !== 'undefined') user.middleName = middleName;
+    if (typeof lastName !== 'undefined') user.lastName = lastName;
+    if (typeof email !== 'undefined') user.email = email;
+    if (typeof phoneNumber !== 'undefined') user.phoneNumber = phoneNumber;
+    if (typeof birthdate !== 'undefined' && birthdate !== null && birthdate !== '') {
+      user.birthdate = new Date(birthdate);
+    }
 
         await user.save();
 
@@ -1226,9 +1228,10 @@ app.put('/api/profile/:userId', async (req, res) => {
             }
         );
 
-        res.json({
-            message: 'Profile updated successfully',
-            user: {
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
                 firstName: user.firstName,
                 middleName: user.middleName,
                 lastName: user.lastName,
@@ -1240,7 +1243,7 @@ app.put('/api/profile/:userId', async (req, res) => {
         });
     } catch (error) {
         console.error('Error updating profile:', error);
-        res.status(500).json({ message: 'Error updating profile' });
+    res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });
     }
 });
 
@@ -3988,7 +3991,7 @@ app.get('/api/vaccinestocks', async (req, res) => {
 app.post('/api/vaccinestocks', async (req, res) => {
   try {
     const { center, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand } = req.body;
-
+    
     if (!center || !vaccineName || quantity === undefined) {
       return res.status(400).json({ success: false, message: 'Center, vaccine name, and quantity are required' });
     }
