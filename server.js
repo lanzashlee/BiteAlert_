@@ -1180,7 +1180,7 @@ app.get('/api/profile/:userId', async (req, res) => {
 app.put('/api/profile/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-    const { firstName, middleName, lastName, email, phoneNumber, birthdate } = req.body;
+        const { firstName, middleName, lastName, email, phoneNumber, birthdate } = req.body;
 
         // Check if email is already in use by another user
         const existingUser = await Admin.findOne({ email, _id: { $ne: userId } });
@@ -1228,10 +1228,10 @@ app.put('/api/profile/:userId', async (req, res) => {
             }
         );
 
-    res.json({
+        res.json({
       success: true,
-      message: 'Profile updated successfully',
-      user: {
+            message: 'Profile updated successfully',
+            user: {
                 firstName: user.firstName,
                 middleName: user.middleName,
                 lastName: user.lastName,
@@ -2838,6 +2838,53 @@ app.get('/api/cases-per-center', async (req, res) => {
     res.json({ success: true, data: results });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to fetch cases per center', error: err.message });
+  }
+});
+
+// API: Cases per barangay (uses bitecases.barangay field directly)
+app.get('/api/cases-per-barangay', async (req, res) => {
+  try {
+    const { center } = req.query; // optional filter; if provided, only that barangay
+    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+
+    const match = {};
+    if (center && center !== 'all') {
+      // Normalize common variants like "Batis" vs "Balong-Bato Center" etc. Use case-insensitive contains
+      match.$or = [
+        { barangay: { $regex: center, $options: 'i' } },
+        { addressBarangay: { $regex: center, $options: 'i' } },
+        { patientBarangay: { $regex: center, $options: 'i' } },
+        { locationBarangay: { $regex: center, $options: 'i' } },
+        { barangayName: { $regex: center, $options: 'i' } }
+      ];
+    }
+
+    const pipeline = [
+      Object.keys(match).length ? { $match: match } : null,
+      {
+        $group: {
+          _id: {
+            $toUpper: { $trim: { input: {
+              $ifNull: [
+                '$barangay',
+                { $ifNull: ['$addressBarangay',
+                  { $ifNull: ['$patientBarangay',
+                    { $ifNull: ['$locationBarangay', '$barangayName'] }
+                  ] }
+                ] }
+            } } }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $project: { _id: 0, barangay: '$_id', count: 1 } },
+      { $sort: { barangay: 1 } }
+    ].filter(Boolean);
+
+    const grouped = await BiteCase.aggregate(pipeline);
+    res.json({ success: true, data: grouped });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch cases per barangay', error: err.message });
   }
 });
 
