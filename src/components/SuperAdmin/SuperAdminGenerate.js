@@ -180,36 +180,87 @@ const SuperAdminGenerate = () => {
       
       let normalized = [];
       const derive = (it) => {
-        const sex = (it.sex || it.gender || it.patientSex || '').toString();
-        const ageVal = Number(it.age || it.patientAge || it.ageYears);
-        const animalType = (it.animalType || it.animal || it.animal_type || it.type || '').toString();
-        const species = /cat/i.test(animalType) ? 'Cat' : /dog/i.test(animalType) ? 'Dog' : '';
-        const ownershipSource = (it.animalStatus || it.ownership || it.petType || '').toString();
-        const ownership = /pet/i.test(ownershipSource) ? 'Pet' : /stray/i.test(ownershipSource) ? 'Stray' : '';
-        const categoryRaw = (it.category || (it.management && it.management.category) || it.caseCategory || '').toString();
-        const categoryMatch = categoryRaw.match(/(1|2|3)/);
-        const category = categoryMatch ? categoryMatch[1] : '';
-        const completionRaw = (it.vaccinationStatus || it.seriesStatus || it.completion || '').toString();
+        // Calculate age from birthdate
+        let ageVal = null;
+        if (it.birthdate) {
+          const birthDate = new Date(it.birthdate);
+          const today = new Date();
+          ageVal = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            ageVal--;
+          }
+        } else if (it.age) {
+          ageVal = Number(it.age);
+        }
+
+        // Extract sex
+        const sex = (it.sex || '').toString();
+
+        // Extract animal species from animalProfile.species array
+        let species = '';
+        if (it.animalProfile && it.animalProfile.species && Array.isArray(it.animalProfile.species)) {
+          const speciesArray = it.animalProfile.species;
+          if (speciesArray.includes('Dog')) species = 'Dog';
+          else if (speciesArray.includes('Cat')) species = 'Cat';
+        }
+
+        // Extract ownership from animalProfile.ownership array
+        let ownership = '';
+        if (it.animalProfile && it.animalProfile.ownership && Array.isArray(it.animalProfile.ownership)) {
+          const ownershipArray = it.animalProfile.ownership;
+          if (ownershipArray.includes('Pet')) ownership = 'Pet';
+          else if (ownershipArray.includes('Stray')) ownership = 'Stray';
+        }
+
+        // Extract category from management.category array
+        let category = '';
+        if (it.management && it.management.category && Array.isArray(it.management.category)) {
+          const categoryArray = it.management.category;
+          if (categoryArray.includes('Category 1')) category = '1';
+          else if (categoryArray.includes('Category 2')) category = '2';
+          else if (categoryArray.includes('Category 3')) category = '3';
+        }
+
+        // Determine completion status from status field
         let completion = '';
-        if (/complete/i.test(completionRaw)) completion = 'Complete';
-        else if (/incomplete/i.test(completionRaw)) completion = 'Incomplete';
-        else if (/not\s?given/i.test(completionRaw)) completion = 'Not Given';
-        const erigGiven = !!(it.erig || it.erigGiven || it.immunoglobulin || it.rigGiven);
-        const boosterGiven = !!(it.booster || it.boosterGiven);
-        const barangay = it.barangay || it.patientBarangay || it.addressBarangay || '';
+        if (it.status === 'completed') completion = 'Complete';
+        else if (it.status === 'incomplete') completion = 'Incomplete';
+        else if (it.status === 'active' || it.status === 'scheduled') completion = 'Incomplete';
+        else completion = 'Not Given';
+
+        // Check ERIG given from erig object
+        const erigGiven = !!(it.erig && it.erig.medicineUsed && it.erig.medicineUsed.trim() !== '');
+
+        // Check booster from currentImmunization
+        const boosterGiven = !!(it.currentImmunization && it.currentImmunization.type && 
+          it.currentImmunization.type.includes('Booster'));
+
+        // Extract bite site from siteOfBite array
+        let biteSite = '';
+        if (it.siteOfBite && Array.isArray(it.siteOfBite) && it.siteOfBite.length > 0) {
+          biteSite = it.siteOfBite.join(', ');
+        }
+
+        // Build patient name
+        const name = [it.firstName, it.middleName, it.lastName].filter(Boolean).join(' ');
+
+        // Build address
+        const address = [it.houseNo, it.street, it.barangay, it.city].filter(Boolean).join(', ');
+
         return {
-          caseNo: it.caseNo || it.case_no || it.case || '',
-          name: it.patientName || it.name || it.patient_name || '',
-          date: it.date || it.createdAt || it.created_at || it.dateReported || '',
-          age: it.age || it.patientAge || '',
+          caseNo: it.registrationNumber || it.patientId || '',
+          name: name || '',
+          date: it.dateRegistered || it.arrivalDate || it.createdAt || '',
+          age: ageVal ? ageVal.toString() : '',
           sex,
-          address: it.address || it.patientAddress || it.location || '',
-          animalType,
-          biteSite: it.biteSite || it.bite_site || it.biteLocation || it.bite_location || it.location || '',
-          status: it.status || it.caseStatus || 'Active',
-          barangay,
+          address: address || '',
+          animalType: species || '',
+          biteSite: biteSite || '',
+          status: it.status || 'Active',
+          barangay: it.barangay || '',
           // derived fields for filtering
-          _ageNumber: isNaN(ageVal) ? null : ageVal,
+          _ageNumber: ageVal,
           _species: species,
           _ownership: ownership,
           _category: category,
