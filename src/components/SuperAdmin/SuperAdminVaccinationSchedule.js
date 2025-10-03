@@ -164,12 +164,16 @@ const SuperAdminVaccinationSchedule = () => {
       const response = await apiFetch(stockUrl);
       const result = await response.json();
       
+      console.log('🔍 Vaccine stock API response:', result);
+      
       if (Array.isArray(result)) {
+        console.log('🔍 Setting vaccine stocks (array):', result);
         setVaccineStocks(result);
       } else if (result.success && Array.isArray(result.data)) {
+        console.log('🔍 Setting vaccine stocks (success.data):', result.data);
         setVaccineStocks(result.data);
       } else {
-        console.log('No vaccine stock data found');
+        console.log('🔍 No vaccine stock data found, result:', result);
         setVaccineStocks([]);
       }
     } catch (error) {
@@ -217,22 +221,49 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Get available brands for a specific vaccine
   const getAvailableBrands = (vaccineName) => {
-    if (!vaccineStocks || vaccineStocks.length === 0) return [];
+    console.log('🔍 getAvailableBrands called with:', vaccineName);
+    console.log('🔍 vaccineStocks:', vaccineStocks);
+    
+    if (!vaccineStocks || vaccineStocks.length === 0) {
+      console.log('🔍 No vaccine stocks available');
+      return [];
+    }
     
     const brands = [];
     
     // Process the vaccine stock structure
     vaccineStocks.forEach(center => {
+      console.log('🔍 Processing center:', center.centerName);
       if (center.vaccines && Array.isArray(center.vaccines)) {
         center.vaccines.forEach(vaccine => {
-          // Match by vaccine name
-          const nameMatch = vaccine.name && vaccine.name.toLowerCase().includes(vaccineName.toLowerCase());
-          const typeMatch = vaccine.type && vaccine.type.toLowerCase().includes(vaccineName.toLowerCase());
+          console.log('🔍 Processing vaccine:', vaccine.name, vaccine.type);
+          
+          // Match by vaccine name - be more flexible with matching
+          let nameMatch = false;
+          let typeMatch = false;
+          
+          if (vaccineName === 'VAXIRAB (PCEC)') {
+            nameMatch = vaccine.name && (vaccine.name.toLowerCase().includes('vaxirab') || vaccine.name.toLowerCase().includes('pcec'));
+            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('anti-rabies');
+          } else if (vaccineName === 'SPEEDA (PVRV)') {
+            nameMatch = vaccine.name && (vaccine.name.toLowerCase().includes('speeda') || vaccine.name.toLowerCase().includes('pvrv'));
+            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('anti-rabies');
+          } else if (vaccineName === 'TCV') {
+            nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('tetanus');
+            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('tetanus');
+          } else if (vaccineName === 'ERIG') {
+            nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('erig');
+            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('erig');
+          }
+          
+          console.log('🔍 Match results:', { nameMatch, typeMatch, vaccineName });
           
           if (nameMatch || typeMatch) {
+            console.log('🔍 Found matching vaccine:', vaccine.name);
             // Process stock entries
             if (vaccine.stockEntries && Array.isArray(vaccine.stockEntries)) {
               vaccine.stockEntries.forEach(entry => {
+                console.log('🔍 Processing stock entry:', entry);
                 if (entry.stock > 0) {
                   brands.push({
                     name: vaccine.name,
@@ -250,6 +281,7 @@ const SuperAdminVaccinationSchedule = () => {
       }
     });
     
+    console.log('🔍 Final brands array:', brands);
     return brands;
   };
 
@@ -2732,6 +2764,8 @@ const SuperAdminVaccinationSchedule = () => {
                                     {selectedVaccine && (
                                       <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200 mt-6">
                                         <p className="text-lg font-bold text-blue-600 mb-4">🏷️ Select Brand/Branch</p>
+                                        <p className="text-sm text-gray-600 mb-2">Selected Vaccine: {selectedVaccine}</p>
+                                        <p className="text-sm text-gray-600 mb-4">Available Brands: {getAvailableBrands(selectedVaccine).length}</p>
                                         <select 
                                           className="w-full p-4 border border-gray-300 rounded-lg text-lg font-semibold bg-white"
                                           value={selectedVaccineBrand}
@@ -2745,6 +2779,9 @@ const SuperAdminVaccinationSchedule = () => {
                                             </option>
                                           ))}
                                         </select>
+                                        {getAvailableBrands(selectedVaccine).length === 0 && (
+                                          <p className="text-red-600 text-sm mt-2">No brands available for this vaccine</p>
+                                        )}
                                         {selectedVaccineBrand && (
                                           <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
                                             <p className="text-sm text-gray-600">
