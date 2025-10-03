@@ -374,13 +374,13 @@ const SuperAdminStock = () => {
         brand: ''
       }));
     } else if (name === 'vaccineName') {
-      // When vaccine changes, set the type only; brand should be chosen manually
+      // When vaccine changes, try to match with available vaccines for suggestions
       const selectedVaccine = availableVaccines.find(v => v.name === value);
       setFormData(prev => ({
         ...prev,
         [name]: value,
         vaccineType: selectedVaccine ? selectedVaccine.type : '',
-        brand: ''
+        brand: selectedVaccine ? selectedVaccine.brand : ''
       }));
     } else {
     setFormData(prev => ({
@@ -1180,30 +1180,27 @@ const SuperAdminStock = () => {
 
               <div className="form-group">
                 <label htmlFor="vaccineName">Vaccine Name *</label>
-                <select
+                <input
+                  type="text"
                   id="vaccineName"
                   name="vaccineName"
                   value={formData.vaccineName}
                   onChange={handleInputChange}
                   required
                   className="form-control"
-                >
-                  <option value="">Select a vaccine</option>
-                  {availableVaccines.length > 0 ? (
-                    availableVaccines.map(vaccine => (
-                      <option key={vaccine._id || vaccine.name} value={vaccine.name}>
-                        {vaccine.name} ({vaccine.brand})
+                  placeholder="Enter vaccine name (e.g., Rabies Vaccine, COVID-19 Vaccine)"
+                  list="vaccine-suggestions"
+                />
+                <datalist id="vaccine-suggestions">
+                  {availableVaccines.map(vaccine => (
+                    <option key={vaccine._id || vaccine.name} value={vaccine.name}>
+                      {vaccine.name} ({vaccine.brand})
                     </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>Loading vaccines...</option>
-                  )}
-                </select>
-                {availableVaccines.length === 0 && (
-                  <small style={{ color: '#dc2626', marginTop: '4px', display: 'block' }}>
-                    No vaccines available. Please check your connection or contact administrator.
-                  </small>
-                )}
+                  ))}
+                </datalist>
+                <small style={{ color: '#6b7280', marginTop: '4px', display: 'block' }}>
+                  Type the vaccine name or select from suggestions. You can add any vaccine name.
+                </small>
               </div>
 
               {/* Show vaccine type and brand when vaccine is selected */}
@@ -1216,9 +1213,9 @@ const SuperAdminStock = () => {
                       id="vaccineType"
                       name="vaccineType"
                       value={formData.vaccineType}
-                      readOnly
+                      onChange={handleInputChange}
                       className="form-control"
-                      style={{ backgroundColor: '#f8f9fa' }}
+                      placeholder="Enter vaccine type (e.g., Viral, Bacterial, mRNA)"
                     />
                   </div>
                   <div className="form-group">
