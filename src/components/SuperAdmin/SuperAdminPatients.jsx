@@ -585,32 +585,25 @@ const SuperAdminPatients = () => {
     }
     
     return patients.filter(p => {
-      // Center-based filtering for admin users
+      // Center-based filtering for admin users - match barangay to center name
       if (userCenter && userCenter !== 'all') {
-        const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
         const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
         
         console.log(`Patient: ${p.firstName} ${p.lastName}`);
-        console.log(`  - Center fields: center=${p.center}, centerName=${p.centerName}, healthCenter=${p.healthCenter}`);
-        console.log(`  - Barangay fields: barangay=${p.barangay}, addressBarangay=${p.addressBarangay}`);
         console.log(`  - User center: ${userCenter}`);
-        console.log(`  - Patient center: ${patientCenter}`);
         console.log(`  - Patient barangay: ${patientBarangay}`);
         
-        // Check if patient belongs to the user's center/barangay
-        const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
-                           userCenter.toLowerCase().includes(patientCenter.toLowerCase());
+        // Check if patient's barangay matches the user's center name
         const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
                               userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
         
-        console.log(`  - Center match: ${centerMatch}`);
         console.log(`  - Barangay match: ${barangayMatch}`);
         
-        if (!centerMatch && !barangayMatch) {
-          console.log('❌ FILTERING OUT:', p.firstName, p.lastName);
+        if (!barangayMatch) {
+          console.log('❌ FILTERING OUT:', p.firstName, p.lastName, '- Barangay does not match center');
           return false;
         }
-        console.log('✅ KEEPING:', p.firstName, p.lastName);
+        console.log('✅ KEEPING:', p.firstName, p.lastName, '- Barangay matches center');
       }
       
       // text search across name, contact, address
