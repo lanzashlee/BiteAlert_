@@ -1,42 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import { apiFetch, apiConfig, getApiUrl } from '../../config/api';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
-import { Line, Bar, Pie } from 'react-chartjs-2';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { Suspense } from 'react';
 import SmallLoadingSpinner from './SmallDogLoading';
 import './SuperAdminDashboard.css';
-const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
 
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  ChartDataLabels
-);
+// Lazy load Chart.js components to reduce initial bundle size
+const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
 
 const SuperAdminDashboard = () => {
   const [summary, setSummary] = useState(null);
@@ -241,7 +213,7 @@ const SuperAdminDashboard = () => {
     }
   };
   
-  // Chart data states (React-ChartJS-2)
+  // Chart data states (React-ChartJS-2) - Memoized to prevent unnecessary re-renders
   const [patientsChartData, setPatientsChartData] = useState({
     labels: [],
     datasets: [{
@@ -314,20 +286,20 @@ const SuperAdminDashboard = () => {
     }]
   });
 
-  // Common options
-  const commonOptions = {
+  // Memoized chart options to prevent unnecessary re-renders
+  const commonOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 2000, easing: 'easeInOutQuart' },
+    animation: { duration: 1000, easing: 'easeInOutQuart' }, // Reduced animation duration
     plugins: {
       legend: {
         position: 'bottom',
         labels: { padding: 20, usePointStyle: true, pointStyle: 'circle', font: { size: 12 } }
       }
     }
-  };
+  }), []);
 
-  const lineChartOptions = {
+  const lineChartOptions = useMemo(() => ({
     ...commonOptions,
     scales: {
       y: {
@@ -338,9 +310,9 @@ const SuperAdminDashboard = () => {
       x: { grid: { display: false }, ticks: { padding: 10 } }
     },
     plugins: { ...commonOptions.plugins, title: { display: true, text: 'Patient Growth Over Time', padding: { top: 10, bottom: 30 }, font: { size: 16, weight: '500' } } }
-  };
+  }), [commonOptions]);
 
-  const barChartOptions = {
+  const barChartOptions = useMemo(() => ({
     ...commonOptions,
     scales: {
       y: {
@@ -351,9 +323,9 @@ const SuperAdminDashboard = () => {
       x: { grid: { display: false }, ticks: { padding: 10 } }
     },
     plugins: { ...commonOptions.plugins, title: { display: true, text: 'Cases per Center', padding: { top: 10, bottom: 30 }, font: { size: 16, weight: '500' } } }
-  };
+  }), [commonOptions]);
 
-  const vaccinesChartOptions = {
+  const vaccinesChartOptions = useMemo(() => ({
     ...commonOptions,
     scales: {
       y: {
@@ -364,9 +336,9 @@ const SuperAdminDashboard = () => {
       x: { grid: { display: false }, ticks: { padding: 10 } }
     },
     plugins: { ...commonOptions.plugins, title: { display: true, text: 'Vaccine Stock Trends', padding: { top: 10, bottom: 30 }, font: { size: 16, weight: '500' } } }
-  };
+  }), [commonOptions]);
 
-  const severityChartOptions = {
+  const severityChartOptions = useMemo(() => ({
     ...commonOptions,
     plugins: {
       ...commonOptions.plugins,
@@ -388,10 +360,10 @@ const SuperAdminDashboard = () => {
         formatter: (value) => (value > 0 ? value : '')
       }
     }
-  };
+  }), [commonOptions]);
 
-  // Fetch summary + charts
-  const updateDashboardSummary = async () => {
+  // Memoized data fetching functions to prevent unnecessary re-renders
+  const updateDashboardSummary = useCallback(async () => {
     try {
       const userCenter = getUserCenter();
       
@@ -569,9 +541,9 @@ const SuperAdminDashboard = () => {
       } finally {
         setLoading(false);
       }
-    };
+    }, [timeRange]);
 
-  const updatePatientGrowth = async () => {
+  const updatePatientGrowth = useCallback(async () => {
     try {
       const userCenter = getUserCenter();
       let apiUrl = `${apiConfig.endpoints.patientGrowth}`;
@@ -639,9 +611,9 @@ const SuperAdminDashboard = () => {
         }));
       }
     } catch (e) { console.error(e); }
-  };
+  }, [timeRange]);
 
-  const updateCasesPerBarangay = async () => {
+  const updateCasesPerBarangay = useCallback(async () => {
     try {
       const userCenter = getUserCenter();
       let apiUrl = `${apiConfig.endpoints.casesPerBarangay}`;
@@ -657,9 +629,9 @@ const SuperAdminDashboard = () => {
         setCasesChartData(prev => ({ ...prev, labels: barangayNames, datasets: [{ ...prev.datasets[0], data: casesData }] }));
       }
     } catch (e) { console.error(e); }
-  };
+  }, [timeRange]);
 
-  const updateVaccineStockTrends = async () => {
+  const updateVaccineStockTrends = useCallback(async () => {
     try {
       const userCenter = getUserCenter();
       let apiUrl = `${apiConfig.endpoints.vaccineStockTrends}`;
@@ -769,9 +741,9 @@ const SuperAdminDashboard = () => {
         setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: data }] }));
       }
     } catch (e) { console.error(e); }
-  };
+  }, [timeRange]);
 
-  const updateSeverityChart = async () => {
+  const updateSeverityChart = useCallback(async () => {
     try {
       const userCenter = getUserCenter();
       let apiUrl = `${apiConfig.endpoints.severityDistribution}`;
@@ -833,21 +805,29 @@ const SuperAdminDashboard = () => {
         setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
       }
     } catch (e) { console.error(e); }
-  };
+  }, [timeRange]);
 
   useEffect(() => {
     // Stagger initial work: summary immediately, others in idle/timeout
     updateDashboardSummary();
-    const idle = window.requestIdleCallback || ((cb)=>setTimeout(cb, 150));
+    
+    // Use requestIdleCallback for non-critical chart updates
+    const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 100));
     idle(() => {
-      updatePatientGrowth();
-      updateCasesPerBarangay();
-      updateVaccineStockTrends();
-      updateSeverityChart();
+      // Batch chart updates to reduce main thread blocking
+      const updateCharts = async () => {
+        await Promise.all([
+          updatePatientGrowth(),
+          updateCasesPerBarangay(),
+          updateVaccineStockTrends(),
+          updateSeverityChart()
+        ]);
+      };
+      updateCharts();
     });
 
     const vis = () => document.visibilityState === 'visible';
-    const every = 300000;
+    const every = 300000; // 5 minutes
     const summaryInterval = setInterval(() => { if (vis()) updateDashboardSummary(); }, every);
     const patientInterval = setInterval(() => { if (vis()) updatePatientGrowth(); }, every);
     const casesInterval = setInterval(() => { if (vis()) updateCasesPerBarangay(); }, every);
@@ -861,7 +841,7 @@ const SuperAdminDashboard = () => {
       clearInterval(vaccineInterval);
       clearInterval(severityInterval);
     };
-  }, [timeRange]);
+  }, [timeRange, updateDashboardSummary, updatePatientGrowth, updateCasesPerBarangay, updateVaccineStockTrends, updateSeverityChart]);
 
   return (
     <div className="dashboard-container">
@@ -1115,6 +1095,6 @@ const SuperAdminDashboard = () => {
   );
 };
 
-export default SuperAdminDashboard;
+export default memo(SuperAdminDashboard);
 
  

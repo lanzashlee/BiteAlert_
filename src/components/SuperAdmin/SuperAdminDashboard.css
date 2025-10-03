@@ -1,11 +1,32 @@
 /* General Styling */
 @import '../GlobalResponsive.css';
 @import './ResponsiveSidebar.css';
+
+/* Performance optimizations */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
+}
+
+/* Enable hardware acceleration for better performance */
+.dashboard-container,
+.main-content,
+.card,
+.notification-dropdown {
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Optimize rendering performance */
+.card {
+    contain: layout style paint;
+}
+
+/* Reduce repaints */
+.main-header {
+    contain: layout style;
 }
 
 body {
@@ -890,11 +911,11 @@ body {
   }
 }
 
-/* Smooth Animations */
+/* Optimized Animations - Reduced complexity for better performance */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -905,7 +926,7 @@ body {
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.98);
   }
   to {
     opacity: 1;
@@ -913,7 +934,7 @@ body {
   }
 }
 
-/* Animation for screen size transitions */
+/* Reduced motion for better performance */
 @media (prefers-reduced-motion: no-preference) {
   .dashboard-container,
   .main-content,
@@ -921,30 +942,48 @@ body {
   .dashboard-cards,
   .card,
   .notification-dropdown {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
   }
   
   .card {
-    animation: fadeIn 0.5s ease-out;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fadeIn 0.3s ease-out;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
   }
   
   .card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
   
-  .dashboard-cards .card:nth-child(1) { animation: fadeIn 0.5s ease-out 0.1s both; }
-  .dashboard-cards .card:nth-child(2) { animation: fadeIn 0.5s ease-out 0.2s both; }
-  .dashboard-cards .card:nth-child(3) { animation: fadeIn 0.5s ease-out 0.3s both; }
-  .dashboard-cards .card:nth-child(4) { animation: fadeIn 0.5s ease-out 0.4s both; }
+  /* Staggered animations with reduced delays */
+  .dashboard-cards .card:nth-child(1) { animation: fadeIn 0.3s ease-out 0.05s both; }
+  .dashboard-cards .card:nth-child(2) { animation: fadeIn 0.3s ease-out 0.1s both; }
+  .dashboard-cards .card:nth-child(3) { animation: fadeIn 0.3s ease-out 0.15s both; }
+  .dashboard-cards .card:nth-child(4) { animation: fadeIn 0.3s ease-out 0.2s both; }
   
   .notification-dropdown {
-    animation: scaleIn 0.3s ease-out;
+    animation: scaleIn 0.2s ease-out;
   }
   
   .main-header {
-    animation: fadeIn 0.4s ease-out;
+    animation: fadeIn 0.2s ease-out;
+  }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-container,
+  .main-content,
+  .main-header,
+  .dashboard-cards,
+  .card,
+  .notification-dropdown {
+    transition: none;
+    animation: none;
+  }
+  
+  .card:hover {
+    transform: none;
   }
 }
 
