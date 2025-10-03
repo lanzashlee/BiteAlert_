@@ -131,16 +131,16 @@ const SuperAdminVaccinationSchedule = () => {
       return { status: 'Completed', color: '#6c757d' };
     }
 
-    // Check if any vaccinations are overdue
-    const overdueVaccinations = vaccinations.filter(v => {
+    // Check if any vaccinations are missed
+    const missedVaccinations = vaccinations.filter(v => {
       if (!v.scheduledDate || v.status === 'completed') return false;
       const scheduledDate = new Date(v.scheduledDate);
       scheduledDate.setHours(0, 0, 0, 0);
       return scheduledDate.getTime() < today.getTime();
     });
 
-    if (overdueVaccinations.length > 0) {
-      return { status: 'Overdue', color: '#dc3545' };
+    if (missedVaccinations.length > 0) {
+      return { status: 'Missed', color: '#dc3545' };
     }
 
     return { status: 'Pending', color: '#ffc107' };
@@ -1095,7 +1095,7 @@ const SuperAdminVaccinationSchedule = () => {
     // Status filter - improved to work with schedule status
     if (statusFilter) {
       filtered = filtered.filter(v => {
-        if (statusFilter === 'overdue') {
+        if (statusFilter === 'missed') {
           return v.status === 'missed' || (v.status === 'scheduled' && new Date(v.scheduledDate) < new Date());
         }
         if (statusFilter === 'today') {
@@ -2015,7 +2015,7 @@ const SuperAdminVaccinationSchedule = () => {
       // Status filter at patient level (check if any vaccination matches)
       if (statusFilter) {
         const hasMatchingStatus = patientData.vaccinations.some(v => {
-          if (statusFilter === 'overdue') {
+          if (statusFilter === 'missed') {
             return v.status === 'missed' || (v.status === 'scheduled' && new Date(v.scheduledDate) < new Date());
           }
           if (statusFilter === 'today') {
@@ -2173,7 +2173,6 @@ const SuperAdminVaccinationSchedule = () => {
                 <option value="scheduled">Scheduled</option>
                 <option value="completed">Completed</option>
                 <option value="missed">Missed</option>
-                <option value="overdue">Overdue</option>
               </select>
               
               <select 
