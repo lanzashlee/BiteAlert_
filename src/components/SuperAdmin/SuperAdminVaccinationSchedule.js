@@ -90,6 +90,62 @@ const SuperAdminVaccinationSchedule = () => {
     }
   }, [datePicker]);
   
+  // Get schedule status for a patient
+  const getScheduleStatus = (patientData) => {
+    if (!patientData?.vaccinations || patientData.vaccinations.length === 0) {
+      return { status: 'No Schedule', color: '#6c757d' };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const vaccinations = patientData.vaccinations;
+    
+    // Check if any vaccination is scheduled for today
+    const todayVaccinations = vaccinations.filter(v => {
+      if (!v.scheduledDate) return false;
+      const scheduledDate = new Date(v.scheduledDate);
+      scheduledDate.setHours(0, 0, 0, 0);
+      return scheduledDate.getTime() === today.getTime();
+    });
+
+    if (todayVaccinations.length > 0) {
+      return { status: 'Today', color: '#28a745' };
+    }
+
+    // Check if any vaccination is scheduled for the future
+    const futureVaccinations = vaccinations.filter(v => {
+      if (!v.scheduledDate) return false;
+      const scheduledDate = new Date(v.scheduledDate);
+      scheduledDate.setHours(0, 0, 0, 0);
+      return scheduledDate.getTime() > today.getTime();
+    });
+
+    if (futureVaccinations.length > 0) {
+      return { status: 'Scheduled', color: '#007bff' };
+    }
+
+    // Check if all vaccinations are completed
+    const allCompleted = vaccinations.every(v => v.status === 'completed');
+    if (allCompleted) {
+      return { status: 'Completed', color: '#6c757d' };
+    }
+
+    // Check if any vaccinations are overdue
+    const overdueVaccinations = vaccinations.filter(v => {
+      if (!v.scheduledDate || v.status === 'completed') return false;
+      const scheduledDate = new Date(v.scheduledDate);
+      scheduledDate.setHours(0, 0, 0, 0);
+      return scheduledDate.getTime() < today.getTime();
+    });
+
+    if (overdueVaccinations.length > 0) {
+      return { status: 'Overdue', color: '#dc3545' };
+    }
+
+    return { status: 'Pending', color: '#ffc107' };
+  };
+
   // Get vaccine dosage based on type and route
   const getVaccineDosage = (vaccine, route) => {
     const dosageMap = {
@@ -2100,7 +2156,14 @@ const SuperAdminVaccinationSchedule = () => {
                         <div className="patient-info">
                           <h3>{getPatientDisplayName(patientData.patient)}</h3>
                           <p className="patient-id">ID: {patientData.patient?.patientId || 'N/A'}</p>
-                          <p className="bite-case-id">Bite Case: {patientData.vaccinations[0]?.biteCaseId || 'N/A'}</p>
+                          {(() => {
+                            const scheduleStatus = getScheduleStatus(patientData);
+                            return (
+                              <p className="schedule-status" style={{ color: scheduleStatus.color, fontWeight: 'bold' }}>
+                                Status: {scheduleStatus.status}
+                              </p>
+                            );
+                          })()}
                     </div>
                         <div className="patient-status">
                       <div className="click-hint">
@@ -2864,7 +2927,16 @@ const SuperAdminVaccinationSchedule = () => {
               <div className="patient-detail-info">
                 <h3>{getPatientDisplayName(selectedPatientDetail.patient)}</h3>
                 <p><strong>Patient ID:</strong> {selectedPatientDetail.patient?.patientId || 'N/A'}</p>
-                <p><strong>Bite Case ID:</strong> {selectedPatientDetail.vaccinations[0]?.biteCaseId || 'N/A'}</p>
+                {(() => {
+                  const scheduleStatus = getScheduleStatus(selectedPatientDetail);
+                  return (
+                    <p><strong>Schedule Status:</strong> 
+                      <span style={{ color: scheduleStatus.color, fontWeight: 'bold', marginLeft: '8px' }}>
+                        {scheduleStatus.status}
+                      </span>
+                    </p>
+                  );
+                })()}
                 <p><strong>Total Vaccinations:</strong> {selectedPatientDetail.vaccinations.length}</p>
               </div>
               {/* Removed View Case History action per request */}
