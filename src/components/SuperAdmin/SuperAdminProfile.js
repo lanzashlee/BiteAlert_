@@ -110,11 +110,12 @@ const SuperAdminProfile = () => {
 
   const loadUserData = async () => {
     try {
+      console.log('🔍 PROFILE DEBUG: Loading user data...');
       const user = resolveUserFromStorage();
-      console.log('Resolved user from storage:', user);
+      console.log('🔍 PROFILE DEBUG: Resolved user from storage:', user);
       
       if (!user) {
-        console.log('No user found in storage');
+        console.log('🔍 PROFILE DEBUG: No user found in storage');
         setUserData(null);
         setLoading(false);
         return;
@@ -152,11 +153,11 @@ const SuperAdminProfile = () => {
       const profile = payload && payload.success ? payload.data : payload;
 
       if (profile && (profile.email || profile.firstName || profile.lastName)) {
-        console.log('Profile data found:', profile);
+        console.log('🔍 PROFILE DEBUG: Profile data found:', profile);
         setUserData(profile);
         setFormData(profile);
       } else {
-        console.log('No valid profile data found in response');
+        console.log('🔍 PROFILE DEBUG: No valid profile data found in response');
         setUserData(null);
       }
     } catch (error) {

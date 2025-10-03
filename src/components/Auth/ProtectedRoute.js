@@ -35,12 +35,14 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
         }
 
         // Skip API verification for faster loading - trust storage
-        // Only check account status for admins
+        // Only check account status for admins (optional check)
         if (user.role === 'admin') {
           try {
+            console.log('Checking admin account status for:', user.email);
             const statusResponse = await apiFetch(`/api/account-status/${encodeURIComponent(user.email)}`);
             if (statusResponse.ok) {
               const statusData = await statusResponse.json();
+              console.log('Account status response:', statusData);
               if (statusData.success && statusData.account && statusData.account.isActive === false) {
                 console.log('Account is deactivated, redirecting to login');
                 localStorage.removeItem('currentUser');
@@ -49,9 +51,12 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
                 navigate('/login');
                 return;
               }
+            } else {
+              console.warn('Account status check failed, but continuing with authentication');
             }
           } catch (error) {
             console.warn('Failed to check account status:', error);
+            console.log('Continuing with authentication despite status check failure');
             // Continue with authentication even if status check fails
           }
         }
