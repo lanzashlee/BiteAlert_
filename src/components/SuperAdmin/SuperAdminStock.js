@@ -83,17 +83,41 @@ const SuperAdminStock = () => {
         return enBatch.toLowerCase() === desiredBatch.toLowerCase() && enExpiry === desiredExpiry;
       });
 
-      const payload = {
-        center: centerName,
-        centerName: centerName,
-        vaccineName: vaccine.name,
-        vaccineType: vaccine.type || '',
-        brand: vaccine.brand || '',
-        quantity: qty,
-        expiryDate: qa.expiryDate || '',
-        batchNumber: qa.batchNumber || ''
-      };
-      const res = await apiFetch('/api/vaccinestocks', {
+      // Check if this is adding to existing vaccine or creating new one
+      const existingCenter = data.find(c => (c.centerName || '') === centerName);
+      const existingVaccine = existingCenter?.vaccines?.find(v => (v.name || '') === vaccine.name);
+      
+      let payload;
+      let endpoint;
+      
+      if (existingVaccine) {
+        // Add to existing vaccine - use PUT to update existing entry
+        payload = {
+          centerName: centerName,
+          vaccineName: vaccine.name,
+          quantity: qty,
+          expiryDate: qa.expiryDate || '',
+          batchNumber: qa.batchNumber || ''
+        };
+        endpoint = '/api/vaccinestocks/add-to-existing';
+        console.log('🔍 Adding to existing vaccine:', vaccine.name);
+      } else {
+        // Create new vaccine entry
+        payload = {
+          center: centerName,
+          centerName: centerName,
+          vaccineName: vaccine.name,
+          vaccineType: vaccine.type || '',
+          brand: vaccine.brand || '',
+          quantity: qty,
+          expiryDate: qa.expiryDate || '',
+          batchNumber: qa.batchNumber || ''
+        };
+        endpoint = '/api/vaccinestocks';
+        console.log('🔍 Creating new vaccine entry:', vaccine.name);
+      }
+      
+      const res = await apiFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -106,13 +130,34 @@ const SuperAdminStock = () => {
         // Optimistic UI update: merge or create locally for instant feedback
         setData(prevData => {
           const copy = JSON.parse(JSON.stringify(prevData || []));
-          const center = copy.find(c => (c.centerName || '') === centerName);
-          if (!center) return prevData; 
-          const vac = (center.vaccines || []).find(v => (v.name || '') === vaccine.name);
-          if (!vac) return prevData;
+          let center = copy.find(c => (c.centerName || '') === centerName);
+          
+          if (!center) {
+            // Create new center if it doesn't exist
+            center = {
+              centerName: centerName,
+              vaccines: []
+            };
+            copy.push(center);
+          }
+          
+          let vac = (center.vaccines || []).find(v => (v.name || '') === vaccine.name);
+          
+          if (!vac) {
+            // Create new vaccine if it doesn't exist
+            vac = {
+              name: vaccine.name,
+              type: vaccine.type || '',
+              brand: vaccine.brand || '',
+              stockEntries: []
+            };
+            center.vaccines.push(vac);
+          }
+          
           if (!Array.isArray(vac.stockEntries)) vac.stockEntries = [];
+          
           if (foundSameBatchSameExpiry) {
-            // Merge quantities
+            // Merge quantities with existing batch
             const target = vac.stockEntries.find(en => {
               const enBatch = String(en.branchNo || '').trim();
               const enExpiry = en.expirationDate ? normalizeDate(en.expirationDate) : '';
@@ -125,8 +170,12 @@ const SuperAdminStock = () => {
             }
             showToast('Added to existing batch', 'success');
           } else {
-            // Create new entry (even if same batch but different expiry)
-            vac.stockEntries.push({ branchNo: desiredBatch, stock: qty, expirationDate: qa.expiryDate || '' });
+            // Create new stock entry
+            vac.stockEntries.push({ 
+              branchNo: desiredBatch, 
+              stock: qty, 
+              expirationDate: qa.expiryDate || '' 
+            });
             showToast('New batch created', 'success');
           }
           return copy;
