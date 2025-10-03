@@ -5,6 +5,7 @@ import UnifiedModal from '../UnifiedModal';
 import { apiFetch, apiConfig } from '../../config/api';
 import './SuperAdminPrescriptiveAnalytics.css';
 import LoadingSpinner from './DogLoadingSpinner.jsx';
+import { getUserCenter, filterByCenter } from '../../utils/userContext';
 
 const SuperAdminPrescriptiveAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -166,17 +167,24 @@ const SuperAdminPrescriptiveAnalytics = () => {
   const clientSideFallbackFlow = async () => {
     try {
       console.log('Running client-side fallback flow...');
+      const userCenter = getUserCenter();
+      console.log('🔍 ANALYTICS DEBUG: Loading analytics for center:', userCenter);
+      
       const casesRes = await apiFetch(apiConfig.endpoints.bitecases);
       const raw = await casesRes.json();
       console.log('Raw cases response:', raw);
-      const cases = Array.isArray(raw)
+      const allCases = Array.isArray(raw)
         ? raw
         : Array.isArray(raw?.data)
           ? raw.data
           : Array.isArray(raw?.cases)
             ? raw.cases
             : [];
-      console.log('Processed cases:', cases.length);
+      console.log('Total cases before filtering:', allCases.length);
+      
+      // Apply client-side filtering for admin users
+      const cases = filterByCenter(allCases, 'center');
+      console.log('🔍 ANALYTICS DEBUG: Filtered cases for center:', cases.length);
 
       // Optional center filtering (mirrors previous client logic)
       let validCentersSet = null;

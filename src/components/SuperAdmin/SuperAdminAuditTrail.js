@@ -4,6 +4,7 @@ import ResponsiveSidebar from './ResponsiveSidebar';
 import './SuperAdminAuditTrail.css';
 import LoadingSpinner from './DogLoadingSpinner.jsx';
 import { apiFetch, apiConfig } from '../../config/api';
+import { getUserCenter, filterByCenter } from '../../utils/userContext';
 
 function formatDateTime(value) {
   try {
@@ -100,11 +101,22 @@ const SuperAdminAuditTrail = () => {
     const load = async () => {
       setLoading(true);
       try {
+        const userCenter = getUserCenter();
+        console.log('🔍 AUDIT TRAIL DEBUG: Loading audit trail for center:', userCenter);
+        
         const res = await apiFetch(apiConfig.endpoints.auditTrail);
         if (!res.ok) throw new Error('Failed to load audit trail');
         const json = await res.json();
-        setData(Array.isArray(json) ? json : (json.data || []));
+        const allData = Array.isArray(json) ? json : (json.data || []);
+        
+        // Apply client-side filtering for admin users
+        const filteredData = filterByCenter(allData, 'centerName');
+        console.log('🔍 AUDIT TRAIL DEBUG: Total entries before filtering:', allData.length);
+        console.log('🔍 AUDIT TRAIL DEBUG: Filtered entries for center:', filteredData.length);
+        
+        setData(filteredData);
       } catch (e) {
+        console.error('Error loading audit trail:', e);
         setData([]);
       } finally {
         setLoading(false);
