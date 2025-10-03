@@ -1,4 +1,33 @@
 import React, { memo, lazy, Suspense } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  ChartDataLabels
+);
 
 // Lazy load individual chart components to reduce initial bundle size
 const LineChart = lazy(() => import('react-chartjs-2').then(module => ({ default: module.Line })));
