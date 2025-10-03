@@ -419,12 +419,20 @@ const SuperAdminDashboard = () => {
         console.log('No user center detected, fetching all vaccines for client-side filtering');
       }
       
+      console.log('🔍 DASHBOARD DEBUG: Fetching vaccine stocks from:', vaccineUrl);
       const vaccineResponse = await apiFetch(vaccineUrl);
       const vaccineResult = await vaccineResponse.json();
+      console.log('🔍 DASHBOARD DEBUG: Vaccine stocks API response:', vaccineResult);
+      
       let totalStock = 0;
       if (vaccineResult.success && Array.isArray(vaccineResult.data)) {
+        console.log('🔍 DASHBOARD DEBUG: Total vaccine stocks before filtering:', vaccineResult.data.length);
+        console.log('🔍 DASHBOARD DEBUG: Sample vaccine stock:', vaccineResult.data[0]);
+        
         // Apply client-side filtering by center
         const filteredVaccines = filterByCenter(vaccineResult.data, 'center');
+        console.log('🔍 DASHBOARD DEBUG: Vaccine stocks after center filtering:', filteredVaccines.length);
+        
         // API now returns flat structure, so we can directly sum the quantities
         totalStock = filteredVaccines.reduce((sum, stock) => {
           let quantity = stock.quantity || 0;
@@ -435,8 +443,12 @@ const SuperAdminDashboard = () => {
           } else {
             quantity = Number(quantity);
           }
+          console.log('🔍 DASHBOARD DEBUG: Vaccine stock quantity:', stock.vaccineName, quantity);
           return sum + (isNaN(quantity) ? 0 : quantity);
         }, 0);
+        console.log('🔍 DASHBOARD DEBUG: Total vaccine stock quantity:', totalStock);
+      } else {
+        console.log('🔍 DASHBOARD DEBUG: No vaccine data found or invalid response structure');
       }
 
       let summaryUrl = `${apiConfig.endpoints.dashboardSummary}?filter=${timeRange}`;
@@ -454,26 +466,34 @@ const SuperAdminDashboard = () => {
         // Apply client-side filtering for total patients
         if (userCenter && userCenter !== 'all') {
           try {
+            console.log('🔍 DASHBOARD DEBUG: Fetching patients for center filtering:', userCenter);
             const patientsRes = await apiFetch(`${apiConfig.endpoints.patients}?page=1&limit=1000`);
             const patientsData = await patientsRes.json();
+            console.log('🔍 DASHBOARD DEBUG: Patients API response:', patientsData);
+            
             const allPatients = Array.isArray(patientsData) 
               ? patientsData 
               : (patientsData.data || patientsData.patients || []);
+            
+            console.log('🔍 DASHBOARD DEBUG: Total patients before filtering:', allPatients.length);
+            console.log('🔍 DASHBOARD DEBUG: Sample patient data:', allPatients[0]);
             
             // Filter patients by center/barangay
             const filteredPatients = allPatients.filter(p => {
               const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
               const normalizedBarangay = patientBarangay.toLowerCase().trim();
               const normalizedCenter = userCenter.toLowerCase().trim();
-              return normalizedBarangay === normalizedCenter || 
+              const matches = normalizedBarangay === normalizedCenter || 
                      normalizedBarangay.includes(normalizedCenter) || 
                      normalizedCenter.includes(normalizedBarangay);
+              console.log('🔍 DASHBOARD DEBUG: Patient filtering:', p.firstName, p.lastName, 'barangay:', patientBarangay, 'matches:', matches);
+              return matches;
             });
             
             totalPatients = filteredPatients.length;
-            console.log('Filtered total patients for center:', totalPatients);
+            console.log('🔍 DASHBOARD DEBUG: Filtered total patients for center:', totalPatients);
           } catch (error) {
-            console.error('Error filtering patients for dashboard:', error);
+            console.error('🔍 DASHBOARD DEBUG: Error filtering patients for dashboard:', error);
           }
         }
 
@@ -494,33 +514,38 @@ const SuperAdminDashboard = () => {
           centersCount = 0;
         }
 
-        // Active cases: count from Vaccine Schedule (bite cases with assigned schedule)
+        // Active cases: count from bite cases
         let activeCasesCount = 0;
         try {
-          let vaccinationUrl = apiConfig.endpoints.bitecases;
+          let biteCasesUrl = apiConfig.endpoints.bitecases;
           if (userCenter && userCenter !== 'all') {
-            console.log('Admin center detected, using client-side filtering for vaccinations:', userCenter);
+            console.log('🔍 DASHBOARD DEBUG: Admin center detected, using client-side filtering for bite cases:', userCenter);
           } else if (!userCenter) {
-            console.log('No user center detected, fetching all vaccinations for client-side filtering');
+            console.log('🔍 DASHBOARD DEBUG: No user center detected, fetching all bite cases for client-side filtering');
           }
-          const vaccinationRes = await apiFetch(vaccinationUrl);
-          const vaccinationData = await vaccinationRes.json();
+          
+          console.log('🔍 DASHBOARD DEBUG: Fetching bite cases from:', biteCasesUrl);
+          const biteCasesRes = await apiFetch(biteCasesUrl);
+          const biteCasesData = await biteCasesRes.json();
+          console.log('🔍 DASHBOARD DEBUG: Bite cases API response:', biteCasesData);
+          
           let biteCases = [];
-          if (Array.isArray(vaccinationData)) biteCases = vaccinationData;
-          else if (vaccinationData?.success && Array.isArray(vaccinationData.data)) biteCases = vaccinationData.data;
+          if (Array.isArray(biteCasesData)) biteCases = biteCasesData;
+          else if (biteCasesData?.success && Array.isArray(biteCasesData.data)) biteCases = biteCasesData.data;
+          else if (Array.isArray(biteCasesData.data)) biteCases = biteCasesData.data;
+          
+          console.log('🔍 DASHBOARD DEBUG: Total bite cases before filtering:', biteCases.length);
+          console.log('🔍 DASHBOARD DEBUG: Sample bite case:', biteCases[0]);
           
           // Apply client-side filtering by center
           biteCases = filterByCenter(biteCases, 'center');
+          console.log('🔍 DASHBOARD DEBUG: Bite cases after center filtering:', biteCases.length);
 
-          const hasAssignedSchedule = (bc) => {
-            const perDay = [bc.d0Date, bc.d3Date, bc.d7Date, bc.d14Date, bc.d28Date].some(Boolean);
-            const arraySched = Array.isArray(bc.scheduleDates) && bc.scheduleDates.some(Boolean);
-            return perDay || arraySched;
-          };
-
-          // Treat as active when there is a schedule AND status is not completed
-          activeCasesCount = (biteCases || []).filter(bc => hasAssignedSchedule(bc) && String(bc.status || '').toLowerCase() !== 'completed').length;
+          // Count all bite cases as active cases (not just those with schedules)
+          activeCasesCount = biteCases.length;
+          console.log('🔍 DASHBOARD DEBUG: Active cases count:', activeCasesCount);
         } catch (e) {
+          console.error('🔍 DASHBOARD DEBUG: Error fetching bite cases:', e);
           activeCasesCount = 0;
         }
 
