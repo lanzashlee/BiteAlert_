@@ -1069,25 +1069,42 @@ const SuperAdminVaccinationSchedule = () => {
   const filteredVaccinations = useMemo(() => {
     let filtered = vaccinations;
 
-    // Search filter
+    // Search filter - improved to handle patient name properly
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(v => 
-        v.patient && (
-          v.patient.fullName?.toLowerCase().includes(searchLower) ||
+      filtered = filtered.filter(v => {
+        if (!v.patient) return false;
+        
+        // Build full name from patient data
+        const fullName = [
+          v.patient.firstName,
+          v.patient.middleName,
+          v.patient.lastName
+        ].filter(Boolean).join(' ').toLowerCase();
+        
+        return (
+          fullName.includes(searchLower) ||
           v.patient.patientId?.toLowerCase().includes(searchLower) ||
           v.patient.email?.toLowerCase().includes(searchLower) ||
           v.vaccinationDay?.toLowerCase().includes(searchLower) ||
           v.biteCaseId?.toLowerCase().includes(searchLower)
-        )
-      );
+        );
+      });
     }
 
-    // Status filter
+    // Status filter - improved to work with schedule status
     if (statusFilter) {
       filtered = filtered.filter(v => {
         if (statusFilter === 'overdue') {
-          return v.status === 'missed';
+          return v.status === 'missed' || (v.status === 'scheduled' && new Date(v.scheduledDate) < new Date());
+        }
+        if (statusFilter === 'today') {
+          const today = new Date();
+          const vaccinationDate = new Date(v.scheduledDate);
+          return vaccinationDate.toDateString() === today.toDateString();
+        }
+        if (statusFilter === 'scheduled') {
+          return v.status === 'scheduled' && new Date(v.scheduledDate) > new Date();
         }
         return v.status === statusFilter;
       });
@@ -1098,7 +1115,7 @@ const SuperAdminVaccinationSchedule = () => {
       filtered = filtered.filter(v => v.vaccinationDay === vaccinationDayFilter);
     }
 
-    // Center filter
+    // Center filter - improved to be more flexible
     if (centerFilter) {
       const norm = (v) => String(v || '')
         .toLowerCase()
@@ -1108,19 +1125,21 @@ const SuperAdminVaccinationSchedule = () => {
         .trim();
       const want = norm(centerFilter);
       filtered = filtered.filter(v => {
-        const fromPatient = norm(v.patient?.center || v.patient?.centerName || v.patient?.facility || '');
-        return fromPatient === want;
+        const fromPatient = norm(v.patient?.center || v.patient?.centerName || v.patient?.facility || v.patient?.barangay || '');
+        const fromBiteCase = norm(v.patient?.biteCaseCenter || '');
+        return fromPatient === want || fromBiteCase === want || fromPatient.includes(want) || want.includes(fromPatient);
       });
     }
 
-    // Date filter
+    // Date filter - improved date comparison
     if (dateFilter) {
-      const today = new Date();
       const filterDate = new Date(dateFilter);
+      filterDate.setHours(0, 0, 0, 0);
       
       filtered = filtered.filter(v => {
         const vaccinationDate = new Date(v.scheduledDate);
-        return vaccinationDate.toDateString() === filterDate.toDateString();
+        vaccinationDate.setHours(0, 0, 0, 0);
+        return vaccinationDate.getTime() === filterDate.getTime();
       });
     }
 
@@ -1963,9 +1982,11 @@ const SuperAdminVaccinationSchedule = () => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
-  // Group vaccinations by patient
+  // Group vaccinations by patient with improved filtering
   const vaccinationsByPatient = useMemo(() => {
     const grouped = {};
+    
+    // Group vaccinations by patient
     filteredVaccinations.forEach(vaccination => {
       const patientId = vaccination.patient?.patientId || 'unknown';
       if (!grouped[patientId]) {
@@ -1986,8 +2007,55 @@ const SuperAdminVaccinationSchedule = () => {
       });
     });
     
-    return grouped;
-  }, [filteredVaccinations]);
+    // Apply additional patient-level filters
+    const filteredGroups = {};
+    Object.entries(grouped).forEach(([patientId, patientData]) => {
+      let shouldInclude = true;
+      
+      // Status filter at patient level (check if any vaccination matches)
+      if (statusFilter) {
+        const hasMatchingStatus = patientData.vaccinations.some(v => {
+          if (statusFilter === 'overdue') {
+            return v.status === 'missed' || (v.status === 'scheduled' && new Date(v.scheduledDate) < new Date());
+          }
+          if (statusFilter === 'today') {
+            const today = new Date();
+            const vaccinationDate = new Date(v.scheduledDate);
+            return vaccinationDate.toDateString() === today.toDateString();
+          }
+          if (statusFilter === 'scheduled') {
+            return v.status === 'scheduled' && new Date(v.scheduledDate) > new Date();
+          }
+          return v.status === statusFilter;
+        });
+        shouldInclude = shouldInclude && hasMatchingStatus;
+      }
+      
+      // Vaccination day filter at patient level
+      if (vaccinationDayFilter) {
+        const hasMatchingDay = patientData.vaccinations.some(v => v.vaccinationDay === vaccinationDayFilter);
+        shouldInclude = shouldInclude && hasMatchingDay;
+      }
+      
+      // Date filter at patient level
+      if (dateFilter) {
+        const filterDate = new Date(dateFilter);
+        filterDate.setHours(0, 0, 0, 0);
+        const hasMatchingDate = patientData.vaccinations.some(v => {
+          const vaccinationDate = new Date(v.scheduledDate);
+          vaccinationDate.setHours(0, 0, 0, 0);
+          return vaccinationDate.getTime() === filterDate.getTime();
+        });
+        shouldInclude = shouldInclude && hasMatchingDate;
+      }
+      
+      if (shouldInclude) {
+        filteredGroups[patientId] = patientData;
+      }
+    });
+    
+    return filteredGroups;
+  }, [filteredVaccinations, statusFilter, vaccinationDayFilter, dateFilter]);
 
   // Get status badge class
   const getStatusBadgeClass = (status, scheduledDate) => {
@@ -2101,6 +2169,7 @@ const SuperAdminVaccinationSchedule = () => {
                 className="filter-select"
               >
                 <option value="">All Status</option>
+                <option value="today">Today</option>
                 <option value="scheduled">Scheduled</option>
                 <option value="completed">Completed</option>
                 <option value="missed">Missed</option>
