@@ -527,11 +527,14 @@ const SuperAdminPatients = () => {
         const userCenter = getUserCenter();
         const finalUserCenter = userCenter; // use exact center as stored (no remap)
 
-        // Build API URL with center/barangay filter for non-superadmin users
+        // Build API URL WITHOUT server-side center/barangay filtering.
+        // We fetch broadly, then apply robust client-side filtering by center/barangay
+        // to avoid missing data when backend fields vary across records.
         let apiParams = params || 'page=1&limit=1000';
         if (finalUserCenter && finalUserCenter !== 'all') {
-          apiParams += `&center=${encodeURIComponent(finalUserCenter)}`;
-          apiParams += `&barangay=${encodeURIComponent(finalUserCenter)}`;
+          console.log('Admin center detected, using client-side filtering for center:', finalUserCenter);
+        } else if (!finalUserCenter) {
+          console.log('No user center detected, fetching all patients for client-side filtering');
         }
 
         const res = await apiFetch(`${apiConfig.endpoints.patients}?${apiParams}`, { signal: controller.signal });

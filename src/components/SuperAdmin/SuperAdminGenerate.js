@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import LoadingSpinner from './DogLoadingSpinner';
-import { getUserCenter } from '../../utils/userContext';
+import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import { apiFetch, apiConfig } from '../../config/api';
 import './SuperAdminGenerate.css';
 
@@ -145,13 +145,18 @@ const SuperAdminGenerate = () => {
       const userCenter = getUserCenter();
       let url = '/api/reports/rabies-utilization';
       if (userCenter && userCenter !== 'all') {
-        url += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for rabies data:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all rabies data for client-side filtering');
       }
       
       const response = await apiFetch(url);
       const result = await response.json();
       if (result.success) {
-        setRabiesUtilData(Array.isArray(result.data) ? result.data : (result.data?.table?.body || []));
+        let data = Array.isArray(result.data) ? result.data : (result.data?.table?.body || []);
+        // Apply client-side filtering by center
+        data = filterByCenter(data, 'center');
+        setRabiesUtilData(data);
       }
     } catch (error) {
       console.error('Error loading rabies utilization data:', error);
@@ -163,7 +168,9 @@ const SuperAdminGenerate = () => {
       const userCenter = getUserCenter();
       let url = apiConfig.endpoints.bitecases;
       if (userCenter && userCenter !== 'all') {
-        url += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for bite cases:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all bite cases for client-side filtering');
       }
       
       console.log('Loading animal bite data from:', url);
@@ -213,12 +220,14 @@ const SuperAdminGenerate = () => {
       };
 
       if (Array.isArray(result)) {
-        // Direct array response
-        normalized = result.map(derive);
+        // Direct array response - apply client-side filtering
+        const filtered = filterByCenter(result, 'center');
+        normalized = filtered.map(derive);
       } else if (result.success && result.data) {
-        // Success response with data
+        // Success response with data - apply client-side filtering
         const raw = Array.isArray(result.data) ? result.data : (result.data?.table?.body || []);
-        normalized = (raw || []).map(derive);
+        const filtered = filterByCenter(raw, 'center');
+        normalized = (filtered || []).map(derive);
       } else {
         console.log('No animal bite data found or API returned empty result');
         // Add some sample data for testing if no real data exists
@@ -280,13 +289,18 @@ const SuperAdminGenerate = () => {
       const userCenter = getUserCenter();
       let url = '/api/reports/demographic';
       if (userCenter && userCenter !== 'all') {
-        url += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for demographic data:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all demographic data for client-side filtering');
       }
       
       const response = await apiFetch(url);
       const result = await response.json();
       if (result.success) {
-        setCustomDemoData(Array.isArray(result.data) ? result.data : (result.data?.table?.body || []));
+        let data = Array.isArray(result.data) ? result.data : (result.data?.table?.body || []);
+        // Apply client-side filtering by center
+        data = filterByCenter(data, 'center');
+        setCustomDemoData(data);
       }
     } catch (error) {
       console.error('Error loading demographic data:', error);
@@ -298,14 +312,18 @@ const SuperAdminGenerate = () => {
       const userCenter = getUserCenter();
       let url = '/api/patients';
       if (userCenter && userCenter !== 'all') {
-        url += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for patients data:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all patients data for client-side filtering');
       }
       
       const response = await apiFetch(url);
       const result = await response.json();
       console.log('Patients API response:', result);
       if (result.success) {
-        const patients = Array.isArray(result.data) ? result.data : (result.data?.patients || []);
+        let patients = Array.isArray(result.data) ? result.data : (result.data?.patients || []);
+        // Apply client-side filtering by center
+        patients = filterByCenter(patients, 'center');
         console.log('Loaded patients:', patients.length);
         setPatientsData(patients);
       }
@@ -319,7 +337,9 @@ const SuperAdminGenerate = () => {
       const userCenter = getUserCenter();
       let url = '/api/bitecases';
       if (userCenter && userCenter !== 'all') {
-        url += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for vaccination data:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all vaccination data for client-side filtering');
       }
       
       const response = await apiFetch(url);
@@ -355,8 +375,10 @@ const SuperAdminGenerate = () => {
       const resolveCenter = (o) => o.center || o.centerName || o.center_name || o.facility || '';
 
       if (Array.isArray(result)) {
+        // Apply client-side filtering by center
+        const filtered = filterByCenter(result, 'center');
         // Process bite cases to extract vaccination data
-        const vaccinationData = result.map(case_ => ({
+        const vaccinationData = filtered.map(case_ => ({
           patientName: resolveName(case_) || '—',
           day: resolveDay(case_),
           date: resolveDate(case_),
@@ -367,7 +389,9 @@ const SuperAdminGenerate = () => {
         console.log('Loaded vaccination data:', vaccinationData.length);
         setVaccinationData(vaccinationData);
       } else if (result.success && Array.isArray(result.data)) {
-        const vaccinationData = result.data.map(case_ => ({
+        // Apply client-side filtering by center
+        const filtered = filterByCenter(result.data, 'center');
+        const vaccinationData = filtered.map(case_ => ({
           patientName: resolveName(case_) || '—',
           day: resolveDay(case_),
           date: resolveDate(case_),
@@ -388,15 +412,19 @@ const SuperAdminGenerate = () => {
       const userCenter = getUserCenter();
       let url = '/api/cases-per-barangay';
       if (userCenter && userCenter !== 'all') {
-        url += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for barangay data:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all barangay data for client-side filtering');
       }
       
       const response = await apiFetch(url);
       const result = await response.json();
       console.log('Barangay API response:', result);
       if (result.success) {
+        // Apply client-side filtering by center
+        const filtered = filterByCenter(result.data, 'center');
         // Transform the data to match our expected format
-        const barangayData = result.data.map(item => ({
+        const barangayData = filtered.map(item => ({
           barangay: item.barangay,
           totalCases: item.count,
           riskLevel: item.count > 10 ? 'High' : item.count > 5 ? 'Medium' : 'Low',
@@ -418,7 +446,9 @@ const SuperAdminGenerate = () => {
       const userCenter = getUserCenter();
       let url = '/api/staffs';
       if (userCenter && userCenter !== 'all') {
-        url += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for staff data:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all staff data for client-side filtering');
       }
       
       const response = await apiFetch(url);
@@ -426,8 +456,10 @@ const SuperAdminGenerate = () => {
       console.log('Staff API response:', result);
       
       if (result.success && result.staffs && result.staffs.length > 0) {
+        // Apply client-side filtering by center
+        const filtered = filterByCenter(result.staffs, 'center');
         // Transform the data to match our expected format
-        const staffData = result.staffs.map(staff => ({
+        const staffData = filtered.map(staff => ({
           firstName: staff.fullName ? staff.fullName.split(' ')[0] : '',
           middleName: staff.fullName ? staff.fullName.split(' ').slice(1, -1).join(' ') : '',
           lastName: staff.fullName ? staff.fullName.split(' ').slice(-1)[0] : '',
@@ -491,15 +523,19 @@ const SuperAdminGenerate = () => {
       const userCenter = getUserCenter();
       let url = '/api/admin-accounts';
       if (userCenter && userCenter !== 'all') {
-        url += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for admin data:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all admin data for client-side filtering');
       }
       
       const response = await apiFetch(url);
       const result = await response.json();
       console.log('Admin API response:', result);
       if (Array.isArray(result)) {
+        // Apply client-side filtering by center
+        const filtered = filterByCenter(result, 'center');
         // Transform the data to match our expected format
-        const adminData = result.map(admin => ({
+        const adminData = filtered.map(admin => ({
           firstName: admin.firstName || '',
           middleName: admin.middleName || '',
           lastName: admin.lastName || '',

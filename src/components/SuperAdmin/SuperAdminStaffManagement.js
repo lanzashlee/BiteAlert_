@@ -252,10 +252,14 @@ const SuperAdminStaffManagement = () => {
         setLoading(true);
         const userCenter = getUserCenter();
         
-        // Build API URL with center filter for non-superadmin users
+        // Build API URL WITHOUT server-side center filtering.
+        // We fetch broadly, then apply robust client-side filtering by center
+        // to avoid missing data when backend fields vary across records.
         let apiUrl = '/api/staffs';
         if (userCenter && userCenter !== 'all') {
-          apiUrl += `?center=${encodeURIComponent(userCenter)}`;
+          console.log('Admin center detected, using client-side filtering for center:', userCenter);
+        } else if (!userCenter) {
+          console.log('No user center detected, fetching all staff for client-side filtering');
         }
         
         const res = await apiFetch(apiUrl);

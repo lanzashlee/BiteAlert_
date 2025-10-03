@@ -400,25 +400,33 @@ const SuperAdminDashboard = () => {
       try {
         let staffUrl = `${apiConfig.endpoints.staffs}`;
         if (userCenter && userCenter !== 'all') {
-          staffUrl += `?center=${encodeURIComponent(userCenter)}`;
+          console.log('Admin center detected, using client-side filtering for center:', userCenter);
+        } else if (!userCenter) {
+          console.log('No user center detected, fetching all staff for client-side filtering');
         }
         const response = await apiFetch(staffUrl);
         const result = await response.json();
         if (result.success && Array.isArray(result.staffs)) {
-          staffCount = result.staffs.length;
+          // Apply client-side filtering by center
+          const filteredStaff = filterByCenter(result.staffs, 'center');
+          staffCount = filteredStaff.length;
         }
       } catch {}
       let vaccineUrl = `${apiConfig.endpoints.vaccinestocks}`;
       if (userCenter && userCenter !== 'all') {
-        vaccineUrl += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for vaccines:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all vaccines for client-side filtering');
       }
       
       const vaccineResponse = await apiFetch(vaccineUrl);
       const vaccineResult = await vaccineResponse.json();
       let totalStock = 0;
       if (vaccineResult.success && Array.isArray(vaccineResult.data)) {
+        // Apply client-side filtering by center
+        const filteredVaccines = filterByCenter(vaccineResult.data, 'center');
         // API now returns flat structure, so we can directly sum the quantities
-        totalStock = vaccineResult.data.reduce((sum, stock) => {
+        totalStock = filteredVaccines.reduce((sum, stock) => {
           let quantity = stock.quantity || 0;
           if (typeof quantity === 'object' && quantity.$numberInt !== undefined) {
             quantity = parseInt(quantity.$numberInt);
@@ -463,14 +471,18 @@ const SuperAdminDashboard = () => {
         try {
           let vaccinationUrl = apiConfig.endpoints.bitecases;
           if (userCenter && userCenter !== 'all') {
-            vaccinationUrl += `?center=${encodeURIComponent(userCenter)}`;
+            console.log('Admin center detected, using client-side filtering for vaccinations:', userCenter);
+          } else if (!userCenter) {
+            console.log('No user center detected, fetching all vaccinations for client-side filtering');
           }
           const vaccinationRes = await apiFetch(vaccinationUrl);
           const vaccinationData = await vaccinationRes.json();
           let biteCases = [];
           if (Array.isArray(vaccinationData)) biteCases = vaccinationData;
           else if (vaccinationData?.success && Array.isArray(vaccinationData.data)) biteCases = vaccinationData.data;
-          else if (Array.isArray(vaccinationData?.data)) biteCases = vaccinationData.data;
+          
+          // Apply client-side filtering by center
+          biteCases = filterByCenter(biteCases, 'center');
 
           const hasAssignedSchedule = (bc) => {
             const perDay = [bc.d0Date, bc.d3Date, bc.d7Date, bc.d14Date, bc.d28Date].some(Boolean);
@@ -583,14 +595,18 @@ const SuperAdminDashboard = () => {
       try {
         let biteUrl = `${apiConfig.endpoints.bitecases}`;
         if (userCenter && userCenter !== 'all') {
-          biteUrl += `?center=${encodeURIComponent(userCenter)}`;
+          console.log('Admin center detected, using client-side filtering for bite cases:', userCenter);
+        } else if (!userCenter) {
+          console.log('No user center detected, fetching all bite cases for client-side filtering');
         }
         const biteRes = await apiFetch(biteUrl);
         const biteJson = await biteRes.json();
         let cases = [];
         if (Array.isArray(biteJson)) cases = biteJson;
         else if (biteJson?.success && Array.isArray(biteJson.data)) cases = biteJson.data;
-        else if (Array.isArray(biteJson?.data)) cases = biteJson.data;
+        
+        // Apply client-side filtering by center
+        cases = filterByCenter(cases, 'center');
 
         let mild = 0, moderate = 0, severe = 0;
         (cases || []).forEach(c => {
