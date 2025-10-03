@@ -346,24 +346,24 @@ const SuperAdminVaccinationSchedule = () => {
     // Deduct from stock for selected vaccine
     const stockUpdates = [];
     if (selectedVaccine && selectedVaccineBrand) {
-      let quantity = 0;
-      
+        let quantity = 0;
+        
       if (selectedVaccine.includes('ERIG')) {
-        // Get patient weight for ERIG calculation
-        const patientWeight = scheduleModalData?.patient?.weight || 70; // default 70kg
-        quantity = calculateERIGDosage(patientWeight);
-      } else {
-        // Get dosage based on vaccine and route
+          // Get patient weight for ERIG calculation
+          const patientWeight = scheduleModalData?.patient?.weight || 70; // default 70kg
+          quantity = calculateERIGDosage(patientWeight);
+        } else {
+          // Get dosage based on vaccine and route
         const dosage = getVaccineDosage(selectedVaccine, scheduleModalData?.route);
-        quantity = parseFloat(dosage.replace('ml', '')) || 1;
-      }
-      
-      stockUpdates.push({
+          quantity = parseFloat(dosage.replace('ml', '')) || 1;
+        }
+        
+        stockUpdates.push({
         vaccine: selectedVaccine,
         brand: selectedVaccineBrand,
-        quantity: quantity,
-        operation: 'deduct'
-      });
+          quantity: quantity,
+          operation: 'deduct'
+        });
     }
 
     // Update stock for each selected vaccine (center-scoped)
@@ -2891,13 +2891,13 @@ const SuperAdminVaccinationSchedule = () => {
                           <span className="text-xs sm:text-sm text-gray-600 ml-2">({vaccineConfirmData.selectedVaccineBrand})</span>
                         )}
                       </div>
-                      <span className="text-xs sm:text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg">
+                        <span className="text-xs sm:text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg">
                         {vaccineConfirmData.selectedVaccine.includes('ERIG') ? 
                           `${calculateERIGDosage(scheduleModalData?.patient?.weight || 70)}ml` : 
                           getVaccineDosage(vaccineConfirmData.selectedVaccine, scheduleModalData?.route)
                         }
-                      </span>
-                    </div>
+                        </span>
+                      </div>
                   )}
                 </div>
             </div>

@@ -1,28 +1,16 @@
 export function clearAuthStorage() {
   try {
-    // Import security utilities
-    const { secureStorage, logSecurityEvent } = require('./security');
-    
-    // Get user info before clearing for logging
-    const raw = localStorage.getItem('currentUser') || localStorage.getItem('userData');
-    const user = raw ? JSON.parse(raw) : null;
-    
-    // Clear all storage using secure methods
-    secureStorage.removeItem('currentUser');
-    secureStorage.removeItem('userData');
-    secureStorage.removeItem('token');
-    secureStorage.removeItem('rememberMe');
-    secureStorage.removeItem('apiCache');
-    
-    // Clear session storage
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
+    localStorage.removeItem('rememberMe');
     sessionStorage.removeItem('currentUser');
     sessionStorage.removeItem('userData');
     sessionStorage.removeItem('token');
-    
-    // Log security event
-    if (user) {
-      logSecurityEvent('LOGOUT_SUCCESS', { userId: user.id, role: user.role });
-    }
+    // Clear any cached API responses
+    try {
+      localStorage.removeItem('apiCache');
+    } catch {}
   } catch {}
 }
 

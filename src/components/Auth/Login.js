@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
 import { apiFetch, apiConfig } from '../../config/api';
-import { sanitizeInput, validateEmail, validatePassword, secureStorage, logSecurityEvent, rateLimit } from '../../utils/security';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -102,30 +101,12 @@ const Login = () => {
     setLoading(true);
     setLoadingMessage('Logging in...');
     
-    // Input validation and sanitization
-    const sanitizedEmail = sanitizeInput(email);
-    const sanitizedPassword = sanitizeInput(password);
-
-    if (!validateEmail(sanitizedEmail)) {
-      setError('Please enter a valid email address');
-      setLoading(false);
-      return;
-    }
-
-    // Rate limiting check
-    if (!rateLimit(sanitizedEmail, 5, 15 * 60 * 1000)) {
-      setError('Too many login attempts. Please try again in 15 minutes.');
-      logSecurityEvent('RATE_LIMIT_EXCEEDED', { email: sanitizedEmail });
-      setLoading(false);
-      return;
-    }
-    
     try {
-      console.log('Attempting login with:', { email: sanitizedEmail, password: '***' });
+      console.log('Attempting login with:', { email, password: '***' });
       const res = await apiFetch(apiConfig.endpoints.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword })
+        body: JSON.stringify({ email, password })
       });
       
       console.log('Login response status:', res.status);
@@ -136,13 +117,13 @@ const Login = () => {
       
       if (data.success) {
         console.log('Login successful, storing user data:', data.user);
-        // Persist based on rememberMe using secure storage
+        // Persist based on rememberMe
         if (rememberMe) {
-          secureStorage.setItem('userData', data.user);
-          if (data.token) secureStorage.setItem('token', data.token);
-          secureStorage.setItem('rememberMe', 'true');
+          localStorage.setItem('userData', JSON.stringify(data.user));
+          if (data.token) localStorage.setItem('token', data.token);
+          localStorage.setItem('rememberMe', 'true');
         } else {
-          secureStorage.removeItem('rememberMe');
+          localStorage.removeItem('rememberMe');
         }
         // Always keep a sessionStorage copy so refresh stays logged in
         try {
@@ -150,9 +131,7 @@ const Login = () => {
           if (data.token) sessionStorage.setItem('token', data.token);
         } catch {}
         // Keep a mirror in currentUser for legacy reads
-        try { secureStorage.setItem('currentUser', data.user); } catch {}
-        
-        logSecurityEvent('LOGIN_SUCCESS', { email: sanitizedEmail, role: data.user.role });
+        try { localStorage.setItem('currentUser', JSON.stringify(data.user)); } catch {}
         
         // Set role-specific loading message
         const role = data.user?.role;
@@ -175,13 +154,11 @@ const Login = () => {
         }
       } else {
         setError(data?.message || 'Invalid email or password');
-        logSecurityEvent('LOGIN_FAILED', { email: sanitizedEmail, reason: data?.message });
         setLoading(false);
       }
     } catch (err) {
       console.log('Login error:', err);
       setError('An error occurred during login. Please try again.');
-      logSecurityEvent('LOGIN_NETWORK_ERROR', { email: sanitizedEmail, error: err.message });
       setLoading(false);
     }
   };

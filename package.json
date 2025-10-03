@@ -40,12 +40,10 @@
     "server": "set API_PORT=4000 && nodemon server.js",
     "dev": "concurrently \"npm run start\" \"npm run server\"",
     "build": "react-scripts build && npm run copy-redirects",
-    "copy-redirects": "node -e \"const fs=require('fs'); fs.copyFileSync('public/_redirects', 'build/_redirects'); fs.copyFileSync('public/404.html', 'build/404.html'); fs.copyFileSync('public/vercel.json', 'build/vercel.json'); fs.copyFileSync('public/netlify.toml', 'build/netlify.toml'); fs.copyFileSync('public/robots.txt', 'build/robots.txt'); fs.copyFileSync('public/sitemap.xml', 'build/sitemap.xml')\"",
+    "copy-redirects": "node -e \"const fs=require('fs'); fs.copyFileSync('public/_redirects', 'build/_redirects'); fs.copyFileSync('public/404.html', 'build/404.html'); fs.copyFileSync('public/vercel.json', 'build/vercel.json'); fs.copyFileSync('public/netlify.toml', 'build/netlify.toml')\"",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server:prod": "node server.js",
-    "security:audit": "npm audit --audit-level=moderate",
-    "security:fix": "npm audit fix"
+    "server:prod": "node server.js"
   },
   "eslintConfig": {
     "extends": [
