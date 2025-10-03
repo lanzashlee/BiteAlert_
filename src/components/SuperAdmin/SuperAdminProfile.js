@@ -387,7 +387,7 @@ const SuperAdminProfile = () => {
           {/* Hide Back button for admins to avoid navigating back to login history */}
           {(userData?.role !== 'admin') && (
           <div className="header-actions">
-              <button className="btn btn-secondary" type="button" onClick={() => window.history.back()}>
+              <button className="btn btn-secondary" type="button" onClick={() => window.history.back()} aria-label="Go back to previous page" title="Back">
               <i className="fa-solid fa-arrow-left" /> Back
             </button>
           </div>
@@ -504,7 +504,7 @@ const SuperAdminProfile = () => {
 
                 {editing && (
                   <div className="form-actions">
-                    <button type="submit" className="btn btn-primary">
+                    <button type="submit" className="btn btn-primary" aria-label="Save profile changes" title="Save Changes">
                       <i className="fa-solid fa-save" /> Save Changes
                     </button>
                     <button 
@@ -594,7 +594,7 @@ const SuperAdminProfile = () => {
                 )}
 
                 <div className="form-actions">
-                  <button type="submit" className="btn btn-primary">
+                  <button type="submit" className="btn btn-primary" aria-label="Change account password" title="Change Password">
                     <i className="fa-solid fa-key" /> Change Password
                   </button>
                 </div>
@@ -620,8 +620,8 @@ const SuperAdminProfile = () => {
               <span className="signout-subtitle">You will need to log in again to access your account.</span>
             </div>
             <div className="signout-modal-footer">
-              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)}>Cancel</button>
-              <button className="confirm-btn" onClick={confirmSignOut}>Sign Out</button>
+              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)} aria-label="Cancel sign out" title="Cancel">Cancel</button>
+              <button className="confirm-btn" onClick={confirmSignOut} aria-label="Confirm sign out" title="Sign out">Sign Out</button>
             </div>
           </div>
         </div>

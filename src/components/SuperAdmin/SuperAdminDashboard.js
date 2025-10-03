@@ -1105,8 +1105,8 @@ const SuperAdminDashboard = () => {
               <span className="signout-subtitle">You will need to log in again to access your account.</span>
             </div>
             <div className="signout-modal-footer">
-              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)}>Cancel</button>
-              <button className="confirm-btn" onClick={confirmSignOut}>Sign Out</button>
+              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)} aria-label="Cancel sign out" title="Cancel">Cancel</button>
+              <button className="confirm-btn" onClick={confirmSignOut} aria-label="Confirm sign out" title="Sign out">Sign Out</button>
             </div>
           </div>
         </div>

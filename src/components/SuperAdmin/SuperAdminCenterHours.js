@@ -259,7 +259,7 @@ const SuperAdminCenterHours = () => {
                       ))}
                       <td>{(hoursByCenterId[String(c._id)]?.contactNumber || c.contactNumber || '—')}</td>
                       <td style={{ textAlign:'right' }}>
-                        <button className="btn btn-primary" onClick={() => beginEdit(c)}>Edit</button>
+                        <button className="btn btn-primary" onClick={() => beginEdit(c)} aria-label={`Edit service hours for ${c.name}`} title="Edit">Edit</button>
                       </td>
                     </tr>
                   );
@@ -298,11 +298,11 @@ const SuperAdminCenterHours = () => {
               </div>
             </div>
             <div className="react-modal-footer">
-              <button className="modal-btn modal-btn-secondary" onClick={cancelEdit}>Cancel</button>
+              <button className="modal-btn modal-btn-secondary" onClick={cancelEdit} aria-label="Cancel editing service hours" title="Cancel">Cancel</button>
               <button className="modal-btn modal-btn-primary" onClick={()=>{
                 const center = centers.find(c=>c._id===editingId);
                 if (center) saveEdit(center);
-              }}>Save</button>
+              }} aria-label="Save service hours changes" title="Save Changes">Save</button>
             </div>
           </div>
         </div>
@@ -324,8 +324,8 @@ const SuperAdminCenterHours = () => {
               <span className="signout-subtitle">You will need to log in again to access your account.</span>
             </div>
             <div className="signout-modal-footer">
-              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)}>Cancel</button>
-              <button className="confirm-btn" onClick={confirmSignOut}>Sign Out</button>
+              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)} aria-label="Cancel sign out" title="Cancel">Cancel</button>
+              <button className="confirm-btn" onClick={confirmSignOut} aria-label="Confirm sign out" title="Sign out">Sign Out</button>
             </div>
           </div>
         </div>

@@ -222,7 +222,7 @@ const SuperAdminCenter = () => {
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
-            <button className="primary-btn" onClick={openAdd}>
+            <button className="primary-btn" onClick={openAdd} aria-label="Add new health center" title="Add Center">
               <i className="fa fa-plus" /> Add Center
             </button>
             <a className="secondary-btn" href="/superadmin/center-archive">
@@ -286,10 +286,10 @@ const SuperAdminCenter = () => {
                        <td style={{ fontSize: '1rem' }}>{c.contactPerson || '—'}</td>
                        <td style={{ fontSize: '1rem' }}>{c.contactNumber || '—'}</td>
                                              <td className="table-actions">
-                         <button className="update-btn" onClick={() => openEdit(c)}>
+                         <button className="update-btn" onClick={() => openEdit(c)} aria-label={`Update ${c.name} center information`} title="Update">
                            <i className="fa fa-edit" /> Update
                          </button>
-                         <button className="archive-btn" onClick={() => askArchive(c)}>
+                         <button className="archive-btn" onClick={() => askArchive(c)} aria-label={`Archive ${c.name} center`} title="Archive">
                            <i className="fa fa-archive" /> Archive
                          </button>
                        </td>

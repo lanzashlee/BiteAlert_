@@ -890,10 +890,10 @@ const SuperAdminStock = () => {
         <div className="content-header">
           <h2>Stock & Inventory Management</h2>
           <div className="header-actions">
-            <button className="btn btn-success" onClick={openAddModal}>
+            <button className="btn btn-success" onClick={openAddModal} aria-label="Add new vaccine stock" title="Add new vaccine stock">
               <i className="fa-solid fa-plus" /> Add Vaccine Stock
             </button>
-            <button className="btn btn-primary" onClick={exportToPDF}>
+            <button className="btn btn-primary" onClick={exportToPDF} aria-label="Export stock data to PDF" title="Export to PDF">
               <i className="fa-solid fa-download" /> Export PDF
             </button>
           </div>
@@ -1404,13 +1404,15 @@ const SuperAdminStock = () => {
               </div>
             </form>
             <div className="add-modal-footer">
-              <button className="cancel-btn" onClick={closeAddModal} disabled={formLoading}>
+              <button className="cancel-btn" onClick={closeAddModal} disabled={formLoading} aria-label="Cancel adding vaccine stock" title="Cancel">
                 Cancel
               </button>
               <button 
                 className="confirm-btn" 
                 onClick={handleSubmit} 
                 disabled={formLoading}
+                aria-label="Add vaccine stock to inventory" 
+                title="Add to inventory"
               >
                 {formLoading ? (
                   <>
@@ -1625,8 +1627,8 @@ const SuperAdminStock = () => {
               <span className="signout-subtitle">You will need to log in again to access your account.</span>
             </div>
             <div className="signout-modal-footer">
-              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)}>Cancel</button>
-              <button className="confirm-btn" onClick={confirmSignOut}>Sign Out</button>
+              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)} aria-label="Cancel sign out" title="Cancel">Cancel</button>
+              <button className="confirm-btn" onClick={confirmSignOut} aria-label="Confirm sign out" title="Sign out">Sign Out</button>
             </div>
           </div>
         </div>

@@ -74,6 +74,8 @@ const ResponsiveSidebar = ({ onSignOut }) => {
       <button 
         className={`hamburger-menu ${sidebarOpen ? 'active' : ''}`}
         onClick={toggleSidebar}
+        aria-label="Toggle navigation menu"
+        title="Toggle navigation menu"
       >
         <div className="hamburger-line"></div>
         <div className="hamburger-line"></div>
@@ -101,7 +103,7 @@ const ResponsiveSidebar = ({ onSignOut }) => {
           </li>
           ))}
         </ul>
-        <button className="sign-out" onClick={onSignOut}>
+        <button className="sign-out" onClick={onSignOut} aria-label="Sign out of account" title="Sign out">
           <i className="fa-solid fa-right-from-bracket" />
           <span>Sign out</span>
         </button>

@@ -2336,7 +2336,7 @@ const SuperAdminVaccinationSchedule = () => {
                 placeholder="Filter by date"
               />
 
-              <button type="button" className="btn-secondary" onClick={clearFilters} title="Clear all filters">
+              <button type="button" className="btn-secondary" onClick={clearFilters} title="Clear all filters" aria-label="Clear all applied filters">
                 Clear Filters
               </button>
             </div>
@@ -3368,7 +3368,7 @@ const SuperAdminVaccinationSchedule = () => {
                 <div className="text-xs font-bold text-red-600 uppercase tracking-wide">Reschedule {datePicker.day}</div>
                 <div className="text-[11px] text-gray-500">Future dates only. Earlier doses won’t change.</div>
               </div>
-              <button className="text-gray-400 hover:text-gray-600" onClick={() => setDatePicker(null)} type="button">
+              <button className="text-gray-400 hover:text-gray-600" onClick={() => setDatePicker(null)} type="button" aria-label="Clear date filter" title="Clear date">
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </div>

@@ -1562,10 +1562,10 @@ const SuperAdminGenerate = () => {
               <i className="fas fa-list"></i>
               <h3>Animal Bite Records</h3>
               <div className="header-actions">
-                <button className="btn btn-secondary" onClick={()=>setShowBiteSummary(s=>!s)}>
+                <button className="btn btn-secondary" onClick={()=>setShowBiteSummary(s=>!s)} aria-label={showBiteSummary? 'Hide bite summary':'Show bite summary'} title={showBiteSummary? 'Hide Summary':'Show Summary'}>
                   <i className={`fa ${showBiteSummary? 'fa-eye-slash':'fa-eye'}`}></i> {showBiteSummary? 'Hide Summary':'Show Summary'}
                 </button>
-                <button className="btn" onClick={exportAnimalBitePDF}>
+                <button className="btn" onClick={exportAnimalBitePDF} aria-label="Export animal bite records to PDF" title="Export PDF">
                   <i className="fa fa-download"></i> Export PDF
                 </button>
               </div>
@@ -1786,7 +1786,7 @@ const SuperAdminGenerate = () => {
                       </div>
                     </div>
                     <div className="export-btn-group">
-                      <button className="btn" onClick={exportRabiesUtilPDF}>
+                      <button className="btn" onClick={exportRabiesUtilPDF} aria-label="Export rabies utilization report to PDF" title="Export PDF">
                         <i className="fa fa-download"></i> Export PDF
                       </button>
                     </div>
@@ -2032,7 +2032,7 @@ const SuperAdminGenerate = () => {
                 </div>
               </div>
                     <div className="export-btn-group">
-                      <button className="btn" onClick={exportAnimalBitePDF}>
+                      <button className="btn" onClick={exportAnimalBitePDF} aria-label="Export animal bite records to PDF" title="Export PDF">
                         <i className="fa fa-download"></i> Export PDF
                       </button>
                     </div>
@@ -2131,7 +2131,7 @@ const SuperAdminGenerate = () => {
                       </div>
                     </div>
                     <div className="export-btn-group">
-                      <button className="btn" onClick={exportCustomDemoPDF}>
+                      <button className="btn" onClick={exportCustomDemoPDF} aria-label="Export custom demo report to PDF" title="Export PDF">
                         <i className="fa fa-download"></i> Export PDF
                       </button>
                     </div>
@@ -2277,7 +2277,7 @@ const SuperAdminGenerate = () => {
                       </div>
                     </div>
                     <div className="export-btn-group">
-                      <button className="btn" onClick={exportPatientsPDF}>
+                      <button className="btn" onClick={exportPatientsPDF} aria-label="Export patients report to PDF" title="Export PDF">
                         <i className="fa fa-download"></i> Export PDF
                       </button>
                     </div>
@@ -2414,7 +2414,7 @@ const SuperAdminGenerate = () => {
                       </div>
                     </div>
                     <div className="export-btn-group">
-                      <button className="btn" onClick={exportVaccinationPDF}>
+                      <button className="btn" onClick={exportVaccinationPDF} aria-label="Export vaccination report to PDF" title="Export PDF">
                         <i className="fa fa-download"></i> Export PDF
                       </button>
                     </div>
@@ -2515,7 +2515,7 @@ const SuperAdminGenerate = () => {
                       </div>
                     </div>
                     <div className="export-btn-group">
-                      <button className="btn" onClick={exportBarangayPDF}>
+                      <button className="btn" onClick={exportBarangayPDF} aria-label="Export barangay report to PDF" title="Export PDF">
                         <i className="fa fa-download"></i> Export PDF
                       </button>
                     </div>
@@ -2622,7 +2622,7 @@ const SuperAdminGenerate = () => {
                       </div>
                     </div>
                     <div className="export-btn-group">
-                      <button className="btn" onClick={exportStaffPDF}>
+                      <button className="btn" onClick={exportStaffPDF} aria-label="Export staff report to PDF" title="Export PDF">
                         <i className="fa fa-download"></i> Export PDF
                       </button>
                     </div>
@@ -2715,7 +2715,7 @@ const SuperAdminGenerate = () => {
                       </div>
                     </div>
                     <div className="export-btn-group">
-                      <button className="btn" onClick={exportAdminPDF}>
+                      <button className="btn" onClick={exportAdminPDF} aria-label="Export admin report to PDF" title="Export PDF">
                         <i className="fa fa-download"></i> Export PDF
                       </button>
                     </div>
@@ -2778,8 +2778,8 @@ const SuperAdminGenerate = () => {
               <span className="signout-subtitle">You will need to log in again to access your account.</span>
             </div>
             <div className="signout-modal-footer">
-              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)}>Cancel</button>
-              <button className="confirm-btn" onClick={confirmSignOut}>Sign Out</button>
+              <button className="cancel-btn" onClick={() => setShowSignoutModal(false)} aria-label="Cancel sign out" title="Cancel">Cancel</button>
+              <button className="confirm-btn" onClick={confirmSignOut} aria-label="Confirm sign out" title="Sign out">Sign Out</button>
             </div>
           </div>
         </div>
