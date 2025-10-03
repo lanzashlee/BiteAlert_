@@ -53,6 +53,14 @@ const SuperAdminStock = () => {
     const key = `${centerName}::${vaccine.name}`;
     const qa = override || quickAdd[key] || {};
     const qty = parseInt(qa.quantity);
+    
+    console.log('🔍 STOCK ADD DEBUG:');
+    console.log('Center:', centerName);
+    console.log('Vaccine:', vaccine?.name);
+    console.log('Quantity:', qty);
+    console.log('Batch Number:', qa.batchNumber);
+    console.log('Expiry Date:', qa.expiryDate);
+    
     if (!centerName || !vaccine?.name || isNaN(qty)) {
       alert('Center, vaccine name, and quantity are required');
       return;
@@ -91,7 +99,10 @@ const SuperAdminStock = () => {
         body: JSON.stringify(payload)
       });
       const result = await res.json();
+      console.log('🔍 API RESPONSE:', result);
+      
       if (result.success) {
+        console.log('🔍 API SUCCESS - Action:', result.action);
         // Optimistic UI update: merge or create locally for instant feedback
         setData(prevData => {
           const copy = JSON.parse(JSON.stringify(prevData || []));
@@ -124,6 +135,7 @@ const SuperAdminStock = () => {
         setQuickAdd(prev => ({ ...prev, [key]: { quantity: '', batchNumber: '', expiryDate: '' } }));
         setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' });
         // Background refresh to stay accurate with server
+        console.log('🔍 REFRESHING DATA AFTER STOCK ADD...');
         loadData();
       } else {
         showToast(result.message || 'Failed to add vaccine stock', 'error');
@@ -213,6 +225,7 @@ const SuperAdminStock = () => {
         }
         
         console.log('Filtered vaccine stocks for center:', filteredData.length);
+        console.log('🔍 SAMPLE FILTERED DATA:', filteredData.slice(0, 2));
         
         // Group flat data by center to match component expectations
         const groupedData = {};
@@ -248,6 +261,7 @@ const SuperAdminStock = () => {
         
         // Convert to array format expected by component
         const finalData = Object.values(groupedData);
+        console.log('🔍 FINAL GROUPED DATA:', finalData);
         setData(finalData);
       }
     } catch (error) {
