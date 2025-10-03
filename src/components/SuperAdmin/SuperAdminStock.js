@@ -166,24 +166,53 @@ const SuperAdminStock = () => {
     try {
       const userCenter = getUserCenter();
       
-      // Build API URL with center filter for non-superadmin users
+      // Build API URL WITHOUT server-side center filtering.
+      // We fetch broadly, then apply robust client-side filtering by center
+      // to avoid missing data when backend fields vary across records.
       let apiUrl = '/api/vaccinestocks';
       if (userCenter && userCenter !== 'all') {
-        apiUrl += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for vaccine stocks:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all vaccine stocks for client-side filtering');
       }
       
       const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
-        // Apply additional client-side filtering if needed
+        // Apply client-side filtering by center
         const allData = result.data || [];
+        console.log('Total vaccine stocks before filtering:', allData.length);
+        
         // Map the data to ensure consistent field names
         const mappedData = allData.map(stock => ({
           ...stock,
           center: stock.center || stock.centerName
         }));
         
-        const filteredData = filterByCenter(mappedData, 'center');
+        // Apply center-based filtering for admin users
+        let filteredData = mappedData;
+        if (userCenter && userCenter !== 'all') {
+          filteredData = mappedData.filter(stock => {
+            const stockCenter = stock.center || stock.centerName || '';
+            const normalizedCenter = stockCenter.toLowerCase().trim();
+            const normalizedUserCenter = userCenter.toLowerCase().trim();
+            
+            console.log('Stock filtering:', {
+              stockCenter,
+              normalizedCenter,
+              normalizedUserCenter,
+              matches: normalizedCenter === normalizedUserCenter || 
+                      normalizedCenter.includes(normalizedUserCenter) || 
+                      normalizedUserCenter.includes(normalizedCenter)
+            });
+            
+            return normalizedCenter === normalizedUserCenter || 
+                   normalizedCenter.includes(normalizedUserCenter) || 
+                   normalizedUserCenter.includes(normalizedCenter);
+          });
+        }
+        
+        console.log('Filtered vaccine stocks for center:', filteredData.length);
         
         // Group flat data by center to match component expectations
         const groupedData = {};
