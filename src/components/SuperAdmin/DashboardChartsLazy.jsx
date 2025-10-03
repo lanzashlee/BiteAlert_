@@ -1,44 +1,33 @@
 import React, { memo, lazy, Suspense, useEffect } from 'react';
-// Lazy load Chart.js components to reduce initial bundle size
-let ChartJS, ChartDataLabels;
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-const initializeChartJS = async () => {
-  if (ChartJS) return;
-  
-  const chartModule = await import('chart.js');
-  ChartJS = chartModule.Chart;
-  
-  // Only import what we need
-  const {
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    ArcElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler
-  } = await import('chart.js');
-  
-  ChartDataLabels = (await import('chartjs-plugin-datalabels')).default;
-  
-  // Register only essential components
-  ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    ArcElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler,
-    ChartDataLabels
-  );
-};
+// Register Chart.js components immediately
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  ChartDataLabels
+);
 
 // Lazy load individual chart components to reduce initial bundle size
 const LineChart = lazy(() => import('react-chartjs-2').then(module => ({ default: module.Line })));
@@ -81,11 +70,6 @@ const DashboardChartsLazy = memo(({
   vaccinesChartOptions,
   severityChartOptions
 }) => {
-  // Initialize Chart.js when component mounts
-  useEffect(() => {
-    initializeChartJS();
-  }, []);
-
   return (
     <div className="row" aria-live="polite">
       <div className="col-md-6">

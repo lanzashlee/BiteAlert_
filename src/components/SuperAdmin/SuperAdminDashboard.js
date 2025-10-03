@@ -290,7 +290,7 @@ const SuperAdminDashboard = () => {
   const commonOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 500, easing: 'easeInOutQuart' }, // Further reduced animation duration
+    animation: { duration: 0 }, // Disable animations for better performance
     interaction: {
       intersect: false,
       mode: 'index'
@@ -812,29 +812,29 @@ const SuperAdminDashboard = () => {
   }, [timeRange]);
 
   useEffect(() => {
-    // Stagger initial work: summary immediately, others in idle/timeout
+    // Load summary immediately for LCP optimization
     updateDashboardSummary();
     
-    // Use requestIdleCallback for non-critical chart updates
-    const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 100));
-    idle(() => {
-      // Batch chart updates to reduce main thread blocking
-      const updateCharts = async () => {
-        await Promise.all([
-          updatePatientGrowth(),
-          updateCasesPerBarangay(),
-          updateVaccineStockTrends(),
-          updateSeverityChart()
-        ]);
-      };
-      updateCharts();
-    });
+    // Defer chart loading to reduce initial TBT
+    const loadCharts = () => {
+      const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
+      idle(() => {
+        // Load charts one by one to reduce main thread blocking
+        setTimeout(() => updatePatientGrowth(), 0);
+        setTimeout(() => updateCasesPerBarangay(), 100);
+        setTimeout(() => updateVaccineStockTrends(), 200);
+        setTimeout(() => updateSeverityChart(), 300);
+      });
+    };
+    
+    // Delay chart loading to improve initial render
+    setTimeout(loadCharts, 500);
 
     const vis = () => document.visibilityState === 'visible';
     const every = 300000; // 5 minutes
     const summaryInterval = setInterval(() => { if (vis()) updateDashboardSummary(); }, every);
     
-    // Batch chart updates less frequently to reduce main thread work
+    // Reduce chart update frequency to minimize TBT
     const chartInterval = setInterval(() => { 
       if (vis()) {
         const updateCharts = async () => {
@@ -847,13 +847,13 @@ const SuperAdminDashboard = () => {
         };
         updateCharts();
       }
-    }, every * 2); // Update charts every 10 minutes
+    }, every * 3); // Update charts every 15 minutes
 
     return () => {
       clearInterval(summaryInterval);
       clearInterval(chartInterval);
     };
-  }, [timeRange, updateDashboardSummary, updatePatientGrowth, updateCasesPerBarangay, updateVaccineStockTrends, updateSeverityChart]);
+  }, [updateDashboardSummary, updatePatientGrowth, updateCasesPerBarangay, updateVaccineStockTrends, updateSeverityChart]);
 
   return (
     <div className="dashboard-container">

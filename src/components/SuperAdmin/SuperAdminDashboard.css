@@ -14,19 +14,42 @@
 .dashboard-container,
 .main-content,
 .card,
-.notification-dropdown {
+.notification-dropdown,
+.panel {
     transform: translateZ(0);
     will-change: transform;
+    backface-visibility: hidden;
 }
 
 /* Optimize rendering performance */
-.card {
+.card,
+.panel {
     contain: layout style paint;
 }
 
-/* Reduce repaints */
+/* Reduce repaints and improve performance */
 .main-header {
     contain: layout style;
+}
+
+/* Optimize chart containers */
+.panel-body {
+    contain: layout style;
+    transform: translateZ(0);
+}
+
+/* Reduce layout thrashing */
+.dashboard-cards {
+    contain: layout;
+}
+
+/* Optimize animations */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 body {
