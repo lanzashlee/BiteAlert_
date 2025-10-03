@@ -183,11 +183,19 @@ const Login = () => {
       <div
         className="left-panel-modern"
         style={{
-          backgroundImage: "url(/img/SANJUAN.jpg)",
+          backgroundImage: "url(/img/SANJUAN.webp)",
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
       >
+        {/* LCP Image with high priority */}
+        <img 
+          src="/img/SANJUAN.webp" 
+          alt="San Juan Background" 
+          style={{ display: 'none' }}
+          fetchPriority="high"
+          loading="eager"
+        />
         <div className="brand-content">
           <h1 className="logo-modern">
             <span className="logo-bite">Bite</span>

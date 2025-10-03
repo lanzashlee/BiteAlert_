@@ -19,27 +19,109 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <!-- Google Fonts (swap for CLS) -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style> @font-face{ font-family:'Poppins'; font-display:swap; src:local('Poppins'); } </style>
-    <!-- Clash Grotesk Font -->
-    <link href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&display=swap" rel="stylesheet">
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <!-- TailwindCSS (CDN for utility classes used in React components) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+    <link rel="preconnect" href="https://maxcdn.bootstrapcdn.com" crossorigin>
     
-    <!-- jsPDF Libraries for PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- DNS prefetch for additional performance -->
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/img/SANJUAN.webp" as="image" type="image/webp">
+    <link rel="preload" href="/img/bite_logo.png" as="image" type="image/png">
+
+    <!-- Critical CSS - Inline for immediate rendering -->
+    <style>
+      /* Critical styles for initial render */
+      body { margin: 0; font-family: 'Poppins', sans-serif; background: #fdf2dc; }
+      #root { min-height: 100vh; }
+      .loading-spinner { display: flex; justify-content: center; align-items: center; height: 100vh; }
+      .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #800000; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    
+    <!-- Non-critical CSS - Load asynchronously -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"></noscript>
+    
+    <!-- Google Fonts - Optimized loading with font-display: swap -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"></noscript>
+    
+    <!-- Font display optimization -->
+    <style>
+      @font-face {
+        font-family: 'Poppins';
+        font-display: swap;
+        src: local('Poppins');
+      }
+      @font-face {
+        font-family: 'Clash Grotesk';
+        font-display: swap;
+        src: local('Clash Grotesk');
+      }
+    </style>
+    
+    <!-- Clash Grotesk Font - Deferred -->
+    <link rel="preload" href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&display=swap"></noscript>
+    
+    <!-- Bootstrap - Deferred -->
+    <link rel="preload" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"></noscript>
+    
+    <!-- TailwindCSS - Deferred -->
+    <script>
+      // Load TailwindCSS asynchronously
+      (function() {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.tailwindcss.com';
+        script.async = true;
+        document.head.appendChild(script);
+      })();
+    </script>
+    
+    <!-- jsPDF Libraries - Deferred loading -->
+    <script>
+      // Load PDF libraries only when needed
+      window.loadPDFLibraries = function() {
+        return new Promise((resolve) => {
+          if (window.jspdf) {
+            resolve();
+            return;
+          }
+          
+          const script1 = document.createElement('script');
+          script1.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          script1.onload = () => {
+            const script2 = document.createElement('script');
+            script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js';
+            script2.onload = resolve;
+            document.head.appendChild(script2);
+          };
+          document.head.appendChild(script1);
+        });
+      };
+    </script>
     
     <title>Bite Alert 🐾</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </body>
 </html> 

@@ -982,11 +982,19 @@ const SuperAdminGenerate = () => {
     });
   };
 
-  // Helper function to check if PDF libraries are available
-  const checkPDFLibraries = () => {
+  // Helper function to check if PDF libraries are available and load them if needed
+  const checkPDFLibraries = async () => {
     if (!window.jspdf) {
-      alert('PDF generation libraries are not loaded. Please refresh the page and try again.');
-      return false;
+      try {
+        await window.loadPDFLibraries();
+        if (!window.jspdf) {
+          alert('PDF generation libraries failed to load. Please refresh the page and try again.');
+          return false;
+        }
+      } catch (error) {
+        alert('PDF generation libraries failed to load. Please refresh the page and try again.');
+        return false;
+      }
     }
     return true;
   };
@@ -1014,9 +1022,9 @@ const SuperAdminGenerate = () => {
 
       // Order: prefer two left (sanjuan, sj1), two right (bp and optional extra)
       const sources = [
-        '/img/sanjuan.png',
-        '/img/sj1.png',
-        '/img/bp.png'
+        '/img/sanjuan.webp',
+        '/img/sj1.webp',
+        '/img/bp.webp'
       ];
 
       const loaded = (await Promise.all(sources.map((s)=>loadImage(s).catch(()=>null)))).filter(Boolean);
@@ -1133,7 +1141,7 @@ const SuperAdminGenerate = () => {
 
   // Export functions
   const exportRabiesUtilPDF = async () => {
-    if (!checkPDFLibraries()) return;
+    if (!(await checkPDFLibraries())) return;
     
     setLoading(true);
     const filteredData = filterRabiesUtilData();
@@ -1176,7 +1184,7 @@ const SuperAdminGenerate = () => {
   };
 
   const exportAnimalBitePDF = async () => {
-    if (!checkPDFLibraries()) return;
+    if (!(await checkPDFLibraries())) return;
     
     setLoading(true);
     const filteredData = filterAnimalBiteData();
@@ -1267,7 +1275,7 @@ const SuperAdminGenerate = () => {
   };
 
   const exportCustomDemoPDF = async () => {
-    if (!checkPDFLibraries()) return;
+    if (!(await checkPDFLibraries())) return;
     
     setLoading(true);
     const filteredData = filterCustomDemoData();
@@ -1314,7 +1322,7 @@ const SuperAdminGenerate = () => {
 
   // New export functions
   const exportPatientsPDF = async () => {
-    if (!checkPDFLibraries()) return;
+    if (!(await checkPDFLibraries())) return;
     
     setLoading(true);
     const filteredData = filterPatientsData();
@@ -1363,7 +1371,7 @@ const SuperAdminGenerate = () => {
   };
 
   const exportVaccinationPDF = async () => {
-    if (!checkPDFLibraries()) return;
+    if (!(await checkPDFLibraries())) return;
     
     setLoading(true);
     const filteredData = filterVaccinationData();
@@ -1409,7 +1417,7 @@ const SuperAdminGenerate = () => {
   };
 
   const exportBarangayPDF = async () => {
-    if (!checkPDFLibraries()) return;
+    if (!(await checkPDFLibraries())) return;
     
     setLoading(true);
     const filteredData = filterBarangayData();
@@ -1454,7 +1462,7 @@ const SuperAdminGenerate = () => {
   };
 
   const exportStaffPDF = async () => {
-    if (!checkPDFLibraries()) return;
+    if (!(await checkPDFLibraries())) return;
     
     setLoading(true);
     const filteredData = filterStaffData();
@@ -1500,7 +1508,7 @@ const SuperAdminGenerate = () => {
   };
 
   const exportAdminPDF = async () => {
-    if (!checkPDFLibraries()) return;
+    if (!(await checkPDFLibraries())) return;
     
     setLoading(true);
     const filteredData = filterAdminData();
