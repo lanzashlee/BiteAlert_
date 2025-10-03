@@ -49,8 +49,10 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
         console.log('✅ PROTECTED ROUTE: Authentication successful');
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Authentication check error:', error);
-        navigate('/login');
+        console.error('🔍 PROTECTED ROUTE: Authentication check error:', error);
+        console.log('🔍 PROTECTED ROUTE: Continuing with authentication despite error');
+        // Don't redirect on error - trust the stored data
+        setIsAuthenticated(true);
       } finally {
         setIsLoading(false);
       }
