@@ -573,11 +573,10 @@ const SuperAdminPatientManagement = () => {
               console.log(`  - User center: "${finalUserCenter}"`);
               
               // Normalize strings for comparison
-              const normalizedCenter = patientCenter.toLowerCase().trim();
               const normalizedBarangay = patientBarangay.toLowerCase().trim();
               const normalizedUserCenter = finalUserCenter.toLowerCase().trim();
               
-              // Check if patient's barangay matches the user's center name
+              // Only check if patient's barangay matches the user's center name
               const barangayMatch = normalizedBarangay === normalizedUserCenter ||
                                   normalizedBarangay.includes(normalizedUserCenter) ||
                                   normalizedUserCenter.includes(normalizedBarangay) ||
@@ -585,18 +584,9 @@ const SuperAdminPatientManagement = () => {
                                   normalizedBarangay.replace(/\s*center$/i, '') === normalizedUserCenter ||
                                   normalizedUserCenter.includes(normalizedBarangay.replace(/\s*center$/i, ''));
               
-              // Check if patient's center matches the user's center name
-              const centerMatch = normalizedCenter === normalizedUserCenter ||
-                                normalizedCenter.includes(normalizedUserCenter) ||
-                                normalizedUserCenter.includes(normalizedCenter) ||
-                                // Handle "Balong-Bato" vs "Balong-Bato Center" variations
-                                normalizedCenter.replace(/\s*center$/i, '') === normalizedUserCenter ||
-                                normalizedUserCenter.includes(normalizedCenter.replace(/\s*center$/i, ''));
-              
               console.log(`  - Barangay match: ${barangayMatch}`);
-              console.log(`  - Center match: ${centerMatch}`);
               
-              const matches = barangayMatch || centerMatch;
+              const matches = barangayMatch;
               
               if (!matches) {
                 console.log('❌ FILTERING OUT:', p.firstName, p.lastName, '- No barangay/center match');
@@ -814,11 +804,10 @@ const SuperAdminPatientManagement = () => {
         console.log(`  - User center: "${userCenter}"`);
         
         // Normalize strings for comparison
-        const normalizedCenter = patientCenter.toLowerCase().trim();
         const normalizedBarangay = patientBarangay.toLowerCase().trim();
         const normalizedUserCenter = userCenter.toLowerCase().trim();
         
-        // Check if patient's barangay matches the user's center name
+        // Only check if patient's barangay matches the user's center name
         const barangayMatch = normalizedBarangay === normalizedUserCenter ||
                              normalizedBarangay.includes(normalizedUserCenter) ||
                              normalizedUserCenter.includes(normalizedBarangay) ||
@@ -826,18 +815,9 @@ const SuperAdminPatientManagement = () => {
                              normalizedBarangay.replace(/\s*center$/i, '') === normalizedUserCenter ||
                              normalizedUserCenter.includes(normalizedBarangay.replace(/\s*center$/i, ''));
         
-        // Check if patient's center matches the user's center name
-        const centerMatch = normalizedCenter === normalizedUserCenter ||
-                           normalizedCenter.includes(normalizedUserCenter) ||
-                           normalizedUserCenter.includes(normalizedCenter) ||
-                           // Handle "Balong-Bato" vs "Balong-Bato Center" variations
-                           normalizedCenter.replace(/\s*center$/i, '') === normalizedUserCenter ||
-                           normalizedUserCenter.includes(normalizedCenter.replace(/\s*center$/i, ''));
-        
         console.log(`  - Barangay match: ${barangayMatch}`);
-        console.log(`  - Center match: ${centerMatch}`);
         
-        const matches = barangayMatch || centerMatch;
+        const matches = barangayMatch;
         
         if (!matches) {
           console.log('❌ FILTERING OUT:', p.firstName, p.lastName, '- No barangay/center match');
