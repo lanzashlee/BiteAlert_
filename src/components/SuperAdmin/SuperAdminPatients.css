@@ -253,10 +253,10 @@
 /* Patient ID Styling */
 .patient-id {
   font-weight: 600;
-  color: #dc2626;
+  color: #721c24;
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
-  background: rgba(220, 38, 38, 0.1);
+  background: #f8d7da;
   padding: 4px 8px;
   border-radius: 8px;
   transition: all 0.3s ease;

@@ -1297,6 +1297,10 @@
 
 .patient-id {
   font-weight: 500;
+  color: #721c24;
+  background: #f8d7da;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .bite-case-id {
@@ -1707,8 +1711,11 @@
 .patient-id {
   margin: 0 0 0.25rem 0;
   font-size: 0.875rem;
-  color: #374151;
+  color: #721c24;
   font-weight: 500;
+  background: #f8d7da;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .patient-location {

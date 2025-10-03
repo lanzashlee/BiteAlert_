@@ -240,7 +240,7 @@ const SuperAdminCenter = () => {
         </div>
 
         {loading ? (
-          <div className="loading-state" aria-label="Loading centers">
+          <div className="loading-state" role="status" aria-live="polite">
             <i className="fa fa-spinner fa-spin"></i>
           </div>
         ) : (

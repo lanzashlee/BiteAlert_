@@ -546,7 +546,7 @@ const SuperAdminStaffManagement = () => {
           </div>
 
           {loading ? (
-            <div className="loading-state" aria-label="Loading">
+            <div className="loading-state" role="status" aria-live="polite">
               <div className="responsive-loading"><div className="responsive-spinner"></div></div>
             </div>
           ) : (

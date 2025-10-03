@@ -1041,7 +1041,7 @@ const SuperAdminPatientManagement = () => {
 
           {loading ? (
 
-            <div className="loading-state" aria-label="Loading">
+            <div className="loading-state" role="status" aria-live="polite">
 
               <i className="fa fa-spinner fa-spin"></i>
 
