@@ -1080,27 +1080,59 @@ const SuperAdminStock = () => {
                                         <div className="vaccine-brand">{vaccine.brand}</div>
                                         </div>
                                         </div>
-                                        <button
-                                          title="Quick add stock"
-                                          onClick={(e)=>{ 
-                                            e.stopPropagation(); 
-                                            // Open empty; user can type an existing Batch No. to auto-fill expiry
-                                            setQuickModal({ 
-                                              open:true, 
-                                              centerName:center.centerName, 
-                                              vaccine, 
-                                              quantity:'', 
-                                              batchNumber:'', 
-                                              expiryDate:''
-                                            }); 
-                                          }}
-                                          style={{
-                                            border:'none', background:'#eafaf1', color:'#10b981', width:28, height:28, borderRadius:14,
-                                            display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer'
-                                          }}
-                                        >
-                                          <i className="fa-solid fa-plus"></i>
-                                        </button>
+                                        <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                                          <span 
+                                            className={`status-badge status-${stockStatus.status}`}
+                                            style={{ 
+                                              backgroundColor: stockStatus.color,
+                                              color: 'white',
+                                              padding: '4px 8px',
+                                              borderRadius: '12px',
+                                              fontSize: '12px',
+                                              fontWeight: '500'
+                                            }}
+                                          >
+                                            {stockStatus.label}
+                                          </span>
+                                          <button
+                                            title="Add stock to this vaccine"
+                                            onClick={(e)=>{ 
+                                              e.stopPropagation(); 
+                                              setQuickModal({ 
+                                                open:true, 
+                                                centerName:center.centerName, 
+                                                vaccine, 
+                                                quantity:'', 
+                                                batchNumber:'', 
+                                                expiryDate:''
+                                              }); 
+                                            }}
+                                            style={{
+                                              border:'none', 
+                                              background:'#eafaf1', 
+                                              color:'#10b981', 
+                                              width:32, 
+                                              height:32, 
+                                              borderRadius:16,
+                                              display:'flex', 
+                                              alignItems:'center', 
+                                              justifyContent:'center', 
+                                              cursor:'pointer',
+                                              transition: 'all 0.2s ease',
+                                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.target.style.background = '#d1fae5';
+                                              e.target.style.transform = 'scale(1.05)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.target.style.background = '#eafaf1';
+                                              e.target.style.transform = 'scale(1)';
+                                            }}
+                                          >
+                                            <i className="fa-solid fa-plus" style={{fontSize:'12px'}}></i>
+                                          </button>
+                                        </div>
                                       </div>
                                       <div className="vaccine-stock-info">
                                         <div className="stock-details">
@@ -1112,12 +1144,12 @@ const SuperAdminStock = () => {
                                           </span>
                                         </div>
                                         <div className="stock-quantity">
-                                          <span className="stock-level">{vaccineStock}</span>
-                                          <span 
-                                            className={`status-badge status-${stockStatus.status}`}
-                                            style={{ backgroundColor: stockStatus.color }}
-                                          >
-                                            {stockStatus.label}
+                                          <span className="stock-level" style={{
+                                            fontSize: '16px',
+                                            fontWeight: '600',
+                                            color: vaccineStock === 0 ? '#e74c3c' : vaccineStock <= 10 ? '#f39c12' : '#27ae60'
+                                          }}>
+                                            {vaccineStock} units
                                           </span>
                                         </div>
                                       </div>
@@ -1332,93 +1364,182 @@ const SuperAdminStock = () => {
         </div>
       )}
 
-      {/* Small Quick Add Modal */}
+      {/* Enhanced Quick Add Stock Modal */}
       {quickModal.open && (
         <div className="add-modal active">
           <div className="add-modal-overlay" onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' })}></div>
-          <div className="add-modal-content" style={{ maxWidth: 520 }}>
+          <div className="add-modal-content" style={{ maxWidth: 600 }}>
             <div className="add-modal-header">
-              <div className="add-icon-wrapper">
+              <div className="add-icon-wrapper" style={{background: '#eafaf1', color: '#10b981'}}>
                 <i className="fa-solid fa-plus"></i>
               </div>
-              <h3>Add Stock - {quickModal.vaccine?.name}</h3>
+              <div>
+                <h3>Add Stock to Existing Vaccine</h3>
+                <p style={{color: '#6b7280', fontSize: '14px', margin: '4px 0 0 0'}}>
+                  Add new stock to: <strong>{quickModal.vaccine?.name}</strong>
+                </p>
+              </div>
             </div>
             <div className="add-modal-body">
+              {/* Current Stock Info */}
+              {quickModal.vaccine && (
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginBottom: '20px'
+                }}>
+                  <h4 style={{margin: '0 0 12px 0', fontSize: '16px', color: '#374151'}}>Current Stock</h4>
+                  <div style={{display: 'flex', gap: '20px', flexWrap: 'wrap'}}>
+                    <div>
+                      <span style={{color: '#6b7280', fontSize: '14px'}}>Total Stock:</span>
+                      <span style={{marginLeft: '8px', fontWeight: '600', color: '#1f2937'}}>
+                        {quickModal.vaccine?.stockEntries?.reduce((sum, entry) => {
+                          let val = entry.stock;
+                          if (typeof val === 'object' && val.$numberInt !== undefined) val = parseInt(val.$numberInt);
+                          else if (typeof val === 'object' && val.$numberDouble !== undefined) val = parseFloat(val.$numberDouble);
+                          else val = Number(val);
+                          return sum + (isNaN(val) ? 0 : val);
+                        }, 0) || 0} units
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{color: '#6b7280', fontSize: '14px'}}>Batches:</span>
+                      <span style={{marginLeft: '8px', fontWeight: '600', color: '#1f2937'}}>
+                        {quickModal.vaccine?.stockEntries?.length || 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="form-group">
-                <label>Center</label>
-                <input className="form-control" value={quickModal.centerName} readOnly />
+                <label>Health Center</label>
+                <input className="form-control" value={quickModal.centerName} readOnly style={{background: '#f9fafb'}} />
               </div>
+              
               <div className="form-group">
                 <label>Vaccine</label>
-                <input className="form-control" value={quickModal.vaccine?.name || ''} readOnly />
+                <input className="form-control" value={quickModal.vaccine?.name || ''} readOnly style={{background: '#f9fafb'}} />
               </div>
+              
               {quickModal.vaccine && (
                 <div className="form-row">
                   <div className="form-group">
                     <label>Vaccine Type</label>
-                    <input className="form-control" value={quickModal.vaccine?.type || ''} readOnly />
+                    <input className="form-control" value={quickModal.vaccine?.type || ''} readOnly style={{background: '#f9fafb'}} />
                   </div>
                   <div className="form-group">
                     <label>Brand</label>
-                    <input className="form-control" value={quickModal.vaccine?.brand || ''} readOnly />
+                    <input className="form-control" value={quickModal.vaccine?.brand || ''} readOnly style={{background: '#f9fafb'}} />
                   </div>
                 </div>
               )}
+
               <div className="form-row">
                 <div className="form-group">
-                  <label>Quantity *</label>
-                  <input type="number" min="0" className="form-control" value={quickModal.quantity} onChange={e=>setQuickModal(m=>({ ...m, quantity:e.target.value }))} />
+                  <label>New Stock Quantity *</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    className="form-control" 
+                    value={quickModal.quantity} 
+                    onChange={e=>setQuickModal(m=>({ ...m, quantity:e.target.value }))}
+                    placeholder="Enter quantity to add"
+                    style={{border: '2px solid #e5e7eb'}}
+                  />
+                  <small style={{color: '#6b7280', marginTop: '4px', display: 'block'}}>
+                    Enter the quantity you want to add to existing stock
+                  </small>
                 </div>
               </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Batch No.</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={quickModal.batchNumber}
-                  onChange={e=>{
-                    const inputVal = e.target.value;
-                    const entries = quickModal.vaccine?.stockEntries || [];
-                    const match = entries.find(en => String(en.branchNo || '').trim().toLowerCase() === String(inputVal || '').trim().toLowerCase());
-                    const toInputDate = (val) => {
-                      if (!val) return '';
-                      const d = new Date(val);
-                      if (isNaN(d.getTime())) {
-                        // Try parsing mm/dd/yyyy
-                        const parts = String(val).split(/[\/\-]/);
-                        if (parts.length === 3) {
-                          const m = parts[0].padStart(2,'0');
-                          const day = parts[1].padStart(2,'0');
-                          const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-                          return `${y}-${m}-${day}`;
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Batch Number *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={quickModal.batchNumber}
+                    onChange={e=>{
+                      const inputVal = e.target.value;
+                      const entries = quickModal.vaccine?.stockEntries || [];
+                      const match = entries.find(en => String(en.branchNo || '').trim().toLowerCase() === String(inputVal || '').trim().toLowerCase());
+                      const toInputDate = (val) => {
+                        if (!val) return '';
+                        const d = new Date(val);
+                        if (isNaN(d.getTime())) {
+                          const parts = String(val).split(/[\/\-]/);
+                          if (parts.length === 3) {
+                            const m = parts[0].padStart(2,'0');
+                            const day = parts[1].padStart(2,'0');
+                            const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                            return `${y}-${m}-${day}`;
+                          }
+                          return '';
                         }
-                        return '';
-                      }
-                      const yyyy = d.getFullYear();
-                      const mm = String(d.getMonth()+1).padStart(2,'0');
-                      const dd = String(d.getDate()).padStart(2,'0');
-                      return `${yyyy}-${mm}-${dd}`;
-                    };
-                    setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: toInputDate(match?.expirationDate) }));
-                  }}
-                />
+                        const yyyy = d.getFullYear();
+                        const mm = String(d.getMonth()+1).padStart(2,'0');
+                        const dd = String(d.getDate()).padStart(2,'0');
+                        return `${yyyy}-${mm}-${dd}`;
+                      };
+                      setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: toInputDate(match?.expirationDate) }));
+                    }}
+                    placeholder="Enter batch number"
+                    style={{border: '2px solid #e5e7eb'}}
+                  />
+                  <small style={{color: '#6b7280', marginTop: '4px', display: 'block'}}>
+                    {quickModal.vaccine?.stockEntries?.length > 0 ? 
+                      `Existing batches: ${quickModal.vaccine.stockEntries.map(e => e.branchNo).join(', ')}` :
+                      'Enter a unique batch number for this stock'
+                    }
+                  </small>
+                </div>
+                
+                <div className="form-group">
+                  <label>Expiry Date *</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={quickModal.expiryDate}
+                    onChange={e=>setQuickModal(m=>({ ...m, expiryDate:e.target.value }))}
+                    style={{border: '2px solid #e5e7eb'}}
+                  />
+                  <small style={{color: '#6b7280', marginTop: '4px', display: 'block'}}>
+                    Set the expiration date for this batch
+                  </small>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Expiry Date</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={quickModal.expiryDate}
-                  onChange={e=>setQuickModal(m=>({ ...m, expiryDate:e.target.value }))}
-                />
-              </div>
-            </div>
             </div>
             <div className="add-modal-footer">
-              <button className="cancel-btn" onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' })} disabled={formLoading}>Cancel</button>
-              <button className="confirm-btn" onClick={()=>submitQuickAdd(quickModal.centerName, quickModal.vaccine, { quantity:quickModal.quantity, batchNumber:quickModal.batchNumber, expiryDate:quickModal.expiryDate })} disabled={formLoading}>
-                {formLoading ? (<><i className="fa-solid fa-spinner fa-spin"></i> Adding...</>) : (<><i className="fa-solid fa-plus"></i> Add Stock</>)}
+              <button 
+                className="cancel-btn" 
+                onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' })} 
+                disabled={formLoading}
+                style={{background: '#f3f4f6', color: '#374151'}}
+              >
+                Cancel
+              </button>
+              <button 
+                className="confirm-btn" 
+                onClick={()=>submitQuickAdd(quickModal.centerName, quickModal.vaccine, { quantity:quickModal.quantity, batchNumber:quickModal.batchNumber, expiryDate:quickModal.expiryDate })} 
+                disabled={formLoading || !quickModal.quantity || !quickModal.batchNumber || !quickModal.expiryDate}
+                style={{
+                  background: '#10b981',
+                  color: 'white',
+                  opacity: (!quickModal.quantity || !quickModal.batchNumber || !quickModal.expiryDate) ? 0.5 : 1
+                }}
+              >
+                {formLoading ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i> Adding Stock...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-plus"></i> Add Stock
+                  </>
+                )}
               </button>
             </div>
           </div>
