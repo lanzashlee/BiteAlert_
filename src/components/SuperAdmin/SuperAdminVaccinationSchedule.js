@@ -54,8 +54,8 @@ const SuperAdminVaccinationSchedule = () => {
   // Vaccine confirmation modal
   const [showVaccineConfirm, setShowVaccineConfirm] = useState(false);
   const [vaccineConfirmData, setVaccineConfirmData] = useState(null);
-  const [selectedVaccines, setSelectedVaccines] = useState({});
-  const [selectedVaccineBrands, setSelectedVaccineBrands] = useState({});
+  const [selectedVaccine, setSelectedVaccine] = useState('');
+  const [selectedVaccineBrand, setSelectedVaccineBrand] = useState('');
   const [vaccineStocks, setVaccineStocks] = useState([]);
   const [stockLoading, setStockLoading] = useState(false);
   // Inline date picker popover state
@@ -179,7 +179,7 @@ const SuperAdminVaccinationSchedule = () => {
       setStockLoading(false);
     }
   };
-
+  
   // Get vaccine dosage based on type and route
   const getVaccineDosage = (vaccine, route) => {
     const dosageMap = {
@@ -215,24 +215,40 @@ const SuperAdminVaccinationSchedule = () => {
     return stock ? (stock.quantity || 0) : 0;
   };
 
-  // Get available brands for a vaccine type
-  const getAvailableBrands = (vaccineType) => {
+  // Get available brands for a specific vaccine
+  const getAvailableBrands = (vaccineName) => {
     if (!vaccineStocks || vaccineStocks.length === 0) return [];
     
-    const brands = vaccineStocks
-      .filter(s => {
-        const nameMatch = s.name && s.name.toLowerCase().includes(vaccineType.toLowerCase());
-        const typeMatch = s.type && s.type.toLowerCase().includes(vaccineType.toLowerCase());
-        return (nameMatch || typeMatch) && s.quantity > 0;
-      })
-      .map(s => ({
-        name: s.name || s.brand || 'Unknown',
-        brand: s.brand || '',
-        quantity: s.quantity || 0
-      }))
-      .filter((brand, index, self) => 
-        index === self.findIndex(b => b.name === brand.name)
-      );
+    const brands = [];
+    
+    // Process the vaccine stock structure
+    vaccineStocks.forEach(center => {
+      if (center.vaccines && Array.isArray(center.vaccines)) {
+        center.vaccines.forEach(vaccine => {
+          // Match by vaccine name
+          const nameMatch = vaccine.name && vaccine.name.toLowerCase().includes(vaccineName.toLowerCase());
+          const typeMatch = vaccine.type && vaccine.type.toLowerCase().includes(vaccineName.toLowerCase());
+          
+          if (nameMatch || typeMatch) {
+            // Process stock entries
+            if (vaccine.stockEntries && Array.isArray(vaccine.stockEntries)) {
+              vaccine.stockEntries.forEach(entry => {
+                if (entry.stock > 0) {
+                  brands.push({
+                    name: vaccine.name,
+                    brand: vaccine.brand,
+                    branchNo: entry.branchNo,
+                    quantity: entry.stock,
+                    expirationDate: entry.expirationDate,
+                    centerName: center.centerName
+                  });
+                }
+              });
+            }
+          }
+        });
+      }
+    });
     
     return brands;
   };
@@ -259,7 +275,7 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Process vaccine update with stock deduction
   const processVaccineUpdate = async () => {
-    const { day, scheduleItem, selectedVaccines, selectedVaccineBrands } = vaccineConfirmData;
+    const { day, scheduleItem, selectedVaccine, selectedVaccineBrand } = vaccineConfirmData;
     
     // Update vaccinationdates
     const map = {
@@ -294,30 +310,27 @@ const SuperAdminVaccinationSchedule = () => {
       throw new Error('Failed to update vaccination dates');
     }
 
-    // Deduct from stock for selected vaccines
+    // Deduct from stock for selected vaccine
     const stockUpdates = [];
-    for (const [vaccineName, selected] of Object.entries(selectedVaccines)) {
-      if (selected && selectedVaccineBrands[vaccineName]) {
-        const vaccineBrand = selectedVaccineBrands[vaccineName];
-        let quantity = 0;
-        
-        if (vaccineName.includes('ERIG')) {
-          // Get patient weight for ERIG calculation
-          const patientWeight = scheduleModalData?.patient?.weight || 70; // default 70kg
-          quantity = calculateERIGDosage(patientWeight);
-        } else {
-          // Get dosage based on vaccine and route
-          const dosage = getVaccineDosage(vaccineName, scheduleModalData?.route);
-          quantity = parseFloat(dosage.replace('ml', '')) || 1;
-        }
-        
-        stockUpdates.push({
-          vaccine: vaccineName,
-          brand: vaccineBrand.brand || '',
-          quantity: quantity,
-          operation: 'deduct'
-        });
+    if (selectedVaccine && selectedVaccineBrand) {
+      let quantity = 0;
+      
+      if (selectedVaccine.includes('ERIG')) {
+        // Get patient weight for ERIG calculation
+        const patientWeight = scheduleModalData?.patient?.weight || 70; // default 70kg
+        quantity = calculateERIGDosage(patientWeight);
+      } else {
+        // Get dosage based on vaccine and route
+        const dosage = getVaccineDosage(selectedVaccine, scheduleModalData?.route);
+        quantity = parseFloat(dosage.replace('ml', '')) || 1;
       }
+      
+      stockUpdates.push({
+        vaccine: selectedVaccine,
+        brand: selectedVaccineBrand,
+        quantity: quantity,
+        operation: 'deduct'
+      });
     }
 
     // Update stock for each selected vaccine (center-scoped)
@@ -502,8 +515,8 @@ const SuperAdminVaccinationSchedule = () => {
       setScheduleModalLoading(true);
       setShowScheduleModal(true);
       setScheduleModalData(null);
-      setSelectedVaccines({}); // Reset vaccine selections
-      setSelectedVaccineBrands({}); // Reset vaccine brand selections
+      setSelectedVaccine(''); // Reset vaccine selection
+      setSelectedVaccineBrand(''); // Reset vaccine brand selection
 
       console.log('🔍 Opening modal for patient:', patientData?.patient?.patientId, patientData?.patient?.fullName);
 
@@ -576,21 +589,18 @@ const SuperAdminVaccinationSchedule = () => {
         console.warn('Failed fetching bite case:', e);
       }
 
-      // Auto-populate vaccine selections for completed schedules
-      const autoSelectedVaccines = {};
+      // Auto-populate vaccine selection for completed schedules
       if (brandName) {
-        // Map brand name to vaccine checkbox
+        // Map brand name to vaccine selection
         if (brandName.includes('VAXIRAB') || brandName.includes('PCEC')) {
-          autoSelectedVaccines['VAXIRAB (PCEC)'] = true;
+          setSelectedVaccine('VAXIRAB (PCEC)');
         } else if (brandName.includes('SPEEDA') || brandName.includes('PVRV')) {
-          autoSelectedVaccines['SPEEDA (PVRV)'] = true;
+          setSelectedVaccine('SPEEDA (PVRV)');
+        } else if (brandName.includes('TCV')) {
+          setSelectedVaccine('TCV');
+        } else if (brandName.includes('ERIG')) {
+          setSelectedVaccine('ERIG');
         }
-      }
-      
-      // Check if any schedule items are completed to auto-populate vaccines
-      const hasCompletedSchedules = scheduleList.some(s => s.status === 'completed');
-      if (hasCompletedSchedules && Object.keys(autoSelectedVaccines).length > 0) {
-        setSelectedVaccines(autoSelectedVaccines);
       }
 
       setScheduleModalData({
@@ -613,8 +623,8 @@ const SuperAdminVaccinationSchedule = () => {
         route: '',
         schedule: []
       });
-      setSelectedVaccines({}); // Reset vaccine selections on error
-      setSelectedVaccineBrands({}); // Reset vaccine brand selections on error
+      setSelectedVaccine(''); // Reset vaccine selection on error
+      setSelectedVaccineBrand(''); // Reset vaccine brand selection on error
     } finally {
       setScheduleModalLoading(false);
     }
@@ -2652,130 +2662,105 @@ const SuperAdminVaccinationSchedule = () => {
                                            <div className="space-y-6">
                                              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                                                <p className="text-lg font-bold text-red-600 mb-4">💉 ARV (Anti-Rabies Vaccine)</p>
-                                               <div className="space-y-4">
-                                                 {getAvailableBrands('Anti-Rabies Vaccine').map((brand, index) => (
-                                                   <div key={index} className="p-4 bg-white rounded-lg border border-gray-200">
-                                                     <label className="flex items-center space-x-4 cursor-pointer">
-                                                       <input 
-                                                         type="checkbox" 
-                                                         className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                                         checked={selectedVaccines[brand.name] || false}
-                                                         onChange={(e) => {
-                                                           setSelectedVaccines(prev => ({ ...prev, [brand.name]: e.target.checked }));
-                                                           if (e.target.checked) {
-                                                             setSelectedVaccineBrands(prev => ({ ...prev, [brand.name]: brand }));
-                                                           } else {
-                                                             setSelectedVaccineBrands(prev => {
-                                                               const newBrands = { ...prev };
-                                                               delete newBrands[brand.name];
-                                                               return newBrands;
-                                                             });
-                                                           }
-                                                         }}
-                                                         disabled={scheduleItem?.status === 'completed'}
-                                                       />
-                                                       <div className="flex-1">
-                                                         <span className="text-lg font-semibold text-gray-800">{brand.name}</span>
-                                                         {selectedVaccines[brand.name] && (
-                                                           <div className="mt-2">
-                                                             <select 
-                                                               className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                                                               value={selectedVaccineBrands[brand.name]?.brand || ''}
-                                                               onChange={(e) => setSelectedVaccineBrands(prev => ({ 
-                                                                 ...prev, 
-                                                                 [brand.name]: { ...prev[brand.name], brand: e.target.value }
-                                                               }))}
-                                                               disabled={scheduleItem?.status === 'completed'}
-                                                             >
-                                                               <option value="">Select Brand</option>
-                                                               <option value="PCEC">PCEC</option>
-                                                               <option value="PVRV">PVRV</option>
-                                                             </select>
-                                                           </div>
-                                                         )}
-                                                         <div className="mt-1 text-sm text-gray-600">
-                                                           Stock: <span className={`font-semibold ${brand.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                             {brand.quantity} available
-                                                           </span>
-                                                         </div>
-                                                       </div>
-                                                     </label>
-                                                   </div>
-                                                 ))}
-                                               </div>
+                                                 <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
+                                                   <input 
+                                                   type="radio" 
+                                                   name="vaccine" 
+                                                   className="w-5 h-5 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
+                                                   checked={selectedVaccine === 'VAXIRAB (PCEC)'}
+                                                   onChange={() => {
+                                                     setSelectedVaccine('VAXIRAB (PCEC)');
+                                                     setSelectedVaccineBrand('');
+                                                   }}
+                                                   disabled={scheduleItem?.status === 'completed'}
+                                                   />
+                                                   <span className="text-lg font-semibold text-gray-800">VAXIRAB (PCEC)</span>
+                                                 </label>
+                                               <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200 mt-4">
+                                                   <input 
+                                                   type="radio" 
+                                                   name="vaccine" 
+                                                   className="w-5 h-5 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
+                                                   checked={selectedVaccine === 'SPEEDA (PVRV)'}
+                                                   onChange={() => {
+                                                     setSelectedVaccine('SPEEDA (PVRV)');
+                                                     setSelectedVaccineBrand('');
+                                                   }}
+                                                   disabled={scheduleItem?.status === 'completed'}
+                                                   />
+                                                   <span className="text-lg font-semibold text-gray-800">SPEEDA (PVRV)</span>
+                                                 </label>
                               </div>
                               
                                              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                                                <p className="text-lg font-bold text-red-600 mb-4">🩹 TCV (Tetanus Toxoid-Containing Vaccine)</p>
-                                               {getAvailableBrands('Tetanus').map((brand, index) => (
-                                                 <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 mb-4">
-                                                   <label className="flex items-center space-x-4 cursor-pointer">
-                                                     <input 
-                                                       type="checkbox" 
-                                                       className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                                       checked={selectedVaccines[brand.name] || false}
-                                                       onChange={(e) => {
-                                                         setSelectedVaccines(prev => ({ ...prev, [brand.name]: e.target.checked }));
-                                                         if (e.target.checked) {
-                                                           setSelectedVaccineBrands(prev => ({ ...prev, [brand.name]: brand }));
-                                                         } else {
-                                                           setSelectedVaccineBrands(prev => {
-                                                             const newBrands = { ...prev };
-                                                             delete newBrands[brand.name];
-                                                             return newBrands;
-                                                           });
-                                                         }
-                                                       }}
-                                                       disabled={scheduleItem?.status === 'completed'}
-                                                     />
-                                                     <div className="flex-1">
-                                                       <span className="text-lg font-semibold text-gray-800">{brand.name}</span>
-                                                       <div className="mt-1 text-sm text-gray-600">
-                                                         Stock: <span className={`font-semibold ${brand.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                           {brand.quantity} available
-                                                         </span>
-                                                       </div>
-                                                     </div>
-                                                   </label>
-                                                 </div>
-                                               ))}
+                                               <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
+                                                 <input 
+                                                   type="radio" 
+                                                   name="vaccine" 
+                                                   className="w-5 h-5 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
+                                                   checked={selectedVaccine === 'TCV'}
+                                                   onChange={() => {
+                                                     setSelectedVaccine('TCV');
+                                                     setSelectedVaccineBrand('');
+                                                   }}
+                                                   disabled={scheduleItem?.status === 'completed'}
+                                                 />
+                                                 <span className="text-lg font-semibold text-gray-800">TCV</span>
+                                               </label>
                                     </div>
                                              
                                              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                                                <p className="text-lg font-bold text-red-600 mb-4">💊 ERIG (Equine Rabies Immunoglobulin)</p>
-                                               {getAvailableBrands('ERIG').map((brand, index) => (
-                                                 <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 mb-4">
-                                                   <label className="flex items-center space-x-4 cursor-pointer">
-                                                     <input 
-                                                       type="checkbox" 
-                                                       className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                                       checked={selectedVaccines[brand.name] || false}
-                                                       onChange={(e) => {
-                                                         setSelectedVaccines(prev => ({ ...prev, [brand.name]: e.target.checked }));
-                                                         if (e.target.checked) {
-                                                           setSelectedVaccineBrands(prev => ({ ...prev, [brand.name]: brand }));
-                                                         } else {
-                                                           setSelectedVaccineBrands(prev => {
-                                                             const newBrands = { ...prev };
-                                                             delete newBrands[brand.name];
-                                                             return newBrands;
-                                                           });
-                                                         }
-                                                       }}
-                                                       disabled={scheduleItem?.status === 'completed'}
-                                                     />
-                                                     <div className="flex-1">
-                                                       <span className="text-lg font-semibold text-gray-800">{brand.name}</span>
-                                                       <div className="mt-1 text-sm text-gray-600">
-                                                         Stock: <span className={`font-semibold ${brand.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                           {brand.quantity} available
-                                                         </span>
-                                                       </div>
-                                                     </div>
-                                                   </label>
-                                                 </div>
-                                               ))}
+                                               <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
+                                                 <input 
+                                                   type="radio" 
+                                                   name="vaccine" 
+                                                   className="w-5 h-5 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
+                                                   checked={selectedVaccine === 'ERIG'}
+                                                   onChange={() => {
+                                                     setSelectedVaccine('ERIG');
+                                                     setSelectedVaccineBrand('');
+                                                   }}
+                                                   disabled={scheduleItem?.status === 'completed'}
+                                                 />
+                                                 <span className="text-lg font-semibold text-gray-800">ERIG</span>
+                                               </label>
                                     </div>
+                                    
+                                    {/* Brand Selection Dropdown */}
+                                    {selectedVaccine && (
+                                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200 mt-6">
+                                        <p className="text-lg font-bold text-blue-600 mb-4">🏷️ Select Brand/Branch</p>
+                                        <select 
+                                          className="w-full p-4 border border-gray-300 rounded-lg text-lg font-semibold bg-white"
+                                          value={selectedVaccineBrand}
+                                          onChange={(e) => setSelectedVaccineBrand(e.target.value)}
+                                          disabled={scheduleItem?.status === 'completed'}
+                                        >
+                                          <option value="">Select Brand/Branch Number</option>
+                                          {getAvailableBrands(selectedVaccine).map((brand, index) => (
+                                            <option key={index} value={brand.branchNo}>
+                                              {brand.name} - Branch {brand.branchNo} (Stock: {brand.quantity})
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {selectedVaccineBrand && (
+                                          <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
+                                            <p className="text-sm text-gray-600">
+                                              <span className="font-semibold">Selected:</span> {selectedVaccine} - {selectedVaccineBrand}
+                                            </p>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                              <span className="font-semibold">Dosage:</span> {
+                                                selectedVaccine.includes('ERIG') ? 
+                                                  `${calculateERIGDosage(scheduleModalData?.patient?.weight || 70)}ml` : 
+                                                  getVaccineDosage(selectedVaccine, scheduleModalData?.route)
+                                              }
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
                                       </div>
                                   </div>
                                   
@@ -2787,8 +2772,8 @@ const SuperAdminVaccinationSchedule = () => {
                                              setVaccineConfirmData({
                                                day,
                                                scheduleItem,
-                                               selectedVaccines: { ...selectedVaccines },
-                                               selectedVaccineBrands: { ...selectedVaccineBrands }
+                                               selectedVaccine,
+                                               selectedVaccineBrand
                                              });
                                              setShowVaccineConfirm(true);
                                            }}
@@ -2852,32 +2837,26 @@ const SuperAdminVaccinationSchedule = () => {
                   <h4 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-red-600 uppercase tracking-wide">Selected Vaccines</h4>
                     </div>
                 <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                  {Object.entries(vaccineConfirmData?.selectedVaccines || {}).map(([vaccine, selected]) => {
-                    if (selected && vaccineConfirmData?.selectedVaccineBrands?.[vaccine]) {
-                      const vaccineBrand = vaccineConfirmData.selectedVaccineBrands[vaccine];
-                      return (
-                        <div key={vaccine} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow space-y-2 sm:space-y-0">
-                          <div>
-                            <span className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">{vaccine}</span>
-                            {vaccineBrand.brand && (
-                              <span className="text-xs sm:text-sm text-gray-600 ml-2">({vaccineBrand.brand})</span>
-                            )}
-                          </div>
-                          <span className="text-xs sm:text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg">
-                            {vaccine.includes('ERIG') ? 
-                              `${calculateERIGDosage(scheduleModalData?.patient?.weight || 70)}ml` : 
-                              getVaccineDosage(vaccine, scheduleModalData?.route)
-                            }
-                          </span>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
+                  {vaccineConfirmData?.selectedVaccine && (
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow space-y-2 sm:space-y-0">
+                      <div>
+                        <span className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">{vaccineConfirmData.selectedVaccine}</span>
+                        {vaccineConfirmData.selectedVaccineBrand && (
+                          <span className="text-xs sm:text-sm text-gray-600 ml-2">({vaccineConfirmData.selectedVaccineBrand})</span>
+                        )}
+                      </div>
+                      <span className="text-xs sm:text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg">
+                        {vaccineConfirmData.selectedVaccine.includes('ERIG') ? 
+                          `${calculateERIGDosage(scheduleModalData?.patient?.weight || 70)}ml` : 
+                          getVaccineDosage(vaccineConfirmData.selectedVaccine, scheduleModalData?.route)
+                        }
+                      </span>
+                    </div>
+                  )}
                 </div>
             </div>
 
-              {Object.values(vaccineConfirmData?.selectedVaccines || {}).some(v => v) && (
+              {vaccineConfirmData?.selectedVaccine && (
                 <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 sm:border-l-6 border-yellow-400 p-4 sm:p-6 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 md:mb-8 shadow-sm">
                   <div className="flex items-center">
                     <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-400 rounded-full flex items-center justify-center mr-2 sm:mr-3">
@@ -2908,8 +2887,8 @@ const SuperAdminVaccinationSchedule = () => {
                       await processVaccineUpdate();
                       setShowVaccineConfirm(false);
                       setSelectedDose(null);
-                      setSelectedVaccines({});
-                      setSelectedVaccineBrands({});
+                      setSelectedVaccine('');
+                      setSelectedVaccineBrand('');
                     } catch (err) {
                       console.error('Error processing vaccine update:', err);
                       showNotification('Error updating vaccination', 'error');
