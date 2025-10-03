@@ -664,19 +664,54 @@ const SuperAdminDashboard = () => {
               const vaccineCenter = v.center || v.centerName || v.healthCenter || v.facility || v.treatmentCenter || '';
               const normalizedCenter = vaccineCenter.toLowerCase().trim();
               const normalizedUserCenter = userCenter.toLowerCase().trim();
+              
+              console.log('Vaccine filtering:', {
+                vaccineCenter,
+                normalizedCenter,
+                normalizedUserCenter,
+                matches: normalizedCenter === normalizedUserCenter || 
+                        normalizedCenter.includes(normalizedUserCenter) || 
+                        normalizedUserCenter.includes(normalizedCenter)
+              });
+              
               return normalizedCenter === normalizedUserCenter || 
                      normalizedCenter.includes(normalizedUserCenter) || 
                      normalizedUserCenter.includes(normalizedCenter);
             });
             
+            console.log('Total vaccines before filtering:', allVaccines.length);
+            console.log('Filtered vaccines for center:', filteredVaccines.length);
+            console.log('Sample filtered vaccine:', filteredVaccines[0]);
+            console.log('Sample original vaccine:', allVaccines[0]);
+            
             // Generate monthly stock trends for filtered vaccines
             const monthlyData = {};
             filteredVaccines.forEach(vaccine => {
+              console.log('Processing vaccine:', {
+                vaccine,
+                createdAt: vaccine.createdAt,
+                dateAdded: vaccine.dateAdded,
+                updatedAt: vaccine.updatedAt,
+                quantity: vaccine.quantity
+              });
+              
               const date = new Date(vaccine.createdAt || vaccine.dateAdded || vaccine.updatedAt);
               const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
               const quantity = Number(vaccine.quantity || 0);
-              monthlyData[monthKey] = (monthlyData[monthKey] || 0) + quantity;
+              
+              console.log('Date processing:', {
+                date,
+                monthKey,
+                quantity,
+                isValidDate: !isNaN(date.getTime())
+              });
+              
+              if (!isNaN(date.getTime())) {
+                monthlyData[monthKey] = (monthlyData[monthKey] || 0) + quantity;
+              }
             });
+            
+            console.log('Monthly data generated:', monthlyData);
             
             // Generate labels and data for the last 12 months
             const now = new Date();
@@ -691,8 +726,18 @@ const SuperAdminDashboard = () => {
             }
             
             console.log('Filtered vaccine stock trends for center:', data);
+            
+            // If no filtered data, fall back to original data
+            if (data.every(val => val === 0) && filteredVaccines.length === 0) {
+              console.log('No filtered vaccine data found, using original API data');
+              labels = result.labels;
+              data = result.data;
+            }
           } catch (error) {
             console.error('Error filtering vaccine stock trends:', error);
+            // Fall back to original data on error
+            labels = result.labels;
+            data = result.data;
           }
         }
         
