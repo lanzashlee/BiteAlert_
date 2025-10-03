@@ -155,7 +155,7 @@ const SuperAdminVaccinationSchedule = () => {
       setStockLoading(true);
       const userCenter = getUserCenter();
       
-      let stockUrl = '/api/stock';
+      let stockUrl = '/api/vaccinestocks';
       if (userCenter && userCenter !== 'all') {
         stockUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
@@ -243,11 +243,11 @@ const SuperAdminVaccinationSchedule = () => {
           let typeMatch = false;
           
           if (vaccineName === 'VAXIRAB (PCEC)') {
-            nameMatch = vaccine.name && (vaccine.name.toLowerCase().includes('vaxirab') || vaccine.name.toLowerCase().includes('pcec'));
-            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('anti-rabies');
+            nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('vaxirab');
+            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('anti-rabies') && vaccine.brand && vaccine.brand.toLowerCase().includes('pcec');
           } else if (vaccineName === 'SPEEDA (PVRV)') {
-            nameMatch = vaccine.name && (vaccine.name.toLowerCase().includes('speeda') || vaccine.name.toLowerCase().includes('pvrv'));
-            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('anti-rabies');
+            nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('speeda');
+            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('anti-rabies') && vaccine.brand && vaccine.brand.toLowerCase().includes('pvrv');
           } else if (vaccineName === 'TCV') {
             nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('tetanus');
             typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('tetanus');
@@ -271,7 +271,8 @@ const SuperAdminVaccinationSchedule = () => {
                     branchNo: entry.branchNo,
                     quantity: entry.stock,
                     expirationDate: entry.expirationDate,
-                    centerName: center.centerName
+                    centerName: center.centerName,
+                    type: vaccine.type
                   });
                 }
               });
@@ -2765,7 +2766,8 @@ const SuperAdminVaccinationSchedule = () => {
                                       <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200 mt-6">
                                         <p className="text-lg font-bold text-blue-600 mb-4">🏷️ Select Brand/Branch</p>
                                         <p className="text-sm text-gray-600 mb-2">Selected Vaccine: {selectedVaccine}</p>
-                                        <p className="text-sm text-gray-600 mb-4">Available Brands: {getAvailableBrands(selectedVaccine).length}</p>
+                                        <p className="text-sm text-gray-600 mb-2">Available Brands: {getAvailableBrands(selectedVaccine).length}</p>
+                                        <p className="text-sm text-gray-600 mb-4">Vaccine Stocks Data: {vaccineStocks.length} centers loaded</p>
                                         <select 
                                           className="w-full p-4 border border-gray-300 rounded-lg text-lg font-semibold bg-white"
                                           value={selectedVaccineBrand}
@@ -2775,7 +2777,7 @@ const SuperAdminVaccinationSchedule = () => {
                                           <option value="">Select Brand/Branch Number</option>
                                           {getAvailableBrands(selectedVaccine).map((brand, index) => (
                                             <option key={index} value={brand.branchNo}>
-                                              {brand.name} - Branch {brand.branchNo} (Stock: {brand.quantity})
+                                              {brand.name} ({brand.brand}) - Branch {brand.branchNo} (Stock: {brand.quantity})
                                             </option>
                                           ))}
                                         </select>
