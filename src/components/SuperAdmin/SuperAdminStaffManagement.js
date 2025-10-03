@@ -510,6 +510,8 @@ const SuperAdminStaffManagement = () => {
                 value={centerFilter} 
                 onChange={(e) => setCenterFilter(e.target.value)}
                 className="filter-select"
+                aria-label="Filter by health center"
+                title="Filter by center"
               >
                 <option value="">All Centers</option>
                 {centerOptions.map(name => (
@@ -520,6 +522,8 @@ const SuperAdminStaffManagement = () => {
                  value={roleFilter} 
                  onChange={(e) => setRoleFilter(e.target.value)}
                  className="filter-select"
+                 aria-label="Filter by staff role"
+                 title="Filter by role"
                >
                  <option value="">All Roles</option>
                  {uniqueRoles.map(role => (
@@ -530,6 +534,8 @@ const SuperAdminStaffManagement = () => {
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="filter-select"
+                aria-label="Filter by staff status"
+                title="Filter by status"
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>

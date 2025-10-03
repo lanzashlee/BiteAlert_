@@ -205,7 +205,13 @@ const SuperAdminCenter = () => {
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <select className="filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <select 
+              className="filter-select" 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sort centers by"
+              title="Sort centers"
+            >
               <option value="name">Sort: Center Name (A-Z)</option>
               <option value="address">Sort: Address (A-Z)</option>
               <option value="contact">Sort: Contact Person (A-Z)</option>
@@ -216,6 +222,8 @@ const SuperAdminCenter = () => {
               className="filter-select"
               value={centerFilter}
               onChange={(e)=>setCenterFilter(e.target.value)}
+              aria-label="Filter by center"
+              title="Filter by center"
             >
               <option value="">All Centers</option>
               {centerOptions.map(name => (

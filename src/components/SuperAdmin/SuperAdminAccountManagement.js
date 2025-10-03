@@ -436,6 +436,8 @@ const SuperAdminAccountManagement = () => {
                 className="filter-select" 
                 value={centerFilter} 
                 onChange={handleCenterFilter}
+                aria-label="Filter by health center"
+                title="Filter by health center"
               >
                 <option value="">All Centers</option>
                 {centers.map((c) => (
@@ -446,6 +448,8 @@ const SuperAdminAccountManagement = () => {
                 className="filter-select" 
                 value={statusFilter} 
                 onChange={handleStatusFilter}
+                aria-label="Filter by account status"
+                title="Filter by account status"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -496,7 +500,11 @@ const SuperAdminAccountManagement = () => {
                       <td>
                         <div className="action-buttons">
                           <div className="status-container">
-                            <span className={`status-indicator ${account.isActive ? 'active' : 'inactive'}`}>
+                            <span 
+                              className={`status-indicator ${account.isActive ? 'active' : 'inactive'}`}
+                              aria-label={`Account status: ${account.isActive ? 'Active' : 'Inactive'}`}
+                              title={`Account status: ${account.isActive ? 'Active' : 'Inactive'}`}
+                            >
                               {account.isActive ? 'Active' : 'Inactive'}
                             </span>
                             <div className="table-actions">

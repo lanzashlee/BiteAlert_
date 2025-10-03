@@ -1013,6 +1013,8 @@ const SuperAdminPatientManagement = () => {
                 value={centerFilter} 
                 onChange={(e) => setCenterFilter(e.target.value)}
                 className="filter-select"
+                aria-label="Filter by health center"
+                title="Filter by center"
               >
                 <option value="">All Centers</option>
                 {centerOptions.map(c => (
@@ -1023,6 +1025,8 @@ const SuperAdminPatientManagement = () => {
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="filter-select"
+                aria-label="Filter by patient status"
+                title="Filter by status"
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>

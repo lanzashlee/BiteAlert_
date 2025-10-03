@@ -2295,6 +2295,7 @@ const SuperAdminVaccinationSchedule = () => {
                 value={centerFilter}
                 onChange={(e) => setCenterFilter(e.target.value)}
                 className="filter-select"
+                aria-label="Filter by health center"
                 title="Filter by health center"
               >
                 <option value="">All Centers</option>
@@ -2307,6 +2308,8 @@ const SuperAdminVaccinationSchedule = () => {
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="filter-select"
+                aria-label="Filter by vaccination status"
+                title="Filter by status"
               >
                 <option value="">All Status</option>
                 <option value="today">Today</option>
@@ -2319,6 +2322,8 @@ const SuperAdminVaccinationSchedule = () => {
                 value={vaccinationDayFilter} 
                 onChange={(e) => setVaccinationDayFilter(e.target.value)}
                 className="filter-select"
+                aria-label="Filter by vaccination day"
+                title="Filter by day"
               >
                 <option value="">All Days</option>
                 <option value="Day 0">Day 0</option>
@@ -2334,6 +2339,8 @@ const SuperAdminVaccinationSchedule = () => {
                 onChange={(e) => setDateFilter(e.target.value)}
                 className="filter-select"
                 placeholder="Filter by date"
+                aria-label="Filter by specific date"
+                title="Filter by date"
               />
 
               <button type="button" className="btn-secondary" onClick={clearFilters} title="Clear all filters" aria-label="Clear all applied filters">
