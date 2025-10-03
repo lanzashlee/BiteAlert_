@@ -893,81 +893,81 @@ const SuperAdminPatientManagement = () => {
   // Patient actions
 
   const handleActivate = async (patientId) => {
-
     try {
-
-      const res = await fetch(`/api/patients/${patientId}`, { 
-
-        method: 'PUT',
-
+      console.log('🔍 PATIENT ACTIVATION DEBUG: Activating patient:', patientId);
+      
+      // Try the updateAccountStatus endpoint first
+      const res = await apiFetch(apiConfig.endpoints.updateAccountStatus, { 
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-
-        body: JSON.stringify({ status: 'Active' })
-
+        body: JSON.stringify({ 
+          patientId: patientId,
+          status: 'Active',
+          role: 'Patient'
+        })
       });
 
+      console.log('🔍 PATIENT ACTIVATION DEBUG: API response status:', res.status);
+      console.log('🔍 PATIENT ACTIVATION DEBUG: API response ok:', res.ok);
+
       if (res.ok) {
-
+        const data = await res.json();
+        console.log('🔍 PATIENT ACTIVATION DEBUG: API response data:', data);
+        
         setPatients(patients.map(p => 
-
           p._id === patientId ? { ...p, status: 'Active' } : p
-
         ));
 
         showNotification('Patient activated successfully', 'success');
-
       } else {
-
-        showNotification('Failed to activate patient', 'error');
-
+        const errorData = await res.json().catch(() => ({}));
+        console.error('🔍 PATIENT ACTIVATION DEBUG: API error response:', errorData);
+        showNotification(`Failed to activate patient: ${errorData.message || 'Server error'}`, 'error');
       }
-
     } catch (error) {
-
-      showNotification('Error activating patient', 'error');
-
+      console.error('🔍 PATIENT ACTIVATION DEBUG: Network error:', error);
+      showNotification(`Error activating patient: ${error.message}`, 'error');
     }
-
   };
 
 
 
   const handleDeactivate = async (patientId) => {
-
     try {
-
-      const res = await fetch(`/api/patients/${patientId}`, { 
-
-        method: 'PUT',
-
+      console.log('🔍 PATIENT DEACTIVATION DEBUG: Deactivating patient:', patientId);
+      
+      // Try the updateAccountStatus endpoint first
+      const res = await apiFetch(apiConfig.endpoints.updateAccountStatus, { 
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-
-        body: JSON.stringify({ status: 'Inactive' })
-
+        body: JSON.stringify({ 
+          patientId: patientId,
+          status: 'Inactive',
+          role: 'Patient'
+        })
       });
 
+      console.log('🔍 PATIENT DEACTIVATION DEBUG: API response status:', res.status);
+      console.log('🔍 PATIENT DEACTIVATION DEBUG: API response ok:', res.ok);
+
       if (res.ok) {
-
+        const data = await res.json();
+        console.log('🔍 PATIENT DEACTIVATION DEBUG: API response data:', data);
+        
         setPatients(patients.map(p => 
-
           p._id === patientId ? { ...p, status: 'Inactive' } : p
-
         ));
 
         showNotification('Patient deactivated successfully', 'success');
-
       } else {
-
-        showNotification('Failed to deactivate patient', 'error');
-
+        const errorData = await res.json().catch(() => ({}));
+        console.error('🔍 PATIENT DEACTIVATION DEBUG: API error response:', errorData);
+        showNotification(`Failed to deactivate patient: ${errorData.message || 'Server error'}`, 'error');
       }
-
     } catch (error) {
-
-      showNotification('Error deactivating patient', 'error');
-
+      console.error('🔍 PATIENT DEACTIVATION DEBUG: Network error:', error);
+      showNotification(`Error deactivating patient: ${error.message}`, 'error');
     }
-
   };
 
 
