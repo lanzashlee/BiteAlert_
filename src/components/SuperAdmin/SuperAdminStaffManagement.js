@@ -284,7 +284,7 @@ const SuperAdminStaffManagement = () => {
           console.log('Total staff before filtering:', mappedStaff.length);
           console.log('Sample staff data:', mappedStaff.slice(0, 2));
           
-          // Apply center filtering - check both center and officeAddress fields
+          // Apply center filtering - prioritize officeAddress field
           const filteredStaff = mappedStaff.filter(staff => {
             if (userCenter && userCenter !== 'all') {
               const staffCenter = staff.center || staff.centerName || '';
@@ -295,24 +295,45 @@ const SuperAdminStaffManagement = () => {
               console.log(`  - Office address: "${officeAddress}"`);
               console.log(`  - User center: "${userCenter}"`);
               
-              // Check if center field matches
-              const centerMatch = staffCenter.toLowerCase().trim() === userCenter.toLowerCase().trim() ||
-                                 staffCenter.toLowerCase().includes(userCenter.toLowerCase()) ||
-                                 userCenter.toLowerCase().includes(staffCenter.toLowerCase());
+              // Primary: Check if office address contains the center name
+              let addressMatch = false;
+              if (officeAddress) {
+                // Normalize both strings for comparison
+                const normalizedAddress = officeAddress.toLowerCase().trim();
+                const normalizedUserCenter = userCenter.toLowerCase().trim();
+                
+                // Check for exact match or partial match
+                addressMatch = normalizedAddress === normalizedUserCenter ||
+                              normalizedAddress.includes(normalizedUserCenter) ||
+                              normalizedUserCenter.includes(normalizedAddress) ||
+                              // Handle "Balong-Bato" vs "Balong-Bato Center" variations
+                              normalizedAddress.replace(/\s*center$/i, '') === normalizedUserCenter ||
+                              normalizedUserCenter.includes(normalizedAddress.replace(/\s*center$/i, ''));
+              }
               
-              // Check if office address contains the center name
-              const addressMatch = officeAddress.toLowerCase().includes(userCenter.toLowerCase());
+              // Fallback: Check center field if office address doesn't match
+              let centerMatch = false;
+              if (!addressMatch && staffCenter) {
+                const normalizedCenter = staffCenter.toLowerCase().trim();
+                const normalizedUserCenter = userCenter.toLowerCase().trim();
+                
+                centerMatch = normalizedCenter === normalizedUserCenter ||
+                             normalizedCenter.includes(normalizedUserCenter) ||
+                             normalizedUserCenter.includes(normalizedCenter) ||
+                             normalizedCenter.replace(/\s*center$/i, '') === normalizedUserCenter ||
+                             normalizedUserCenter.includes(normalizedCenter.replace(/\s*center$/i, ''));
+              }
               
-              console.log(`  - Center match: ${centerMatch}`);
               console.log(`  - Address match: ${addressMatch}`);
+              console.log(`  - Center match: ${centerMatch}`);
               
-              const matches = centerMatch || addressMatch;
+              const matches = addressMatch || centerMatch;
               
               if (!matches) {
-                console.log('❌ FILTERING OUT:', staff.fullName, '- No center/address match');
+                console.log('❌ FILTERING OUT:', staff.fullName, '- No officeAddress/center match');
                 return false;
               }
-              console.log('✅ KEEPING:', staff.fullName, '- Center/address matches');
+              console.log('✅ KEEPING:', staff.fullName, '- officeAddress/center matches');
               return true;
             }
             return true; // Super admin sees all
