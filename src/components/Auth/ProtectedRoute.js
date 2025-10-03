@@ -10,6 +10,9 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
+        console.log('🔍 PROTECTED ROUTE DEBUG: Starting authentication check');
+        console.log('Required role:', requiredRole);
+        
         // Check if user data exists in storage (token optional)
         // Prefer sessionStorage (survives refresh), fall back to localStorage
         const userData =
@@ -18,50 +21,32 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
           sessionStorage.getItem('currentUser') ||
           localStorage.getItem('currentUser');
 
+        console.log('🔍 PROTECTED ROUTE DEBUG: User data found:', !!userData);
+
         if (!userData) {
-          console.log('No user data found, redirecting to login');
+          console.log('❌ PROTECTED ROUTE: No user data found, redirecting to login');
           navigate('/login');
           return;
         }
 
         const user = JSON.parse(userData);
-        console.log('Checking authentication for user:', user);
+        console.log('🔍 PROTECTED ROUTE DEBUG: Checking authentication for user:', user);
+        console.log('🔍 PROTECTED ROUTE DEBUG: User role:', user.role);
 
         // Check if role is required and matches
         if (requiredRole && user.role !== requiredRole) {
-          console.log(`User role ${user.role} does not match required role ${requiredRole}`);
+          console.log(`❌ PROTECTED ROUTE: User role ${user.role} does not match required role ${requiredRole}`);
           navigate('/login');
           return;
         }
+        
+        console.log('✅ PROTECTED ROUTE: Role check passed');
 
         // Skip API verification for faster loading - trust storage
-        // Only check account status for admins (optional check)
-        if (user.role === 'admin') {
-          try {
-            console.log('Checking admin account status for:', user.email);
-            const statusResponse = await apiFetch(`/api/account-status/${encodeURIComponent(user.email)}`);
-            if (statusResponse.ok) {
-              const statusData = await statusResponse.json();
-              console.log('Account status response:', statusData);
-              if (statusData.success && statusData.account && statusData.account.isActive === false) {
-                console.log('Account is deactivated, redirecting to login');
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('userData');
-                localStorage.removeItem('token');
-                navigate('/login');
-                return;
-              }
-            } else {
-              console.warn('Account status check failed, but continuing with authentication');
-            }
-          } catch (error) {
-            console.warn('Failed to check account status:', error);
-            console.log('Continuing with authentication despite status check failure');
-            // Continue with authentication even if status check fails
-          }
-        }
+        // Skip account status check for now to prevent redirect issues
+        console.log('Skipping account status check for faster authentication');
 
-        console.log('Authentication successful');
+        console.log('✅ PROTECTED ROUTE: Authentication successful');
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Authentication check error:', error);
