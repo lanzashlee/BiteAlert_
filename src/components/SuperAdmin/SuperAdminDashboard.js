@@ -290,7 +290,11 @@ const SuperAdminDashboard = () => {
   const commonOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 1000, easing: 'easeInOutQuart' }, // Reduced animation duration
+    animation: { duration: 500, easing: 'easeInOutQuart' }, // Further reduced animation duration
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
     plugins: {
       legend: {
         position: 'bottom',
@@ -829,17 +833,25 @@ const SuperAdminDashboard = () => {
     const vis = () => document.visibilityState === 'visible';
     const every = 300000; // 5 minutes
     const summaryInterval = setInterval(() => { if (vis()) updateDashboardSummary(); }, every);
-    const patientInterval = setInterval(() => { if (vis()) updatePatientGrowth(); }, every);
-    const casesInterval = setInterval(() => { if (vis()) updateCasesPerBarangay(); }, every);
-    const vaccineInterval = setInterval(() => { if (vis()) updateVaccineStockTrends(); }, every);
-    const severityInterval = setInterval(() => { if (vis()) updateSeverityChart(); }, every);
+    
+    // Batch chart updates less frequently to reduce main thread work
+    const chartInterval = setInterval(() => { 
+      if (vis()) {
+        const updateCharts = async () => {
+          await Promise.all([
+            updatePatientGrowth(),
+            updateCasesPerBarangay(),
+            updateVaccineStockTrends(),
+            updateSeverityChart()
+          ]);
+        };
+        updateCharts();
+      }
+    }, every * 2); // Update charts every 10 minutes
 
     return () => {
       clearInterval(summaryInterval);
-      clearInterval(patientInterval);
-      clearInterval(casesInterval);
-      clearInterval(vaccineInterval);
-      clearInterval(severityInterval);
+      clearInterval(chartInterval);
     };
   }, [timeRange, updateDashboardSummary, updatePatientGrowth, updateCasesPerBarangay, updateVaccineStockTrends, updateSeverityChart]);
 

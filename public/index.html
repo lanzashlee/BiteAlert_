@@ -14,13 +14,11 @@
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/img/bite_logo.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
-    <!-- Performance: Preconnect to backend and 3rd parties -->
+    <!-- Performance: Preconnect to most critical origins only (max 4) -->
     <link rel="preconnect" href="https://bitealert-backend-doga.onrender.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
-    <link rel="preconnect" href="https://maxcdn.bootstrapcdn.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     
     <!-- DNS prefetch for additional performance -->
     <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
@@ -39,9 +37,18 @@
       @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
     
-    <!-- Non-critical CSS - Load asynchronously -->
+    <!-- Non-critical CSS - Load asynchronously with font-display: swap -->
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"></noscript>
+    
+    <!-- Font Awesome font-display optimization -->
+    <style>
+      @font-face {
+        font-family: 'Font Awesome 6 Free';
+        font-display: swap;
+        src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/webfonts/fa-solid-900.woff2') format('woff2');
+      }
+    </style>
     
     <!-- Google Fonts - Optimized loading with font-display: swap -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
