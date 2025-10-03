@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
@@ -15,13 +15,13 @@ const SuperAdminVaccinationSchedule = () => {
   const [vaccinationDayFilter, setVaccinationDayFilter] = useState('');
   const [centerFilter, setCenterFilter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchTerm('');
     setStatusFilter('');
     setDateFilter('');
     setVaccinationDayFilter('');
     setCenterFilter('');
-  };
+  }, []);
   const [viewMode, setViewMode] = useState('card');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
@@ -94,7 +94,7 @@ const SuperAdminVaccinationSchedule = () => {
   }, [datePicker]);
   
   // Get schedule status for a patient
-  const getScheduleStatus = (patientData) => {
+  const getScheduleStatus = useCallback((patientData) => {
     if (!patientData?.vaccinations || patientData.vaccinations.length === 0) {
       return { status: 'No Schedule', color: '#6c757d' };
     }
@@ -147,7 +147,7 @@ const SuperAdminVaccinationSchedule = () => {
     }
 
     return { status: 'Pending', color: '#ffc107' };
-  };
+  }, []);
 
   // Load vaccine stocks
   const loadVaccineStocks = async () => {
@@ -3431,4 +3431,4 @@ const SuperAdminVaccinationSchedule = () => {
   );
 };
 
-export default SuperAdminVaccinationSchedule;
+export default memo(SuperAdminVaccinationSchedule);

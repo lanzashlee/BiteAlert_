@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import { apiFetch } from '../../config/api';
 
-export default function PatientDiagnosisManagement({ selectedPatient }) {
+const PatientDiagnosisManagement = memo(({ selectedPatient }) => {
   const [centers, setCenters] = useState([]);
   const [formData, setFormData] = useState({
     // Registration
@@ -2565,4 +2565,6 @@ export default function PatientDiagnosisManagement({ selectedPatient }) {
       </div>
     </div>
   );
-}
+});
+
+export default PatientDiagnosisManagement;

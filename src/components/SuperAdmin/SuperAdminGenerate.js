@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import LoadingSpinner from './DogLoadingSpinner';
@@ -2796,6 +2796,6 @@ const SuperAdminGenerate = () => {
   );
 };
 
-export default SuperAdminGenerate;
+export default memo(SuperAdminGenerate);
 
  

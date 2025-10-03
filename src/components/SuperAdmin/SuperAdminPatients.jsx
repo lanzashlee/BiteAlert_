@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { fullLogout } from '../../utils/auth';
 import LoadingSpinner from './DogLoadingSpinner';
@@ -11,7 +11,7 @@ import { apiFetch, apiConfig } from '../../config/api';
 const PAGE_SIZE = 20;
 
 // Case Details Form Component for Read-Only Display - Exact Form Format
-const CaseDetailsForm = ({ case: caseData }) => {
+const CaseDetailsForm = memo(({ case: caseData }) => {
   return (
     <div style={{ 
       background: 'white', 
@@ -373,7 +373,7 @@ const CaseDetailsForm = ({ case: caseData }) => {
       </section>
     </div>
   );
-};
+});
 
 const SuperAdminPatients = () => {
   const [patients, setPatients] = useState([]);
@@ -3392,4 +3392,4 @@ const SuperAdminPatients = () => {
   );
 };
 
-export default SuperAdminPatients;
+export default memo(SuperAdminPatients);
