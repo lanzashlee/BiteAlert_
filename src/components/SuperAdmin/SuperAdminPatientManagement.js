@@ -790,7 +790,7 @@ const SuperAdminPatientManagement = () => {
     console.log('User center for filtering:', userCenter);
     
     let filteredPatients = patients;
-    
+
     // Apply center-based filtering for admin users
     if (userCenter && userCenter !== 'all') {
       console.log('🔍 APPLYING ADMIN CENTER FILTERING');
@@ -910,7 +910,7 @@ const SuperAdminPatientManagement = () => {
       if (res.ok) {
         const data = await res.json();
         console.log('🔍 PATIENT ACTIVATION DEBUG: API response data:', data);
-        
+
         setPatients(patients.map(p => 
           p._id === patientId ? { ...p, status: 'Active' } : p
         ));
@@ -947,7 +947,7 @@ const SuperAdminPatientManagement = () => {
       if (res.ok) {
         const data = await res.json();
         console.log('🔍 PATIENT DEACTIVATION DEBUG: API response data:', data);
-        
+
         setPatients(patients.map(p => 
           p._id === patientId ? { ...p, status: 'Inactive' } : p
         ));

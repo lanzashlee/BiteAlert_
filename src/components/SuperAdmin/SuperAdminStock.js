@@ -1108,20 +1108,20 @@ const SuperAdminStock = () => {
                                           >
                                             {stockStatus.label}
                                           </span>
-                                          <button
+                                        <button
                                             title="Add stock to this vaccine"
-                                            onClick={(e)=>{ 
-                                              e.stopPropagation(); 
-                                              setQuickModal({ 
-                                                open:true, 
-                                                centerName:center.centerName, 
-                                                vaccine, 
-                                                quantity:'', 
-                                                batchNumber:'', 
-                                                expiryDate:''
-                                              }); 
-                                            }}
-                                            style={{
+                                          onClick={(e)=>{ 
+                                            e.stopPropagation(); 
+                                            setQuickModal({ 
+                                              open:true, 
+                                              centerName:center.centerName, 
+                                              vaccine, 
+                                              quantity:'', 
+                                              batchNumber:'', 
+                                              expiryDate:''
+                                            }); 
+                                          }}
+                                          style={{
                                               border:'none', 
                                               background:'#eafaf1', 
                                               color:'#10b981', 
@@ -1145,7 +1145,7 @@ const SuperAdminStock = () => {
                                             }}
                                           >
                                             <i className="fa-solid fa-plus" style={{fontSize:'12px'}}></i>
-                                          </button>
+                                        </button>
                                         </div>
                                       </div>
                                       <div className="vaccine-stock-info">
@@ -1268,14 +1268,14 @@ const SuperAdminStock = () => {
                 />
                 <datalist id="vaccine-suggestions">
                   {availableVaccines.map(vaccine => (
-                    <option key={vaccine._id || vaccine.name} value={vaccine.name}>
-                      {vaccine.name} ({vaccine.brand})
+                      <option key={vaccine._id || vaccine.name} value={vaccine.name}>
+                        {vaccine.name} ({vaccine.brand})
                     </option>
                   ))}
                 </datalist>
                 <small style={{ color: '#6b7280', marginTop: '4px', display: 'block' }}>
                   Type the vaccine name or select from suggestions. You can add any vaccine name.
-                </small>
+                  </small>
               </div>
 
               {/* Show vaccine type and brand when vaccine is selected */}
@@ -1469,37 +1469,37 @@ const SuperAdminStock = () => {
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
+            <div className="form-row">
+              <div className="form-group">
                   <label>Batch Number *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={quickModal.batchNumber}
-                    onChange={e=>{
-                      const inputVal = e.target.value;
-                      const entries = quickModal.vaccine?.stockEntries || [];
-                      const match = entries.find(en => String(en.branchNo || '').trim().toLowerCase() === String(inputVal || '').trim().toLowerCase());
-                      const toInputDate = (val) => {
-                        if (!val) return '';
-                        const d = new Date(val);
-                        if (isNaN(d.getTime())) {
-                          const parts = String(val).split(/[\/\-]/);
-                          if (parts.length === 3) {
-                            const m = parts[0].padStart(2,'0');
-                            const day = parts[1].padStart(2,'0');
-                            const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-                            return `${y}-${m}-${day}`;
-                          }
-                          return '';
+                <input
+                  type="text"
+                  className="form-control"
+                  value={quickModal.batchNumber}
+                  onChange={e=>{
+                    const inputVal = e.target.value;
+                    const entries = quickModal.vaccine?.stockEntries || [];
+                    const match = entries.find(en => String(en.branchNo || '').trim().toLowerCase() === String(inputVal || '').trim().toLowerCase());
+                    const toInputDate = (val) => {
+                      if (!val) return '';
+                      const d = new Date(val);
+                      if (isNaN(d.getTime())) {
+                        const parts = String(val).split(/[\/\-]/);
+                        if (parts.length === 3) {
+                          const m = parts[0].padStart(2,'0');
+                          const day = parts[1].padStart(2,'0');
+                          const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                          return `${y}-${m}-${day}`;
                         }
-                        const yyyy = d.getFullYear();
-                        const mm = String(d.getMonth()+1).padStart(2,'0');
-                        const dd = String(d.getDate()).padStart(2,'0');
-                        return `${yyyy}-${mm}-${dd}`;
-                      };
-                      setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: toInputDate(match?.expirationDate) }));
-                    }}
+                        return '';
+                      }
+                      const yyyy = d.getFullYear();
+                      const mm = String(d.getMonth()+1).padStart(2,'0');
+                      const dd = String(d.getDate()).padStart(2,'0');
+                      return `${yyyy}-${mm}-${dd}`;
+                    };
+                    setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: toInputDate(match?.expirationDate) }));
+                  }}
                     placeholder="Enter batch number"
                     style={{border: '2px solid #e5e7eb'}}
                   />
@@ -1509,22 +1509,22 @@ const SuperAdminStock = () => {
                       'Enter a unique batch number for this stock'
                     }
                   </small>
-                </div>
+              </div>
                 
-                <div className="form-group">
+              <div className="form-group">
                   <label>Expiry Date *</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={quickModal.expiryDate}
-                    onChange={e=>setQuickModal(m=>({ ...m, expiryDate:e.target.value }))}
+                <input
+                  type="date"
+                  className="form-control"
+                  value={quickModal.expiryDate}
+                  onChange={e=>setQuickModal(m=>({ ...m, expiryDate:e.target.value }))}
                     style={{border: '2px solid #e5e7eb'}}
-                  />
+                />
                   <small style={{color: '#6b7280', marginTop: '4px', display: 'block'}}>
                     Set the expiration date for this batch
                   </small>
-                </div>
               </div>
+            </div>
             </div>
             <div className="add-modal-footer">
               <button 

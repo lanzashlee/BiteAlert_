@@ -1107,7 +1107,7 @@ const SuperAdminVaccinationSchedule = () => {
           v.patient.email?.toLowerCase().includes(searchLower) ||
           v.vaccinationDay?.toLowerCase().includes(searchLower) ||
           v.biteCaseId?.toLowerCase().includes(searchLower)
-        );
+      );
       });
     }
 
@@ -2601,13 +2601,13 @@ const SuperAdminVaccinationSchedule = () => {
                                              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                                                <p className="text-lg font-bold text-red-600 mb-4">🩹 TCV (Tetanus Toxoid-Containing Vaccine)</p>
                                                <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
-                                                   <input 
-                                                     type="checkbox" 
-                                                     className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                                     checked={selectedVaccines['TCV'] || false}
-                                                     onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'TCV': e.target.checked }))}
+                                                 <input 
+                                                   type="checkbox" 
+                                                   className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                                                   checked={selectedVaccines['TCV'] || false}
+                                                   onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'TCV': e.target.checked }))}
                                                      disabled={scheduleItem?.status === 'completed'}
-                                                   />
+                                                 />
                                                  <span className="text-lg font-semibold text-gray-800">TCV</span>
                                                </label>
                                     </div>
@@ -2615,13 +2615,13 @@ const SuperAdminVaccinationSchedule = () => {
                                              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                                                <p className="text-lg font-bold text-red-600 mb-4">💊 ERIG (Equine Rabies Immunoglobulin)</p>
                                                <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
-                                                   <input 
-                                                     type="checkbox" 
-                                                     className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                                     checked={selectedVaccines['ERIG'] || false}
-                                                     onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'ERIG': e.target.checked }))}
+                                                 <input 
+                                                   type="checkbox" 
+                                                   className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                                                   checked={selectedVaccines['ERIG'] || false}
+                                                   onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'ERIG': e.target.checked }))}
                                                      disabled={scheduleItem?.status === 'completed'}
-                                                   />
+                                                 />
                                                  <span className="text-lg font-semibold text-gray-800">ERIG</span>
                                                </label>
                                     </div>
