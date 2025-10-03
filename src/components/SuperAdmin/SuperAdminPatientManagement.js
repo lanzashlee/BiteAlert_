@@ -559,18 +559,54 @@ const SuperAdminPatientManagement = () => {
           // Filter by center/barangay on client side as well
           let filteredPatients = allPatients;
           if (finalUserCenter && finalUserCenter !== 'all') {
+            console.log('🔍 PATIENT FILTERING DEBUG:');
+            console.log('User center for filtering:', finalUserCenter);
+            console.log('Total patients before filtering:', allPatients.length);
+            
             filteredPatients = allPatients.filter(p => {
               const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
               const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
               
-              // Check if patient belongs to the user's center/barangay
-              const centerMatch = patientCenter.toLowerCase().includes(finalUserCenter.toLowerCase()) || 
-                                 finalUserCenter.toLowerCase().includes(patientCenter.toLowerCase());
-              const barangayMatch = patientBarangay.toLowerCase().includes(finalUserCenter.toLowerCase()) || 
-                                  finalUserCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+              console.log(`Patient: ${p.firstName} ${p.lastName}`);
+              console.log(`  - Center field: "${patientCenter}"`);
+              console.log(`  - Barangay field: "${patientBarangay}"`);
+              console.log(`  - User center: "${finalUserCenter}"`);
               
-              return centerMatch || barangayMatch;
+              // Normalize strings for comparison
+              const normalizedCenter = patientCenter.toLowerCase().trim();
+              const normalizedBarangay = patientBarangay.toLowerCase().trim();
+              const normalizedUserCenter = finalUserCenter.toLowerCase().trim();
+              
+              // Check if patient's barangay matches the user's center name
+              const barangayMatch = normalizedBarangay === normalizedUserCenter ||
+                                  normalizedBarangay.includes(normalizedUserCenter) ||
+                                  normalizedUserCenter.includes(normalizedBarangay) ||
+                                  // Handle "Balong-Bato" vs "Balong-Bato Center" variations
+                                  normalizedBarangay.replace(/\s*center$/i, '') === normalizedUserCenter ||
+                                  normalizedUserCenter.includes(normalizedBarangay.replace(/\s*center$/i, ''));
+              
+              // Check if patient's center matches the user's center name
+              const centerMatch = normalizedCenter === normalizedUserCenter ||
+                                normalizedCenter.includes(normalizedUserCenter) ||
+                                normalizedUserCenter.includes(normalizedCenter) ||
+                                // Handle "Balong-Bato" vs "Balong-Bato Center" variations
+                                normalizedCenter.replace(/\s*center$/i, '') === normalizedUserCenter ||
+                                normalizedUserCenter.includes(normalizedCenter.replace(/\s*center$/i, ''));
+              
+              console.log(`  - Barangay match: ${barangayMatch}`);
+              console.log(`  - Center match: ${centerMatch}`);
+              
+              const matches = barangayMatch || centerMatch;
+              
+              if (!matches) {
+                console.log('❌ FILTERING OUT:', p.firstName, p.lastName, '- No barangay/center match');
+                return false;
+              }
+              console.log('✅ KEEPING:', p.firstName, p.lastName, '- Barangay/center matches');
+              return true;
             });
+            
+            console.log('🔍 PATIENT FILTERING DEBUG: Filtered patients count:', filteredPatients.length);
           } else if (!finalUserCenter) {
             // If no user center detected, try to filter for "Batis" specifically
             console.log('No user center detected, trying to filter for Batis patients');
