@@ -429,6 +429,7 @@ const SuperAdminVaccinationSchedule = () => {
       setScheduleModalLoading(true);
       setShowScheduleModal(true);
       setScheduleModalData(null);
+      setSelectedVaccines({}); // Reset vaccine selections
 
       console.log('🔍 Opening modal for patient:', patientData?.patient?.patientId, patientData?.patient?.fullName);
 
@@ -501,6 +502,23 @@ const SuperAdminVaccinationSchedule = () => {
         console.warn('Failed fetching bite case:', e);
       }
 
+      // Auto-populate vaccine selections for completed schedules
+      const autoSelectedVaccines = {};
+      if (brandName) {
+        // Map brand name to vaccine checkbox
+        if (brandName.includes('VAXIRAB') || brandName.includes('PCEC')) {
+          autoSelectedVaccines['VAXIRAB (PCEC)'] = true;
+        } else if (brandName.includes('SPEEDA') || brandName.includes('PVRV')) {
+          autoSelectedVaccines['SPEEDA (PVRV)'] = true;
+        }
+      }
+      
+      // Check if any schedule items are completed to auto-populate vaccines
+      const hasCompletedSchedules = scheduleList.some(s => s.status === 'completed');
+      if (hasCompletedSchedules && Object.keys(autoSelectedVaccines).length > 0) {
+        setSelectedVaccines(autoSelectedVaccines);
+      }
+
       setScheduleModalData({
         patient: patientData?.patient,
         biteCaseId: vdItem?.biteCaseId,
@@ -521,6 +539,7 @@ const SuperAdminVaccinationSchedule = () => {
         route: '',
         schedule: []
       });
+      setSelectedVaccines({}); // Reset vaccine selections on error
     } finally {
       setScheduleModalLoading(false);
     }
@@ -2562,7 +2581,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                      className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                                                      checked={selectedVaccines['VAXIRAB (PCEC)'] || false}
                                                      onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'VAXIRAB (PCEC)': e.target.checked }))}
-                                                     disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
+                                                     disabled={scheduleItem?.status === 'completed'}
                                                    />
                                                    <span className="text-lg font-semibold text-gray-800">VAXIRAB (PCEC)</span>
                                                  </label>
@@ -2572,7 +2591,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                      className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                                                      checked={selectedVaccines['SPEEDA (PVRV)'] || false}
                                                      onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'SPEEDA (PVRV)': e.target.checked }))}
-                                                     disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
+                                                     disabled={scheduleItem?.status === 'completed'}
                                                    />
                                                    <span className="text-lg font-semibold text-gray-800">SPEEDA (PVRV)</span>
                                                  </label>
@@ -2582,13 +2601,13 @@ const SuperAdminVaccinationSchedule = () => {
                                              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                                                <p className="text-lg font-bold text-red-600 mb-4">🩹 TCV (Tetanus Toxoid-Containing Vaccine)</p>
                                                <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
-                                                 <input 
-                                                   type="checkbox" 
-                                                   className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                                   checked={selectedVaccines['TCV'] || false}
-                                                   onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'TCV': e.target.checked }))}
-                                                   disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
-                                                 />
+                                                   <input 
+                                                     type="checkbox" 
+                                                     className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                                                     checked={selectedVaccines['TCV'] || false}
+                                                     onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'TCV': e.target.checked }))}
+                                                     disabled={scheduleItem?.status === 'completed'}
+                                                   />
                                                  <span className="text-lg font-semibold text-gray-800">TCV</span>
                                                </label>
                                     </div>
@@ -2596,13 +2615,13 @@ const SuperAdminVaccinationSchedule = () => {
                                              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                                                <p className="text-lg font-bold text-red-600 mb-4">💊 ERIG (Equine Rabies Immunoglobulin)</p>
                                                <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
-                                                 <input 
-                                                   type="checkbox" 
-                                                   className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                                   checked={selectedVaccines['ERIG'] || false}
-                                                   onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'ERIG': e.target.checked }))}
-                                                   disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
-                                                 />
+                                                   <input 
+                                                     type="checkbox" 
+                                                     className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                                                     checked={selectedVaccines['ERIG'] || false}
+                                                     onChange={(e) => setSelectedVaccines(prev => ({ ...prev, 'ERIG': e.target.checked }))}
+                                                     disabled={scheduleItem?.status === 'completed'}
+                                                   />
                                                  <span className="text-lg font-semibold text-gray-800">ERIG</span>
                                                </label>
                                     </div>
