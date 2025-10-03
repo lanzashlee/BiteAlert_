@@ -5,15 +5,26 @@ export const getUserCenter = () => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || 
                        JSON.parse(localStorage.getItem('userData'));
     
-    if (!currentUser) return null;
+    console.log('🔍 getUserCenter DEBUG:');
+    console.log('Current user:', currentUser);
+    console.log('User role:', currentUser?.role);
+    console.log('User centerName:', currentUser?.centerName);
+    
+    if (!currentUser) {
+      console.log('No current user found');
+      return null;
+    }
     
     // Super admins have access to all centers
     if (currentUser.role === 'superadmin') {
+      console.log('User is superadmin, returning "all"');
       return 'all';
     }
     
     // Regular admins are restricted to their assigned center (use as-is)
-    return currentUser.centerName || null;
+    const center = currentUser.centerName || null;
+    console.log('Returning center for admin:', center);
+    return center;
   } catch (error) {
     console.error('Error getting user center:', error);
     return null;

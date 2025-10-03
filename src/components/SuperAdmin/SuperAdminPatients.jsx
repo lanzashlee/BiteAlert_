@@ -575,8 +575,14 @@ const SuperAdminPatients = () => {
   const visiblePatients = useMemo(() => {
     const norm = (v) => String(v || '').toLowerCase();
     const userCenter = getUserCenter();
+    console.log('🔍 FILTERING DEBUG:');
     console.log('User center for filtering:', userCenter);
     console.log('Total patients before filtering:', patients.length);
+    
+    // Debug: Show first few patients' data structure
+    if (patients.length > 0) {
+      console.log('Sample patient data structure:', patients[0]);
+    }
     
     return patients.filter(p => {
       // Center-based filtering for admin users
@@ -584,17 +590,27 @@ const SuperAdminPatients = () => {
         const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
         const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
         
+        console.log(`Patient: ${p.firstName} ${p.lastName}`);
+        console.log(`  - Center fields: center=${p.center}, centerName=${p.centerName}, healthCenter=${p.healthCenter}`);
+        console.log(`  - Barangay fields: barangay=${p.barangay}, addressBarangay=${p.addressBarangay}`);
+        console.log(`  - User center: ${userCenter}`);
+        console.log(`  - Patient center: ${patientCenter}`);
+        console.log(`  - Patient barangay: ${patientBarangay}`);
+        
         // Check if patient belongs to the user's center/barangay
         const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
                            userCenter.toLowerCase().includes(patientCenter.toLowerCase());
         const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
                               userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
         
+        console.log(`  - Center match: ${centerMatch}`);
+        console.log(`  - Barangay match: ${barangayMatch}`);
+        
         if (!centerMatch && !barangayMatch) {
-          console.log('Filtering out patient:', p.firstName, p.lastName, 'Center:', patientCenter, 'Barangay:', patientBarangay);
+          console.log('❌ FILTERING OUT:', p.firstName, p.lastName);
           return false;
         }
-        console.log('Keeping patient:', p.firstName, p.lastName, 'Center:', patientCenter, 'Barangay:', patientBarangay);
+        console.log('✅ KEEPING:', p.firstName, p.lastName);
       }
       
       // text search across name, contact, address
