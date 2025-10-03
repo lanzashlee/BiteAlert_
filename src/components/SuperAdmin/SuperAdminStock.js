@@ -83,47 +83,47 @@ const SuperAdminStock = () => {
         return enBatch.toLowerCase() === desiredBatch.toLowerCase() && enExpiry === desiredExpiry;
       });
 
-      // Check if this is adding to existing vaccine or creating new one
-      const existingCenter = data.find(c => (c.centerName || '') === centerName);
-      const existingVaccine = existingCenter?.vaccines?.find(v => (v.name || '') === vaccine.name);
+      // Use the standard endpoint for both new and existing vaccines
+      const payload = {
+        center: centerName,
+        centerName: centerName,
+        vaccineName: vaccine.name,
+        vaccineType: vaccine.type || '',
+        brand: vaccine.brand || '',
+        quantity: qty,
+        expiryDate: qa.expiryDate || '',
+        batchNumber: qa.batchNumber || ''
+      };
       
-      let payload;
-      let endpoint;
+      console.log('🔍 Adding vaccine stock:', vaccine.name, 'to center:', centerName);
       
-      if (existingVaccine) {
-        // Add to existing vaccine - use PUT to update existing entry
-        payload = {
-          centerName: centerName,
-          vaccineName: vaccine.name,
-          quantity: qty,
-          expiryDate: qa.expiryDate || '',
-          batchNumber: qa.batchNumber || ''
-        };
-        endpoint = '/api/vaccinestocks/add-to-existing';
-        console.log('🔍 Adding to existing vaccine:', vaccine.name);
-      } else {
-        // Create new vaccine entry
-        payload = {
-          center: centerName,
-          centerName: centerName,
-          vaccineName: vaccine.name,
-          vaccineType: vaccine.type || '',
-          brand: vaccine.brand || '',
-          quantity: qty,
-          expiryDate: qa.expiryDate || '',
-          batchNumber: qa.batchNumber || ''
-        };
-        endpoint = '/api/vaccinestocks';
-        console.log('🔍 Creating new vaccine entry:', vaccine.name);
-      }
-      
-      const res = await apiFetch(endpoint, {
+      const res = await apiFetch('/api/vaccinestocks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const result = await res.json();
-      console.log('🔍 API RESPONSE:', result);
+      
+      console.log('🔍 Response status:', res.status);
+      console.log('🔍 Response ok:', res.ok);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('🔍 API Error Response:', errorText);
+        showToast(`Server error: ${res.status} - ${errorText}`, 'error');
+        return;
+      }
+      
+      let result;
+      try {
+        result = await res.json();
+        console.log('🔍 API RESPONSE:', result);
+      } catch (error) {
+        console.error('🔍 Failed to parse JSON response:', error);
+        const responseText = await res.text();
+        console.log('🔍 Response text:', responseText);
+        showToast('Server error: Invalid response format', 'error');
+        return;
+      }
       
       if (result.success) {
         console.log('🔍 API SUCCESS - Action:', result.action);
