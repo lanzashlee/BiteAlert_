@@ -441,13 +441,41 @@ const SuperAdminDashboard = () => {
 
       let summaryUrl = `${apiConfig.endpoints.dashboardSummary}?filter=${timeRange}`;
       if (userCenter && userCenter !== 'all') {
-        summaryUrl += `&center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for dashboard summary:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all dashboard data for client-side filtering');
       }
       
       const response = await apiFetch(summaryUrl);
       const result = await response.json();
       if (result.success && result.data) {
-        const { totalPatients, adminCount } = result.data;
+        let { totalPatients, adminCount } = result.data;
+        
+        // Apply client-side filtering for total patients
+        if (userCenter && userCenter !== 'all') {
+          try {
+            const patientsRes = await apiFetch(`${apiConfig.endpoints.patients}?page=1&limit=1000`);
+            const patientsData = await patientsRes.json();
+            const allPatients = Array.isArray(patientsData) 
+              ? patientsData 
+              : (patientsData.data || patientsData.patients || []);
+            
+            // Filter patients by center/barangay
+            const filteredPatients = allPatients.filter(p => {
+              const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+              const normalizedBarangay = patientBarangay.toLowerCase().trim();
+              const normalizedCenter = userCenter.toLowerCase().trim();
+              return normalizedBarangay === normalizedCenter || 
+                     normalizedBarangay.includes(normalizedCenter) || 
+                     normalizedCenter.includes(normalizedBarangay);
+            });
+            
+            totalPatients = filteredPatients.length;
+            console.log('Filtered total patients for center:', totalPatients);
+          } catch (error) {
+            console.error('Error filtering patients for dashboard:', error);
+          }
+        }
 
         // Health centers: fetch directly from Center Data Management
         let centersCount = 0;
@@ -523,16 +551,66 @@ const SuperAdminDashboard = () => {
       const userCenter = getUserCenter();
       let apiUrl = `${apiConfig.endpoints.patientGrowth}`;
       if (userCenter && userCenter !== 'all') {
-        apiUrl += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for patient growth:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all patient growth data for client-side filtering');
       }
       
       const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
+        let labels = result.labels;
+        let data = result.data;
+        
+        // Apply client-side filtering for admin users
+        if (userCenter && userCenter !== 'all') {
+          try {
+            const patientsRes = await apiFetch(`${apiConfig.endpoints.patients}?page=1&limit=1000`);
+            const patientsData = await patientsRes.json();
+            const allPatients = Array.isArray(patientsData) 
+              ? patientsData 
+              : (patientsData.data || patientsData.patients || []);
+            
+            // Filter patients by center/barangay
+            const filteredPatients = allPatients.filter(p => {
+              const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+              const normalizedBarangay = patientBarangay.toLowerCase().trim();
+              const normalizedCenter = userCenter.toLowerCase().trim();
+              return normalizedBarangay === normalizedCenter || 
+                     normalizedBarangay.includes(normalizedCenter) || 
+                     normalizedCenter.includes(normalizedBarangay);
+            });
+            
+            // Generate monthly growth data for filtered patients
+            const monthlyData = {};
+            filteredPatients.forEach(patient => {
+              const date = new Date(patient.createdAt || patient.registrationDate || patient.dateRegistered);
+              const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+              monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+            });
+            
+            // Generate labels and data for the last 12 months
+            const now = new Date();
+            labels = [];
+            data = [];
+            for (let i = 11; i >= 0; i--) {
+              const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+              const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+              labels.push(monthName);
+              data.push(monthlyData[monthKey] || 0);
+            }
+            
+            console.log('Filtered patient growth data for center:', data);
+          } catch (error) {
+            console.error('Error filtering patient growth data:', error);
+          }
+        }
+        
         setPatientsChartData(prev => ({
           ...prev,
-          labels: result.labels,
-          datasets: [{ ...prev.datasets[0], data: result.data }]
+          labels: labels,
+          datasets: [{ ...prev.datasets[0], data: data }]
         }));
       }
     } catch (e) { console.error(e); }
@@ -561,13 +639,64 @@ const SuperAdminDashboard = () => {
       const userCenter = getUserCenter();
       let apiUrl = `${apiConfig.endpoints.vaccineStockTrends}`;
       if (userCenter && userCenter !== 'all') {
-        apiUrl += `?center=${encodeURIComponent(userCenter)}`;
+        console.log('Admin center detected, using client-side filtering for vaccine stock trends:', userCenter);
+      } else if (!userCenter) {
+        console.log('No user center detected, fetching all vaccine stock trends for client-side filtering');
       }
       
       const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
-        setVaccinesChartData(prev => ({ ...prev, labels: result.labels, datasets: [{ ...prev.datasets[0], data: result.data }] }));
+        let labels = result.labels;
+        let data = result.data;
+        
+        // Apply client-side filtering for admin users
+        if (userCenter && userCenter !== 'all') {
+          try {
+            const vaccineRes = await apiFetch(`${apiConfig.endpoints.vaccinestocks}`);
+            const vaccineData = await vaccineRes.json();
+            const allVaccines = Array.isArray(vaccineData) 
+              ? vaccineData 
+              : (vaccineData.data || []);
+            
+            // Filter vaccines by center
+            const filteredVaccines = allVaccines.filter(v => {
+              const vaccineCenter = v.center || v.centerName || v.healthCenter || v.facility || v.treatmentCenter || '';
+              const normalizedCenter = vaccineCenter.toLowerCase().trim();
+              const normalizedUserCenter = userCenter.toLowerCase().trim();
+              return normalizedCenter === normalizedUserCenter || 
+                     normalizedCenter.includes(normalizedUserCenter) || 
+                     normalizedUserCenter.includes(normalizedCenter);
+            });
+            
+            // Generate monthly stock trends for filtered vaccines
+            const monthlyData = {};
+            filteredVaccines.forEach(vaccine => {
+              const date = new Date(vaccine.createdAt || vaccine.dateAdded || vaccine.updatedAt);
+              const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+              const quantity = Number(vaccine.quantity || 0);
+              monthlyData[monthKey] = (monthlyData[monthKey] || 0) + quantity;
+            });
+            
+            // Generate labels and data for the last 12 months
+            const now = new Date();
+            labels = [];
+            data = [];
+            for (let i = 11; i >= 0; i--) {
+              const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+              const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+              labels.push(monthName);
+              data.push(monthlyData[monthKey] || 0);
+            }
+            
+            console.log('Filtered vaccine stock trends for center:', data);
+          } catch (error) {
+            console.error('Error filtering vaccine stock trends:', error);
+          }
+        }
+        
+        setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: data }] }));
       }
     } catch (e) { console.error(e); }
   };
