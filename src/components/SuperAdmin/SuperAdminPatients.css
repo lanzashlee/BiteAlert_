@@ -400,13 +400,13 @@
 }
 
 .status-badge.active {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-  color: #166534;
+  background: #d4edda;
+  color: #155724;
 }
 
 .status-badge.inactive {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  color: #dc2626;
+  background: #f8d7da;
+  color: #721c24;
 }
 
 .status-badge.day0 {
@@ -1278,13 +1278,13 @@
 }
 
 .info-section .status-badge.active {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-  color: #166534;
+  background: #d4edda;
+  color: #155724;
 }
 
 .info-section .status-badge.inactive {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  color: #dc2626;
+  background: #f8d7da;
+  color: #721c24;
 }
 
 /* Case History Expandable Row */

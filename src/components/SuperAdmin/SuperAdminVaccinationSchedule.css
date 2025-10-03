@@ -604,23 +604,23 @@
 }
 
 .status-scheduled {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #cffafe;
+  color: #0c4a6e;
 }
 
 .status-today {
   background: #fef3c7;
-  color: #d97706;
+  color: #92400e;
 }
 
 .status-completed {
-  background: #d1fae5;
-  color: #065f46;
+  background: #d4edda;
+  color: #155724;
 }
 
 .status-missed {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #f8d7da;
+  color: #721c24;
 }
 
 .status-overdue {
