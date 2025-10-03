@@ -895,13 +895,16 @@ const SuperAdminPatientManagement = () => {
   const handleActivate = async (patientId) => {
     try {
       console.log('🔍 PATIENT ACTIVATION DEBUG: Activating patient:', patientId);
+      console.log('🔍 PATIENT ACTIVATION DEBUG: Patient ID type:', typeof patientId);
       
       // Try the updateAccountStatus endpoint first
-      const res = await apiFetch(apiConfig.endpoints.updateAccountStatus, { 
+      let res = await apiFetch(apiConfig.endpoints.updateAccountStatus, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
+          id: patientId,
           patientId: patientId,
+          _id: patientId,
           status: 'Active',
           role: 'Patient'
         })
@@ -909,6 +912,17 @@ const SuperAdminPatientManagement = () => {
 
       console.log('🔍 PATIENT ACTIVATION DEBUG: API response status:', res.status);
       console.log('🔍 PATIENT ACTIVATION DEBUG: API response ok:', res.ok);
+
+      // If updateAccountStatus fails, try direct patient update as fallback
+      if (!res.ok) {
+        console.log('🔍 PATIENT ACTIVATION DEBUG: updateAccountStatus failed, trying direct patient update');
+        res = await apiFetch(`/api/patients/${patientId}`, { 
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'Active' })
+        });
+        console.log('🔍 PATIENT ACTIVATION DEBUG: Fallback API response status:', res.status);
+      }
 
       if (res.ok) {
         const data = await res.json();
@@ -935,13 +949,16 @@ const SuperAdminPatientManagement = () => {
   const handleDeactivate = async (patientId) => {
     try {
       console.log('🔍 PATIENT DEACTIVATION DEBUG: Deactivating patient:', patientId);
+      console.log('🔍 PATIENT DEACTIVATION DEBUG: Patient ID type:', typeof patientId);
       
       // Try the updateAccountStatus endpoint first
-      const res = await apiFetch(apiConfig.endpoints.updateAccountStatus, { 
+      let res = await apiFetch(apiConfig.endpoints.updateAccountStatus, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
+          id: patientId,
           patientId: patientId,
+          _id: patientId,
           status: 'Inactive',
           role: 'Patient'
         })
@@ -949,6 +966,17 @@ const SuperAdminPatientManagement = () => {
 
       console.log('🔍 PATIENT DEACTIVATION DEBUG: API response status:', res.status);
       console.log('🔍 PATIENT DEACTIVATION DEBUG: API response ok:', res.ok);
+
+      // If updateAccountStatus fails, try direct patient update as fallback
+      if (!res.ok) {
+        console.log('🔍 PATIENT DEACTIVATION DEBUG: updateAccountStatus failed, trying direct patient update');
+        res = await apiFetch(`/api/patients/${patientId}`, { 
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'Inactive' })
+        });
+        console.log('🔍 PATIENT DEACTIVATION DEBUG: Fallback API response status:', res.status);
+      }
 
       if (res.ok) {
         const data = await res.json();
