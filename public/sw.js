@@ -56,6 +56,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip EventSource requests (SSE) - let them pass through without interception
+  if (request.headers.get('Accept') === 'text/event-stream' || 
+      request.headers.get('Cache-Control') === 'no-cache') {
+    return;
+  }
+
   // Handle different types of requests
   if (url.pathname.startsWith('/img/') || url.pathname.endsWith('.webp') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg')) {
     // Images - cache first strategy
@@ -100,23 +106,37 @@ self.addEventListener('fetch', (event) => {
         })
     );
   } else if (url.pathname.startsWith('/api/')) {
-    // API requests - network first strategy
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(DYNAMIC_CACHE)
-              .then((cache) => {
-                cache.put(request, responseClone);
-              });
-          }
-          return response;
+    // API requests - network first strategy, but skip caching for streaming endpoints
+    if (url.pathname.includes('/stream') || url.pathname.includes('/notifications')) {
+      // Don't cache streaming endpoints, just pass through
+      event.respondWith(
+        fetch(request).catch(() => {
+          // Return a simple error response instead of trying to cache
+          return new Response(JSON.stringify({ error: 'Network error' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
         })
-        .catch(() => {
-          return caches.match(request);
-        })
-    );
+      );
+    } else {
+      // Regular API requests - network first strategy
+      event.respondWith(
+        fetch(request)
+          .then((response) => {
+            if (response.status === 200) {
+              const responseClone = response.clone();
+              caches.open(DYNAMIC_CACHE)
+                .then((cache) => {
+                  cache.put(request, responseClone);
+                });
+            }
+            return response;
+          })
+          .catch(() => {
+            return caches.match(request);
+          })
+      );
+    }
   } else {
     // HTML pages - network first, fallback to cache
     event.respondWith(
