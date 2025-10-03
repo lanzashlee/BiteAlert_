@@ -577,7 +577,13 @@ const SuperAdminPatients = () => {
     const userCenter = getUserCenter();
     console.log('🔍 FILTERING DEBUG:');
     console.log('User center for filtering:', userCenter);
+    console.log('User center type:', typeof userCenter);
     console.log('Total patients before filtering:', patients.length);
+    
+    // If no user center, show all patients (for superadmin)
+    if (!userCenter) {
+      console.log('⚠️ No user center found - showing all patients (superadmin mode)');
+    }
     
     // Debug: Show first few patients' data structure
     if (patients.length > 0) {
@@ -594,8 +600,25 @@ const SuperAdminPatients = () => {
         console.log(`  - Patient barangay: ${patientBarangay}`);
         
         // Check if patient's barangay matches the user's center name
-        const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
-                              userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+        const normalizedBarangay = patientBarangay.toLowerCase().trim();
+        const normalizedCenter = userCenter.toLowerCase().trim();
+        
+        console.log(`  - Normalized barangay: "${normalizedBarangay}"`);
+        console.log(`  - Normalized center: "${normalizedCenter}"`);
+        
+        // Strict matching - only keep if barangay exactly matches center name
+        const barangayMatch = normalizedBarangay === normalizedCenter;
+        
+        // If exact match fails, try partial matching for common variations
+        if (!barangayMatch) {
+          const partialMatch = normalizedBarangay.includes(normalizedCenter) || 
+                              normalizedCenter.includes(normalizedBarangay);
+          console.log(`  - Partial match: ${partialMatch}`);
+          if (partialMatch) {
+            console.log('✅ Using partial match');
+            return true;
+          }
+        }
         
         console.log(`  - Barangay match: ${barangayMatch}`);
         
