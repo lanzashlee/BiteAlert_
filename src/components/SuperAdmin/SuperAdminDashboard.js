@@ -907,7 +907,11 @@ const SuperAdminDashboard = () => {
             </div>
             
             {/* User Profile */}
-            <div className="user-profile" onClick={() => navigate('/superadmin/profile')}>
+            <div className="user-profile" onClick={() => {
+              const profilePath = currentUser?.role === 'admin' ? '/admin/profile' : '/superadmin/profile';
+              console.log('🔍 DASHBOARD: Navigating to profile path:', profilePath, 'for role:', currentUser?.role);
+              navigate(profilePath);
+            }}>
               <div className="profile-picture">
                 <img src={getApiUrl(apiConfig.endpoints.profilePicture)} alt="Profile" onError={(e) => {
                   e.target.style.display = 'none';
