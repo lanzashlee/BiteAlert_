@@ -279,7 +279,46 @@ const SuperAdminStaffManagement = () => {
               : (staff.officeAddress || '')
           }));
           
-          const filteredStaff = filterByCenter(mappedStaff, 'center');
+          console.log('🔍 STAFF FILTERING DEBUG:');
+          console.log('User center:', userCenter);
+          console.log('Total staff before filtering:', mappedStaff.length);
+          console.log('Sample staff data:', mappedStaff.slice(0, 2));
+          
+          // Apply center filtering - check both center and officeAddress fields
+          const filteredStaff = mappedStaff.filter(staff => {
+            if (userCenter && userCenter !== 'all') {
+              const staffCenter = staff.center || staff.centerName || '';
+              const officeAddress = staff.officeAddressString || '';
+              
+              console.log(`Staff: ${staff.fullName}`);
+              console.log(`  - Center field: "${staffCenter}"`);
+              console.log(`  - Office address: "${officeAddress}"`);
+              console.log(`  - User center: "${userCenter}"`);
+              
+              // Check if center field matches
+              const centerMatch = staffCenter.toLowerCase().trim() === userCenter.toLowerCase().trim() ||
+                                 staffCenter.toLowerCase().includes(userCenter.toLowerCase()) ||
+                                 userCenter.toLowerCase().includes(staffCenter.toLowerCase());
+              
+              // Check if office address contains the center name
+              const addressMatch = officeAddress.toLowerCase().includes(userCenter.toLowerCase());
+              
+              console.log(`  - Center match: ${centerMatch}`);
+              console.log(`  - Address match: ${addressMatch}`);
+              
+              const matches = centerMatch || addressMatch;
+              
+              if (!matches) {
+                console.log('❌ FILTERING OUT:', staff.fullName, '- No center/address match');
+                return false;
+              }
+              console.log('✅ KEEPING:', staff.fullName, '- Center/address matches');
+              return true;
+            }
+            return true; // Super admin sees all
+          });
+          
+          console.log('🔍 STAFF FILTERING DEBUG: Filtered staff count:', filteredStaff.length);
           setStaff(filteredStaff);
         } else {
           showNotification('Failed to load staff data', 'error');
