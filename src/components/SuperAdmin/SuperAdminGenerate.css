@@ -379,7 +379,7 @@ body {
 }
 
 .report-body {
-    padding: 1rem 1rem 0 1rem;
+    padding: 0.5rem 0.5rem 0 0.5rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -391,7 +391,7 @@ body {
 .table-section-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.2rem;
+  gap: 0.8rem;
   align-items: flex-start;
   width: 100%;
   margin-bottom: 0;
@@ -401,10 +401,10 @@ body {
 .modern-filter-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.6rem 0.7rem;
+    gap: 0.4rem 0.5rem;
     align-items: end;
     width: 100%;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.2rem;
 }
 
 /* Ensure uniform control sizing inside filter row */
@@ -495,7 +495,7 @@ select.form-control:focus {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(17, 24, 39, 0.06);
-  padding: 0.25rem;
+  padding: 0.1rem;
 }
 
 .table {
@@ -506,7 +506,7 @@ select.form-control:focus {
 
 .table thead th {
   background: #f5f7fb;
-  padding: 8px 10px;
+  padding: 6px 8px;
   text-align: left;
   font-weight: 600;
   color: #2a3342;
@@ -515,7 +515,7 @@ select.form-control:focus {
 }
 
 .table tbody td {
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-bottom: 1px solid #eef2f7;
   font-size: 0.9rem;
 }
