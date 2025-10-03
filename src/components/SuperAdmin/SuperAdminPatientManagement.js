@@ -528,22 +528,8 @@ const SuperAdminPatientManagement = () => {
         console.log('User role:', currentUser?.role || userData?.role);
         console.log('User center name:', currentUser?.centerName || userData?.centerName);
         
-        // Temporary fix: Override user center to Batis for testing
-        if (userCenter === 'Balong-Bato' || userCenter === 'Balong-Bato Center') {
-          console.log('Overriding user center from', userCenter, 'to Batis for testing');
-          // Update localStorage to set center to Batis
-          if (currentUser) {
-            currentUser.centerName = 'Batis';
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-          }
-          if (userData) {
-            userData.centerName = 'Batis';
-            localStorage.setItem('userData', JSON.stringify(userData));
-          }
-          // Force refresh the user center
-          const updatedUserCenter = 'Batis';
-          console.log('Updated user center to:', updatedUserCenter);
-        }
+        // Use the actual user center without overriding
+        console.log('Using user center:', userCenter);
         
         // Build API URL WITHOUT server-side center/barangay filtering.
         // We fetch broadly, then apply robust client-side filtering by center/barangay
