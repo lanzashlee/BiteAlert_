@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Disallow access to sensitive areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /superadmin/
+Disallow: /static/
+Disallow: /_redirects
+Disallow: /netlify.toml
+Disallow: /vercel.json
+
+# Sitemap location
+Sitemap: https://bite-alert-clgv-bdtr8frpx-lanzashlees-projects.vercel.app/sitemap.xml
