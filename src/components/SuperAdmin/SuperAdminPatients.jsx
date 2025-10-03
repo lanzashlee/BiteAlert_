@@ -574,7 +574,29 @@ const SuperAdminPatients = () => {
   // Client-side real-time filtering derived from raw patients
   const visiblePatients = useMemo(() => {
     const norm = (v) => String(v || '').toLowerCase();
+    const userCenter = getUserCenter();
+    console.log('User center for filtering:', userCenter);
+    console.log('Total patients before filtering:', patients.length);
+    
     return patients.filter(p => {
+      // Center-based filtering for admin users
+      if (userCenter && userCenter !== 'all') {
+        const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
+        const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+        
+        // Check if patient belongs to the user's center/barangay
+        const centerMatch = patientCenter.toLowerCase().includes(userCenter.toLowerCase()) || 
+                           userCenter.toLowerCase().includes(patientCenter.toLowerCase());
+        const barangayMatch = patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) || 
+                              userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+        
+        if (!centerMatch && !barangayMatch) {
+          console.log('Filtering out patient:', p.firstName, p.lastName, 'Center:', patientCenter, 'Barangay:', patientBarangay);
+          return false;
+        }
+        console.log('Keeping patient:', p.firstName, p.lastName, 'Center:', patientCenter, 'Barangay:', patientBarangay);
+      }
+      
       // text search across name, contact, address
       if (query) {
         const hay = [
