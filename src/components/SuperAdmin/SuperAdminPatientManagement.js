@@ -793,8 +793,61 @@ const SuperAdminPatientManagement = () => {
   // Filtered patient data
 
   const filteredPatients = useMemo(() => {
+    console.log('🔍 FILTERED PATIENTS DEBUG:');
     console.log('Calculating filtered patients from:', patients.length, 'total patients');
+    
+    const userCenter = getUserCenter();
+    console.log('User center for filtering:', userCenter);
+    
     let filteredPatients = patients;
+    
+    // Apply center-based filtering for admin users
+    if (userCenter && userCenter !== 'all') {
+      console.log('🔍 APPLYING ADMIN CENTER FILTERING');
+      filteredPatients = patients.filter(p => {
+        const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
+        const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+        
+        console.log(`Patient: ${p.firstName} ${p.lastName}`);
+        console.log(`  - Center field: "${patientCenter}"`);
+        console.log(`  - Barangay field: "${patientBarangay}"`);
+        console.log(`  - User center: "${userCenter}"`);
+        
+        // Normalize strings for comparison
+        const normalizedCenter = patientCenter.toLowerCase().trim();
+        const normalizedBarangay = patientBarangay.toLowerCase().trim();
+        const normalizedUserCenter = userCenter.toLowerCase().trim();
+        
+        // Check if patient's barangay matches the user's center name
+        const barangayMatch = normalizedBarangay === normalizedUserCenter ||
+                             normalizedBarangay.includes(normalizedUserCenter) ||
+                             normalizedUserCenter.includes(normalizedBarangay) ||
+                             // Handle "Balong-Bato" vs "Balong-Bato Center" variations
+                             normalizedBarangay.replace(/\s*center$/i, '') === normalizedUserCenter ||
+                             normalizedUserCenter.includes(normalizedBarangay.replace(/\s*center$/i, ''));
+        
+        // Check if patient's center matches the user's center name
+        const centerMatch = normalizedCenter === normalizedUserCenter ||
+                           normalizedCenter.includes(normalizedUserCenter) ||
+                           normalizedUserCenter.includes(normalizedCenter) ||
+                           // Handle "Balong-Bato" vs "Balong-Bato Center" variations
+                           normalizedCenter.replace(/\s*center$/i, '') === normalizedUserCenter ||
+                           normalizedUserCenter.includes(normalizedCenter.replace(/\s*center$/i, ''));
+        
+        console.log(`  - Barangay match: ${barangayMatch}`);
+        console.log(`  - Center match: ${centerMatch}`);
+        
+        const matches = barangayMatch || centerMatch;
+        
+        if (!matches) {
+          console.log('❌ FILTERING OUT:', p.firstName, p.lastName, '- No barangay/center match');
+          return false;
+        }
+        console.log('✅ KEEPING:', p.firstName, p.lastName, '- Barangay/center matches');
+        return true;
+      });
+      console.log('🔍 FILTERED PATIENTS DEBUG: After admin filtering:', filteredPatients.length);
+    }
 
 
 

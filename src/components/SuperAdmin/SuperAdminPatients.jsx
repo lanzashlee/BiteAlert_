@@ -548,7 +548,14 @@ const SuperAdminPatients = () => {
         if (!res.ok) throw new Error(data.message || 'Failed to load patients');
 
         // Apply additional client-side filtering if needed
+        console.log('🔍 PATIENTS INITIAL FILTERING DEBUG:');
+        console.log('User center:', finalUserCenter);
+        console.log('Total patients from API:', allPatients.length);
+        console.log('Sample patient data:', allPatients.slice(0, 2));
+        
         const filteredPatients = filterByCenter(allPatients, 'center');
+        console.log('Patients after filterByCenter:', filteredPatients.length);
+        
         // Apply explicit center filter if chosen
         const norm = (v) => String(v || '')
           .toLowerCase()
@@ -559,6 +566,8 @@ const SuperAdminPatients = () => {
         const byCenter = (centerFilter && centerFilter !== 'all') 
           ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
           : filteredPatients;
+        
+        console.log('Final patients count after all filtering:', byCenter.length);
         setPatients(byCenter);
         setTotalPages(data.totalPages || data.pages || 1);
       } catch (e) {
@@ -606,19 +615,13 @@ const SuperAdminPatients = () => {
         console.log(`  - Normalized barangay: "${normalizedBarangay}"`);
         console.log(`  - Normalized center: "${normalizedCenter}"`);
         
-        // Strict matching - only keep if barangay exactly matches center name
-        const barangayMatch = normalizedBarangay === normalizedCenter;
-        
-        // If exact match fails, try partial matching for common variations
-        if (!barangayMatch) {
-          const partialMatch = normalizedBarangay.includes(normalizedCenter) || 
-                              normalizedCenter.includes(normalizedBarangay);
-          console.log(`  - Partial match: ${partialMatch}`);
-          if (partialMatch) {
-            console.log('✅ Using partial match');
-            return true;
-          }
-        }
+        // Enhanced matching - handle center name variations
+        const barangayMatch = normalizedBarangay === normalizedCenter ||
+                             normalizedBarangay.includes(normalizedCenter) ||
+                             normalizedCenter.includes(normalizedBarangay) ||
+                             // Handle "Balong-Bato" vs "Balong-Bato Center" variations
+                             normalizedBarangay.replace(/\s*center$/i, '') === normalizedCenter ||
+                             normalizedCenter.includes(normalizedBarangay.replace(/\s*center$/i, ''));
         
         console.log(`  - Barangay match: ${barangayMatch}`);
         
