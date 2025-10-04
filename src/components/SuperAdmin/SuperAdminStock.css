@@ -49,19 +49,34 @@
 }
 
 .superadmin-stock-container .main-content {
-  margin-left: 280px;
-  width: calc(100% - 280px);
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
+  max-width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: fixed;
+  top: 0;
+  left: 320px; /* Start exactly at sidebar edge */
+  width: calc(100% - 320px);
+  height: 100vh;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  z-index: 1;
   box-sizing: border-box;
-  transition: all var(--transition-normal);
+  transition: left 0.3s ease, width 0.3s ease;
+  margin: 0;
+  border: none;
+  border-left: none;
 }
 
 /* Standardize header across modules */
 .superadmin-stock-container .content-header {
-  margin: 0 5rem 1.25rem 3rem;
-  padding: 1.5rem 2.5rem;
+  margin: 0 0 1.5rem 0;
+  padding: 1rem 1.5rem;
   background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 
@@ -427,9 +442,9 @@
 
 @media (min-width: 481px) and (max-width: 768px) {
   .superadmin-stock-container .main-content {
-    margin-left: 250px;
-    width: calc(100% - 250px);
-    padding: 1.5rem;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
   }
   
   .superadmin-stock-container .quick-stats {
@@ -452,9 +467,9 @@
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .superadmin-stock-container .main-content {
-    margin-left: 260px;
-    width: calc(100% - 260px);
-    padding: 1.75rem;
+    left: 300px;
+    width: calc(100% - 300px);
+    padding: 1.5rem;
   }
   
   .superadmin-stock-container .quick-stats {
@@ -465,9 +480,9 @@
 
 @media (min-width: 1025px) {
   .superadmin-stock-container .main-content {
-    margin-left: 280px;
-    width: calc(100% - 280px);
-    padding: 2rem;
+    left: 320px;
+    width: calc(100% - 320px);
+    padding: 1.5rem 2rem;
   }
   
   .superadmin-stock-container .quick-stats {
