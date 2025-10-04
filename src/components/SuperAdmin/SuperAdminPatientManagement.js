@@ -1041,11 +1041,7 @@ const SuperAdminPatientManagement = () => {
 
 
           {loading ? (
-
             <UnifiedSpinner text="Loading patients..." />
-
-            </div>
-
           ) : (
 
             <div className="table-container">
