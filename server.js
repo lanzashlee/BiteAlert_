@@ -14,6 +14,25 @@ const app = express();
 // Use PORT for Render deployment, fallback to API_PORT for local development
 const PORT = process.env.PORT || process.env.API_PORT || 4000;
 
+// Security Headers Middleware
+app.use((req, res, next) => {
+    // Remove server information
+    res.removeHeader('X-Powered-By');
+    
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=(), autoplay=(), encrypted-media=(), fullscreen=(self), picture-in-picture=()');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    
+    // Content Security Policy
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self';");
+    
+    next();
+});
+
 // Middleware Setup
 app.use(express.json());
 
@@ -346,7 +365,6 @@ async function patchAdminAndSuperAdminIDs() {
 async function logAuditTrail(role, firstName, middleName, lastName, action, ids = {}) {
     try {
         const auditLog = new AuditTrail({
-            timestamp: new Date(),
             role,
             firstName,
             middleName,
@@ -508,7 +526,6 @@ app.post('/api/create-account', async (req, res) => {
                 adminID,
                 centerName: centerName, // Add center assignment
                 isActive: true,
-                createdAt: new Date(),
                 updatedAt: new Date()
             });
         }
@@ -632,7 +649,7 @@ app.post('/login', async (req, res) => {
         console.log(`Login successful for ${email} (${userType})`);
 
         // Generate a simple token (in production, use JWT)
-        const token = Buffer.from(`${user._id}:${Date.now()}`).toString('base64');
+        const token = Buffer.from(`${user._id}:${Math.random().toString(36).substr(2, 9)}`).toString('base64');
 
         // Send response
         res.json({
@@ -703,7 +720,7 @@ app.post('/api/login', async (req, res) => {
         );
 
         // Generate a simple token (in production, use JWT)
-        const token = Buffer.from(`${user._id}:${Date.now()}`).toString('base64');
+        const token = Buffer.from(`${user._id}:${Math.random().toString(36).substr(2, 9)}`).toString('base64');
 
         return res.json({
             success: true,
@@ -1494,8 +1511,7 @@ app.get('/api/get-geographical-data', async (req, res) => {
 app.get('/api/status', (req, res) => {
     res.json({
         server: 'running',
-        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-        timestamp: new Date()
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
     });
 });
 
@@ -2092,7 +2108,6 @@ app.post('/api/generate-vaccine-allocation', async (req, res) => {
         recommendations.sort((a, b) => b.recommendedQuantity - a.recommendedQuantity);
         recommendations.forEach((rec, i) => rec.priorityRank = i + 1);
         const allocationDoc = new VaccineAllocation({
-            generatedAt: new Date(),
             params: { startDate, endDate, granularity, minVaccineLevel, bufferPercent },
             recommendations
         });
