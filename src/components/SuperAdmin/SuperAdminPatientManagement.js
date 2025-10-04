@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { apiFetch, apiConfig } from '../../config/api';
 
 import ResponsiveSidebar from './ResponsiveSidebar';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 
 import UnifiedModal from '../UnifiedModal';
 
@@ -1041,9 +1042,7 @@ const SuperAdminPatientManagement = () => {
 
           {loading ? (
 
-            <div className="loading-state" role="status" aria-live="polite">
-
-              <i className="fa fa-spinner fa-spin"></i>
+            <UnifiedSpinner text="Loading patients..." />
 
             </div>
 

@@ -4,7 +4,7 @@ import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedModal from '../UnifiedModal';
 import { apiFetch, apiConfig } from '../../config/api';
 import './SuperAdminPrescriptiveAnalytics.css';
-import LoadingSpinner from './DogLoadingSpinner.jsx';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 
 const SuperAdminPrescriptiveAnalytics = () => {
@@ -529,9 +529,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
       <div className="superadmin-prescriptive-container">
         <ResponsiveSidebar onSignOut={handleSignOut} />
         <main className="main-content">
-          <div className="loading-container" aria-label="Loading analytics">
-            <div className="responsive-loading"><div className="responsive-spinner"></div></div>
-          </div>
+          <UnifiedSpinner text="Loading analytics..." />
         </main>
       </div>
     );

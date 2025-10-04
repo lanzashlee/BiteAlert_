@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { apiFetch } from '../../config/api';
 import './SuperAdminCenterHours.css';
 
@@ -231,9 +232,7 @@ const SuperAdminCenterHours = () => {
           </button>
         </div>
         {loading ? (
-          <div className="loading-state" role="status" aria-live="polite">
-            <i className="fa fa-spinner fa-spin"></i>
-          </div>
+          <UnifiedSpinner text="Loading center hours..." />
         ) : (
           <div className="table-container">
             <table className="accounts-table">

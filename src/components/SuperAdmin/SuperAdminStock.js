@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { apiFetch } from '../../config/api';
 import { fullLogout } from '../../utils/auth';
-import LoadingSpinner from './DogLoadingSpinner';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminStock.css';
 
@@ -1022,7 +1022,7 @@ const SuperAdminStock = () => {
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="loading-cell">
-                      <LoadingSpinner />
+                      <UnifiedSpinner />
                     </td>
                   </tr>
                 ) : filteredAndSortedData.length === 0 ? (

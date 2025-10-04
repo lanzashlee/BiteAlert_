@@ -5,7 +5,7 @@ import { fullLogout } from '../../utils/auth';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminStaffManagement.css';
-// import LoadingSpinner from './DogLoadingSpinner.jsx';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 
 const SuperAdminStaffManagement = () => {
   const [staff, setStaff] = useState([]);
@@ -546,9 +546,7 @@ const SuperAdminStaffManagement = () => {
           </div>
 
           {loading ? (
-            <div className="loading-state" role="status" aria-live="polite">
-              <div className="responsive-loading"><div className="responsive-spinner"></div></div>
-            </div>
+            <UnifiedSpinner text="Loading staff..." />
           ) : (
             <div className="table-container">
               <table className="accounts-table">

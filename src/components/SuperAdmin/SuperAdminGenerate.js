@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
-import LoadingSpinner from './DogLoadingSpinner';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import { apiFetch, apiConfig } from '../../config/api';
 import './SuperAdminGenerate.css';

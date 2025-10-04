@@ -4,7 +4,7 @@ import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import { apiFetch, apiConfig, getApiUrl } from '../../config/api';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { Suspense } from 'react';
-import SmallLoadingSpinner from './SmallDogLoading';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import './SuperAdminDashboard.css';
 
 // Lazy load Chart.js components to reduce initial bundle size
@@ -986,7 +986,7 @@ const SuperAdminDashboard = () => {
               <div className="card-title">Total Patients</div>
               <div className="card-value" id="totalPatients">
                 {loading ? (
-                  <SmallLoadingSpinner />
+                  <UnifiedSpinner size="small" centered={false} />
                 ) : (
                   <span className="value-text">
                     {summary?.totalPatients?.toLocaleString() || '0'}
@@ -1004,7 +1004,7 @@ const SuperAdminDashboard = () => {
               <div className="card-title">Vaccine Stocks</div>
               <div className="card-value" id="vaccineStocks">
                 {loading ? (
-                  <SmallLoadingSpinner />
+                  <UnifiedSpinner size="small" centered={false} />
                 ) : (
                   <span className="value-text">
                     {summary?.vaccineStocks?.toLocaleString() || '0'}
@@ -1022,7 +1022,7 @@ const SuperAdminDashboard = () => {
               <div className="card-title">Health Centers</div>
               <div className="card-value" id="healthCenters">
                 {loading ? (
-                  <SmallLoadingSpinner />
+                  <UnifiedSpinner size="small" centered={false} />
                 ) : (
                   <span className="value-text">
                     {summary?.healthCenters?.toLocaleString() || '0'}
@@ -1040,7 +1040,7 @@ const SuperAdminDashboard = () => {
               <div className="card-title">Staff</div>
               <div className="card-value" id="staffCount">
                 {loading ? (
-                  <SmallLoadingSpinner />
+                  <UnifiedSpinner size="small" centered={false} />
                 ) : (
                   <span className="value-text">
                     {summary?.staffCount?.toLocaleString() || '0'}
@@ -1061,7 +1061,7 @@ const SuperAdminDashboard = () => {
                   <div className="card-title">Administrator Accounts</div>
                   <div className="card-value" id="adminCount">
                     {loading ? (
-                      <SmallLoadingSpinner />
+                      <UnifiedSpinner size="small" centered={false} />
                     ) : (
                       <span className="value-text">
                         {summary?.adminCount?.toLocaleString() || '0'}
@@ -1079,7 +1079,7 @@ const SuperAdminDashboard = () => {
                   <div className="card-title">Active Cases</div>
                   <div className="card-value" id="activeCases">
                     {loading ? (
-                      <SmallLoadingSpinner />
+                      <UnifiedSpinner size="small" centered={false} />
                     ) : (
                       <span className="value-text">
                         {summary?.activeCases?.toLocaleString() || '0'}

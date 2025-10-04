@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminVaccinationSchedule.css';
@@ -2351,7 +2352,7 @@ const SuperAdminVaccinationSchedule = () => {
 
           {/* Views */}
               {loading ? (
-                <div className="loading-state">Loading vaccination schedules...</div>
+                <UnifiedSpinner text="Loading vaccination schedules..." />
               ) : Object.keys(vaccinationsByPatient).length === 0 ? (
                 <div className="empty-state-container">
                   <div className="empty-state-message">
@@ -3330,7 +3331,7 @@ const SuperAdminVaccinationSchedule = () => {
         customContent={(
           <div className="case-history">
             {caseHistoryLoading ? (
-              <div className="loading-state">Loading history...</div>
+              <UnifiedSpinner text="Loading history..." />
             ) : caseHistory.length === 0 ? (
               <div className="empty-state-message">
                 <i className="fa-solid fa-folder-open"></i>

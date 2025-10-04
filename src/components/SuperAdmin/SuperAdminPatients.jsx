@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, memo, lazy, Suspense } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { fullLogout } from '../../utils/auth';
-import LoadingSpinner from './DogLoadingSpinner';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminPatients.css';
@@ -2013,7 +2013,7 @@ const SuperAdminPatients = () => {
 
         {loading && (
           <div className="loading-state">
-            <LoadingSpinner />
+            <UnifiedSpinner />
           </div>
         )}
         {error && <div className="error-state">{error}</div>}
@@ -2193,7 +2193,7 @@ const SuperAdminPatients = () => {
                 <div>
                   <div className="info-section">
                     <h5>Case History</h5>
-                    {historyLoading && <div className="loading-state"><LoadingSpinner /></div>}
+                    {historyLoading && <div className="loading-state"><UnifiedSpinner /></div>}
                     {historyError && <div className="error-state">{historyError}</div>}
                     {!historyLoading && !historyError && (
                       caseHistory.length === 0 ? (

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import './SuperAdminAuditTrail.css';
-import LoadingSpinner from './DogLoadingSpinner.jsx';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { apiFetch, apiConfig } from '../../config/api';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 

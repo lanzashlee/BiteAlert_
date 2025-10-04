@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedModal from '../UnifiedModal';
 import './SuperAdminAccountManagement.css';
-import LoadingSpinner from './DogLoadingSpinner.jsx';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { apiFetch } from '../../config/api';
 
 const SuperAdminAccountManagement = () => {
@@ -472,7 +472,7 @@ const SuperAdminAccountManagement = () => {
                 {loading ? (
                   <tr>
                     <td colSpan="4" className="loading-state">
-                      <div className="responsive-loading"><div className="responsive-spinner"></div></div>
+                      <UnifiedSpinner />
                     </td>
                   </tr>
                 ) : filteredAccounts.length === 0 ? (

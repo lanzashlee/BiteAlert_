@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
+import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { apiFetch } from '../../config/api';
 import './SuperAdminProfile.css';
 
@@ -347,11 +348,7 @@ const SuperAdminProfile = () => {
           <div className="content-header">
             <h2>Profile Settings</h2>
           </div>
-          <div className="loading-container">
-            <div className="loading-spinner" aria-label="Loading profile">
-              <i className="fa fa-spinner fa-spin" />
-            </div>
-          </div>
+          <UnifiedSpinner text="Loading profile..." />
         </main>
       </div>
     );
