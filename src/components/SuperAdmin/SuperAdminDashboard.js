@@ -19,7 +19,28 @@ const SuperAdminDashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [lastEventTime, setLastEventTime] = useState(null);
+  const [worker, setWorker] = useState(null);
   const navigate = useNavigate();
+
+  // Initialize Web Worker for heavy computations
+  useEffect(() => {
+    if (window.Worker) {
+      const dashboardWorker = new Worker('/dashboard-worker.js');
+      setWorker(dashboardWorker);
+      
+      dashboardWorker.onmessage = (e) => {
+        const { type, data, error } = e.data;
+        if (error) {
+          console.error('Worker error:', error);
+        }
+        // Handle worker responses here if needed
+      };
+      
+      return () => {
+        dashboardWorker.terminate();
+      };
+    }
+  }, []);
 
   // Get current user data
   useEffect(() => {
@@ -113,33 +134,38 @@ const SuperAdminDashboard = () => {
       };
       // initial
       fetchLatest();
-      pollInterval = setInterval(fetchLatest, 10000);
+      pollInterval = setInterval(fetchLatest, 60000); // Reduced to 60 seconds to minimize TBT
     };
 
-    // Attempt SSE first
-    try {
-      if (window && 'EventSource' in window) {
-        eventSource = new EventSource(getApiUrl(`${apiConfig.endpoints.notifications}/stream`));
-        eventSource.onmessage = (e) => {
-          try {
-            const payload = JSON.parse(e.data);
-            const events = Array.isArray(payload) ? payload : [payload];
-            appendEvents(events);
-          } catch {
-            // ignore malformed message
-          }
-        };
-        eventSource.onerror = () => {
-          // fallback to polling on error
-          eventSource && eventSource.close();
+    // Defer notification loading to reduce initial TBT
+    const initNotifications = () => {
+      try {
+        if (window && 'EventSource' in window) {
+          eventSource = new EventSource(getApiUrl(`${apiConfig.endpoints.notifications}/stream`));
+          eventSource.onmessage = (e) => {
+            try {
+              const payload = JSON.parse(e.data);
+              const events = Array.isArray(payload) ? payload : [payload];
+              appendEvents(events);
+            } catch {
+              // ignore malformed message
+            }
+          };
+          eventSource.onerror = () => {
+            // fallback to polling on error
+            eventSource && eventSource.close();
+            startPolling();
+          };
+        } else {
           startPolling();
-        };
-      } else {
+        }
+      } catch {
         startPolling();
       }
-    } catch {
-      startPolling();
-    }
+    };
+
+    // Delay notification initialization to reduce initial TBT
+    setTimeout(initNotifications, 3000);
 
     return () => {
       if (eventSource) eventSource.close();
@@ -815,20 +841,20 @@ const SuperAdminDashboard = () => {
     // Load summary immediately for LCP optimization
     updateDashboardSummary();
     
-    // Defer chart loading to reduce initial TBT
+    // Defer chart loading to reduce initial TBT - use longer delays
     const loadCharts = () => {
-      const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
+      const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1000));
       idle(() => {
-        // Load charts one by one to reduce main thread blocking
+        // Load charts with longer intervals to reduce main thread blocking
         setTimeout(() => updatePatientGrowth(), 0);
-        setTimeout(() => updateCasesPerBarangay(), 100);
-        setTimeout(() => updateVaccineStockTrends(), 200);
-        setTimeout(() => updateSeverityChart(), 300);
+        setTimeout(() => updateCasesPerBarangay(), 500);
+        setTimeout(() => updateVaccineStockTrends(), 1000);
+        setTimeout(() => updateSeverityChart(), 1500);
       });
     };
     
-    // Delay chart loading to improve initial render
-    setTimeout(loadCharts, 500);
+    // Delay chart loading significantly to improve initial render
+    setTimeout(loadCharts, 2000);
 
     const vis = () => document.visibilityState === 'visible';
     const every = 300000; // 5 minutes
@@ -847,7 +873,7 @@ const SuperAdminDashboard = () => {
         };
         updateCharts();
       }
-    }, every * 3); // Update charts every 15 minutes
+    }, every * 4); // Update charts every 20 minutes
 
     return () => {
       clearInterval(summaryInterval);

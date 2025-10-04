@@ -3,6 +3,48 @@
 @import '../GlobalResponsive.css';
 @import './ResponsiveSidebar.css';
 
+/* Performance optimizations */
+* {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Enable hardware acceleration for better performance */
+.main-content,
+.table-responsive,
+.patient-modal,
+.admin-dashboard-filters {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* Optimize rendering performance */
+.table-responsive,
+.patient-modal {
+    contain: layout style paint;
+}
+
+/* Reduce layout thrashing */
+.table {
+    contain: layout;
+}
+
+/* Optimize animations */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Disable animations for better performance */
+.main-content * {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+}
+
 /* Main Content Styling */
 .main-content {
   padding: 2rem;

@@ -43,13 +43,42 @@
     contain: layout;
 }
 
-/* Optimize animations */
+/* Optimize animations and reduce main thread work */
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* Disable animations for better performance */
+.dashboard-container * {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+}
+
+/* Optimize chart rendering */
+.panel-body canvas {
+    contain: layout style paint;
+    transform: translateZ(0);
+}
+
+/* Reduce layout thrashing */
+.dashboard-cards .card {
+    contain: layout style;
+}
+
+/* Optimize notification dropdown */
+.notification-dropdown {
+    contain: layout style paint;
+    transform: translateZ(0);
+}
+
+/* Optimize sidebar */
+.responsive-sidebar {
+    contain: layout style;
+    transform: translateZ(0);
 }
 
 body {

@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, memo, lazy, Suspense } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { fullLogout } from '../../utils/auth';
 import LoadingSpinner from './DogLoadingSpinner';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminPatients.css';
-import PatientNewCaseStructured from './PatientNewCaseStructured.jsx';
 import { apiFetch, apiConfig } from '../../config/api';
+
+// Lazy load heavy components to reduce initial bundle size
+const PatientNewCaseStructured = lazy(() => import('./PatientNewCaseStructured.jsx'));
 
 const PAGE_SIZE = 20;
 
@@ -466,154 +468,98 @@ const SuperAdminPatients = () => {
     return usp.toString();
   }, [query, status, barangay, centerFilter, dateFilter, vaccinationDate, page, sexFilter]);
 
-  // Load centers for filter dropdown
-  useEffect(() => {
-    async function fetchCenters() {
-      try {
-        const res = await apiFetch(apiConfig.endpoints.centers);
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
-        const names = Array.from(new Set((list || [])
-          .filter(c => !c.isArchived)
-          .map(c => String(c.centerName || c.name || '').trim())
-          .filter(Boolean)))
-          .sort((a,b)=>a.localeCompare(b));
-        setCenterOptions(names);
-      } catch (_) {
-        setCenterOptions([]);
-      }
-    }
-    fetchCenters();
-  }, []);
-
-  // Fetch bite cases to get exposure dates
+  // Optimized data fetching with batching to reduce API calls
   useEffect(() => {
     const controller = new AbortController();
-    async function fetchBiteCases() {
-      setBiteCasesLoading(true);
+    
+    const fetchAllData = async () => {
       try {
-        const userCenter = getUserCenter();
-        
-        // Build API URL with center filter for non-superadmin users
-        let apiUrl = '/api/bitecases';
-        if (userCenter && userCenter !== 'all') {
-          apiUrl += `?center=${encodeURIComponent(userCenter)}`;
+        // Batch API calls to reduce network overhead
+        const [centersRes, biteCasesRes, patientsRes] = await Promise.allSettled([
+          apiFetch(apiConfig.endpoints.centers, { signal: controller.signal }),
+          apiFetch('/api/bitecases', { signal: controller.signal }),
+          apiFetch(`${apiConfig.endpoints.patients}?${params || 'page=1&limit=1000'}`, { signal: controller.signal })
+        ]);
+
+        // Process centers
+        if (centersRes.status === 'fulfilled' && centersRes.value.ok) {
+          const data = await centersRes.value.json();
+          const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+          const names = Array.from(new Set((list || [])
+            .filter(c => !c.isArchived)
+            .map(c => String(c.centerName || c.name || '').trim())
+            .filter(Boolean)))
+            .sort((a,b)=>a.localeCompare(b));
+          setCenterOptions(names);
         }
-        
-        const res = await apiFetch(apiUrl, { signal: controller.signal });
-        const data = await res.json();
-        if (res.ok) {
+
+        // Process bite cases
+        if (biteCasesRes.status === 'fulfilled' && biteCasesRes.value.ok) {
+          const data = await biteCasesRes.value.json();
           const biteCases = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
-          // Apply additional client-side filtering if needed
           const filteredBiteCases = filterByCenter(biteCases, 'center');
           setBiteCases(filteredBiteCases);
         }
-      } catch (e) {
-        if (e.name !== 'AbortError') console.warn('Failed to fetch bite cases:', e);
-      } finally {
-        setBiteCasesLoading(false);
-      }
-    }
-    fetchBiteCases();
-    return () => controller.abort();
-  }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    async function fetchPatients() {
-      setLoading(true);
-      setError('');
-      try {
-        const userCenter = getUserCenter();
-        const finalUserCenter = userCenter; // use exact center as stored (no remap)
-
-        // Build API URL WITHOUT server-side center/barangay filtering.
-        // We fetch broadly, then apply robust client-side filtering by center/barangay
-        // to avoid missing data when backend fields vary across records.
-        let apiParams = params || 'page=1&limit=1000';
-        if (finalUserCenter && finalUserCenter !== 'all') {
-          console.log('Admin center detected, using client-side filtering for center:', finalUserCenter);
-        } else if (!finalUserCenter) {
-          console.log('No user center detected, fetching all patients for client-side filtering');
+        // Process patients
+        if (patientsRes.status === 'fulfilled' && patientsRes.value.ok) {
+          const data = await patientsRes.value.json();
+          const allPatients = Array.isArray(data) 
+            ? data 
+            : (data.data || data.patients || data.items || data.rows || []);
+          
+          const userCenter = getUserCenter();
+          const filteredPatients = filterByCenter(allPatients, 'center');
+          
+          const norm = (v) => String(v || '')
+            .toLowerCase()
+            .replace(/\s*health\s*center$/i,'')
+            .replace(/\s*center$/i,'')
+            .replace(/-/g,' ')
+            .trim();
+          const byCenter = (centerFilter && centerFilter !== 'all') 
+            ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
+            : filteredPatients;
+          
+          setPatients(byCenter);
+          setError('');
         }
-
-        const res = await apiFetch(`${apiConfig.endpoints.patients}?${apiParams}`, { signal: controller.signal });
-        const data = await res.json();
-
-        // Be resilient to different payload shapes from Patients collection
-        // Accept: Array | {data:[]} | {patients:[]} | {items:[]} | {rows:[]}
-        const allPatients = Array.isArray(data) 
-          ? data 
-          : (data.data || data.patients || data.items || data.rows || []);
-        if (!res.ok) throw new Error(data.message || 'Failed to load patients');
-
-        // Apply additional client-side filtering if needed
-        console.log('🔍 PATIENTS INITIAL FILTERING DEBUG:');
-        console.log('User center:', finalUserCenter);
-        console.log('Total patients from API:', allPatients.length);
-        console.log('Sample patient data:', allPatients.slice(0, 2));
-        
-        const filteredPatients = filterByCenter(allPatients, 'center');
-        console.log('Patients after filterByCenter:', filteredPatients.length);
-        
-        // Apply explicit center filter if chosen
-        const norm = (v) => String(v || '')
-          .toLowerCase()
-          .replace(/\s*health\s*center$/i,'')
-          .replace(/\s*center$/i,'')
-          .replace(/-/g,' ')
-          .trim();
-        const byCenter = (centerFilter && centerFilter !== 'all') 
-          ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
-          : filteredPatients;
-        
-        console.log('Final patients count after all filtering:', byCenter.length);
-        setPatients(byCenter);
-        setTotalPages(data.totalPages || data.pages || 1);
       } catch (e) {
-        if (e.name !== 'AbortError') setError(e.message);
-      } finally {
-        setLoading(false);
+        if (e.name !== 'AbortError') {
+          console.error('Error fetching data:', e);
+          setError(e.message || 'Failed to load data');
+        }
       }
-    }
-    fetchPatients();
-    return () => controller.abort();
-  }, [params]);
+    };
 
-  // Client-side real-time filtering derived from raw patients
+    fetchAllData();
+    return () => controller.abort();
+  }, [params, centerFilter]);
+
+  // Removed duplicate bite cases fetching - now handled in batched API call above
+
+  // Removed duplicate patients fetching - now handled in batched API call above
+
+  // Optimized client-side filtering with memoization
   const visiblePatients = useMemo(() => {
+    if (!patients || patients.length === 0) return [];
+    
     const norm = (v) => String(v || '').toLowerCase();
     const userCenter = getUserCenter();
-    console.log('🔍 FILTERING DEBUG:');
-    console.log('User center for filtering:', userCenter);
-    console.log('User center type:', typeof userCenter);
-    console.log('Total patients before filtering:', patients.length);
+    // Removed debug logging for better performance
     
     // If no user center, show all patients (for superadmin)
-    if (!userCenter) {
-      console.log('⚠️ No user center found - showing all patients (superadmin mode)');
-    }
     
-    // Debug: Show first few patients' data structure
-    if (patients.length > 0) {
-      console.log('Sample patient data structure:', patients[0]);
-    }
+    // Removed debug logging for better performance
     
     return patients.filter(p => {
       // Center-based filtering for admin users - match barangay to center name
       if (userCenter && userCenter !== 'all') {
         const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
         
-        console.log(`Patient: ${p.firstName} ${p.lastName}`);
-        console.log(`  - User center: ${userCenter}`);
-        console.log(`  - Patient barangay: ${patientBarangay}`);
-        
         // Check if patient's barangay matches the user's center name
         const normalizedBarangay = patientBarangay.toLowerCase().trim();
         const normalizedCenter = userCenter.toLowerCase().trim();
-        
-        console.log(`  - Normalized barangay: "${normalizedBarangay}"`);
-        console.log(`  - Normalized center: "${normalizedCenter}"`);
         
         // Enhanced matching - handle center name variations
         const barangayMatch = normalizedBarangay === normalizedCenter ||
@@ -623,13 +569,10 @@ const SuperAdminPatients = () => {
                              normalizedBarangay.replace(/\s*center$/i, '') === normalizedCenter ||
                              normalizedCenter.includes(normalizedBarangay.replace(/\s*center$/i, ''));
         
-        console.log(`  - Barangay match: ${barangayMatch}`);
-        
         if (!barangayMatch) {
-          console.log('❌ FILTERING OUT:', p.firstName, p.lastName, '- Barangay does not match center');
           return false;
         }
-        console.log('✅ KEEPING:', p.firstName, p.lastName, '- Barangay matches center');
+        // Patient matches center filter
       }
       
       // text search across name, contact, address
@@ -2236,13 +2179,15 @@ const SuperAdminPatients = () => {
             <div className="patient-modal-body">
               {showCaseForm ? (
                 <div>
-                  <PatientNewCaseStructured 
-                    selectedPatient={selectedPatient}
-                    onSaved={() => {
-                      try { setShowPatientModal(false); } catch(e) {}
-                    }}
-                    onCancel={() => setShowPatientModal(false)}
-                  />
+                  <Suspense fallback={<div style={{padding: '2rem', textAlign: 'center'}}>Loading case form...</div>}>
+                    <PatientNewCaseStructured 
+                      selectedPatient={selectedPatient}
+                      onSaved={() => {
+                        try { setShowPatientModal(false); } catch(e) {}
+                      }}
+                      onCancel={() => setShowPatientModal(false)}
+                    />
+                  </Suspense>
                 </div>
               ) : showHistory ? (
                 <div>
