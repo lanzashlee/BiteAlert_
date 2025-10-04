@@ -2,9 +2,9 @@
 
 /* Landscape Sidebar Styles */
 .sidebar {
-  width: 280px;
+  width: 320px;
   background: linear-gradient(180deg,#7a0e0e 0%, #800000 40%, #6a0a0a 100%);
-  padding: 1.5rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -13,15 +13,19 @@
   top: 0;
   z-index: 1000;
   transition: all 0.3s ease;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  border-right: 1px solid #600000; /* darker maroon divider */
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+  border-right: 2px solid #600000; /* darker maroon divider */
   overflow-y: auto;
+  overflow-x: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* Collapsed Sidebar */
 .sidebar.collapsed {
-  width: 70px;
-  padding: 1rem 0.5rem;
+  width: 80px;
+  padding: 1.5rem 0.75rem;
 }
 
 .sidebar.collapsed .logo-text {
@@ -53,17 +57,17 @@
 /* Minimal Logo Styles */
 .logo {
   color: #ffffff;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   justify-content: center;
 }
 
 .logo i {
   color: #fbbf24;
-  font-size: 1.8rem;
+  font-size: 2.2rem;
 }
 
 .logo-accent {
@@ -76,24 +80,24 @@
   border: none;
   border-radius: 50%;
   color: #ffffff;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.1s ease;
   position: absolute;
-  right: -15px;              /* half outside */
+  right: -18px;              /* half outside */
   top: 50%;                  /* vertically center */
   transform: translateY(-50%); /* adjust to true center */
   z-index: 1001;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Ensure button stays aligned when collapsed */
 .sidebar.collapsed .collapse-toggle {
-  right: -15px;
+  right: -18px;
 }
 
 .collapse-toggle:hover {
@@ -103,7 +107,7 @@
 }
 
 .collapse-toggle i {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   transition: transform 0.2s ease;
 }
 
@@ -121,10 +125,10 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
   flex: 1;
   margin: 0;
-  padding: 0.5rem 0;
+  padding: 1rem 0;
   overflow-y: auto;
   justify-content: flex-start;
 }
@@ -173,10 +177,10 @@
   align-items: center;
   width: 100%;
   font-weight: 600;
-  font-size: 1rem;
-  gap: 0.85rem;
-  padding: 0.9rem 1rem;
-  border-radius: 14px;
+  font-size: 1.1rem;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 16px;
   transition: all 0.2s ease;
   position: relative;
 }
@@ -225,8 +229,8 @@
 }
 
 .menu li i {
-  font-size: 1.05rem;
-  width: 20px;
+  font-size: 1.3rem;
+  width: 24px;
   text-align: center;
 }
 
@@ -322,17 +326,17 @@
 /* Minimal Sign Out Button */
 .sign-out {
   margin-top: auto;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
   background: rgba(255,255,255,0.12);
   color: #ffffff;
   border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 12px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 500;
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -388,46 +392,47 @@
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .sidebar {
-    width: 260px;
+    width: 300px;
   }
   
   .main-content {
-    margin-left: 260px;
+    margin-left: 300px;
+    width: calc(100% - 300px);
   }
 }
 
 @media (max-width: 1024px) {
   .sidebar {
-    width: 72px;
+    width: 80px;
   }
   
   .sidebar .logo {
-    padding: 0.5rem 0;
-    margin: 0.5rem 0 1rem 0;
+    padding: 0.75rem 0;
+    margin: 0.75rem 0 1.5rem 0;
   }
   
   .sidebar .logo {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
   }
   
   .sidebar .menu {
-    padding: 0;
+    padding: 0.5rem 0;
   }
   
   .sidebar .menu li {
-    padding: 0.5rem;
+    padding: 0.75rem;
     text-align: center;
   }
   
   .sidebar .menu li a {
     flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.7rem;
+    gap: 0.5rem;
+    font-size: 0.8rem;
     justify-content: center;
   }
   
   .sidebar .menu li a i {
-    font-size: 1rem;
+    font-size: 1.2rem;
     margin-right: 0;
   }
   
@@ -455,10 +460,10 @@
   }
   
   .sidebar .sign-out {
-    padding: 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.75rem;
+    font-size: 0.8rem;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
   }
   
   .sidebar .sign-out span {
@@ -467,6 +472,7 @@
   
   .main-content {
     margin-left: 80px;
+    width: calc(100% - 80px);
   }
 }
 
@@ -476,7 +482,7 @@
   }
   
   .sidebar {
-    width: 280px;
+    width: 320px;
     transform: translateX(-100%);
     position: fixed;
     z-index: 1000;
@@ -487,32 +493,32 @@
   }
   
   .sidebar .logo {
-    padding: 1rem 0;
-    margin: 1rem 0 1.5rem 0;
+    padding: 1.5rem 0;
+    margin: 1.5rem 0 2rem 0;
   }
   
   .sidebar .logo {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
   }
   
   .sidebar .menu {
-    padding: 0;
+    padding: 1rem 0;
   }
   
   .sidebar .menu li {
-    padding: 0.75rem;
+    padding: 1rem;
     text-align: left;
   }
   
   .sidebar .menu li a {
     flex-direction: row;
-    gap: 0.75rem;
-    font-size: 0.9rem;
+    gap: 1rem;
+    font-size: 1.1rem;
     justify-content: flex-start;
   }
   
   .sidebar .menu li a i {
-    font-size: 1rem;
+    font-size: 1.3rem;
     margin-right: 0;
   }
   
@@ -533,10 +539,10 @@
   }
   
   .sidebar .sign-out {
-    padding: 0.75rem;
-    font-size: 0.9rem;
+    padding: 1rem;
+    font-size: 1.1rem;
     flex-direction: row;
-    gap: 0.75rem;
+    gap: 1rem;
   }
   
   .sidebar .sign-out span {
@@ -545,25 +551,25 @@
   
   .main-content {
     margin-left: 0;
-    padding: 1rem;
+    padding: 2rem;
   }
   
   /* Add padding to main header to account for hamburger menu */
   .main-header {
-    padding-left: 4rem;
+    padding-left: 5rem;
   }
 }
 
 @media (max-width: 480px) {
   .hamburger-menu {
-    top: 0.5rem;
-    left: 0.5rem;
-    padding: 0.5rem;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.75rem;
   }
   
   .hamburger-menu .hamburger-line {
-    width: 20px;
-    height: 2px;
+    width: 24px;
+    height: 3px;
   }
   
   .sidebar {
@@ -571,45 +577,57 @@
   }
   
   .main-content {
-    padding: 0.5rem;
+    padding: 1.5rem;
   }
   
   .main-header {
-    padding-left: 3rem;
+    padding-left: 4rem;
   }
 }
-/* Main content spacing */
+/* Main content spacing - updated for fixed positioning */
 .main-content {
-  flex: 1;
-  margin-left: 280px;
-  width: calc(100% - 280px);
+  position: fixed;
+  top: 0;
+  left: 320px;
+  width: calc(100% - 320px);
+  height: 100vh;
   box-sizing: border-box;
-  transition: margin-left 0.3s ease, width 0.3s ease;
+  transition: left 0.3s ease, width 0.3s ease;
   background: #f9fafb;
-  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* Adjust main content when sidebar is collapsed */
 .sidebar.collapsed ~ .main-content {
-  margin-left: 70px;
-  width: calc(100% - 70px);
+  left: 80px;
+  width: calc(100% - 80px);
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* Unified header style (applies across modules) */
 .main-header {
   background: #ffffff;
-  padding: 2rem 3rem;
+  padding: 2.5rem 4rem;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2.5rem;
 }
 
 .header-left h2 {
   color: #1f2937;
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.02em;
@@ -620,13 +638,13 @@
 .search-container { position: relative; }
 .search-bar {
   display: flex; align-items: center; background: #f8fafc;
-  border: 1px solid #e2e8f0; border-radius: 16px; padding: 1rem 1.25rem;
-  transition: all 0.2s ease; min-width: 300px;
+  border: 1px solid #e2e8f0; border-radius: 20px; padding: 1.25rem 1.5rem;
+  transition: all 0.2s ease; min-width: 400px;
 }
 .search-bar:hover { border-color: #cbd5e1; background: #f1f5f9; }
 .search-bar:focus-within { border-color: #800000; box-shadow: 0 0 0 4px rgba(128,0,0,0.08); background: #fff; }
-.search-icon { color: #64748b; margin-right: 0.75rem; font-size: 1rem; }
-.search-input { background: transparent; border: none; color: #334155; flex: 1; font-size: 1rem; outline: none; font-weight: 400; }
+.search-icon { color: #64748b; margin-right: 1rem; font-size: 1.2rem; }
+.search-input { background: transparent; border: none; color: #334155; flex: 1; font-size: 1.1rem; outline: none; font-weight: 400; }
 .search-input::placeholder { color: #94a3b8; }
 
 /* Unified content header banner across modules */
@@ -634,12 +652,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 2.5rem; /* align with Admin Account Management */
-  margin: 0 5rem 1.25rem 5rem; /* add more space from sidebar on the left */
-  border-radius: 14px;
+  padding: 2rem 3rem; /* align with Admin Account Management */
+  margin: 0 6rem 2rem 6rem; /* add more space from sidebar on the left */
+  border-radius: 20px;
   background: #ffffff;
   color: #1f2937;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* Apply same spacing to classic page headers across modules */
@@ -650,7 +668,7 @@
 .content-header h2 {
   margin: 0;
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 2rem;
   letter-spacing: -0.01em;
 }
 
@@ -661,14 +679,15 @@
 .content-header .btn-primary {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.9rem;
-  border-radius: 10px;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.25);
   background: rgba(255,255,255,0.08);
   color: #ffffff;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 1.1rem;
 }
 
 .content-header .btn:hover,
@@ -679,10 +698,69 @@
 }
 
 @media (max-width: 768px) {
-  .content-header { margin: 0 1rem 1rem 1rem; padding: 1rem; }
-  .content-header h2 { font-size: 1.25rem; }
+  .content-header { margin: 0 2rem 2rem 2rem; padding: 1.5rem; }
+  .content-header h2 { font-size: 1.8rem; }
 }
 
+
+/* Fix scrolling issues - only main content should scroll */
+html, body {
+  overflow: hidden; /* Prevent body from scrolling */
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  width: 100%;
+}
+
+/* Ensure sidebar stays completely fixed */
+.sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  height: 100vh !important;
+  z-index: 1000 !important;
+  overflow-y: auto; /* Allow sidebar to scroll if content is too long */
+  overflow-x: hidden;
+}
+
+/* Main content should be the only scrollable area */
+.main-content {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  overflow-y: auto; /* Only main content scrolls */
+  overflow-x: hidden;
+  z-index: 1;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Hide scrollbar for main content */
+.main-content::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fix for mobile scrolling */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.active {
+    transform: translateX(0);
+  }
+  
+  .main-content {
+    left: 0 !important;
+    width: 100% !important;
+  }
+}
 
 /* No animations */
 

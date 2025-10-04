@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback, memo, lazy, Suspense } from 'react';
+import React, { useEffect, useMemo, useState, memo, lazy, Suspense } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { fullLogout } from '../../utils/auth';
 import LoadingSpinner from './DogLoadingSpinner';
@@ -379,7 +379,7 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
 
 const SuperAdminPatients = () => {
   const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   // Removed vaccination day filter
@@ -388,11 +388,11 @@ const SuperAdminPatients = () => {
   const [sexFilter, setSexFilter] = useState('');
   const [centerFilter, setCenterFilter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
-  const [dateRegistered, setDateRegistered] = useState('');
+  const [dateRegistered] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [vaccinationDate, setVaccinationDate] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages] = useState(1);
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const [showPatientModal, setShowPatientModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -412,7 +412,7 @@ const SuperAdminPatients = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [biteCases, setBiteCases] = useState([]);
-  const [biteCasesLoading, setBiteCasesLoading] = useState(false);
+  const [biteCasesLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
   const [showCaseDetails, setShowCaseDetails] = useState(false);
   const [expandedCases, setExpandedCases] = useState(new Set());

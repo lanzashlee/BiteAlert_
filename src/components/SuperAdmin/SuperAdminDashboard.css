@@ -36,6 +36,11 @@
 .panel-body {
     contain: layout style;
     transform: translateZ(0);
+    height: 350px;
+    min-height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Reduce layout thrashing */
@@ -62,6 +67,26 @@
 .panel-body canvas {
     contain: layout style paint;
     transform: translateZ(0);
+    width: 100% !important;
+    height: 300px !important;
+    max-height: 350px !important;
+}
+
+/* Chart container sizing */
+.panel-body {
+    height: 350px;
+    min-height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Chart wrapper */
+.chart-container {
+    width: 100%;
+    height: 100%;
+    min-height: 300px;
+    position: relative;
 }
 
 /* Reduce layout thrashing */
@@ -83,16 +108,22 @@
 
 body {
     background: #f5f6fa;
-    min-height: 100vh;
-    overflow-x: hidden;
+    height: 100vh;
+    overflow: hidden; /* Prevent body scrolling */
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    width: 100%;
 }
 
 /* Dashboard Layout */
 .dashboard-container {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
     margin: 0;
     padding: 0;
+    overflow: hidden;
+    position: relative;
 }
 
 
@@ -535,10 +566,12 @@ body {
 /* Chart Panels */
 .panel {
     background: white;
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2.5rem;
     height: 100%;
+    min-height: 450px;
+    padding: 2rem;
 }
 
 /* Charts */

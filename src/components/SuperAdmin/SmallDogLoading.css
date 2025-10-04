@@ -9,10 +9,10 @@
 
 .small-loading-spinner {
   display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #800000;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #800000;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
