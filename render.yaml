@@ -4,7 +4,7 @@ services:
     name: bitealert-backend
     env: node
     plan: free
-    buildCommand: npm install --legacy-peer-deps && npm audit fix --force
+    buildCommand: npm ci --only=production
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
@@ -24,7 +24,7 @@ services:
   # Frontend Service (Static Site for React)
   - type: static
     name: bitealert-frontend
-    buildCommand: npm install --legacy-peer-deps && npm run build
+    buildCommand: npm ci && npm run build:fast
     staticPublishPath: build
     routes:
       - type: rewrite
