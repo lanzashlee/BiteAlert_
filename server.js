@@ -52,7 +52,8 @@ const allowedOrigins = [
     'https://bitealert-frontend-xm3h.onrender.com',
     'https://bitealert-frontend-p1od.onrender.com',
     'https://bite-alert-clgv.vercel.app',
-    'https://bite-alert-clgv-m9dh0ta88-lanzashlees-projects.vercel.app'
+    'https://bite-alert-clgv-m9dh0ta88-lanzashlees-projects.vercel.app',
+    'https://bite-alert-clgv-git-main-lanzashlees-projects.vercel.app'
 ].filter(Boolean);
 
 const corsOptions = {
@@ -64,7 +65,7 @@ const corsOptions = {
             return callback(null, true);
         }
         // Allow exact matches or Vercel preview subdomains for this project
-        const isVercelPreview = /https:\/\/bite-alert-clgv(-[a-z0-9-]+)?(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin || '');
+        const isVercelPreview = /https:\/\/bite-alert-clgv(-[a-z0-9-]+)?(-[a-z0-9-]+)?(-git-[a-z0-9-]+)?\.vercel\.app$/i.test(origin || '');
         if (allowedOrigins.includes(origin) || isVercelPreview) {
             console.log('CORS allowed for origin:', origin);
             return callback(null, true);
