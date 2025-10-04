@@ -320,7 +320,7 @@ const SuperAdminProfile = () => {
       }
 
       const data = await response.json();
-      console.log('Password change API payload:', data);
+      // Password change API request initiated
       
       if (data.success || response.ok) {
         setPasswordSuccess('Password changed successfully!');

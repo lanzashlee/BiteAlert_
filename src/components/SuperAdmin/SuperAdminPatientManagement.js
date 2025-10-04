@@ -249,7 +249,7 @@ const SuperAdminPatientManagement = () => {
 
       setIsProcessing(true);
 
-      console.log('Changing password for patient:', selectedPatient._id);
+      // Password change initiated for patient
 
 
 
@@ -263,7 +263,7 @@ const SuperAdminPatientManagement = () => {
         })
       });
 
-      console.log('Password change response:', response);
+      // Password change response received
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -272,7 +272,7 @@ const SuperAdminPatientManagement = () => {
       }
 
       const result = await response.json();
-      console.log('Password change result:', result);
+      // Password change completed successfully
 
       // Log audit trail
       await logAuditTrail(selectedPatient._id, `Password changed for patient: ${selectedPatient.fullName || selectedPatient.firstName + ' ' + selectedPatient.lastName}`);

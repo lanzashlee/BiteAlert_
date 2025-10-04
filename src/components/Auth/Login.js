@@ -102,7 +102,7 @@ const Login = () => {
     setLoadingMessage('Logging in...');
     
     try {
-      console.log('Attempting login with:', { email, password: '***' });
+      // Login attempt logged without sensitive data
       const res = await apiFetch(apiConfig.endpoints.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

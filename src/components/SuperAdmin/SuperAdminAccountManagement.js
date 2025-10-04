@@ -329,7 +329,7 @@ const SuperAdminAccountManagement = () => {
 
       setProcessing(true);
 
-      console.log('Changing password for account:', selectedAccount.id);
+      // Password change initiated for account
 
       // API call to change password
       const response = await apiFetch('/api/change-admin-password', {
@@ -341,7 +341,7 @@ const SuperAdminAccountManagement = () => {
         })
       });
 
-      console.log('Password change response:', response);
+      // Password change response received
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -350,7 +350,7 @@ const SuperAdminAccountManagement = () => {
       }
 
       const result = await response.json();
-      console.log('Password change result:', result);
+      // Password change completed successfully
 
       // Log audit trail
       await logAuditTrail(selectedAccount.id, `Password changed for account: ${selectedAccount.username}`);

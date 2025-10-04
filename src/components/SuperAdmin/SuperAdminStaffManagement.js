@@ -154,7 +154,7 @@ const SuperAdminStaffManagement = () => {
 
       setIsProcessing(true);
 
-      console.log('Changing password for staff:', selectedStaff._id);
+      // Password change initiated for staff
 
       // API call to change password
       const response = await apiFetch('/api/change-staff-password', {
@@ -166,7 +166,7 @@ const SuperAdminStaffManagement = () => {
         })
       });
 
-      console.log('Password change response:', response);
+      // Password change response received
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -175,7 +175,7 @@ const SuperAdminStaffManagement = () => {
       }
 
       const result = await response.json();
-      console.log('Password change result:', result);
+      // Password change completed successfully
 
       // Log audit trail
       await logAuditTrail(selectedStaff._id, `Password changed for staff: ${selectedStaff.fullName}`);
