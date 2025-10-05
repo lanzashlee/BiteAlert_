@@ -79,16 +79,8 @@
     <link rel="preload" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"></noscript>
     
-    <!-- TailwindCSS - Deferred -->
-    <script>
-      // Load TailwindCSS asynchronously
-      (function() {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.tailwindcss.com';
-        script.async = true;
-        document.head.appendChild(script);
-      })();
-    </script>
+    <!-- TailwindCSS - Removed CDN for production -->
+    <!-- Note: TailwindCSS should be installed as a PostCSS plugin for production -->
     
     <!-- jsPDF Libraries - Deferred loading -->
     <script>

@@ -123,17 +123,34 @@ self.addEventListener('fetch', (event) => {
       event.respondWith(
         fetch(request)
           .then((response) => {
-            if (response.status === 200) {
+            if (response && response.status === 200) {
               const responseClone = response.clone();
               caches.open(DYNAMIC_CACHE)
                 .then((cache) => {
                   cache.put(request, responseClone);
+                })
+                .catch((error) => {
+                  console.warn('Cache put failed:', error);
                 });
             }
             return response;
           })
-          .catch(() => {
-            return caches.match(request);
+          .catch((error) => {
+            console.warn('Fetch failed:', error);
+            return caches.match(request).then((cachedResponse) => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              // Return a proper Response object for failed requests
+              return new Response(
+                JSON.stringify({ error: 'Network request failed' }),
+                {
+                  status: 503,
+                  statusText: 'Service Unavailable',
+                  headers: { 'Content-Type': 'application/json' }
+                }
+              );
+            });
           })
       );
     }

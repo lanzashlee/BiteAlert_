@@ -956,11 +956,19 @@ const SuperAdminDashboard = () => {
               navigate(profilePath);
             }}>
               <div className="profile-picture">
-                <img src={getApiUrl(apiConfig.endpoints.profilePicture)} alt="Profile" onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'block';
-                }} />
-                <div className="profile-placeholder">
+                <img 
+                  src={getApiUrl(apiConfig.endpoints.profilePicture)} 
+                  alt="Profile" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                  onLoad={(e) => {
+                    // Hide placeholder when image loads successfully
+                    e.target.nextSibling.style.display = 'none';
+                  }}
+                />
+                <div className="profile-placeholder" style={{ display: 'block' }}>
                   <i className="fa-solid fa-user"></i>
                 </div>
               </div>
