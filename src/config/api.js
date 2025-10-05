@@ -115,24 +115,39 @@ export const apiFetch = async (endpoint, options = {}) => {
     }
   }
   
-  const response = await fetch(url, {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
+  // Add timeout for faster failure detection
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
   
-  // Cache successful GET responses
-  if (response.ok && (!options.method || options.method === 'GET')) {
-    try {
-      const data = await response.clone().json();
-      setCachedData(cacheKey, data);
-    } catch (error) {
-      console.warn('Failed to cache response:', error);
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      signal: controller.signal,
+      ...options,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    // Cache successful GET responses
+    if (response.ok && (!options.method || options.method === 'GET')) {
+      try {
+        const data = await response.clone().json();
+        setCachedData(cacheKey, data);
+      } catch (error) {
+        console.warn('Failed to cache response:', error);
+      }
     }
+    
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - please check your connection');
+    }
+    throw error;
   }
-  
-  return response;
 };

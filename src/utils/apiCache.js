@@ -1,11 +1,19 @@
 // Simple in-memory cache for API responses
 const cache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes for faster updates
+const LOGIN_CACHE_DURATION = 30 * 1000; // 30 seconds for login-related data
 
 export const getCachedData = (key) => {
   const cached = cache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
+  if (cached) {
+    // Use shorter cache duration for login-related endpoints
+    const duration = key.includes('/login') || key.includes('/account-status') 
+      ? LOGIN_CACHE_DURATION 
+      : CACHE_DURATION;
+    
+    if (Date.now() - cached.timestamp < duration) {
+      return cached.data;
+    }
   }
   return null;
 };

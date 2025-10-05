@@ -47,13 +47,16 @@ const Login = () => {
   }, [password]);
 
   const redirectBasedOnRole = (role) => {
-    if (role === 'superadmin') {
-      navigate('/superadmin');
-    } else if (role === 'admin') {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/dashboard');
-    }
+    // Add small delay to show welcome message
+    setTimeout(() => {
+      if (role === 'superadmin') {
+        navigate('/superadmin');
+      } else if (role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }, 500); // 500ms delay to show welcome message
   };
 
   const safeParseJson = async (response) => {
@@ -99,7 +102,7 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setLoadingMessage('Logging in...');
+    setLoadingMessage('Authenticating...');
     
     try {
       // Login attempt logged without sensitive data
@@ -136,22 +139,16 @@ const Login = () => {
         // Set role-specific loading message
         const role = data.user?.role;
         if (role === 'superadmin') {
-          setLoadingMessage('Logging in as Super Admin...');
+          setLoadingMessage('Welcome, Super Admin!');
         } else if (role === 'admin') {
-          setLoadingMessage('Logging in as Admin...');
+          setLoadingMessage('Welcome, Admin!');
         } else {
-          setLoadingMessage('Logging in as User...');
+          setLoadingMessage('Welcome!');
         }
         
-        // Check account status for admins only
-        if (role === 'admin') {
-          if (await checkAccountStatus(email)) {
-            redirectBasedOnRole(role);
-          }
-        } else {
-          // For superadmin, redirect immediately
-          redirectBasedOnRole(role);
-        }
+        // Skip account status check for faster login - backend already validates
+        // Account status will be checked on dashboard load if needed
+        redirectBasedOnRole(role);
       } else {
         setError(data?.message || 'Invalid email or password');
         setLoading(false);
