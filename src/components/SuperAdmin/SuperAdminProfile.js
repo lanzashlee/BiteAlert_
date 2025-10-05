@@ -159,7 +159,7 @@ const SuperAdminProfile = () => {
       }
 
       console.log('Fetching profile for user ID:', id);
-      console.log('API base URL from config:', process.env.REACT_APP_API_URL || 'https://bitealert-backend-doga.onrender.com');
+      console.log('API base URL from config:', process.env.REACT_APP_API_URL || 'https://bitealert-backend.onrender.com');
       
       // Use user data from localStorage for faster loading
       console.log('Using cached user data for profile');
