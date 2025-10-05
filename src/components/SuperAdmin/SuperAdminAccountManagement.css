@@ -191,51 +191,51 @@
   width: 100%;
   border-collapse: collapse;
   margin: 0;
-  min-width: 1000px;
+  min-width: 800px;
 }
 
 .accounts-table th {
   background: #f8fafc;
   color: #374151;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   text-align: left;
-  padding: 0.75rem 0.5rem;
+  padding: 0.5rem 0.25rem;
   border-bottom: 1px solid #e5e7eb;
   white-space: nowrap;
 }
 
 .accounts-table th:first-child {
   border-top-left-radius: 12px;
-  width: 15%; /* Admin ID column */
+  width: 12%; /* Admin ID column */
 }
 
 .accounts-table th:nth-child(2) {
-  width: 35%; /* Email Address column */
+  width: 30%; /* Email Address column */
   text-align: left;
 }
 
 .accounts-table th:nth-child(3) {
-  width: 15%; /* Role column */
+  width: 12%; /* Role column */
   text-align: left;
 }
 
 .accounts-table th:nth-child(4) {
-  width: 15%; /* Status column */
+  width: 12%; /* Status column */
   text-align: left;
 }
 
 .accounts-table th:last-child {
   border-top-right-radius: 12px;
-  width: 20%; /* Actions column */
+  width: 34%; /* Actions column */
   text-align: left;
-  padding-right: 1rem;
+  padding-right: 0.5rem;
 }
 
 .accounts-table td {
-  padding: 0.75rem 0.5rem;
+  padding: 0.5rem 0.25rem;
   border-bottom: 1px solid #f3f4f6;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #374151;
   vertical-align: middle;
 }
@@ -250,7 +250,7 @@
 
 .accounts-table td:last-child {
   text-align: left;
-  padding-left: 1rem;
+  padding-left: 0.25rem;
 }
 
 /* Status badge styles */
@@ -297,18 +297,18 @@
 /* Action buttons */
 .action-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   justify-content: flex-start;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .action-buttons button {
-  min-width: 90px;
-  padding: 0.6rem 1.2rem;
+  min-width: 70px;
+  padding: 0.4rem 0.8rem;
   border: none;
-  border-radius: 8px;
-  font-size: 0.85rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
