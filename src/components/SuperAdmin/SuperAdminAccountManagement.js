@@ -483,21 +483,22 @@ const SuperAdminAccountManagement = () => {
               <thead>
                 <tr>
                   <th>Admin ID</th>
-                  <th>Username</th>
-                  <th>Center</th>
+                  <th>Email Address</th>
+                  <th>Role</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="4" className="loading-state">
+                    <td colSpan="5" className="loading-state">
                       <UnifiedSpinner />
                     </td>
                   </tr>
                 ) : filteredAccounts.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="no-data">
+                    <td colSpan="5" className="no-data">
                       {searchTerm ? 'No matching admin accounts found' : 'No admin accounts found'}
                     </td>
                   </tr>
@@ -505,52 +506,38 @@ const SuperAdminAccountManagement = () => {
                   filteredAccounts.map(account => (
                     <tr key={account.id || account.adminID}>
                       <td>{account.adminID || account.id || 'N/A'}</td>
+                      <td>{account.email || account.username || 'N/A'}</td>
                       <td>
-                        <div className="user-info">
-                          <span className="username">{account.username || 'N/A'}</span>
-                          {account.fullName && <span className="fullname">{account.fullName}</span>}
-                          <span className="role-badge">{account.role || 'N/A'}</span>
-                        </div>
+                        <span className="role-badge">{account.role || 'ADMIN'}</span>
                       </td>
                       <td>
-                        <span className="center-name">
-                          {account.centerName || (account.role === 'superadmin' ? 'All Centers' : 'N/A')}
+                        <span className={`status-badge ${account.isActive ? 'active' : 'inactive'}`}>
+                          {account.isActive ? 'ACTIVE' : 'INACTIVE'}
                         </span>
                       </td>
                       <td>
                         <div className="action-buttons">
-                          <div className="status-container">
-                            <span 
-                              className={`status-indicator ${account.isActive ? 'active' : 'inactive'}`}
-                              aria-label={`Account status: ${account.isActive ? 'Active' : 'Inactive'}`}
-                              title={`Account status: ${account.isActive ? 'Active' : 'Inactive'}`}
-                            >
-                              {account.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                            <div className="table-actions">
-                              <button 
-                                className="btn-activate" 
-                                onClick={() => handleActivation(account.id, true)}
-                                style={{ display: account.isActive ? 'none' : 'block' }}
-                              >
-                                <i className="fa-solid fa-check-circle"></i> Activate
-                              </button>
-                              <button 
-                                className="btn-deactivate" 
-                                onClick={() => handleActivation(account.id, false)}
-                                style={{ display: !account.isActive ? 'none' : 'block' }}
-                              >
-                                <i className="fa-solid fa-ban"></i> Deactivate
-                              </button>
-                              <button 
-                                className="update-btn" 
-                                onClick={() => handlePasswordChange(account.id)}
-                                title="Change Password"
-                              >
-                                <i className="fa-solid fa-key"></i> Change Password
-                              </button>
-                            </div>
-                          </div>
+                          <button 
+                            className="btn-deactivate" 
+                            onClick={() => handleActivation(account.id, false)}
+                            style={{ display: account.isActive ? 'block' : 'none' }}
+                          >
+                            <i className="fa-solid fa-ban"></i> Deactivate
+                          </button>
+                          <button 
+                            className="btn-activate" 
+                            onClick={() => handleActivation(account.id, true)}
+                            style={{ display: !account.isActive ? 'block' : 'none' }}
+                          >
+                            <i className="fa-solid fa-check-circle"></i> Activate
+                          </button>
+                          <button 
+                            className="btn-password" 
+                            onClick={() => handlePasswordChange(account.id)}
+                            title="Change Password"
+                          >
+                            <i className="fa-solid fa-key"></i> Password
+                          </button>
                         </div>
                       </td>
                     </tr>

@@ -211,23 +211,33 @@
 
 .accounts-table th:first-child {
   border-top-left-radius: 12px;
-  width: 8%; /* Admin ID column - much narrower to minimize gap */
+  width: 15%; /* Admin ID column */
 }
 
 .accounts-table th:nth-child(2) {
-  width: 66%; /* Username column - even wider to fill the gap */
+  width: 35%; /* Email Address column */
+  text-align: left;
+}
+
+.accounts-table th:nth-child(3) {
+  width: 15%; /* Role column */
+  text-align: left;
+}
+
+.accounts-table th:nth-child(4) {
+  width: 15%; /* Status column */
   text-align: left;
 }
 
 .accounts-table th:last-child {
   border-top-right-radius: 12px;
-  width: 26%; /* Actions column */
-  text-align: right; /* match right alignment */
+  width: 20%; /* Actions column */
+  text-align: left;
   padding-right: 1rem;
 }
 
 .accounts-table td {
-  padding: 0.45rem 0.6rem; /* tighter rows to reduce middle gap */
+  padding: 0.75rem 0.5rem;
   border-bottom: 1px solid #e5e7eb;
   color: #374151;
   text-align: left;
@@ -235,20 +245,108 @@
   font-size: 0.93rem;
 }
 
-/* Specific column alignments */
-.accounts-table td:first-child {
-  text-align: left;
-  font-weight: 500;
-  color: #800000;
+/* Status badge styles */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
 }
 
-.accounts-table td:nth-child(2) {
-  text-align: left;
+.status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
 }
 
-.accounts-table td:last-child {
-  text-align: right;
-  padding-right: 1.25rem;
+.status-badge.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+/* Role badge styles */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #6366f1;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.action-buttons button {
+  min-width: 90px;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.btn-activate {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.btn-activate:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-deactivate {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.btn-deactivate:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-password {
+  background: #800000;
+  color: white;
+  box-shadow: 0 2px 4px rgba(128, 0, 0, 0.2);
+}
+
+.btn-password:hover {
+  background: #6b0000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(128, 0, 0, 0.3);
 }
 
 .accounts-table tr:last-child td {
