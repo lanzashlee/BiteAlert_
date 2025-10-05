@@ -206,32 +206,39 @@
 
 /* Status Badges */
 .status-badge {
+  display: inline-flex;
+  align-items: center;
   padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
 }
 
-.status-scheduled {
-  background: #cffafe;
-  color: #0c4a6e;
+.status-badge.scheduled {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
 }
 
-.status-today {
+.status-badge.today {
   background: #fef3c7;
   color: #92400e;
+  border: 1px solid #f59e0b;
 }
 
-.status-completed {
-  background: #d4edda;
-  color: #155724;
+.status-badge.completed {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
 }
 
-.status-missed {
-  background: #f8d7da;
-  color: #721c24;
+.status-badge.missed {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
 }
 
 @keyframes pulse {
@@ -247,29 +254,47 @@
 }
 
 .action-buttons button {
-  padding: 0.5rem 0.75rem;
+  min-width: 80px;
+  padding: 0.5rem 1rem;
   border: none;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 80px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-view {
+  background: #dc2626;
+  color: white;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
+.btn-view:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  transform: translateY(-1px);
 }
 
 .btn-calendar {
   background: #f59e0b;
   color: white;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
 }
+
 .btn-calendar:hover:not(:disabled) {
   background: #d97706;
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
   transform: translateY(-1px);
 }
+
 .btn-calendar:disabled {
   background: #9ca3af;
   cursor: not-allowed;
   transform: none;
   opacity: 0.6;
+  box-shadow: none;
 }
 
 /* Inline date picker popover styles */
@@ -749,9 +774,10 @@
 
 .patient-info h3 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #374151;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #dc2626;
+  letter-spacing: -0.02em;
 }
 
 .patient-info p {
@@ -997,7 +1023,7 @@
   background: #dc2626;
   color: #fff;
   text-align: left;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.5rem;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.875rem;
@@ -1005,8 +1031,9 @@
 }
 
 .schedule-table tbody td {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.5rem;
   border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
 }
 
 /* Dose Details Styles */
