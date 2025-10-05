@@ -54,6 +54,7 @@ const allowedOrigins = [
     'https://bite-alert-clgv.vercel.app',
     'https://bite-alert-clgv-m9dh0ta88-lanzashlees-projects.vercel.app',
     'https://bite-alert-clgv-b5f0vy73z-lanzashlees-projects.vercel.app',
+    'https://bite-alert-clgv-80rrcz0y1-lanzashlees-projects.vercel.app',
     'https://bite-alert-clgv-git-main-lanzashlees-projects.vercel.app'
 ].filter(Boolean);
 
