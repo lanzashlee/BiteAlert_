@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/img/bite_logo.png',
-  '/img/SANJUAN.webp',
+  '/img/SANJUAN.jpg',
   '/manifest.json'
 ];
 

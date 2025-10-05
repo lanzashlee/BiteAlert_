@@ -1022,7 +1022,7 @@ const SuperAdminGenerate = () => {
 
       // Order: prefer two left (sanjuan, sj1), two right (bp and optional extra)
       const sources = [
-        '/img/sanjuan.webp',
+        '/img/SANJUAN.jpg',
         '/img/sj1.webp',
         '/img/bp.webp'
       ];

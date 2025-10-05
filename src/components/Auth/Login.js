@@ -183,14 +183,14 @@ const Login = () => {
       <div
         className="left-panel-modern"
         style={{
-          backgroundImage: "url(/img/SANJUAN.webp)",
+          backgroundImage: "url(/img/SANJUAN.jpg)",
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
       >
         {/* LCP Image with high priority */}
         <img 
-          src="/img/SANJUAN.webp" 
+          src="/img/SANJUAN.jpg" 
           alt="San Juan Background" 
           style={{ display: 'none' }}
           fetchPriority="high"
