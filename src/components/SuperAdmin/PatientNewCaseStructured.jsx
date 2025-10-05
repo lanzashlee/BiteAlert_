@@ -188,11 +188,31 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     return `${yy}-${rnd}${tail}`;
   };
 
+  // Generate registration number only once when component mounts
+  const [initialRegistrationNumber] = useState(() => genReg());
+
+  // Generate date registered only once when component mounts
+  const [initialDateRegistered] = useState(() => {
+    const today = new Date();
+    return today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  });
+
+  // Generate initial schedule only once when component mounts
+  const [initialSchedule] = useState(() => {
+    const base = new Date();
+    return { 
+      d0: toISO(base), 
+      d3: toISO(new Date(base.getTime()+3*86400000)), 
+      d7: toISO(new Date(base.getTime()+7*86400000)), 
+      d14: toISO(new Date(base.getTime()+14*86400000)), 
+      d28: toISO(new Date(base.getTime()+28*86400000))
+    };
+  });
+
   useEffect(() => {
     const p = selectedPatient || {};
-    setRegistrationNumber(genReg());
-    const today = new Date();
-    setDateRegistered(today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' }));
+    setRegistrationNumber(initialRegistrationNumber);
+    setDateRegistered(initialDateRegistered);
     setCenter((p.barangay ? (p.barangay.endsWith('Center')? p.barangay : `${p.barangay} Center`) : '') || '');
 
     setFirstName(p.firstName||'');
@@ -215,16 +235,9 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     setProvince(p.province||'');
     setZipCode(p.zipCode||'');
 
-    // initialize schedule D0..D28 with ISO format for date inputs
-    const base = new Date();
-    setSchedule({ 
-      d0: toISO(base), 
-      d3: toISO(new Date(base.getTime()+3*86400000)), 
-      d7: toISO(new Date(base.getTime()+7*86400000)), 
-      d14: toISO(new Date(base.getTime()+14*86400000)), 
-      d28: toISO(new Date(base.getTime()+28*86400000))
-    });
-  }, [selectedPatient]);
+    // Set the pre-generated schedule
+    setSchedule(initialSchedule);
+  }, [selectedPatient, initialRegistrationNumber, initialDateRegistered, initialSchedule]);
 
   const validate = () => {
     // Basic information validation
