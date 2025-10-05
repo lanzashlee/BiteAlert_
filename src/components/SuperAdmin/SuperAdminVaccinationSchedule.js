@@ -546,13 +546,21 @@ const SuperAdminVaccinationSchedule = () => {
   // Open new schedule modal fetching bite case directly
   const openPatientScheduleModal = async (patientData) => {
     try {
+      console.log('🔍 Modal click triggered for patient:', patientData?.patient?.patientId, patientData?.patient?.fullName);
+      console.log('🔍 Patient data structure:', patientData);
+      
       setScheduleModalLoading(true);
       setShowScheduleModal(true);
       setScheduleModalData(null);
       setSelectedVaccine(''); // Reset vaccine selection
       setSelectedVaccineBrand(''); // Reset vaccine brand selection
 
-      console.log('🔍 Opening modal for patient:', patientData?.patient?.patientId, patientData?.patient?.fullName);
+      console.log('🔍 Modal state set - showScheduleModal should be true');
+      
+      // Force a re-render to ensure modal shows
+      setTimeout(() => {
+        console.log('🔍 Modal should be visible now');
+      }, 100);
 
       // Get the specific patient ID
       const patientId = patientData?.patient?.patientId;
@@ -2366,7 +2374,12 @@ const SuperAdminVaccinationSchedule = () => {
                 <div 
                   key={patientId} 
                   className="patient-card clickable-card"
-                  onClick={() => openPatientScheduleModal(patientData)}
+                  onClick={(e) => {
+                    console.log('🔍 Patient card clicked:', patientData?.patient?.patientId);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openPatientScheduleModal(patientData);
+                  }}
                 >
                       <div className="patient-header">
                         <div className="patient-info">
@@ -2406,7 +2419,12 @@ const SuperAdminVaccinationSchedule = () => {
                   </thead>
                   <tbody>
                     {filteredVaccinations.map(v => (
-                      <tr key={v._id} onClick={() => openPatientScheduleModal(vaccinationsByPatient[v.patient?.patientId || 'unknown'])} style={{cursor:'pointer'}}>
+                      <tr key={v._id} onClick={(e) => {
+                        console.log('🔍 Table row clicked for patient:', v.patient?.patientId);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openPatientScheduleModal(vaccinationsByPatient[v.patient?.patientId || 'unknown']);
+                      }} style={{cursor:'pointer'}}>
                         <td>{getPatientDisplayName(v.patient)}</td>
                         <td>{v.patient?.patientId || 'N/A'}</td>
                         <td>{v.vaccinationDay}</td>
@@ -2477,8 +2495,12 @@ const SuperAdminVaccinationSchedule = () => {
 
       <>
         {/* New X-only Schedule Modal */}
+        {console.log('🔍 Modal render check - showScheduleModal:', showScheduleModal)}
         {showScheduleModal && (
-          <div className="fixed inset-y-0 right-0 left-0 lg:left-[280px] bg-black bg-opacity-60 backdrop-blur-sm flex items-start justify-end z-50 p-0" onClick={() => setShowScheduleModal(false)}>
+          <div className="fixed inset-y-0 right-0 left-0 lg:left-[280px] bg-black bg-opacity-60 backdrop-blur-sm flex items-start justify-end z-50 p-0" onClick={() => {
+            console.log('🔍 Modal backdrop clicked - closing modal');
+            setShowScheduleModal(false);
+          }}>
             <div className="bg-white h-full w-full max-w-none border-l border-gray-200 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
               {/* Close Button */}
               <button 
