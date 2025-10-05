@@ -39,6 +39,11 @@ const SuperAdminVaccinationSchedule = () => {
   const [scheduleModalLoading, setScheduleModalLoading] = useState(false);
   const [scheduleModalData, setScheduleModalData] = useState(null);
   const [showEmptyState, setShowEmptyState] = useState(false);
+  const [editingVaccine, setEditingVaccine] = useState(false);
+  const [selectedVaccineType, setSelectedVaccineType] = useState('');
+  const [selectedVaccineRoute, setSelectedVaccineRoute] = useState('');
+  const [patientWeight, setPatientWeight] = useState(null);
+  const [biteCaseData, setBiteCaseData] = useState(null);
   const [selectedVaccination, setSelectedVaccination] = useState(null);
   const [selectedVaccineInfo, setSelectedVaccineInfo] = useState(null);
   const [vaccineInfoLoading, setVaccineInfoLoading] = useState(false);
@@ -477,6 +482,100 @@ const SuperAdminVaccinationSchedule = () => {
     }
   };
 
+  // Fetch patient weight from bite case
+  const fetchPatientWeight = async (patientId) => {
+    try {
+      const response = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
+      if (response.ok) {
+        const data = await response.json();
+        const biteCase = Array.isArray(data) ? data[0] : data;
+        if (biteCase && biteCase.weight) {
+          setPatientWeight(parseFloat(biteCase.weight));
+          setBiteCaseData(biteCase);
+          return parseFloat(biteCase.weight);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching patient weight:', error);
+    }
+    return null;
+  };
+
+
+  // Get vaccine deduction amount based on type and route
+  const getVaccineDeductionAmount = (vaccineType, route, weight = null) => {
+    const type = vaccineType?.toLowerCase();
+    const routeType = route?.toLowerCase();
+    
+    if (type === 'speeda') {
+      if (routeType === 'id') return 0.4;
+      if (routeType === 'im') return 1.0;
+      if (routeType === 'booster') return 0.2;
+    } else if (type === 'vaxirab') {
+      if (routeType === 'id') return 0.2;
+      if (routeType === 'im') return 0.5;
+      if (routeType === 'booster') return 0.1;
+    } else if (type === 'erig' && weight) {
+      return calculateERIGDosage(weight);
+    }
+    
+    return 0;
+  };
+
+  // Deduct vaccine stock from inventory
+  const deductVaccineStock = async (vaccineType, route, centerName, weight = null) => {
+    try {
+      const deductionAmount = getVaccineDeductionAmount(vaccineType, route, weight);
+      
+      if (deductionAmount <= 0) {
+        console.warn('No deduction amount calculated for:', { vaccineType, route, weight });
+        return { success: true, message: 'No stock deduction needed' };
+      }
+
+      // Map vaccine type to inventory name
+      let inventoryName = '';
+      if (vaccineType?.toLowerCase().includes('speeda')) {
+        inventoryName = 'SPEEDA';
+      } else if (vaccineType?.toLowerCase().includes('vaxirab')) {
+        inventoryName = 'VAXIRAB';
+      } else if (vaccineType?.toLowerCase().includes('erig')) {
+        inventoryName = 'Equine Rabies Immunoglobulin';
+      }
+
+      if (!inventoryName) {
+        throw new Error('Unknown vaccine type for stock deduction');
+      }
+
+      console.log('Deducting stock:', { inventoryName, deductionAmount, centerName });
+
+      // Call stock update API
+      const response = await apiFetch('/api/stock/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          centerName: centerName,
+          vaccineName: inventoryName,
+          quantity: deductionAmount,
+          operation: 'deduct'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Stock deduction successful:', result);
+        return { success: true, message: `Successfully deducted ${deductionAmount} vials of ${inventoryName}` };
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to deduct stock');
+      }
+    } catch (error) {
+      console.error('Error deducting vaccine stock:', error);
+      return { success: false, message: error.message || 'Failed to deduct stock' };
+    }
+  };
+
   // Fetch latest vaccine info for this bite case directly from backend
   const openVaccineInfo = async (vaccination) => {
     try {
@@ -552,6 +651,7 @@ const SuperAdminVaccinationSchedule = () => {
       setScheduleModalLoading(true);
       setShowScheduleModal(true);
       setScheduleModalData(null);
+      setEditingVaccine(false);
       setSelectedVaccine(''); // Reset vaccine selection
       setSelectedVaccineBrand(''); // Reset vaccine brand selection
 
@@ -598,7 +698,7 @@ const SuperAdminVaccinationSchedule = () => {
       console.log('🔍 Built schedule list:', scheduleList);
 
      // Get vaccine info from bitecases if available
-    let brandName = '', genericName = '', route = '', categoryOfExposure = '', caseCenter = '';
+    let brandName = '', genericName = '', route = '', categoryOfExposure = '', caseCenter = '', patientWeight = null;
       try {
         const biteCaseRes = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
         if (biteCaseRes.ok) {
@@ -616,7 +716,17 @@ const SuperAdminVaccinationSchedule = () => {
             route = biteCase.route || '';
            categoryOfExposure = biteCase.categoryOfExposure || biteCase.exposureCategory || biteCase.category || '';
            caseCenter = biteCase.center || biteCase.centerName || '';
-            console.log('🔍 Found bite case vaccine info:', { brandName, genericName, route });
+           patientWeight = biteCase.weight ? parseFloat(biteCase.weight) : null;
+            console.log('🔍 Found bite case vaccine info:', { brandName, genericName, route, patientWeight });
+            
+            // Set patient weight and bite case data
+            setPatientWeight(patientWeight);
+            setBiteCaseData(biteCase);
+            
+            // Initialize vaccine selection
+            setSelectedVaccineType(brandName || 'SPEEDA');
+            setSelectedVaccineRoute(route || 'IM');
+            
             // If we don't have schedule yet, or it's empty, build from bite case per-day fields
             if (!scheduleList || scheduleList.length === 0) {
               scheduleList = buildVaccinationsForBiteCase(biteCase).map(d => ({
@@ -652,8 +762,9 @@ const SuperAdminVaccinationSchedule = () => {
         brand: brandName,
         generic: genericName,
         route: route,
-      categoryOfExposure,
-      centerName: caseCenter || patientData?.patient?.center || patientData?.patient?.centerName || '',
+        categoryOfExposure,
+        centerName: caseCenter || patientData?.patient?.center || patientData?.patient?.centerName || '',
+        weight: patientWeight,
         schedule: scheduleList
       });
     } catch (e) {
@@ -2542,21 +2653,101 @@ const SuperAdminVaccinationSchedule = () => {
                     </div>
                   </div>
 
-                  {/* Vaccine Meta Info */}
-                  {(scheduleModalData?.generic || scheduleModalData?.route) && (
-                    <div className="vaccine-info-grid">
-                      {scheduleModalData?.generic && (
-                        <div className="vaccine-info-card">
-                          <p className="vaccine-info-label">Generic Name</p>
-                          <p className="vaccine-info-value">{scheduleModalData.generic}</p>
+                  {/* Vaccine Selection and Editing */}
+                  <div className="vaccine-info-grid">
+                    <div className="vaccine-info-card">
+                      <p className="vaccine-info-label">Vaccine Type</p>
+                      {editingVaccine ? (
+                        <select
+                          value={selectedVaccineType}
+                          onChange={(e) => setSelectedVaccineType(e.target.value)}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        >
+                          <option value="SPEEDA">SPEEDA (PVRV)</option>
+                          <option value="VAXIRAB">VAXIRAB (PCEC)</option>
+                        </select>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <p className="vaccine-info-value">{selectedVaccineType || scheduleModalData?.brand || 'SPEEDA'}</p>
+                          <button
+                            onClick={() => setEditingVaccine(true)}
+                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          >
+                            Edit
+                          </button>
                         </div>
                       )}
-                      {scheduleModalData?.route && (
-                        <div className="vaccine-info-card">
-                          <p className="vaccine-info-label">Route</p>
-                          <p className="vaccine-info-value">{scheduleModalData.route}</p>
+                    </div>
+                    
+                    <div className="vaccine-info-card">
+                      <p className="vaccine-info-label">Route</p>
+                      {editingVaccine ? (
+                        <select
+                          value={selectedVaccineRoute}
+                          onChange={(e) => setSelectedVaccineRoute(e.target.value)}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        >
+                          <option value="ID">Intradermal (ID)</option>
+                          <option value="IM">Intramuscular (IM)</option>
+                          <option value="Booster">Booster</option>
+                        </select>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <p className="vaccine-info-value">{selectedVaccineRoute || scheduleModalData?.route || 'IM'}</p>
+                          <button
+                            onClick={() => setEditingVaccine(true)}
+                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          >
+                            Edit
+                          </button>
                         </div>
                       )}
+                    </div>
+                    
+                    {patientWeight && (
+                      <div className="vaccine-info-card">
+                        <p className="vaccine-info-label">Patient Weight</p>
+                        <p className="vaccine-info-value">{patientWeight} kg</p>
+                      </div>
+                    )}
+                    
+                    {scheduleModalData?.categoryOfExposure && (
+                      <div className="vaccine-info-card">
+                        <p className="vaccine-info-label">Category</p>
+                        <p className="vaccine-info-value">{scheduleModalData.categoryOfExposure}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Save/Cancel buttons for vaccine editing */}
+                  {editingVaccine && (
+                    <div className="flex gap-3 mb-6">
+                      <button
+                        onClick={() => {
+                          setEditingVaccine(false);
+                          // Update schedule modal data with new vaccine info
+                          setScheduleModalData(prev => ({
+                            ...prev,
+                            brand: selectedVaccineType,
+                            route: selectedVaccineRoute
+                          }));
+                          showNotification('Vaccine selection updated', 'success');
+                        }}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingVaccine(false);
+                          // Reset to original values
+                          setSelectedVaccineType(scheduleModalData?.brand || 'SPEEDA');
+                          setSelectedVaccineRoute(scheduleModalData?.route || 'IM');
+                        }}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   )}
 
@@ -2637,15 +2828,50 @@ const SuperAdminVaccinationSchedule = () => {
                                     {isScheduled && (
                                       <div className="schedule-actions">
                                         <button
-                                          onClick={() => {
-                                            setScheduleModalData(prev => ({
-                                              ...prev,
-                                              schedule: prev.schedule.map(item => 
-                                                item.label === scheduleItem.label 
-                                                  ? { ...item, status: 'completed' } 
-                                                  : item
-                                              )
-                                            }));
+                                          onClick={async () => {
+                                            try {
+                                              // Deduct vaccine stock first
+                                              const stockResult = await deductVaccineStock(
+                                                selectedVaccineType,
+                                                selectedVaccineRoute,
+                                                scheduleModalData?.centerName,
+                                                patientWeight
+                                              );
+
+                                              if (stockResult.success) {
+                                                // Update schedule status
+                                                setScheduleModalData(prev => ({
+                                                  ...prev,
+                                                  schedule: prev.schedule.map(item => 
+                                                    item.label === scheduleItem.label 
+                                                      ? { ...item, status: 'completed' } 
+                                                      : item
+                                                  )
+                                                }));
+
+                                                showNotification(`Dose completed! ${stockResult.message}`, 'success');
+                                                
+                                                // Check if all schedules are completed
+                                                const updatedSchedule = scheduleModalData.schedule.map(item => 
+                                                  item.label === scheduleItem.label 
+                                                    ? { ...item, status: 'completed' } 
+                                                    : item
+                                                );
+                                                
+                                                const allCompleted = updatedSchedule.every(item => 
+                                                  item.status === 'completed' || item.status === 'missed'
+                                                );
+                                                
+                                                if (allCompleted) {
+                                                  showNotification('All vaccination schedules completed! Patient will be moved to case history.', 'success');
+                                                }
+                                              } else {
+                                                showNotification(`Failed to complete dose: ${stockResult.message}`, 'error');
+                                              }
+                                            } catch (error) {
+                                              console.error('Error completing dose:', error);
+                                              showNotification('Error completing dose. Please try again.', 'error');
+                                            }
                                           }}
                                           className="schedule-action-btn complete"
                                         >
@@ -2661,6 +2887,7 @@ const SuperAdminVaccinationSchedule = () => {
                                                   : item
                                               )
                                             }));
+                                            showNotification('Dose marked as missed', 'warning');
                                           }}
                                           className="schedule-action-btn miss"
                                         >
