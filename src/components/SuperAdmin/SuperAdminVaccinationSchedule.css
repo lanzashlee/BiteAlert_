@@ -883,7 +883,562 @@
   background: #4f46e5;
 }
 
-/* Patient Detail Modal Styles */
+/* Modern Schedule Modal Styles */
+.schedule-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.schedule-modal-content {
+  background: white;
+  height: 90vh;
+  width: 90%;
+  max-width: 1200px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.schedule-modal-close {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  background: #dc2626;
+  color: white;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.schedule-modal-close:hover {
+  background: #b91c1c;
+  transform: scale(1.05);
+}
+
+.schedule-modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+/* Patient Header Styles */
+.patient-header-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-left: 6px solid #dc2626;
+  padding: 1.5rem 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.patient-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #dc2626;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.patient-id {
+  font-size: 1.125rem;
+  color: #374151;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.patient-location {
+  font-size: 0.875rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Vaccine Info Cards */
+.vaccine-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.vaccine-info-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.vaccine-info-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.vaccine-info-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #dc2626;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.vaccine-info-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Schedule Container */
+.schedule-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.schedule-header {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  padding: 1.5rem 2rem;
+  color: white;
+}
+
+.schedule-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.schedule-subtitle {
+  font-size: 0.875rem;
+  color: #fecaca;
+  font-weight: 500;
+}
+
+.schedule-content {
+  padding: 1.5rem;
+}
+
+/* Individual Schedule Items */
+.schedule-item {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+}
+
+.schedule-item:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.schedule-item.completed {
+  background: #f0fdf4;
+  border-color: #22c55e;
+}
+
+.schedule-item.missed {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+.schedule-item.scheduled {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.schedule-item.pending {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.schedule-status-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.schedule-status-indicator.completed {
+  background: #22c55e;
+}
+
+.schedule-status-indicator.missed {
+  background: #ef4444;
+}
+
+.schedule-status-indicator.scheduled {
+  background: #3b82f6;
+}
+
+.schedule-status-indicator.pending {
+  background: #9ca3af;
+}
+
+.schedule-item-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.schedule-day-badge {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.schedule-day-badge.completed {
+  background: #22c55e;
+}
+
+.schedule-day-badge.missed {
+  background: #ef4444;
+}
+
+.schedule-day-badge.scheduled {
+  background: #3b82f6;
+}
+
+.schedule-day-badge.pending {
+  background: #9ca3af;
+}
+
+.schedule-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.schedule-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.schedule-day-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.schedule-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.schedule-status-badge.completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.schedule-status-badge.missed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.schedule-status-badge.scheduled {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.schedule-status-badge.pending {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.schedule-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.schedule-info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-info-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.schedule-info-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.schedule-action-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.schedule-action-btn.complete {
+  background: #22c55e;
+  color: white;
+}
+
+.schedule-action-btn.complete:hover {
+  background: #16a34a;
+}
+
+.schedule-action-btn.miss {
+  background: #ef4444;
+  color: white;
+}
+
+.schedule-action-btn.miss:hover {
+  background: #dc2626;
+}
+
+/* Empty State */
+.schedule-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.schedule-empty-icon {
+  width: 64px;
+  height: 64px;
+  background: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+.schedule-empty-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.schedule-empty-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .schedule-modal-content {
+    width: 95%;
+    height: 95vh;
+    border-radius: 12px;
+  }
+  
+  .schedule-modal-body {
+    padding: 0.75rem;
+  }
+  
+  .patient-header-card {
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .patient-name {
+    font-size: 1.5rem;
+  }
+  
+  .vaccine-info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .schedule-header {
+    padding: 1rem 1.5rem;
+  }
+  
+  .schedule-content {
+    padding: 1rem;
+  }
+  
+  .schedule-item {
+    padding: 1rem;
+  }
+  
+  .schedule-day-badge {
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
+  }
+  
+  .schedule-info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .schedule-actions {
+    flex-direction: column;
+  }
+  
+  .schedule-action-btn {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .schedule-modal-content {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  .schedule-modal-close {
+    top: 12px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+  }
+  
+  .patient-header-card {
+    padding: 0.75rem 1rem;
+  }
+  
+  .patient-name {
+    font-size: 1.25rem;
+  }
+  
+  .schedule-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .schedule-title {
+    font-size: 1.25rem;
+  }
+  
+  .schedule-content {
+    padding: 0.75rem;
+  }
+  
+  .schedule-item {
+    padding: 0.75rem;
+  }
+}
+
+/* Animation for schedule items */
+.schedule-item {
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading state */
+.schedule-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.schedule-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #dc2626;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.schedule-loading-text {
+  font-size: 1.125rem;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* Patient Detail Modal Styles (Legacy) */
 .patient-detail-content {
   height: 100%;
   display: flex;

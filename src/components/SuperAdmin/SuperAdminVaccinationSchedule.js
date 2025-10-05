@@ -2497,222 +2497,193 @@ const SuperAdminVaccinationSchedule = () => {
         {console.log('🔍 Modal render check - showScheduleModal:', showScheduleModal)}
         {showScheduleModal && (
           <div 
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 9999,
-              padding: '20px'
-            }}
+            className="schedule-modal-overlay"
             onClick={() => {
               console.log('🔍 Modal backdrop clicked - closing modal');
               setShowScheduleModal(false);
             }}
           >
             <div 
-              style={{
-                backgroundColor: 'white',
-                height: '90vh',
-                width: '90%',
-                maxWidth: '1200px',
-                borderRadius: '12px',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                position: 'relative'
-              }}
+              className="schedule-modal-content"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
               <button 
-                style={{
-                  position: 'absolute',
-                  top: '16px',
-                  left: '16px',
-                  width: '40px',
-                  height: '40px',
-                  backgroundColor: '#dc2626',
-                  color: 'white',
-                  borderRadius: '50%',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  zIndex: 10,
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  transition: 'all 0.2s ease'
-                }}
+                className="schedule-modal-close"
                 onClick={() => setShowScheduleModal(false)} 
                 aria-label="Close"
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#b91c1c';
-                  e.target.style.transform = 'scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#dc2626';
-                  e.target.style.transform = 'scale(1)';
-                }}
               >
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
               {scheduleModalLoading ? (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%'
-                }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      border: '4px solid #e5e7eb',
-                      borderTop: '4px solid #dc2626',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite',
-                      margin: '0 auto 16px'
-                    }}></div>
-                    <span style={{
-                      fontSize: '18px',
-                      color: '#4b5563',
-                      fontWeight: '500'
-                    }}>Loading vaccination schedule...</span>
-                                    </div>
-                                    </div>
+                <div className="schedule-loading">
+                  <div className="schedule-loading-spinner"></div>
+                  <span className="schedule-loading-text">Loading vaccination schedule...</span>
+                </div>
               ) : (
-                <div className="p-4 sm:p-6 md:p-8 overflow-y-auto h-full w-full">
+                <div className="schedule-modal-body">
                   {/* Patient Header */}
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 sm:border-l-6 border-red-600 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 md:mb-8 shadow-sm">
-                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0">
-                      <div className="flex-1">
-                        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600 mb-2 sm:mb-3">
-                          {getPatientDisplayName(scheduleModalData?.patient)}
-                        </h3>
-                        <div className="space-y-1 sm:space-y-2">
-                          <p className="text-sm sm:text-base md:text-lg text-gray-700 font-medium">
-                            <span className="text-red-600 font-semibold">ID:</span> {scheduleModalData?.patient?.patientId || 'N/A'}
-                          </p>
-                          <p className="text-xs sm:text-sm md:text-base text-gray-600">
-                            {scheduleModalData?.patient?.barangay ? `📍 Barangay: ${scheduleModalData.patient.barangay}` : ''}
-                            {scheduleModalData?.patient?.center ? ` | 🏥 Center: ${scheduleModalData.patient.center}` : ''}
-                          </p>
-                                </div>
-                          </div>
-                      {/* Removed per request: Vaccine info card */}
+                  <div className="patient-header-card">
+                    <h3 className="patient-name">
+                      {getPatientDisplayName(scheduleModalData?.patient)}
+                    </h3>
+                    <p className="patient-id">
+                      ID: {scheduleModalData?.patient?.patientId || 'N/A'}
+                    </p>
+                    <div className="patient-location">
+                      {scheduleModalData?.patient?.barangay && (
+                        <span>📍 Barangay: {scheduleModalData.patient.barangay}</span>
+                      )}
+                      {scheduleModalData?.patient?.center && (
+                        <span>🏥 Center: {scheduleModalData.patient.center}</span>
+                      )}
                     </div>
                   </div>
 
                   {/* Vaccine Meta Info */}
                   {(scheduleModalData?.generic || scheduleModalData?.route) && (
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8">
+                    <div className="vaccine-info-grid">
                       {scheduleModalData?.generic && (
-                        <div className="bg-white px-4 py-3 sm:px-6 sm:py-4 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex-1">
-                          <span className="text-xs sm:text-sm font-bold text-red-600 uppercase tracking-wide">Generic Name</span>
-                          <p className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mt-1">{scheduleModalData.generic}</p>
-                          </div>
+                        <div className="vaccine-info-card">
+                          <p className="vaccine-info-label">Generic Name</p>
+                          <p className="vaccine-info-value">{scheduleModalData.generic}</p>
+                        </div>
                       )}
                       {scheduleModalData?.route && (
-                        <div className="bg-white px-4 py-3 sm:px-6 sm:py-4 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex-1">
-                          <span className="text-xs sm:text-sm font-bold text-red-600 uppercase tracking-wide">Route</span>
-                          <p className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mt-1">{scheduleModalData.route}</p>
-                          </div>
+                        <div className="vaccine-info-card">
+                          <p className="vaccine-info-label">Route</p>
+                          <p className="vaccine-info-value">{scheduleModalData.route}</p>
+                        </div>
                       )}
                     </div>
                   )}
 
-                  {/* Dose Details */}
-                  <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-                    <div className="bg-gradient-to-r from-red-600 to-red-700 px-4 py-4 sm:px-6 sm:py-6 md:px-8">
-                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">{selectedDose?.day} Details</h2>
-                      <p className="text-red-100 mt-1 text-sm sm:text-base">Vaccination dose information and status</p>
+                  {/* Complete Vaccination Schedule */}
+                  <div className="schedule-container">
+                    <div className="schedule-header">
+                      <h2 className="schedule-title">Vaccination Schedule</h2>
+                      <p className="schedule-subtitle">Complete vaccination timeline and status</p>
                     </div>
-                    <div className="p-6">
-                      {selectedDose && (
-                        <div className="space-y-6">
-                          {/* Dose Information */}
-                          <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-l-6 border-red-600 p-6 rounded-xl">
-                            <div className="flex items-center mb-4">
-                                         <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center mr-4">
-                                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                           </svg>
-                          </div>
-                                         <h4 className="text-2xl font-bold text-red-600 uppercase tracking-wide">
-                                {selectedDose.day} Details
-                                         </h4>
-                        </div>
+                    <div className="schedule-content">
+                      {scheduleModalData?.schedule && scheduleModalData.schedule.length > 0 ? (
+                        <div>
+                          {scheduleModalData.schedule.map((scheduleItem, index) => {
+                            const isCompleted = scheduleItem.status === 'completed';
+                            const isMissed = scheduleItem.status === 'missed';
+                            const isScheduled = scheduleItem.status === 'scheduled';
+                            const isUpcoming = new Date(scheduleItem.date) > new Date();
                             
-                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                                             <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Category of Exposure</p>
-                                             <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.categoryOfExposure || '—'}</p>
-                    </div>
-                                           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                                             <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Route of Administration</p>
-                                             <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.route || '—'}</p>
-                  </div>
-                                           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                                             <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Vaccine</p>
-                                             <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.brand || '—'}</p>
-            </div>
-                                         </div>
-                                         
-                            {/* Status Section */}
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 border-l-6 border-l-red-600 shadow-sm mt-6">
-                                           <div className="flex items-center mb-4">
-                                             <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center mr-3">
-                                               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                               </svg>
-                  </div>
-                                             <p className="text-lg font-bold text-red-600 uppercase tracking-wide">Status</p>
-                </div>
-                                           <label className="flex items-center space-x-4 cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                             <input 
-                                               type="checkbox" 
-                                               className="w-6 h-6 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                  checked={selectedDose.scheduleItem?.status === 'completed'}
-                                               onChange={(e) => {
-                                    if (selectedDose.scheduleItem?.status && selectedDose.scheduleItem.status !== 'scheduled') return;
-                                                 const newStatus = e.target.checked ? 'completed' : 'scheduled';
-                                                 setScheduleModalData(prev => ({
-                                                   ...prev,
-                                                   schedule: prev.schedule.map(item => 
-                                        item.label === selectedDose.day ? { ...item, status: newStatus } : item
-                                                   )
-                                                 }));
-                                               }}
-                                  disabled={selectedDose.scheduleItem?.status && selectedDose.scheduleItem.status !== 'scheduled'}
-                                             />
-                                <span className={`text-lg font-semibold ${selectedDose.scheduleItem?.status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>
-                                  {selectedDose.scheduleItem?.status === 'completed' ? '✅ Completed' : '⏳ Scheduled'}
-                          </span>
-                                           </label>
-                          </div>
-                            
-                            {/* Date Information */}
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 border-l-6 border-l-red-600 shadow-sm mt-6">
-                              <div className="flex items-center mb-4">
-                                             <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center mr-3">
-                                               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                               </svg>
+                            return (
+                              <div 
+                                key={scheduleItem.label}
+                                className={`schedule-item ${
+                                  isCompleted ? 'completed' : 
+                                  isMissed ? 'missed' : 
+                                  isScheduled ? 'scheduled' : 'pending'
+                                }`}
+                              >
+                                {/* Status Indicator */}
+                                <div className={`schedule-status-indicator ${
+                                  isCompleted ? 'completed' : 
+                                  isMissed ? 'missed' : 
+                                  isScheduled ? 'scheduled' : 'pending'
+                                }`}></div>
+
+                                <div className="schedule-item-content">
+                                  {/* Day Badge */}
+                                  <div className={`schedule-day-badge ${
+                                    isCompleted ? 'completed' : 
+                                    isMissed ? 'missed' : 
+                                    isScheduled ? 'scheduled' : 'pending'
+                                  }`}>
+                                    {scheduleItem.label.replace('Day ', 'D')}
+                                  </div>
+
+                                  {/* Content */}
+                                  <div className="schedule-details">
+                                    <div className="schedule-details-header">
+                                      <h3 className="schedule-day-title">
+                                        {scheduleItem.label}
+                                      </h3>
+                                      <span className={`schedule-status-badge ${
+                                        isCompleted ? 'completed' : 
+                                        isMissed ? 'missed' : 
+                                        isScheduled ? 'scheduled' : 'pending'
+                                      }`}>
+                                        {isCompleted ? '✅ Completed' : 
+                                         isMissed ? '❌ Missed' : 
+                                         isScheduled ? '📅 Scheduled' : '⏸️ Pending'}
+                                      </span>
+                                    </div>
+
+                                    <div className="schedule-info-grid">
+                                      <div className="schedule-info-item">
+                                        <p className="schedule-info-label">Scheduled Date</p>
+                                        <p className="schedule-info-value">
+                                          {scheduleItem.date ? formatScheduleDate(scheduleItem.date) : 'Not scheduled'}
+                                        </p>
+                                      </div>
+                                      <div className="schedule-info-item">
+                                        <p className="schedule-info-label">Vaccine Type</p>
+                                        <p className="schedule-info-value">
+                                          {scheduleModalData?.brand || scheduleModalData?.generic || 'Anti-Rabies'}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    {isScheduled && (
+                                      <div className="schedule-actions">
+                                        <button
+                                          onClick={() => {
+                                            setScheduleModalData(prev => ({
+                                              ...prev,
+                                              schedule: prev.schedule.map(item => 
+                                                item.label === scheduleItem.label 
+                                                  ? { ...item, status: 'completed' } 
+                                                  : item
+                                              )
+                                            }));
+                                          }}
+                                          className="schedule-action-btn complete"
+                                        >
+                                          Mark as Completed
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setScheduleModalData(prev => ({
+                                              ...prev,
+                                              schedule: prev.schedule.map(item => 
+                                                item.label === scheduleItem.label 
+                                                  ? { ...item, status: 'missed' } 
+                                                  : item
+                                              )
+                                            }));
+                                          }}
+                                          className="schedule-action-btn miss"
+                                        >
+                                          Mark as Missed
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                                <p className="text-lg font-bold text-red-600 uppercase tracking-wide">Scheduled Date</p>
-                      </div>
-                              <p className="text-xl font-semibold text-gray-800">
-                                {selectedDose.scheduleItem ? formatScheduleDate(selectedDose.scheduleItem.date) : 'Not scheduled'}
-                                            </p>
-                                          </div>
-                                      </div>
-                                      </div>
+                      ) : (
+                        <div className="schedule-empty-state">
+                          <div className="schedule-empty-icon">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <h3 className="schedule-empty-title">No Schedule Found</h3>
+                          <p className="schedule-empty-description">This patient doesn't have a vaccination schedule yet.</p>
+                        </div>
                       )}
                     </div>
                   </div>
