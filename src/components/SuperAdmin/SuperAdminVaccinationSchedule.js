@@ -2628,305 +2628,93 @@ const SuperAdminVaccinationSchedule = () => {
                     </div>
                   )}
 
-                  {/* Schedule Table */}
-                  <div className="bg-white rounded-none shadow-lg overflow-hidden border border-gray-100">
-                    <div className="bg-gradient-to-r from-red-600 to-red-700 px-4 py-4 sm:px-6 sm:py-6 md:px-8 sticky top-0 z-20">
-                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">Vaccination Schedule</h2>
-                      <p className="text-red-100 mt-1 text-sm sm:text-base">Click on any dose to view and edit details</p>
+                  {/* Dose Details */}
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                    <div className="bg-gradient-to-r from-red-600 to-red-700 px-4 py-4 sm:px-6 sm:py-6 md:px-8">
+                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">{selectedDose?.day} Details</h2>
+                      <p className="text-red-100 mt-1 text-sm sm:text-base">Vaccination dose information and status</p>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="bg-gray-50 border-b border-gray-200">
-                            <th className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6 text-left font-bold text-sm sm:text-base md:text-lg text-gray-800 uppercase tracking-wide">Dose</th>
-                            <th className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6 text-left font-bold text-sm sm:text-base md:text-lg text-gray-800 uppercase tracking-wide">Date</th>
-                            <th className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6 text-left font-bold text-sm sm:text-base md:text-lg text-gray-800 uppercase tracking-wide">Status</th>
-                            <th className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6 text-left font-bold text-sm sm:text-base md:text-lg text-gray-800 uppercase tracking-wide">Action</th>
-                          </tr>
-                        </thead>
-                       <tbody>
-                         {['Day 0', 'Day 3', 'Day 7', 'Day 14', 'Day 28'].map(day => {
-                           const scheduleItem = (scheduleModalData?.schedule || []).find(d => d.label === day);
-                           const isSelected = selectedDose?.day === day;
-                           return (
-                             <React.Fragment key={day}>
-                               <tr 
-                                 className={`border-b border-gray-200 hover:bg-gray-50 transition-all duration-200 ${isSelected ? 'bg-red-50 border-l-4 sm:border-l-6 border-l-red-600 shadow-sm' : ''}`}
-                                 onClick={() => setSelectedDose(isSelected ? null : { day, scheduleItem })}
-                                 style={{ cursor: 'pointer' }}
-                               >
-                                 <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
-                                   <div className="flex items-center">
-                                     <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-600 rounded-full mr-2 sm:mr-4"></div>
-                                     <span className="text-sm sm:text-base md:text-xl font-bold text-gray-900">{day}</span>
-                                   </div>
-                                 </td>
-                                 <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
-                                   <span className="text-sm sm:text-base md:text-lg text-gray-700 font-medium">
-                                    {scheduleItem ? formatScheduleDate(scheduleItem.date) : 'Not scheduled'}
-                                   </span>
-                                 </td>
-                                 <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
-                                   {scheduleItem ? (
-                                     <span className={`inline-flex px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-full ${getStatusBadgeClass(scheduleItem.status, scheduleItem.date)}`}>
-                                       {getStatusText(scheduleItem.status, scheduleItem.date)}
-                                     </span>
-                                   ) : (
-                                     <span className="inline-flex px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-full bg-blue-100 text-blue-800">
-                                       Not scheduled
-                                     </span>
-                                   )}
-                                 </td>
-                                 <td className="px-3 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6">
-                                  <div className="action-buttons">
-                                <button 
-                                     className="bg-red-600 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:bg-red-700 transition-all duration-200 uppercase tracking-wide shadow-lg hover:shadow-xl hover:scale-105"
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       setSelectedDose(isSelected ? null : { day, scheduleItem });
-                                     }}
-                                   >
-                                     {isSelected ? 'Hide Details' : 'View Details'}
-                                </button>
-                                    <button
-                                      className="btn-calendar px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wide"
-                                      disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (scheduleItem?.status && scheduleItem.status !== 'scheduled') return;
-                                        const rect = e.currentTarget.getBoundingClientRect();
-                                        // Prefer centered relative to the button; constrain to viewport, slight left bias
-                                        const width = 320; // popover width
-                                        const gutter = 8;
-                                        // For fixed-position popover, use viewport coords (no scroll offsets)
-                                        const centerLeft = rect.left + rect.width / 2 - width / 2;
-                                        let left = centerLeft;
-                                        const minLeft = gutter;
-                                        const maxLeft = window.innerWidth - width - gutter;
-                                        if (left < minLeft) left = minLeft; // keep inside viewport
-                                        if (left > maxLeft) left = maxLeft;
-                                        const top = Math.round(rect.bottom + 8);
-                                        // Prefill with existing date for this day
-                                        const existingISO = scheduleItem?.date || null;
-                                        const defaultYMD = new Date().toISOString().split('T')[0];
-                                        const existingYMD = existingISO ? new Date(existingISO).toISOString().split('T')[0] : defaultYMD;
-                                        const preview = buildCascadePreview(day, existingYMD);
-                                        setDatePicker({ day, patientId: scheduleModalData?.patient?.patientId || '', top, left, value: existingYMD, preview });
-                                      }}
-                                    >
-                                      <i className="fa-solid fa-calendar"></i>
-                                    </button>
-                                  </div>
-                                 </td>
-                               </tr>
-                               {isSelected && (
-                                 <tr>
-                                   <td colSpan="4" className="p-0">
-                                     <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-l-6 border-red-600 p-8 m-6 rounded-2xl shadow-sm">
-                                       <div className="flex items-center mb-6">
-                                         <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center mr-4">
-                                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                           </svg>
-                          </div>
-                                         <h4 className="text-2xl font-bold text-red-600 uppercase tracking-wide">
-                                           {day} Details
-                                         </h4>
-                        </div>
-                                       <div className="space-y-6">
-                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                                             <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Category of Exposure</p>
-                                             <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.categoryOfExposure || '—'}</p>
-                    </div>
-                                           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                                             <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Route of Administration</p>
-                                             <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.route || '—'}</p>
-                  </div>
-                                           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                                             <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Vaccine</p>
-                                             <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.brand || '—'}</p>
-            </div>
-                                         </div>
-                                         
-                                         <div className="bg-white p-6 rounded-xl border border-gray-200 border-l-6 border-l-red-600 shadow-sm">
-                                           <div className="flex items-center mb-4">
-                                             <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center mr-3">
-                                               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                               </svg>
-                  </div>
-                                             <p className="text-lg font-bold text-red-600 uppercase tracking-wide">Status</p>
-                </div>
-                                           <label className="flex items-center space-x-4 cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                             <input 
-                                               type="checkbox" 
-                                               className="w-6 h-6 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                                               checked={scheduleItem?.status === 'completed'}
-                                               onChange={(e) => {
-                                               if (scheduleItem?.status && scheduleItem.status !== 'scheduled') return; // lock when completed/missed
-                                                 const newStatus = e.target.checked ? 'completed' : 'scheduled';
-                                                 setScheduleModalData(prev => ({
-                                                   ...prev,
-                                                   schedule: prev.schedule.map(item => 
-                                                     item.label === day ? { ...item, status: newStatus } : item
-                                                   )
-                                                 }));
-                                               }}
-                                              disabled={scheduleItem?.status && scheduleItem.status !== 'scheduled'}
-                                             />
-                                             <span className={`text-lg font-semibold ${scheduleItem?.status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>
-                                               {scheduleItem?.status === 'completed' ? '✅ Completed' : '⏳ Scheduled'}
-                          </span>
-                                           </label>
-                          </div>
-                                         <div className="bg-white p-6 rounded-xl border border-gray-200 border-l-6 border-l-red-600 shadow-sm">
-                                           <div className="flex items-center mb-6">
-                                             <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center mr-3">
-                                               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                               </svg>
-                        </div>
-                                             <p className="text-lg font-bold text-red-600 uppercase tracking-wide">Vaccine Took</p>
-                      </div>
-                      
-                                           <div className="space-y-6">
-                                             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
-                                               <p className="text-lg font-bold text-red-600 mb-4">💉 ARV (Anti-Rabies Vaccine)</p>
-                                                 <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
-                                                   <input 
-                                                   type="radio" 
-                                                   name="vaccine" 
-                                                   className="w-5 h-5 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
-                                                   checked={selectedVaccine === 'VAXIRAB (PCEC)'}
-                                                   onChange={() => {
-                                                     setSelectedVaccine('VAXIRAB (PCEC)');
-                                                     setSelectedVaccineBrand('');
-                                                   }}
-                                                   disabled={scheduleItem?.status === 'completed'}
-                                                   />
-                                                   <span className="text-lg font-semibold text-gray-800">VAXIRAB (PCEC)</span>
-                                                 </label>
-                                               <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200 mt-4">
-                                                   <input 
-                                                   type="radio" 
-                                                   name="vaccine" 
-                                                   className="w-5 h-5 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
-                                                   checked={selectedVaccine === 'SPEEDA (PVRV)'}
-                                                   onChange={() => {
-                                                     setSelectedVaccine('SPEEDA (PVRV)');
-                                                     setSelectedVaccineBrand('');
-                                                   }}
-                                                   disabled={scheduleItem?.status === 'completed'}
-                                                   />
-                                                   <span className="text-lg font-semibold text-gray-800">SPEEDA (PVRV)</span>
-                                                 </label>
+                    <div className="p-6">
+                      {selectedDose && (
+                        <div className="space-y-6">
+                          {/* Dose Information */}
+                          <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-l-6 border-red-600 p-6 rounded-xl">
+                            <div className="flex items-center mb-4">
+                              <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center mr-4">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
                               </div>
-                              
-                                             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
-                                               <p className="text-lg font-bold text-red-600 mb-4">🩹 TCV (Tetanus Toxoid-Containing Vaccine)</p>
-                                               <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
-                                                 <input 
-                                                   type="radio" 
-                                                   name="vaccine" 
-                                                   className="w-5 h-5 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
-                                                   checked={selectedVaccine === 'TCV'}
-                                                   onChange={() => {
-                                                     setSelectedVaccine('TCV');
-                                                     setSelectedVaccineBrand('');
-                                                   }}
-                                                   disabled={scheduleItem?.status === 'completed'}
-                                                 />
-                                                 <span className="text-lg font-semibold text-gray-800">TCV</span>
-                                               </label>
-                                    </div>
-                                             
-                                             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
-                                               <p className="text-lg font-bold text-red-600 mb-4">💊 ERIG (Equine Rabies Immunoglobulin)</p>
-                                               <label className="flex items-center space-x-4 cursor-pointer p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
-                                                 <input 
-                                                   type="radio" 
-                                                   name="vaccine" 
-                                                   className="w-5 h-5 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
-                                                   checked={selectedVaccine === 'ERIG'}
-                                                   onChange={() => {
-                                                     setSelectedVaccine('ERIG');
-                                                     setSelectedVaccineBrand('');
-                                                   }}
-                                                   disabled={scheduleItem?.status === 'completed'}
-                                                 />
-                                                 <span className="text-lg font-semibold text-gray-800">ERIG</span>
-                                               </label>
-                                    </div>
-                                    
-                                    {/* Brand Selection Dropdown */}
-                                    {selectedVaccine && (
-                                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200 mt-6">
-                                        <p className="text-lg font-bold text-blue-600 mb-4">🏷️ Select Brand/Branch</p>
-                                        <p className="text-sm text-gray-600 mb-2">Selected Vaccine: {selectedVaccine}</p>
-                                        <p className="text-sm text-gray-600 mb-2">Available Brands: {getAvailableBrands(selectedVaccine).length}</p>
-                                        <p className="text-sm text-gray-600 mb-4">Vaccine Stocks Data: {vaccineStocks.length} centers loaded</p>
-                                        <select 
-                                          className="w-full p-4 border border-gray-300 rounded-lg text-lg font-semibold bg-white"
-                                          value={selectedVaccineBrand}
-                                          onChange={(e) => setSelectedVaccineBrand(e.target.value)}
-                                          disabled={scheduleItem?.status === 'completed'}
-                                        >
-                                          <option value="">Select Brand/Branch Number</option>
-                                          {getAvailableBrands(selectedVaccine).map((brand, index) => (
-                                            <option key={index} value={brand.branchNo}>
-                                              {brand.name} ({brand.brand}) - Branch {brand.branchNo} (Stock: {brand.quantity})
-                                            </option>
-                                          ))}
-                                        </select>
-                                        {getAvailableBrands(selectedVaccine).length === 0 && (
-                                          <p className="text-red-600 text-sm mt-2">No brands available for this vaccine</p>
-                                        )}
-                                        {selectedVaccineBrand && (
-                                          <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
-                                            <p className="text-sm text-gray-600">
-                                              <span className="font-semibold">Selected:</span> {selectedVaccine} - {selectedVaccineBrand}
-                                            </p>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                              <span className="font-semibold">Dosage:</span> {
-                                                selectedVaccine.includes('ERIG') ? 
-                                                  `${calculateERIGDosage(scheduleModalData?.patient?.weight || 70)}ml` : 
-                                                  getVaccineDosage(selectedVaccine, scheduleModalData?.route)
-                                              }
-                                            </p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                      </div>
-                                  </div>
-                                  
-                                        <button
-                                           className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide shadow-lg hover:shadow-xl transform hover:scale-105"
-                                           disabled={doseEditLoading || (scheduleItem?.status && scheduleItem.status !== 'scheduled')}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                             setVaccineConfirmData({
-                                               day,
-                                               scheduleItem,
-                                               selectedVaccine,
-                                               selectedVaccineBrand
-                                             });
-                                             setShowVaccineConfirm(true);
-                                           }}
-                                         >
-                                           🚀 Update Status
-                                        </button>
-                                       </div>
-                                     </div>
-                                   </td>
-                                 </tr>
-                               )}
-                             </React.Fragment>
-                           );
-                         })}
-                       </tbody>
-                      </table>
+                              <h4 className="text-2xl font-bold text-red-600 uppercase tracking-wide">
+                                {selectedDose.day} Details
+                              </h4>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Category of Exposure</p>
+                                <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.categoryOfExposure || '—'}</p>
+                              </div>
+                              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Route of Administration</p>
+                                <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.route || '—'}</p>
+                              </div>
+                              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-2">Vaccine</p>
+                                <p className="text-xl font-semibold text-gray-800">{scheduleModalData?.brand || '—'}</p>
+                              </div>
+                            </div>
+                            
+                            {/* Status Section */}
+                            <div className="bg-white p-6 rounded-xl border border-gray-200 border-l-6 border-l-red-600 shadow-sm mt-6">
+                              <div className="flex items-center mb-4">
+                                <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center mr-3">
+                                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                                <p className="text-lg font-bold text-red-600 uppercase tracking-wide">Status</p>
+                              </div>
+                              <label className="flex items-center space-x-4 cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <input 
+                                  type="checkbox" 
+                                  className="w-6 h-6 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                                  checked={selectedDose.scheduleItem?.status === 'completed'}
+                                  onChange={(e) => {
+                                    if (selectedDose.scheduleItem?.status && selectedDose.scheduleItem.status !== 'scheduled') return;
+                                    const newStatus = e.target.checked ? 'completed' : 'scheduled';
+                                    setScheduleModalData(prev => ({
+                                      ...prev,
+                                      schedule: prev.schedule.map(item => 
+                                        item.label === selectedDose.day ? { ...item, status: newStatus } : item
+                                      )
+                                    }));
+                                  }}
+                                  disabled={selectedDose.scheduleItem?.status && selectedDose.scheduleItem.status !== 'scheduled'}
+                                />
+                                <span className={`text-lg font-semibold ${selectedDose.scheduleItem?.status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>
+                                  {selectedDose.scheduleItem?.status === 'completed' ? '✅ Completed' : '⏳ Scheduled'}
+                                </span>
+                              </label>
+                            </div>
+                            
+                            {/* Date Information */}
+                            <div className="bg-white p-6 rounded-xl border border-gray-200 border-l-6 border-l-red-600 shadow-sm mt-6">
+                              <div className="flex items-center mb-4">
+                                <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center mr-3">
+                                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                                <p className="text-lg font-bold text-red-600 uppercase tracking-wide">Scheduled Date</p>
+                              </div>
+                              <p className="text-xl font-semibold text-gray-800">
+                                {selectedDose.scheduleItem ? formatScheduleDate(selectedDose.scheduleItem.date) : 'Not scheduled'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2934,114 +2722,11 @@ const SuperAdminVaccinationSchedule = () => {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
 
-        {/* Vaccine Confirmation Modal */}
-        {showVaccineConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 md:p-6" onClick={() => setShowVaccineConfirm(false)}>
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-2xl md:max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden border border-gray-100 mx-auto" onClick={(e) => e.stopPropagation()}>
-            {/* Close Button */}
-                                    <button
-              className="absolute top-3 right-3 sm:top-6 sm:right-6 w-8 h-8 sm:w-10 sm:h-10 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-all duration-200 z-10 shadow-lg hover:shadow-xl hover:scale-105" 
-              onClick={() => setShowVaccineConfirm(false)} 
-              aria-label="Close"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-                                    </button>
-            <div className="p-4 sm:p-6 md:p-8">
-              <div className="mb-4 sm:mb-6 md:mb-8">
-                <div className="flex items-center mb-3 sm:mb-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-red-600 rounded-full flex items-center justify-center mr-3 sm:mr-4">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                                  </div>
-                  <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Confirm Vaccine Administration</h3>
-                                </div>
-                <p className="text-sm sm:text-base md:text-lg text-gray-600">
-                  You are about to update the vaccination status for <strong className="text-red-600 text-base sm:text-lg md:text-xl">{vaccineConfirmData?.day}</strong>.
-                </p>
-                            </div>
-              
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 sm:border-l-6 border-red-600 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 md:mb-8 shadow-sm">
-                <div className="flex items-center mb-3 sm:mb-4 md:mb-6">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-600 rounded-full flex items-center justify-center mr-2 sm:mr-3">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                      </div>
-                  <h4 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-red-600 uppercase tracking-wide">Selected Vaccines</h4>
-                    </div>
-                <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                  {vaccineConfirmData?.selectedVaccine && (
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow space-y-2 sm:space-y-0">
-                      <div>
-                        <span className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">{vaccineConfirmData.selectedVaccine}</span>
-                        {vaccineConfirmData.selectedVaccineBrand && (
-                          <span className="text-xs sm:text-sm text-gray-600 ml-2">({vaccineConfirmData.selectedVaccineBrand})</span>
-                        )}
-                      </div>
-                        <span className="text-xs sm:text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg">
-                        {vaccineConfirmData.selectedVaccine.includes('ERIG') ? 
-                          `${calculateERIGDosage(scheduleModalData?.patient?.weight || 70)}ml` : 
-                          getVaccineDosage(vaccineConfirmData.selectedVaccine, scheduleModalData?.route)
-                        }
-                        </span>
-                      </div>
-                  )}
-                </div>
-            </div>
-
-              {vaccineConfirmData?.selectedVaccine && (
-                <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 sm:border-l-6 border-yellow-400 p-4 sm:p-6 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 md:mb-8 shadow-sm">
-                  <div className="flex items-center">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-400 rounded-full flex items-center justify-center mr-2 sm:mr-3">
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-        </div>
-                    <p className="text-sm sm:text-base md:text-lg font-semibold text-yellow-800">
-                      ⚠️ This will deduct from your inventory stock.
-                    </p>
-            </div>
-            </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end pt-4 sm:pt-6 border-t border-gray-200">
-              <button 
-                  className="bg-gray-500 text-white px-4 py-3 sm:px-6 sm:py-4 md:px-8 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base md:text-lg hover:bg-gray-600 transition-all duration-200 uppercase tracking-wide shadow-lg hover:shadow-xl transform hover:scale-105" 
-                  onClick={() => setShowVaccineConfirm(false)}
-              >
-                  Cancel
-              </button>
-              <button 
-                  className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 sm:px-6 sm:py-4 md:px-8 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base md:text-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide shadow-lg hover:shadow-xl transform hover:scale-105"
-                  disabled={doseEditLoading}
-                  onClick={async () => {
-                    try {
-                      setDoseEditLoading(true);
-                      await processVaccineUpdate();
-                      setShowVaccineConfirm(false);
-                      setSelectedDose(null);
-                      setSelectedVaccine('');
-                      setSelectedVaccineBrand('');
-                    } catch (err) {
-                      console.error('Error processing vaccine update:', err);
-                      showNotification('Error updating vaccination', 'error');
-                    } finally {
-                      setDoseEditLoading(false);
-                    }
-                  }}
-                >
-                  {doseEditLoading ? '⏳ Processing...' : '✅ Confirm & Update'}
-              </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      </>
 
       {/* Logout Modal */}
       <UnifiedModal
