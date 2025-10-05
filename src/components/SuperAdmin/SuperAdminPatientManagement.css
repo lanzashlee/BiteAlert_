@@ -149,6 +149,48 @@
   border: 1px solid #ef4444;
 }
 
+/* Table Styles */
+.table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin: 0;
+}
+
+.accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.accounts-table th {
+  background: #f8fafc;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-align: left;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.accounts-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: #374151;
+  vertical-align: middle;
+}
+
+.accounts-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.accounts-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 /* Modal button consistency */
 .dashboard-container .modal-buttons {
   display: flex;
