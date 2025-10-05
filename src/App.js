@@ -6,6 +6,7 @@ import './App.css';
 import Login from './components/Auth/Login';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './components/Dashboard/Dashboard';
+import UnifiedSpinner from './components/Common/UnifiedSpinner';
 
 // Lazy load non-critical components for code splitting
 const SuperAdminDashboard = React.lazy(() => import('./components/SuperAdmin/SuperAdminDashboard'));
@@ -26,8 +27,6 @@ const SuperAdminPrescriptiveAnalytics = React.lazy(() => import('./components/Su
 const PatientDiagnosisManagement = React.lazy(() => import('./components/SuperAdmin/PatientDiagnosisManagement'));
 const ActivateAccount = React.lazy(() => import('./components/Auth/ActivateAccount'));
 const CreateAccount = React.lazy(() => import('./components/Auth/CreateAccount'));
-
-import UnifiedSpinner from './components/Common/UnifiedSpinner';
 
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
