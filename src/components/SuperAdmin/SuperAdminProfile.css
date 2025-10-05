@@ -59,6 +59,9 @@ body {
   border-bottom: 1px solid #e5e7eb;
   position: relative;
   z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .content-header h2 {
@@ -66,6 +69,46 @@ body {
   font-weight: 600;
   color: #111827;
   margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-actions .btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.header-actions .btn-secondary {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.header-actions .btn-secondary:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  color: #111827;
 }
 
 /* Landscape Profile Styles */
