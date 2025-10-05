@@ -522,6 +522,63 @@ const SuperAdminVaccinationSchedule = () => {
     return 0;
   };
 
+  // Move patient to case history when all schedules are completed
+  const movePatientToCaseHistory = async (scheduleData) => {
+    try {
+      const patientId = scheduleData?.patient?.patientId || scheduleData?.patient?.id;
+      if (!patientId) {
+        console.error('No patient ID found for case history move');
+        return;
+      }
+
+      // Update bite case status to completed
+      const biteCaseUpdate = {
+        status: 'completed',
+        completedDate: new Date().toISOString(),
+        vaccinesUsed: {
+          type: selectedVaccineType,
+          route: selectedVaccineRoute,
+          brand: selectedVaccineType,
+          generic: selectedVaccineType === 'SPEEDA' ? 'PVRV' : 'PCEC'
+        },
+        completedSchedules: scheduleData.schedule.map(item => ({
+          day: item.label,
+          date: item.date,
+          status: item.status
+        }))
+      };
+
+      // Update bite case in database
+      const response = await apiFetch(`${apiConfig.endpoints.bitecases}/${scheduleData.biteCaseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(biteCaseUpdate)
+      });
+
+      if (response.ok) {
+        console.log('Patient moved to case history successfully');
+        showNotification('Patient successfully moved to case history!', 'success');
+        
+        // Close the modal and refresh the vaccination list
+        setShowScheduleModal(false);
+        setScheduleModalData(null);
+        
+        // Refresh the vaccination list to remove completed patient
+        setTimeout(() => {
+          handleRefreshData();
+        }, 1000);
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to move patient to case history');
+      }
+    } catch (error) {
+      console.error('Error moving patient to case history:', error);
+      showNotification('Error moving patient to case history. Please try again.', 'error');
+    }
+  };
+
   // Deduct vaccine stock from inventory
   const deductVaccineStock = async (vaccineType, route, centerName, weight = null) => {
     try {
@@ -2713,8 +2770,22 @@ const SuperAdminVaccinationSchedule = () => {
                     
                     {scheduleModalData?.categoryOfExposure && (
                       <div className="vaccine-info-card">
-                        <p className="vaccine-info-label">Category</p>
+                        <p className="vaccine-info-label">Category of Exposure</p>
                         <p className="vaccine-info-value">{scheduleModalData.categoryOfExposure}</p>
+                      </div>
+                    )}
+                    
+                    {biteCaseData?.registrationNumber && (
+                      <div className="vaccine-info-card">
+                        <p className="vaccine-info-label">Registration Number</p>
+                        <p className="vaccine-info-value">{biteCaseData.registrationNumber}</p>
+                      </div>
+                    )}
+                    
+                    {scheduleModalData?.centerName && (
+                      <div className="vaccine-info-card">
+                        <p className="vaccine-info-label">Center</p>
+                        <p className="vaccine-info-value">{scheduleModalData.centerName}</p>
                       </div>
                     )}
                   </div>
@@ -2864,6 +2935,8 @@ const SuperAdminVaccinationSchedule = () => {
                                                 
                                                 if (allCompleted) {
                                                   showNotification('All vaccination schedules completed! Patient will be moved to case history.', 'success');
+                                                  // Move patient to case history
+                                                  await movePatientToCaseHistory(scheduleModalData);
                                                 }
                                               } else {
                                                 showNotification(`Failed to complete dose: ${stockResult.message}`, 'error');
