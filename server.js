@@ -3209,6 +3209,111 @@ app.put('/api/vaccinationdates/:id', async (req, res) => {
     }
 });
 
+// API endpoint for updating vaccination status (used by vaccination scheduler)
+app.put('/api/vaccinations/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body || {};
+        
+        console.log('Updating vaccination:', { id, updateData });
+        
+        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
+        
+        // Find the vaccination record
+        const vaccination = await VaccinationDate.findById(id);
+        if (!vaccination) {
+            return res.status(404).json({ success: false, message: 'Vaccination record not found' });
+        }
+        
+        // Update the vaccination record
+        const updatedVaccination = await VaccinationDate.findByIdAndUpdate(
+            id, 
+            { 
+                $set: {
+                    ...updateData,
+                    updatedAt: new Date()
+                }
+            }, 
+            { new: true }
+        );
+        
+        // If this is a completion update, also update the corresponding bite case
+        if (updateData.status === 'completed' && updateData.vaccinesUsed) {
+            try {
+                const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+                
+                // Find the associated bite case
+                const biteCase = await BiteCase.findOne({ 
+                    patientId: vaccination.patientId,
+                    registrationNumber: vaccination.registrationNumber 
+                });
+                
+                if (biteCase) {
+                    // Update the bite case with vaccination completion info
+                    const biteCaseUpdate = {
+                        lastVaccinationDate: updateData.completedDate,
+                        lastVaccinationDay: updateData.vaccinationDay,
+                        vaccinesUsed: updateData.vaccinesUsed,
+                        updatedAt: new Date()
+                    };
+                    
+                    // Update specific day status in bite case
+                    const dayField = updateData.vaccinationDay?.replace('Day ', 'd').toLowerCase() + 'Status';
+                    if (dayField) {
+                        biteCaseUpdate[dayField] = 'completed';
+                    }
+                    
+                    await BiteCase.findByIdAndUpdate(biteCase._id, { $set: biteCaseUpdate });
+                    console.log('Updated bite case with vaccination completion:', biteCase._id);
+                    
+                    // Check if all vaccinations are completed to move to case history
+                    const allVaccinations = await VaccinationDate.find({ 
+                        patientId: vaccination.patientId,
+                        registrationNumber: vaccination.registrationNumber 
+                    });
+                    
+                    const allCompleted = allVaccinations.every(v => v.status === 'completed' || v.status === 'missed');
+                    
+                    if (allCompleted) {
+                        // Move patient to case history
+                        const caseHistoryUpdate = {
+                            status: 'completed',
+                            completedDate: new Date().toISOString(),
+                            completedSchedules: allVaccinations.map(v => ({
+                                day: v.vaccinationDay,
+                                date: v.completedDate || v.scheduledDate,
+                                status: v.status,
+                                vaccinesUsed: v.vaccinesUsed
+                            })),
+                            updatedAt: new Date()
+                        };
+                        
+                        await BiteCase.findByIdAndUpdate(biteCase._id, { $set: caseHistoryUpdate });
+                        console.log('Patient moved to case history:', biteCase._id);
+                    }
+                }
+            } catch (biteCaseError) {
+                console.error('Error updating bite case:', biteCaseError);
+                // Don't fail the vaccination update if bite case update fails
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            data: updatedVaccination,
+            message: 'Vaccination status updated successfully' 
+        });
+        
+    } catch (err) {
+        console.error('Error updating vaccination:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update vaccination status', 
+            error: err.message 
+        });
+    }
+});
+
 // Upsert diagnosis/management for a bitecase document
 app.put('/api/bitecases/:id/diagnosis', async (req, res) => {
     try {

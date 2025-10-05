@@ -66,6 +66,15 @@ const SuperAdminVaccinationSchedule = () => {
   const [stockLoading, setStockLoading] = useState(false);
   // Inline date picker popover state
   const [datePicker, setDatePicker] = useState(null); // { day, patientId, top, left }
+  // Vaccination status update modal state
+  const [showVaccinationStatusModal, setShowVaccinationStatusModal] = useState(false);
+  const [selectedDoseForUpdate, setSelectedDoseForUpdate] = useState(null);
+  const [selectedVaccines, setSelectedVaccines] = useState({
+    arv: { vaxirab: false, speeda: false },
+    tcv: false,
+    erig: false,
+    booster: { vaxirab: false, speeda: false }
+  });
 
   // Close popover on Escape / outside click / heavy scroll or resize
   useEffect(() => {
@@ -579,6 +588,157 @@ const SuperAdminVaccinationSchedule = () => {
     }
   };
 
+  // Open vaccination status update modal
+  const openVaccinationStatusModal = (scheduleItem, scheduleData) => {
+    setSelectedDoseForUpdate({
+      scheduleItem,
+      scheduleData,
+      patient: scheduleData.patient,
+      centerName: scheduleData.centerName,
+      categoryOfExposure: scheduleData.categoryOfExposure
+    });
+    
+    // Reset vaccine selections
+    setSelectedVaccines({
+      arv: { vaxirab: false, speeda: false },
+      tcv: false,
+      erig: false,
+      booster: { vaxirab: false, speeda: false }
+    });
+    
+    setShowVaccinationStatusModal(true);
+  };
+
+  // Handle vaccine selection changes
+  const handleVaccineSelection = (category, vaccine = null) => {
+    setSelectedVaccines(prev => {
+      const newState = { ...prev };
+      
+      if (category === 'arv' && vaccine) {
+        // For ARV, only one can be selected at a time
+        newState.arv = { vaxirab: false, speeda: false };
+        newState.arv[vaccine] = !prev.arv[vaccine];
+      } else if (category === 'booster' && vaccine) {
+        // For Booster, only one can be selected at a time
+        newState.booster = { vaxirab: false, speeda: false };
+        newState.booster[vaccine] = !prev.booster[vaccine];
+      } else {
+        // For TCV and ERIG, simple toggle
+        newState[category] = !prev[category];
+      }
+      
+      return newState;
+    });
+  };
+
+  // Update vaccination status with selected vaccines
+  const updateVaccinationStatus = async () => {
+    try {
+      if (!selectedDoseForUpdate) return;
+
+      const { scheduleItem, scheduleData, centerName } = selectedDoseForUpdate;
+      
+      // Determine which vaccines were selected
+      const selectedVaccineList = [];
+      
+      if (selectedVaccines.arv.vaxirab) {
+        selectedVaccineList.push({ type: 'VAXIRAB', route: 'ID', dosage: 0.2 });
+      }
+      if (selectedVaccines.arv.speeda) {
+        selectedVaccineList.push({ type: 'SPEEDA', route: 'ID', dosage: 0.4 });
+      }
+      if (selectedVaccines.booster.vaxirab) {
+        selectedVaccineList.push({ type: 'VAXIRAB', route: 'Booster', dosage: 0.1 });
+      }
+      if (selectedVaccines.booster.speeda) {
+        selectedVaccineList.push({ type: 'SPEEDA', route: 'Booster', dosage: 0.2 });
+      }
+      if (selectedVaccines.tcv) {
+        selectedVaccineList.push({ type: 'Tetanus Toxoid-Containing Vaccine', route: 'IM', dosage: 1.0 });
+      }
+      if (selectedVaccines.erig && patientWeight) {
+        const erigDosage = calculateERIGDosage(patientWeight);
+        selectedVaccineList.push({ type: 'Equine Rabies Immunoglobulin', route: 'IM', dosage: erigDosage });
+      }
+
+      if (selectedVaccineList.length === 0) {
+        showNotification('Please select at least one vaccine', 'error');
+        return;
+      }
+
+      // Deduct stock for each selected vaccine
+      for (const vaccine of selectedVaccineList) {
+        const stockResult = await deductVaccineStock(
+          vaccine.type,
+          vaccine.route,
+          centerName,
+          vaccine.type === 'Equine Rabies Immunoglobulin' ? patientWeight : null
+        );
+        
+        if (!stockResult.success) {
+          showNotification(`Failed to deduct stock for ${vaccine.type}: ${stockResult.message}`, 'error');
+          return;
+        }
+      }
+
+      // Update the vaccination status in the database
+      const updateData = {
+        status: 'completed',
+        completedDate: new Date().toISOString(),
+        vaccinesUsed: selectedVaccineList,
+        patientId: scheduleData.patient.patientId,
+        vaccinationDay: scheduleItem.label,
+        center: centerName
+      };
+
+      const response = await apiFetch(`/api/vaccinations/${scheduleItem.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (response.ok) {
+        // Update local state
+        setScheduleModalData(prev => ({
+          ...prev,
+          schedule: prev.schedule.map(item => 
+            item.label === scheduleItem.label 
+              ? { ...item, status: 'completed' } 
+              : item
+          )
+        }));
+
+        showNotification('Vaccination status updated successfully!', 'success');
+        setShowVaccinationStatusModal(false);
+        setSelectedDoseForUpdate(null);
+
+        // Check if all schedules are completed
+        const updatedSchedule = scheduleModalData.schedule.map(item => 
+          item.label === scheduleItem.label 
+            ? { ...item, status: 'completed' } 
+            : item
+        );
+        
+        const allCompleted = updatedSchedule.every(item => 
+          item.status === 'completed' || item.status === 'missed'
+        );
+        
+        if (allCompleted) {
+          showNotification('All vaccination schedules completed! Patient will be moved to case history.', 'success');
+          await movePatientToCaseHistory(scheduleModalData);
+        }
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update vaccination status');
+      }
+    } catch (error) {
+      console.error('Error updating vaccination status:', error);
+      showNotification('Error updating vaccination status. Please try again.', 'error');
+    }
+  };
+
   // Deduct vaccine stock from inventory
   const deductVaccineStock = async (vaccineType, route, centerName, weight = null) => {
     try {
@@ -589,7 +749,7 @@ const SuperAdminVaccinationSchedule = () => {
         return { success: true, message: 'No stock deduction needed' };
       }
 
-      // Map vaccine type to inventory name
+      // Map vaccine type to inventory name (must match database exactly)
       let inventoryName = '';
       if (vaccineType?.toLowerCase().includes('speeda')) {
         inventoryName = 'SPEEDA';
@@ -597,6 +757,8 @@ const SuperAdminVaccinationSchedule = () => {
         inventoryName = 'VAXIRAB';
       } else if (vaccineType?.toLowerCase().includes('erig')) {
         inventoryName = 'Equine Rabies Immunoglobulin';
+      } else if (vaccineType?.toLowerCase().includes('tcv')) {
+        inventoryName = 'Tetanus Toxoid-Containing Vaccine';
       }
 
       if (!inventoryName) {
@@ -613,7 +775,7 @@ const SuperAdminVaccinationSchedule = () => {
         },
         body: JSON.stringify({
           centerName: centerName,
-          vaccineName: inventoryName,
+          itemName: inventoryName,
           quantity: deductionAmount,
           operation: 'deduct'
         })
@@ -2899,56 +3061,10 @@ const SuperAdminVaccinationSchedule = () => {
                                     {isScheduled && (
                                       <div className="schedule-actions">
                                         <button
-                                          onClick={async () => {
-                                            try {
-                                              // Deduct vaccine stock first
-                                              const stockResult = await deductVaccineStock(
-                                                selectedVaccineType,
-                                                selectedVaccineRoute,
-                                                scheduleModalData?.centerName,
-                                                patientWeight
-                                              );
-
-                                              if (stockResult.success) {
-                                                // Update schedule status
-                                                setScheduleModalData(prev => ({
-                                                  ...prev,
-                                                  schedule: prev.schedule.map(item => 
-                                                    item.label === scheduleItem.label 
-                                                      ? { ...item, status: 'completed' } 
-                                                      : item
-                                                  )
-                                                }));
-
-                                                showNotification(`Dose completed! ${stockResult.message}`, 'success');
-                                                
-                                                // Check if all schedules are completed
-                                                const updatedSchedule = scheduleModalData.schedule.map(item => 
-                                                  item.label === scheduleItem.label 
-                                                    ? { ...item, status: 'completed' } 
-                                                    : item
-                                                );
-                                                
-                                                const allCompleted = updatedSchedule.every(item => 
-                                                  item.status === 'completed' || item.status === 'missed'
-                                                );
-                                                
-                                                if (allCompleted) {
-                                                  showNotification('All vaccination schedules completed! Patient will be moved to case history.', 'success');
-                                                  // Move patient to case history
-                                                  await movePatientToCaseHistory(scheduleModalData);
-                                                }
-                                              } else {
-                                                showNotification(`Failed to complete dose: ${stockResult.message}`, 'error');
-                                              }
-                                            } catch (error) {
-                                              console.error('Error completing dose:', error);
-                                              showNotification('Error completing dose. Please try again.', 'error');
-                                            }
-                                          }}
+                                          onClick={() => openVaccinationStatusModal(scheduleItem, scheduleModalData)}
                                           className="schedule-action-btn complete"
                                         >
-                                          Mark as Completed
+                                          Update Status
                                         </button>
                                         <button
                                           onClick={() => {
@@ -2989,6 +3105,145 @@ const SuperAdminVaccinationSchedule = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Vaccination Status Update Modal */}
+        {showVaccinationStatusModal && selectedDoseForUpdate && (
+          <div className="vaccination-status-modal-overlay">
+            <div className="vaccination-status-modal-content">
+              {/* Modal Header */}
+              <div className="vaccination-status-modal-header">
+                <h2>UPDATE VACCINATION STATUS</h2>
+                <button 
+                  className="vaccination-status-modal-close"
+                  onClick={() => setShowVaccinationStatusModal(false)}
+                >
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="vaccination-status-modal-body">
+                {/* Dose Information */}
+                <div className="dose-info-section">
+                  <h3 className="dose-title">{selectedDoseForUpdate.scheduleItem.label}</h3>
+                  <div className="dose-details">
+                    <p><strong>Category of Exposure:</strong> {selectedDoseForUpdate.categoryOfExposure}</p>
+                    <p><strong>Route of Administration:</strong> {selectedDoseForUpdate.scheduleItem.route || 'ID'}</p>
+                    <p><strong>Vaccine:</strong> {selectedDoseForUpdate.scheduleData?.brand || 'Anti-Rabies'}</p>
+                  </div>
+                </div>
+
+                {/* Status Section */}
+                <div className="status-section">
+                  <label className="status-label">Status:</label>
+                  <div className="status-checkbox">
+                    <input type="checkbox" id="completed-status" defaultChecked />
+                    <label htmlFor="completed-status" className="completed-text">Completed</label>
+                  </div>
+                </div>
+
+                {/* Vaccine Selection */}
+                <div className="vaccine-selection-section">
+                  <label className="vaccine-selection-label">Vaccine Took:</label>
+                  
+                  {/* ARV Section */}
+                  <div className="vaccine-category">
+                    <h4>ARV (Anti-Rabies Vaccine)</h4>
+                    <div className="vaccine-options">
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="vaxirab-arv"
+                          checked={selectedVaccines.arv.vaxirab}
+                          onChange={() => handleVaccineSelection('arv', 'vaxirab')}
+                        />
+                        <label htmlFor="vaxirab-arv">VAXIRAB (PCEC)</label>
+                      </div>
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="speeda-arv"
+                          checked={selectedVaccines.arv.speeda}
+                          onChange={() => handleVaccineSelection('arv', 'speeda')}
+                        />
+                        <label htmlFor="speeda-arv">SPEEDA (PVRV)</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TCV Section */}
+                  <div className="vaccine-category">
+                    <h4>TCV (Tetanus Toxoid-Containing Vaccine)</h4>
+                    <div className="vaccine-options">
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="tcv"
+                          checked={selectedVaccines.tcv}
+                          onChange={() => handleVaccineSelection('tcv')}
+                        />
+                        <label htmlFor="tcv">TCV</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ERIG Section */}
+                  <div className="vaccine-category">
+                    <h4>ERIG (Equine Rabies Immunoglobulin)</h4>
+                    <div className="vaccine-options">
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="erig"
+                          checked={selectedVaccines.erig}
+                          onChange={() => handleVaccineSelection('erig')}
+                        />
+                        <label htmlFor="erig">ERIG</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Booster Section */}
+                  <div className="vaccine-category">
+                    <h4>Booster Vaccine</h4>
+                    <div className="vaccine-options">
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="vaxirab-booster"
+                          checked={selectedVaccines.booster.vaxirab}
+                          onChange={() => handleVaccineSelection('booster', 'vaxirab')}
+                        />
+                        <label htmlFor="vaxirab-booster">VAXIRAB (BOOSTER)</label>
+                      </div>
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="speeda-booster"
+                          checked={selectedVaccines.booster.speeda}
+                          onChange={() => handleVaccineSelection('booster', 'speeda')}
+                        />
+                        <label htmlFor="speeda-booster">SPEEDA (BOOSTER)</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="vaccination-status-modal-footer">
+                <button 
+                  className="update-status-btn"
+                  onClick={updateVaccinationStatus}
+                >
+                  Update Status
+                </button>
+              </div>
             </div>
           </div>
         )}
