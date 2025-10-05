@@ -45,8 +45,14 @@
 
 /* Wider modal for custom content */
 .unified-modal-content.has-custom-content {
-  max-width: 600px;
+  max-width: 800px;
+  width: 95vw;
+  max-height: 90vh;
   text-align: left;
+  padding: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes modalPopIn {
@@ -65,6 +71,14 @@
   flex-direction: column;
   align-items: center;
   margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.unified-modal-content.has-custom-content .unified-modal-header {
+  align-items: flex-start;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .unified-modal-icon-wrapper {
@@ -89,6 +103,14 @@
 
 .unified-modal-body {
   margin-bottom: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.unified-modal-content.has-custom-content .unified-modal-body {
+  margin-bottom: 0;
+  padding-right: 0.5rem;
 }
 
 .unified-modal-body p {
@@ -106,6 +128,14 @@
   display: flex;
   justify-content: center;
   gap: 1rem;
+  margin-top: 1.5rem;
+  flex-shrink: 0;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.unified-modal-content.has-custom-content .unified-modal-footer {
+  justify-content: flex-end;
   margin-top: 1.5rem;
 }
 

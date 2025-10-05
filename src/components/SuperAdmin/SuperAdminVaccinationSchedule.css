@@ -885,17 +885,20 @@
 
 /* Patient Detail Modal Styles */
 .patient-detail-content {
-  max-height: 70vh;
-  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .patient-detail-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .patient-detail-info h3 {
@@ -911,6 +914,12 @@
   color: #6b7280;
 }
 
+.vaccination-schedule-detail {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
 .vaccination-schedule-detail h4 {
   margin: 0 0 1.5rem 0;
   font-size: 1.25rem;
@@ -920,8 +929,9 @@
 
 .schedule-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
+  padding-right: 0.5rem;
 }
 
 .schedule-detail-card {
