@@ -49,6 +49,7 @@ const Login = () => {
   const redirectBasedOnRole = (role) => {
     // Add small delay to show welcome message
     setTimeout(() => {
+      setLoading(false); // Stop loading before navigation
       if (role === 'superadmin') {
         navigate('/superadmin');
       } else if (role === 'admin') {
@@ -88,12 +89,31 @@ const Login = () => {
 
   // Disable auto-login on app open unless rememberMe was explicitly set
   useEffect(() => {
+    // Check if user is already logged in
+    const userData = sessionStorage.getItem('userData') || localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        const role = user.role;
+        if (role === 'superadmin') {
+          navigate('/superadmin');
+        } else if (role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+        return;
+      } catch (error) {
+        console.warn('Invalid user data in storage:', error);
+      }
+    }
+    
+    // Only clear storage if explicitly not remembered
     const remembered = localStorage.getItem('rememberMe') === 'true';
     if (!remembered) {
+      // Don't clear sessionStorage - it should persist for the session
       localStorage.removeItem('userData');
       localStorage.removeItem('token');
-      sessionStorage.removeItem('userData');
-      sessionStorage.removeItem('token');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -120,19 +140,24 @@ const Login = () => {
       
       if (data.success) {
         console.log('Login successful, storing user data:', data.user);
-        // Persist based on rememberMe
+        // Always store in sessionStorage for session persistence
+        try {
+          sessionStorage.setItem('userData', JSON.stringify(data.user));
+          if (data.token) sessionStorage.setItem('token', data.token);
+        } catch {}
+        
+        // Store in localStorage based on rememberMe for persistent login
         if (rememberMe) {
           localStorage.setItem('userData', JSON.stringify(data.user));
           if (data.token) localStorage.setItem('token', data.token);
           localStorage.setItem('rememberMe', 'true');
         } else {
           localStorage.removeItem('rememberMe');
+          // Still keep a copy in localStorage for current session
+          localStorage.setItem('userData', JSON.stringify(data.user));
+          if (data.token) localStorage.setItem('token', data.token);
         }
-        // Always keep a sessionStorage copy so refresh stays logged in
-        try {
-          sessionStorage.setItem('userData', JSON.stringify(data.user));
-          if (data.token) sessionStorage.setItem('token', data.token);
-        } catch {}
+        
         // Keep a mirror in currentUser for legacy reads
         try { localStorage.setItem('currentUser', JSON.stringify(data.user)); } catch {}
         
