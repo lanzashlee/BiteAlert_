@@ -553,7 +553,7 @@ const SuperAdminPatients = () => {
     
     // Removed debug logging for better performance
     
-    return patients.filter(p => {
+    const filtered = patients.filter(p => {
       // Center-based filtering for admin users - match barangay to center name
       if (userCenter && userCenter !== 'all') {
         const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
