@@ -18,6 +18,15 @@ const SuperAdminProfile = () => {
   });
   const [passwordErrors, setPasswordErrors] = useState({});
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    feedback: []
+  });
   const [showSignoutModal, setShowSignoutModal] = useState(false);
 
   // Handle sign out
@@ -203,12 +212,89 @@ const SuperAdminProfile = () => {
     }
   };
 
+  // Real-time password strength calculation
+  const calculatePasswordStrength = (password) => {
+    let score = 0;
+    const feedback = [];
+    
+    if (password.length >= 8) {
+      score += 1;
+    } else {
+      feedback.push('At least 8 characters');
+    }
+    
+    if (/[A-Z]/.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('One uppercase letter');
+    }
+    
+    if (/[a-z]/.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('One lowercase letter');
+    }
+    
+    if (/[0-9]/.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('One number');
+    }
+    
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      score += 1;
+    } else {
+      feedback.push('One special character');
+    }
+    
+    return { score, feedback };
+  };
+
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswordData(prev => ({ ...prev, [name]: value }));
-    if (passwordErrors[name]) {
-      setPasswordErrors(prev => ({ ...prev, [name]: '' }));
+    
+    // Real-time password strength calculation for new password
+    if (name === 'newPassword') {
+      const strength = calculatePasswordStrength(value);
+      setPasswordStrength(strength);
     }
+    
+    // Real-time validation
+    const newErrors = { ...passwordErrors };
+    
+    if (name === 'newPassword' && value) {
+      if (value.length < 8) {
+        newErrors.newPassword = 'Password must be at least 8 characters long';
+      } else if (!/[A-Z]/.test(value)) {
+        newErrors.newPassword = 'Password must contain at least one uppercase letter';
+      } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+        newErrors.newPassword = 'Password must contain at least one special character';
+      } else {
+        delete newErrors.newPassword;
+      }
+    }
+    
+    if (name === 'confirmPassword' && value && passwordData.newPassword) {
+      if (value !== passwordData.newPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      } else {
+        delete newErrors.confirmPassword;
+      }
+    }
+    
+    if (name === 'currentPassword' && value) {
+      delete newErrors.currentPassword;
+    }
+    
+    setPasswordErrors(newErrors);
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
   };
 
   const validateForm = () => {
@@ -529,54 +615,151 @@ const SuperAdminProfile = () => {
                 </div>
               )}
 
-              <form onSubmit={handleChangePassword} className="password-form">
-                <div className="form-row">
+              <form onSubmit={handleChangePassword} className="modern-password-form">
+                <div className="form-section">
                   <div className="form-group">
                     <label htmlFor="currentPassword">Current Password *</label>
-                    <input
-                      type="password"
-                      id="currentPassword"
-                      name="currentPassword"
-                      value={passwordData.currentPassword}
-                      onChange={handlePasswordChange}
-                      className={`form-control ${passwordErrors.currentPassword ? 'error' : ''}`}
-                    />
-                    {passwordErrors.currentPassword && <span className="error-message">{passwordErrors.currentPassword}</span>}
+                    <div className="input-wrapper">
+                      <input
+                        type={showPasswords.current ? "text" : "password"}
+                        id="currentPassword"
+                        name="currentPassword"
+                        value={passwordData.currentPassword}
+                        onChange={handlePasswordChange}
+                        className={`modern-input ${passwordErrors.currentPassword ? 'error' : ''}`}
+                        placeholder="Enter your current password"
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        onClick={() => togglePasswordVisibility('current')}
+                        tabIndex="-1"
+                      >
+                        <i className={`fa-solid ${showPasswords.current ? 'fa-eye-slash' : 'fa-eye'}`} />
+                      </button>
+                    </div>
+                    {passwordErrors.currentPassword && (
+                      <div className="error-message">
+                        <i className="fa-solid fa-exclamation-circle" />
+                        {passwordErrors.currentPassword}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="newPassword">New Password *</label>
-                    <input
-                      type="password"
-                      id="newPassword"
-                      name="newPassword"
-                      value={passwordData.newPassword}
-                      onChange={handlePasswordChange}
-                      className={`form-control ${passwordErrors.newPassword ? 'error' : ''}`}
-                    />
-                    {passwordErrors.newPassword && <span className="error-message">{passwordErrors.newPassword}</span>}
-                    <div className="password-requirements">
-                      <small>Password must contain:</small>
-                      <ul>
-                        <li className={passwordData.newPassword.length >= 8 ? 'met' : ''}>At least 8 characters</li>
-                        <li className={/[A-Z]/.test(passwordData.newPassword) ? 'met' : ''}>One uppercase letter</li>
-                        <li className={/[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? 'met' : ''}>One special character</li>
-                      </ul>
+                <div className="form-section">
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="newPassword">New Password *</label>
+                      <div className="input-wrapper">
+                        <input
+                          type={showPasswords.new ? "text" : "password"}
+                          id="newPassword"
+                          name="newPassword"
+                          value={passwordData.newPassword}
+                          onChange={handlePasswordChange}
+                          className={`modern-input ${passwordErrors.newPassword ? 'error' : ''} ${passwordStrength.score >= 3 ? 'valid' : ''}`}
+                          placeholder="Create a strong password"
+                        />
+                        <button
+                          type="button"
+                          className="password-toggle"
+                          onClick={() => togglePasswordVisibility('new')}
+                          tabIndex="-1"
+                        >
+                          <i className={`fa-solid ${showPasswords.new ? 'fa-eye-slash' : 'fa-eye'}`} />
+                        </button>
+                      </div>
+                      
+                      {/* Real-time Password Strength Indicator */}
+                      {passwordData.newPassword && (
+                        <div className="password-strength">
+                          <div className="strength-bar">
+                            <div 
+                              className={`strength-fill strength-${Math.min(passwordStrength.score, 5)}`}
+                              style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                            />
+                          </div>
+                          <div className="strength-text">
+                            {passwordStrength.score === 0 && 'Very Weak'}
+                            {passwordStrength.score === 1 && 'Weak'}
+                            {passwordStrength.score === 2 && 'Fair'}
+                            {passwordStrength.score === 3 && 'Good'}
+                            {passwordStrength.score === 4 && 'Strong'}
+                            {passwordStrength.score === 5 && 'Very Strong'}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Real-time Requirements */}
+                      <div className="password-requirements">
+                        <div className="requirements-title">Password Requirements:</div>
+                        <div className="requirements-list">
+                          <div className={`requirement ${passwordData.newPassword.length >= 8 ? 'met' : ''}`}>
+                            <i className={`fa-solid ${passwordData.newPassword.length >= 8 ? 'fa-check-circle' : 'fa-circle'}`} />
+                            <span>At least 8 characters</span>
+                          </div>
+                          <div className={`requirement ${/[A-Z]/.test(passwordData.newPassword) ? 'met' : ''}`}>
+                            <i className={`fa-solid ${/[A-Z]/.test(passwordData.newPassword) ? 'fa-check-circle' : 'fa-circle'}`} />
+                            <span>One uppercase letter</span>
+                          </div>
+                          <div className={`requirement ${/[a-z]/.test(passwordData.newPassword) ? 'met' : ''}`}>
+                            <i className={`fa-solid ${/[a-z]/.test(passwordData.newPassword) ? 'fa-check-circle' : 'fa-circle'}`} />
+                            <span>One lowercase letter</span>
+                          </div>
+                          <div className={`requirement ${/[0-9]/.test(passwordData.newPassword) ? 'met' : ''}`}>
+                            <i className={`fa-solid ${/[0-9]/.test(passwordData.newPassword) ? 'fa-check-circle' : 'fa-circle'}`} />
+                            <span>One number</span>
+                          </div>
+                          <div className={`requirement ${/[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? 'met' : ''}`}>
+                            <i className={`fa-solid ${/[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? 'fa-check-circle' : 'fa-circle'}`} />
+                            <span>One special character</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {passwordErrors.newPassword && (
+                        <div className="error-message">
+                          <i className="fa-solid fa-exclamation-circle" />
+                          {passwordErrors.newPassword}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="confirmPassword">Confirm New Password *</label>
-                    <input
-                      type="password"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={passwordData.confirmPassword}
-                      onChange={handlePasswordChange}
-                      className={`form-control ${passwordErrors.confirmPassword ? 'error' : ''}`}
-                    />
-                    {passwordErrors.confirmPassword && <span className="error-message">{passwordErrors.confirmPassword}</span>}
+                    
+                    <div className="form-group">
+                      <label htmlFor="confirmPassword">Confirm New Password *</label>
+                      <div className="input-wrapper">
+                        <input
+                          type={showPasswords.confirm ? "text" : "password"}
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          value={passwordData.confirmPassword}
+                          onChange={handlePasswordChange}
+                          className={`modern-input ${passwordErrors.confirmPassword ? 'error' : ''} ${passwordData.confirmPassword && passwordData.confirmPassword === passwordData.newPassword ? 'valid' : ''}`}
+                          placeholder="Confirm your new password"
+                        />
+                        <button
+                          type="button"
+                          className="password-toggle"
+                          onClick={() => togglePasswordVisibility('confirm')}
+                          tabIndex="-1"
+                        >
+                          <i className={`fa-solid ${showPasswords.confirm ? 'fa-eye-slash' : 'fa-eye'}`} />
+                        </button>
+                      </div>
+                      {passwordData.confirmPassword && passwordData.confirmPassword === passwordData.newPassword && (
+                        <div className="success-message">
+                          <i className="fa-solid fa-check-circle" />
+                          Passwords match
+                        </div>
+                      )}
+                      {passwordErrors.confirmPassword && (
+                        <div className="error-message">
+                          <i className="fa-solid fa-exclamation-circle" />
+                          {passwordErrors.confirmPassword}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -588,8 +771,15 @@ const SuperAdminProfile = () => {
                 )}
 
                 <div className="form-actions">
-                  <button type="submit" className="btn btn-primary" aria-label="Change account password" title="Change Password">
-                    <i className="fa-solid fa-key" /> Change Password
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary modern-btn" 
+                    disabled={passwordStrength.score < 3 || passwordData.newPassword !== passwordData.confirmPassword}
+                    aria-label="Change account password" 
+                    title="Change Password"
+                  >
+                    <i className="fa-solid fa-key" /> 
+                    <span>Change Password</span>
                   </button>
                 </div>
               </form>
