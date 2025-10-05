@@ -77,11 +77,205 @@
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
+.superadmin-stock-container .content-header h2 {
+  color: #1f2937;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
 
+.superadmin-stock-container .header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.superadmin-stock-container .header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.superadmin-stock-container .header-actions .btn-success {
+  background: #800000;
+  color: white;
+  box-shadow: 0 2px 4px rgba(128, 0, 0, 0.2);
+}
+
+.superadmin-stock-container .header-actions .btn-success:hover {
+  background: #600000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(128, 0, 0, 0.3);
+}
+
+.superadmin-stock-container .header-actions .btn-primary {
+  background: #800000;
+  color: white;
+  box-shadow: 0 2px 4px rgba(128, 0, 0, 0.2);
+}
+
+.superadmin-stock-container .header-actions .btn-primary:hover {
+  background: #600000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(128, 0, 0, 0.3);
+}
+
+/* Summary Cards */
+.superadmin-stock-container .summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.superadmin-stock-container .summary-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.superadmin-stock-container .summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.superadmin-stock-container .summary-card .card-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.superadmin-stock-container .summary-card .card-info {
+  flex: 1;
+}
+
+.superadmin-stock-container .summary-card .card-title {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.superadmin-stock-container .summary-card .card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+}
+
+/* Filters Section */
+.superadmin-stock-container .filters-section {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.superadmin-stock-container .filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.superadmin-stock-container .filter-group input,
+.superadmin-stock-container .filter-group select {
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+  background: white;
+}
+
+.superadmin-stock-container .filter-group input:focus,
+.superadmin-stock-container .filter-group select:focus {
+  outline: none;
+  border-color: #800000;
+  box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.1);
+}
+
+.superadmin-stock-container .clear-filters-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 140px;
+}
+
+.superadmin-stock-container .clear-filters-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+/* Table Container */
+.superadmin-stock-container .table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
 
 /* Responsive adjustments for SuperAdmin */
+@media (max-width: 768px) {
+  .superadmin-stock-container .content-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .superadmin-stock-container .header-actions {
+    justify-content: center;
+  }
+  
+  .superadmin-stock-container .summary-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .superadmin-stock-container .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .superadmin-stock-container .filter-group {
+    min-width: unset;
+  }
+}
+
 @media (max-width: 480px) {
   .superadmin-stock-container .main-content {
     margin-left: 0;
@@ -89,52 +283,54 @@
     padding: 1rem;
   }
   
-  .superadmin-stock-container .quick-stats {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .superadmin-stock-container .stat-card {
-    min-width: unset;
-    flex: 1;
+  .superadmin-stock-container .content-header {
     padding: 1rem;
   }
   
-  .superadmin-stock-container .search-filter-section {
-    gap: 12px;
+  .superadmin-stock-container .content-header h2 {
+    font-size: 1.5rem;
   }
   
-  .superadmin-stock-container .filter-box {
+  .superadmin-stock-container .header-actions {
     flex-direction: column;
-    gap: 8px;
+    gap: 0.5rem;
   }
   
-  .superadmin-stock-container .filter-box select {
+  .superadmin-stock-container .header-actions .btn {
     width: 100%;
+    justify-content: center;
   }
   
-  .superadmin-stock-container .search-box input {
-    padding: 12px 40px 12px 15px;
-    font-size: 16px;
+  .superadmin-stock-container .summary-cards {
+    gap: 1rem;
   }
   
-  .superadmin-stock-container .filter-box select {
-    padding: 12px;
-    font-size: 16px;
+  .superadmin-stock-container .summary-card {
+    padding: 1rem;
   }
   
-  .superadmin-stock-container .inventory-table-container {
-    font-size: 0.875rem;
+  .superadmin-stock-container .summary-card .card-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
   }
   
-  .superadmin-stock-container .inventory-table th,
-  .superadmin-stock-container .inventory-table td {
-    padding: 0.5rem;
-    font-size: 0.8rem;
+  .superadmin-stock-container .summary-card .card-value {
+    font-size: 1.5rem;
+  }
+  
+  .superadmin-stock-container .filters-section {
+    gap: 0.75rem;
+  }
+  
+  .superadmin-stock-container .filter-group input,
+  .superadmin-stock-container .filter-group select {
+    padding: 0.75rem;
+    font-size: 16px; /* Prevent zoom on iOS */
   }
   
   .superadmin-stock-container .data-table {
-    min-width: 800px;
+    min-width: 600px;
   }
   
   .superadmin-stock-container .table-container {
