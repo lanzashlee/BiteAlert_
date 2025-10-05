@@ -260,6 +260,82 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
   const handleCivilStatusChange = useCallback((e) => setCivilStatus(e.target.value), []);
   const handleSubdivisionChange = useCallback((e) => setSubdivision(e.target.value), []);
   const handlePhilhealthChange = useCallback((e) => setPhilhealth(e.target.value), []);
+  
+  // Memoized handlers for complex state updates
+  const handleTypeNonBiteChange = useCallback((e) => {
+    const checked = e.target.checked;
+    setTypeNonBite(checked);
+    if (checked) setTypeBite(false);
+  }, []);
+  
+  const handleTypeBiteChange = useCallback((e) => {
+    const checked = e.target.checked;
+    setTypeBite(checked);
+    if (checked) setTypeNonBite(false);
+  }, []);
+  
+  const handleTreatedChange = useCallback((e) => {
+    const checked = e.target.checked;
+    setTreated(checked);
+    if (checked) setTransferred(false);
+  }, []);
+  
+  const handleTransferredChange = useCallback((e) => {
+    const checked = e.target.checked;
+    setTransferred(checked);
+    if (checked) setTreated(false);
+  }, []);
+  
+  const handleProvokedChange = useCallback((e) => {
+    const checked = e.target.checked;
+    setProvoked(checked);
+    if (checked) setUnprovoked(false);
+  }, []);
+  
+  const handleUnprovokedChange = useCallback((e) => {
+    const checked = e.target.checked;
+    setUnprovoked(checked);
+    if (checked) setProvoked(false);
+  }, []);
+  
+  const handleWoundWashingChange = useCallback((e) => {
+    const checked = e.target.checked;
+    setWoundWashing(checked);
+    if (checked) setNoWoundWashing(false);
+  }, []);
+  
+  const handleNoWoundWashingChange = useCallback((e) => {
+    const checked = e.target.checked;
+    setNoWoundWashing(checked);
+    if (checked) setWoundWashing(false);
+  }, []);
+  
+  const handleCategory1Change = useCallback((e) => {
+    const checked = e.target.checked;
+    setCategory1(checked);
+    if (checked) {
+      setCategory2(false);
+      setCategory3(false);
+    }
+  }, []);
+  
+  const handleCategory2Change = useCallback((e) => {
+    const checked = e.target.checked;
+    setCategory2(checked);
+    if (checked) {
+      setCategory1(false);
+      setCategory3(false);
+    }
+  }, []);
+  
+  const handleCategory3Change = useCallback((e) => {
+    const checked = e.target.checked;
+    setCategory3(checked);
+    if (checked) {
+      setCategory1(false);
+      setCategory2(false);
+    }
+  }, []);
 
   const validate = () => {
     // Basic information validation
@@ -680,8 +756,8 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
       <div style={card}>
         <h3 style={h3Style}>History of Bite</h3>
         <div style={{ display:'flex', gap:20, flexWrap:'wrap' }}>
-        <label><input type="checkbox" checked={typeNonBite} onChange={e=>{setTypeNonBite(e.target.checked); if (e.target.checked) setTypeBite(false);}} /> NON-BITE</label>
-        <label><input type="checkbox" checked={typeBite} onChange={e=>{setTypeBite(e.target.checked); if (e.target.checked) setTypeNonBite(false);}} /> BITE</label>
+        <label><input type="checkbox" checked={typeNonBite} onChange={handleTypeNonBiteChange} /> NON-BITE</label>
+        <label><input type="checkbox" checked={typeBite} onChange={handleTypeBiteChange} /> BITE</label>
         </div>
         <div style={row}>
           <Labeled labelText="Date of Inquiry"><input type="date" style={inputCss} value={dateOfInquiry} onChange={e=>setDateOfInquiry(e.target.value)} /></Labeled>
@@ -871,11 +947,11 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         <h3 style={{ ...h3Style, marginTop:14 }}>Disposition:</h3>
         <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={treated} onChange={e=>{setTreated(e.target.checked); if (e.target.checked) setTransferred(false);}} />
+            <input type="checkbox" checked={treated} onChange={handleTreatedChange} />
             Treated & Sent Home
           </label>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={transferred} onChange={e=>{setTransferred(e.target.checked); if (e.target.checked) setTreated(false);}} />
+            <input type="checkbox" checked={transferred} onChange={handleTransferredChange} />
             Transferred to another facility/hospital, specify:
           </label>
           {transferred ? (
@@ -883,8 +959,6 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
               <label style={{ display:'block', marginBottom:4, fontWeight:'bold' }}>Specify facility/hospital:</label>
               <select style={inputCss} value={transferredTo} onChange={e=>{
                 setTransferredTo(e.target.value);
-                // Update the center field in real-time
-                setCenter(e.target.value);
               }}>
                 <option value="">Select facility/hospital</option>
                 {centers.length > 0 ? (
@@ -907,11 +981,11 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         <h3 style={{ ...h3Style, marginTop:14 }}>Circumstance of Bite:</h3>
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={provoked} onChange={e=>{setProvoked(e.target.checked); if (e.target.checked) setUnprovoked(false);}} />
+            <input type="checkbox" checked={provoked} onChange={handleProvokedChange} />
             Provoked
           </label>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={unprovoked} onChange={e=>{setUnprovoked(e.target.checked); if (e.target.checked) setProvoked(false);}} />
+            <input type="checkbox" checked={unprovoked} onChange={handleUnprovokedChange} />
             Unprovoked
           </label>
         </div>
@@ -1024,11 +1098,11 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         <h3 style={h3Style}>Washing of Wound:</h3>
         <div style={{ display:'flex', gap:16, marginBottom:16 }}>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={woundWashing} onChange={e=>{setWoundWashing(e.target.checked); if (e.target.checked) setNoWoundWashing(false);}} />
+            <input type="checkbox" checked={woundWashing} onChange={handleWoundWashingChange} />
             Yes
           </label>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={noWoundWashing} onChange={e=>{setNoWoundWashing(e.target.checked); if (e.target.checked) setWoundWashing(false);}} />
+            <input type="checkbox" checked={noWoundWashing} onChange={handleNoWoundWashingChange} />
             No
           </label>
         </div>
@@ -1057,15 +1131,15 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         <h3 style={h3Style}>Category of Bite:</h3>
         <div style={{ display:'flex', gap:16, marginBottom:16 }}>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={category1} onChange={e=>{setCategory1(e.target.checked); if (e.target.checked) {setCategory2(false); setCategory3(false);}}} />
+            <input type="checkbox" checked={category1} onChange={handleCategory1Change} />
             Category 1
           </label>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={category2} onChange={e=>{setCategory2(e.target.checked); if (e.target.checked) {setCategory1(false); setCategory3(false);}}} />
+            <input type="checkbox" checked={category2} onChange={handleCategory2Change} />
             Category 2
           </label>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={category3} onChange={e=>{setCategory3(e.target.checked); if (e.target.checked) {setCategory1(false); setCategory2(false);}}} />
+            <input type="checkbox" checked={category3} onChange={handleCategory3Change} />
             Category 3
           </label>
         </div>
