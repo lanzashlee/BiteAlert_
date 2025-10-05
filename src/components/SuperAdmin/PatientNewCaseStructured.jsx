@@ -846,7 +846,11 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           {transferred ? (
             <div style={{ marginLeft:24 }}>
               <label style={{ display:'block', marginBottom:4, fontWeight:'bold' }}>Specify facility/hospital:</label>
-              <select style={inputCss} value={transferredTo} onChange={e=>setTransferredTo(e.target.value)}>
+              <select style={inputCss} value={transferredTo} onChange={e=>{
+                setTransferredTo(e.target.value);
+                // Update the center field in real-time
+                setCenter(e.target.value);
+              }}>
                 <option value="">Select facility/hospital</option>
                 {centers.length > 0 ? (
                   centers.map(center => (

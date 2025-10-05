@@ -171,9 +171,9 @@ body {
 
 .report-header {
     width: 100%;
-    background: #800000;
+    background: linear-gradient(135deg, #800000 0%, #a00000 100%);
     color: #fff;
-    padding: 1.25rem 3rem 1rem 0; /* balanced right padding; actions pinned separately */
+    padding: 1.5rem 3rem 1.25rem 0; /* balanced right padding; actions pinned separately */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -182,24 +182,33 @@ body {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     position: relative; /* allow header-actions to be placed top-right */
+    box-shadow: 0 4px 12px rgba(128, 0, 0, 0.3);
 }
 
 .report-header i {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+    font-size: 2.2rem;
+    margin-bottom: 0.75rem;
     background: #fff;
     color: #800000;
     border-radius: 50%;
-    padding: 0.5rem;
-    box-shadow: 0 2px 6px rgba(128,0,0,0.10);
+    padding: 0.75rem;
+    box-shadow: 0 4px 12px rgba(128,0,0,0.25);
     display: inline-block;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.report-header i:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(128,0,0,0.35);
 }
 
 .report-header h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.2rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
     text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.5px;
 }
 
 /* Header actions (e.g., Show/Hide Summary, Export) */
@@ -393,22 +402,26 @@ select.form-control:focus {
 }
 
 .export-btn-group .btn {
-    height: 38px;
-    border-radius: 6px;
+    height: 42px;
+    border-radius: 8px;
     font-size: 0.9rem;
     padding: 0 1.5em;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #800000 !important;
-    color: #fff !important;
-    box-shadow: 0 3px 8px rgba(128,0,0,0.2);
+    background: #fff !important;
+    color: #800000 !important;
+    border: 2px solid #800000;
+    box-shadow: 0 4px 12px rgba(128,0,0,0.2);
+    transition: all 0.3s ease;
+    font-weight: 600;
 }
 
 .export-btn-group .btn:hover {
-    background: #600000 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(128,0,0,0.3);
+    background: #800000 !important;
+    color: #fff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(128,0,0,0.4);
 }
 
 @media (min-width: 900px) {
