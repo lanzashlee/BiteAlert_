@@ -3,6 +3,7 @@ import { apiFetch, apiConfig } from '../../config/api';
 
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
+import NotificationSystem from '../Common/NotificationSystem';
 
 import UnifiedModal from '../UnifiedModal';
 
@@ -993,9 +994,13 @@ const SuperAdminPatientManagement = () => {
       <main className="main-content">
 
         <div className="content-header">
-
           <h2>Patient Account Management</h2>
-
+          <div className="header-actions">
+            <NotificationSystem 
+              userRole="superadmin" 
+              centerName="all" 
+            />
+          </div>
         </div>
 
 

@@ -5,6 +5,7 @@ import { apiFetch, apiConfig, getApiUrl } from '../../config/api';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { Suspense } from 'react';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
+import NotificationSystem from '../Common/NotificationSystem';
 import './SuperAdminDashboard.css';
 
 // Lazy load Chart.js components to reduce initial bundle size
@@ -903,51 +904,10 @@ const SuperAdminDashboard = () => {
             )}
             
             {/* Notifications */}
-            <div className="notification-container">
-              <div className="notification-icon" onClick={handleNotificationClick}>
-                <i className="fa-solid fa-bell"></i>
-                <span className="notification-badge">
-                  {notifications.filter(n => !n.read).length}
-                </span>
-              </div>
-              
-              {/* Notification Dropdown */}
-              {showNotifications && (
-                <div className="notification-dropdown">
-                  <div className="notification-header">
-                    <h4>Notifications</h4>
-                    <button 
-                      className="mark-all-read"
-                      onClick={markAllAsRead}
-                    >
-                      Mark all as read
-                    </button>
-                  </div>
-                  <div className="notification-list">
-                    {notifications.length === 0 ? (
-                      <div className="no-notifications">
-                        <i className="fa-solid fa-bell-slash"></i>
-                        <p>No notifications</p>
-                      </div>
-                    ) : (
-                      notifications.map(notification => (
-                        <div 
-                          key={notification.id} 
-                          className={`notification-item ${!notification.read ? 'unread' : ''}`}
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <div className="notification-content">
-                            <p className="notification-message">{notification.message}</p>
-                            <span className="notification-time">{notification.time}</span>
-                          </div>
-                          {!notification.read && <div className="unread-indicator"></div>}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <NotificationSystem 
+              userRole={currentUser?.role || 'superadmin'} 
+              centerName={currentUser?.centerName || 'all'} 
+            />
             
             {/* User Profile */}
             <div className="user-profile" onClick={() => {
