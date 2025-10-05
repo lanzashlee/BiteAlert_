@@ -180,33 +180,29 @@
 
 /* Table Styling - FIXED ALIGNMENT */
 .table-container {
-  overflow-x: auto;
-  border-radius: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
   margin: 0;
 }
 
 .accounts-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
-  border-radius: 0;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  table-layout: fixed; /* Fixed table layout for consistent column widths */
+  margin: 0;
   min-width: 1000px;
 }
 
 .accounts-table th {
-  background: #800000;
-  color: white;
-  padding: 0.8rem 0.875rem;
-  text-align: left;
+  background: #f8fafc;
+  color: #374151;
   font-weight: 600;
-  font-size: 0.93rem;
+  font-size: 0.875rem;
+  text-align: left;
+  padding: 0.75rem 0.5rem;
   border-bottom: 1px solid #e5e7eb;
-  vertical-align: middle;
+  white-space: nowrap;
 }
 
 .accounts-table th:first-child {
@@ -238,11 +234,23 @@
 
 .accounts-table td {
   padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
   color: #374151;
-  text-align: left;
   vertical-align: middle;
-  font-size: 0.93rem;
+}
+
+.accounts-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.accounts-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.accounts-table td:last-child {
+  text-align: left;
+  padding-left: 1rem;
 }
 
 /* Status badge styles */
