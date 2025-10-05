@@ -373,6 +373,7 @@ const SuperAdminProfile = () => {
         // keep local storage roughly in sync
         const merged = { ...(stored || {}), ...formData };
         localStorage.setItem('userData', JSON.stringify(merged));
+        localStorage.setItem('currentUser', JSON.stringify(merged));
         setTimeout(() => setSuccess(''), 3000);
       } else {
         setErrors({ submit: data.message || 'Failed to update profile' });

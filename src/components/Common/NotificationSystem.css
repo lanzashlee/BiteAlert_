@@ -2,7 +2,7 @@
 .notification-system {
   position: relative;
   display: inline-block;
-  z-index: 100000;
+  z-index: 999999;
 }
 
 /* Notification Bell */
@@ -78,7 +78,7 @@
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   border: 1px solid #e5e7eb;
-  z-index: 99999;
+  z-index: 999999;
   max-height: 500px;
   overflow: hidden;
   animation: slideDown 0.3s ease;
@@ -245,7 +245,7 @@
   right: 0;
   bottom: 0;
   background: transparent;
-  z-index: 99998;
+  z-index: 999998;
 }
 
 /* Responsive Design */

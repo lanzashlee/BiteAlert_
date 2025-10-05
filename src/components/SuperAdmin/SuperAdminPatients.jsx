@@ -2026,7 +2026,7 @@ const SuperAdminPatients = () => {
 
         {loading && (
           <div className="loading-state">
-            <UnifiedSpinner />
+            <UnifiedSpinner text="Loading patients..." />
           </div>
         )}
         {error && <div className="error-state">{error}</div>}
@@ -2206,7 +2206,7 @@ const SuperAdminPatients = () => {
                 <div>
                   <div className="info-section">
                     <h5>Case History</h5>
-                    {historyLoading && <div className="loading-state"><UnifiedSpinner /></div>}
+                    {historyLoading && <div className="loading-state"><UnifiedSpinner text="Loading case history..." /></div>}
                     {historyError && <div className="error-state">{historyError}</div>}
                     {!historyLoading && !historyError && (
                       caseHistory.length === 0 ? (

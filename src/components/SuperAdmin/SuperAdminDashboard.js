@@ -954,7 +954,7 @@ const SuperAdminDashboard = () => {
               <div className="card-title">Total Patients</div>
               <div className="card-value" id="totalPatients">
                 {loading ? (
-                  <UnifiedSpinner size="small" centered={false} />
+                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
                 ) : (
                   <span className="value-text">
                     {summary?.totalPatients?.toLocaleString() || '0'}
@@ -972,7 +972,7 @@ const SuperAdminDashboard = () => {
               <div className="card-title">Vaccine Stocks</div>
               <div className="card-value" id="vaccineStocks">
                 {loading ? (
-                  <UnifiedSpinner size="small" centered={false} />
+                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
                 ) : (
                   <span className="value-text">
                     {summary?.vaccineStocks?.toLocaleString() || '0'}
@@ -990,7 +990,7 @@ const SuperAdminDashboard = () => {
               <div className="card-title">Health Centers</div>
               <div className="card-value" id="healthCenters">
                 {loading ? (
-                  <UnifiedSpinner size="small" centered={false} />
+                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
                 ) : (
                   <span className="value-text">
                     {summary?.healthCenters?.toLocaleString() || '0'}
@@ -1008,7 +1008,7 @@ const SuperAdminDashboard = () => {
               <div className="card-title">Staff</div>
               <div className="card-value" id="staffCount">
                 {loading ? (
-                  <UnifiedSpinner size="small" centered={false} />
+                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
                 ) : (
                   <span className="value-text">
                     {summary?.staffCount?.toLocaleString() || '0'}
@@ -1029,7 +1029,7 @@ const SuperAdminDashboard = () => {
                   <div className="card-title">Administrator Accounts</div>
                   <div className="card-value" id="adminCount">
                     {loading ? (
-                      <UnifiedSpinner size="small" centered={false} />
+                      <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
                     ) : (
                       <span className="value-text">
                         {summary?.adminCount?.toLocaleString() || '0'}
@@ -1047,7 +1047,7 @@ const SuperAdminDashboard = () => {
                   <div className="card-title">Active Cases</div>
                   <div className="card-value" id="activeCases">
                     {loading ? (
-                      <UnifiedSpinner size="small" centered={false} />
+                      <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
                     ) : (
                       <span className="value-text">
                         {summary?.activeCases?.toLocaleString() || '0'}

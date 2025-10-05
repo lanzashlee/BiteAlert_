@@ -2505,10 +2505,10 @@ const SuperAdminVaccinationSchedule = () => {
               bottom: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.6)',
               display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'flex-end',
+              alignItems: 'center',
+              justifyContent: 'center',
               zIndex: 9999,
-              padding: 0
+              padding: '20px'
             }}
             onClick={() => {
               console.log('🔍 Modal backdrop clicked - closing modal');
@@ -2518,10 +2518,10 @@ const SuperAdminVaccinationSchedule = () => {
             <div 
               style={{
                 backgroundColor: 'white',
-                height: '100vh',
-                width: '100%',
-                maxWidth: 'none',
-                borderLeft: '1px solid #e5e7eb',
+                height: '90vh',
+                width: '90%',
+                maxWidth: '1200px',
+                borderRadius: '12px',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                 position: 'relative'
               }}

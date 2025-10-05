@@ -1022,9 +1022,9 @@ const SuperAdminGenerate = () => {
 
       // Order: prefer two left (sanjuan, sj1), two right (bp and optional extra)
       const sources = [
-        '/img/SANJUAN.jpg',
-        '/img/sj1.webp',
-        '/img/bp.webp'
+        '/img/sanjuan.png',
+        '/img/sj1.png',
+        '/img/bp.png'
       ];
 
       const loaded = (await Promise.all(sources.map((s)=>loadImage(s).catch(()=>null)))).filter(Boolean);

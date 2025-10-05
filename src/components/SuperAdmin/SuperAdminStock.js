@@ -1022,7 +1022,7 @@ const SuperAdminStock = () => {
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="loading-cell">
-                      <UnifiedSpinner />
+                      <UnifiedSpinner text="Loading stock data..." />
                     </td>
                   </tr>
                 ) : filteredAndSortedData.length === 0 ? (

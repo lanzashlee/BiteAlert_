@@ -493,7 +493,7 @@ const SuperAdminAccountManagement = () => {
                 {loading ? (
                   <tr>
                     <td colSpan="5" className="loading-state">
-                      <UnifiedSpinner />
+                      <UnifiedSpinner text="Loading accounts..." />
                     </td>
                   </tr>
                 ) : filteredAccounts.length === 0 ? (

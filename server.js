@@ -1262,6 +1262,7 @@ app.put('/api/profile/:userId', async (req, res) => {
                 middleName: user.middleName,
                 lastName: user.lastName,
                 email: user.email,
+                phoneNumber: user.phoneNumber,
                 role: user.role,
                 adminID: user.adminID,
                 superAdminID: user.superAdminID

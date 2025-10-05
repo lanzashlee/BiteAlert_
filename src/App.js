@@ -27,11 +27,11 @@ const PatientDiagnosisManagement = React.lazy(() => import('./components/SuperAd
 const ActivateAccount = React.lazy(() => import('./components/Auth/ActivateAccount'));
 const CreateAccount = React.lazy(() => import('./components/Auth/CreateAccount'));
 
+import UnifiedSpinner from './components/Common/UnifiedSpinner';
+
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
-  <div className="loading-spinner">
-    <div className="spinner"></div>
-  </div>
+  <UnifiedSpinner text="Loading application..." />
 );
 
 const App = () => {
