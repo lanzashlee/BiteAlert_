@@ -2497,28 +2497,96 @@ const SuperAdminVaccinationSchedule = () => {
         {/* New X-only Schedule Modal */}
         {console.log('🔍 Modal render check - showScheduleModal:', showScheduleModal)}
         {showScheduleModal && (
-          <div className="fixed inset-y-0 right-0 left-0 lg:left-[280px] bg-black bg-opacity-60 backdrop-blur-sm flex items-start justify-end z-50 p-0" onClick={() => {
-            console.log('🔍 Modal backdrop clicked - closing modal');
-            setShowScheduleModal(false);
-          }}>
-            <div className="bg-white h-full w-full max-w-none border-l border-gray-200 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'flex-end',
+              zIndex: 9999,
+              padding: 0
+            }}
+            onClick={() => {
+              console.log('🔍 Modal backdrop clicked - closing modal');
+              setShowScheduleModal(false);
+            }}
+          >
+            <div 
+              style={{
+                backgroundColor: 'white',
+                height: '100vh',
+                width: '100%',
+                maxWidth: 'none',
+                borderLeft: '1px solid #e5e7eb',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                position: 'relative'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Close Button */}
               <button 
-                className="absolute top-4 left-4 w-9 h-9 sm:w-10 sm:h-10 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-all duration-200 z-10 shadow-lg hover:shadow-xl hover:scale-105" 
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  left: '16px',
+                  width: '40px',
+                  height: '40px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  borderRadius: '50%',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s ease'
+                }}
                 onClick={() => setShowScheduleModal(false)} 
                 aria-label="Close"
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#b91c1c';
+                  e.target.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#dc2626';
+                  e.target.style.transform = 'scale(1)';
+                }}
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
               {scheduleModalLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-red-600 mx-auto mb-4"></div>
-                    <span className="text-lg text-gray-600 font-medium">Loading vaccination schedule...</span>
-                                    </div>
-                                    </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%'
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      border: '4px solid #e5e7eb',
+                      borderTop: '4px solid #dc2626',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      margin: '0 auto 16px'
+                    }}></div>
+                    <span style={{
+                      fontSize: '18px',
+                      color: '#4b5563',
+                      fontWeight: '500'
+                    }}>Loading vaccination schedule...</span>
+                  </div>
+                </div>
               ) : (
                 <div className="p-4 sm:p-6 md:p-8 overflow-y-auto h-full w-full">
                   {/* Patient Header */}
