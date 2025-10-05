@@ -117,7 +117,7 @@ export const apiFetch = async (endpoint, options = {}) => {
   
   // Add timeout for faster failure detection
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for Render cold starts
   
   try {
     const response = await fetch(url, {
@@ -146,7 +146,7 @@ export const apiFetch = async (endpoint, options = {}) => {
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      throw new Error('Request timeout - please check your connection');
+      throw new Error('Request timeout - the server is taking too long to respond. Please try again.');
     }
     throw error;
   }

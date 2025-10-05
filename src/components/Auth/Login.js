@@ -122,10 +122,11 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setLoadingMessage('Authenticating...');
+    setLoadingMessage('Connecting to server...');
     
     try {
       // Login attempt logged without sensitive data
+      setLoadingMessage('Authenticating...');
       const res = await apiFetch(apiConfig.endpoints.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,7 +181,13 @@ const Login = () => {
       }
     } catch (err) {
       console.log('Login error:', err);
-      setError('An error occurred during login. Please try again.');
+      if (err.message.includes('timeout')) {
+        setError('Server is taking too long to respond. This might be due to server startup. Please try again in a moment.');
+      } else if (err.message.includes('Failed to fetch')) {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        setError('An error occurred during login. Please try again.');
+      }
       setLoading(false);
     }
   };
