@@ -24,6 +24,12 @@ const SuperAdminPatientManagement = () => {
   const [centerFilter, setCenterFilter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const PAGE_SIZE = 50;
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [confirmAction, setConfirmAction] = useState(null);
@@ -885,9 +891,20 @@ const SuperAdminPatientManagement = () => {
 
 
     console.log('Final filtered patients count:', filteredPatients.length);
-    return filteredPatients;
+    
+    // Calculate pagination
+    const total = filteredPatients.length;
+    const totalPagesCount = Math.ceil(total / PAGE_SIZE);
+    setTotalItems(total);
+    setTotalPages(totalPagesCount);
+    
+    // Apply pagination
+    const startIndex = (page - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    
+    return filteredPatients.slice(startIndex, endIndex);
 
-  }, [searchTerm, statusFilter, centerFilter, patients]);
+  }, [searchTerm, statusFilter, centerFilter, patients, page]);
 
 
 
@@ -1206,6 +1223,25 @@ const SuperAdminPatientManagement = () => {
 
             </div>
 
+          )}
+
+          {/* Pagination */}
+          {filteredPatients.length > 0 && (
+            <div className="pagination-container">
+              <button 
+                disabled={page <= 1} 
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <i className="fa fa-chevron-left"></i> Prev
+              </button>
+              <span>Page {page} of {totalPages} ({totalItems} total)</span>
+              <button 
+                disabled={page >= totalPages} 
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next <i className="fa fa-chevron-right"></i>
+              </button>
+            </div>
           )}
 
         </div>

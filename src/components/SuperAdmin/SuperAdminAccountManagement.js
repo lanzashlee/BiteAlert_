@@ -13,6 +13,13 @@ const SuperAdminAccountManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [centerFilter, setCenterFilter] = useState('');
   const [centers, setCenters] = useState([]);
+  
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const PAGE_SIZE = 50;
+  
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -99,18 +106,21 @@ const SuperAdminAccountManagement = () => {
   const handleSearch = (event) => {
     const searchValue = event.target.value.toLowerCase();
     setSearchTerm(searchValue);
+    setPage(1); // Reset to first page when searching
     applyFilters(searchValue, statusFilter, centerFilter);
   };
 
   const handleStatusFilter = (event) => {
     const status = event.target.value;
     setStatusFilter(status);
+    setPage(1); // Reset to first page when filtering
     applyFilters(searchTerm, status, centerFilter);
   };
 
   const handleCenterFilter = (event) => {
     const center = event.target.value;
     setCenterFilter(center);
+    setPage(1); // Reset to first page when filtering
     applyFilters(searchTerm, statusFilter, center);
   };
 
@@ -150,7 +160,17 @@ const SuperAdminAccountManagement = () => {
       filtered = filtered.filter(account => normalizeCenter(account.centerName) === want);
     }
 
-    setFilteredAccounts(filtered);
+    // Calculate pagination
+    const total = filtered.length;
+    const totalPagesCount = Math.ceil(total / PAGE_SIZE);
+    setTotalItems(total);
+    setTotalPages(totalPagesCount);
+    
+    // Apply pagination
+    const startIndex = (page - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    
+    setFilteredAccounts(filtered.slice(startIndex, endIndex));
   };
 
   // Handle activation/deactivation
@@ -539,6 +559,25 @@ const SuperAdminAccountManagement = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {filteredAccounts.length > 0 && (
+            <div className="pagination-container">
+              <button 
+                disabled={page <= 1} 
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <i className="fa fa-chevron-left"></i> Prev
+              </button>
+              <span>Page {page} of {totalPages} ({totalItems} total)</span>
+              <button 
+                disabled={page >= totalPages} 
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next <i className="fa fa-chevron-right"></i>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

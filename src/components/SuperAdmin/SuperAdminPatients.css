@@ -302,14 +302,14 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: auto;
-  min-width: clamp(1000px, 100vw, 1400px);
+  min-width: clamp(1200px, 100vw, 1600px);
   white-space: nowrap;
 }
 
 /* Desktop landscape table optimization */
 @media (min-width: 1024px) and (orientation: landscape) {
   .table {
-    min-width: 1200px;
+    min-width: 1400px;
   }
 }
 

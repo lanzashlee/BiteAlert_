@@ -10,7 +10,7 @@ import { apiFetch, apiConfig } from '../../config/api';
 // Lazy load heavy components to reduce initial bundle size
 const PatientNewCaseStructured = lazy(() => import('./PatientNewCaseStructured.jsx'));
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 // Case Details Form Component for Read-Only Display - Exact Form Format
 const CaseDetailsForm = memo(({ case: caseData }) => {
@@ -392,7 +392,8 @@ const SuperAdminPatients = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [vaccinationDate, setVaccinationDate] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const [showPatientModal, setShowPatientModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -602,7 +603,19 @@ const SuperAdminPatients = () => {
       }
       return true;
     });
-  }, [patients, query, sexFilter, barangay, dateFilter]);
+    
+    // Calculate pagination
+    const total = filtered.length;
+    const totalPagesCount = Math.ceil(total / PAGE_SIZE);
+    setTotalItems(total);
+    setTotalPages(totalPagesCount);
+    
+    // Apply pagination
+    const startIndex = (page - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    
+    return filtered.slice(startIndex, endIndex);
+  }, [patients, query, sexFilter, barangay, dateFilter, page]);
 
   useEffect(() => {
     const first = (newPatientData.firstName || '').trim().toLowerCase();
@@ -2033,7 +2046,7 @@ const SuperAdminPatients = () => {
                 </tr>
               </thead>
               <tbody>
-                {patients.length === 0 ? (
+                {visiblePatients.length === 0 ? (
                   <tr>
                     <td colSpan="7">
                       <div className="empty-state">
@@ -2153,7 +2166,7 @@ const SuperAdminPatients = () => {
           >
             <i className="fa fa-chevron-left"></i> Prev
           </button>
-          <span>Page {page} of {totalPages}</span>
+          <span>Page {page} of {totalPages} ({totalItems} total)</span>
           <button 
             disabled={page >= totalPages} 
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

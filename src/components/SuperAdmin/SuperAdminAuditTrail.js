@@ -30,6 +30,13 @@ const SuperAdminAuditTrail = () => {
   const [role, setRole] = useState('');
   const [center, setCenter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
+  
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const PAGE_SIZE = 50;
+  
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const location = useLocation();
 
@@ -175,8 +182,18 @@ const SuperAdminAuditTrail = () => {
         );
       });
     }
-    return arr;
-  }, [data, from, to, role, center, search]);
+    // Calculate pagination
+    const total = arr.length;
+    const totalPagesCount = Math.ceil(total / PAGE_SIZE);
+    setTotalItems(total);
+    setTotalPages(totalPagesCount);
+    
+    // Apply pagination
+    const startIndex = (page - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    
+    return arr.slice(startIndex, endIndex);
+  }, [data, from, to, role, center, search, page]);
 
   return (
     <div className="dashboard-container">
@@ -302,11 +319,22 @@ const SuperAdminAuditTrail = () => {
             </table>
           </div>
 
+          {/* Pagination */}
           {filtered.length > 0 && (
-            <div className="table-footer">
-              <div className="table-info">
-                Showing {filtered.length} of {data.length} records
-              </div>
+            <div className="pagination-container">
+              <button 
+                disabled={page <= 1} 
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <i className="fa fa-chevron-left"></i> Prev
+              </button>
+              <span>Page {page} of {totalPages} ({totalItems} total)</span>
+              <button 
+                disabled={page >= totalPages} 
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next <i className="fa fa-chevron-right"></i>
+              </button>
             </div>
           )}
         </div>
