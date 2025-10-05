@@ -848,8 +848,8 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
               <label style={{ display:'block', marginBottom:4, fontWeight:'bold' }}>Specify facility/hospital:</label>
               <select style={inputCss} value={transferredTo} onChange={e=>{
                 setTransferredTo(e.target.value);
-                // The 'center' field at the top should only update upon form submission, not in real-time from this dropdown
-                // setCenter(e.target.value);
+                // Update the center field in real-time
+                setCenter(e.target.value);
               }}>
                 <option value="">Select facility/hospital</option>
                 {centers.length > 0 ? (
