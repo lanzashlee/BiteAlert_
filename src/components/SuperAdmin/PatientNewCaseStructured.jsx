@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { apiFetch } from '../../config/api';
 
 // Compact, structured new-case form that mirrors the mobile Dart layout.
@@ -238,6 +238,28 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     // Set the pre-generated schedule
     setSchedule(initialSchedule);
   }, [selectedPatient, initialRegistrationNumber, initialDateRegistered, initialSchedule]);
+
+  // Memoized onChange handlers to prevent re-renders
+  const handleFirstNameChange = useCallback((e) => setFirstName(e.target.value), []);
+  const handleMiddleNameChange = useCallback((e) => setMiddleName(e.target.value), []);
+  const handleLastNameChange = useCallback((e) => setLastName(e.target.value), []);
+  const handleSexChange = useCallback((e) => setSex(e.target.value), []);
+  const handleAgeChange = useCallback((e) => setAge(e.target.value), []);
+  const handleWeightChange = useCallback((e) => setWeight(e.target.value), []);
+  const handleBirthPlaceChange = useCallback((e) => setBirthPlace(e.target.value), []);
+  const handlePhoneChange = useCallback((e) => setPhone(e.target.value), []);
+  const handleHouseNoChange = useCallback((e) => setHouseNo(e.target.value), []);
+  const handleStreetChange = useCallback((e) => setStreet(e.target.value), []);
+  const handleBarangayChange = useCallback((e) => setBarangay(e.target.value), []);
+  const handleCityChange = useCallback((e) => setCity(e.target.value), []);
+  const handleProvinceChange = useCallback((e) => setProvince(e.target.value), []);
+  const handleZipCodeChange = useCallback((e) => setZipCode(e.target.value), []);
+  const handleNationalityChange = useCallback((e) => setNationality(e.target.value), []);
+  const handleReligionChange = useCallback((e) => setReligion(e.target.value), []);
+  const handleOccupationChange = useCallback((e) => setOccupation(e.target.value), []);
+  const handleCivilStatusChange = useCallback((e) => setCivilStatus(e.target.value), []);
+  const handleSubdivisionChange = useCallback((e) => setSubdivision(e.target.value), []);
+  const handlePhilhealthChange = useCallback((e) => setPhilhealth(e.target.value), []);
 
   const validate = () => {
     // Basic information validation
@@ -606,7 +628,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             <input style={inputCss} value={registrationNumber} readOnly />
           </Labeled>
           <Labeled labelText="Philhealth No.">
-            <input style={inputCss} value={philhealth} onChange={e=>setPhilhealth(e.target.value)} placeholder="Enter Philhealth number" />
+            <input style={inputCss} value={philhealth} onChange={handlePhilhealthChange} placeholder="Enter Philhealth number" />
           </Labeled>
         </div>
         <div style={{ height:10 }} />
@@ -616,16 +638,16 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         </div>
         <div style={{ height:10 }} />
         <div style={row}>
-          <Labeled labelText="First Name"><input style={inputCss} value={firstName} onChange={e=>setFirstName(e.target.value)} /></Labeled>
-          <Labeled labelText="Middle Name"><input style={inputCss} value={middleName} onChange={e=>setMiddleName(e.target.value)} /></Labeled>
-          <Labeled labelText="Last Name"><input style={inputCss} value={lastName} onChange={e=>setLastName(e.target.value)} /></Labeled>
+          <Labeled labelText="First Name"><input style={inputCss} value={firstName} onChange={handleFirstNameChange} /></Labeled>
+          <Labeled labelText="Middle Name"><input style={inputCss} value={middleName} onChange={handleMiddleNameChange} /></Labeled>
+          <Labeled labelText="Last Name"><input style={inputCss} value={lastName} onChange={handleLastNameChange} /></Labeled>
           <Labeled labelText="Birthdate"><input type="date" style={inputCss} value={birthdate} onChange={e=>setBirthdate(e.target.value)} /></Labeled>
-          <Labeled labelText="Sex"><input style={inputCss} value={sex} onChange={e=>setSex(e.target.value)} /></Labeled>
-          <Labeled labelText="Age"><input style={inputCss} value={age} onChange={e=>setAge(e.target.value)} /></Labeled>
-          <Labeled labelText="Weight (kg)"><input style={inputCss} value={weight} onChange={e=>setWeight(e.target.value)} /></Labeled>
-          <Labeled labelText="Birthplace"><input style={inputCss} value={birthPlace} onChange={e=>setBirthPlace(e.target.value)} /></Labeled>
+          <Labeled labelText="Sex"><input style={inputCss} value={sex} onChange={handleSexChange} /></Labeled>
+          <Labeled labelText="Age"><input style={inputCss} value={age} onChange={handleAgeChange} /></Labeled>
+          <Labeled labelText="Weight (kg)"><input style={inputCss} value={weight} onChange={handleWeightChange} /></Labeled>
+          <Labeled labelText="Birthplace"><input style={inputCss} value={birthPlace} onChange={handleBirthPlaceChange} /></Labeled>
           <Labeled labelText="Civil Status">
-            <select style={inputCss} value={civilStatus} onChange={e=>setCivilStatus(e.target.value)}>
+            <select style={inputCss} value={civilStatus} onChange={handleCivilStatusChange}>
               <option value="">Select Civil Status</option>
               <option value="Single">Single</option>
               <option value="Married">Married</option>
@@ -634,9 +656,9 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
               <option value="Separated">Separated</option>
             </select>
           </Labeled>
-          <Labeled labelText="Nationality"><input style={inputCss} value={nationality} onChange={e=>setNationality(e.target.value)} /></Labeled>
-          <Labeled labelText="Religion"><input style={inputCss} value={religion} onChange={e=>setReligion(e.target.value)} /></Labeled>
-          <Labeled labelText="Contact No."><input style={inputCss} value={phone} onChange={e=>setPhone(e.target.value)} /></Labeled>
+          <Labeled labelText="Nationality"><input style={inputCss} value={nationality} onChange={handleNationalityChange} /></Labeled>
+          <Labeled labelText="Religion"><input style={inputCss} value={religion} onChange={handleReligionChange} /></Labeled>
+          <Labeled labelText="Contact No."><input style={inputCss} value={phone} onChange={handlePhoneChange} /></Labeled>
         </div>
       </div>
 
@@ -644,13 +666,13 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
       <div style={card}>
         <h3 style={h3Style}>Address</h3>
         <div style={row}>
-          <Labeled labelText="House No."><input style={inputCss} value={houseNo} onChange={e=>setHouseNo(e.target.value)} /></Labeled>
-          <Labeled labelText="Street"><input style={inputCss} value={street} onChange={e=>setStreet(e.target.value)} /></Labeled>
-          <Labeled labelText="Barangay"><input style={inputCss} value={barangay} onChange={e=>setBarangay(e.target.value)} /></Labeled>
-          <Labeled labelText="Subdivision"><input style={inputCss} value={subdivision} onChange={e=>setSubdivision(e.target.value)} /></Labeled>
-          <Labeled labelText="City"><input style={inputCss} value={city} onChange={e=>setCity(e.target.value)} /></Labeled>
-          <Labeled labelText="Province"><input style={inputCss} value={province} onChange={e=>setProvince(e.target.value)} /></Labeled>
-          <Labeled labelText="Zip Code"><input style={inputCss} value={zipCode} onChange={e=>setZipCode(e.target.value)} /></Labeled>
+          <Labeled labelText="House No."><input style={inputCss} value={houseNo} onChange={handleHouseNoChange} /></Labeled>
+          <Labeled labelText="Street"><input style={inputCss} value={street} onChange={handleStreetChange} /></Labeled>
+          <Labeled labelText="Barangay"><input style={inputCss} value={barangay} onChange={handleBarangayChange} /></Labeled>
+          <Labeled labelText="Subdivision"><input style={inputCss} value={subdivision} onChange={handleSubdivisionChange} /></Labeled>
+          <Labeled labelText="City"><input style={inputCss} value={city} onChange={handleCityChange} /></Labeled>
+          <Labeled labelText="Province"><input style={inputCss} value={province} onChange={handleProvinceChange} /></Labeled>
+          <Labeled labelText="Zip Code"><input style={inputCss} value={zipCode} onChange={handleZipCodeChange} /></Labeled>
         </div>
       </div>
 
