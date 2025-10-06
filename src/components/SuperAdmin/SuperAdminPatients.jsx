@@ -1145,11 +1145,81 @@ const SuperAdminPatients = () => {
             new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString()  // D28
           ],
           status: 'in_progress',
-          center: '001'
+          center: '001',
+          completedSchedules: [
+            { day: 'Day 0', date: new Date().toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
+            { day: 'Day 3', date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
+            { day: 'Day 7', date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
+            { day: 'Day 14', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
+            { day: 'Day 28', date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' }
+          ]
         };
         setCaseHistory([sampleCase]);
       } else {
-        setCaseHistory(filtered.sort((a,b)=> new Date(b.createdAt||b.incidentDate||0)-new Date(a.createdAt||a.incidentDate||0)));
+        // Process each case to add completedSchedules from vaccination data
+        const processedCases = await Promise.all(filtered.map(async (case_) => {
+          try {
+            // Try to get vaccination data for this case
+            const vaccinationRes = await apiFetch(`${apiConfig.endpoints.vaccinationDates}?patientId=${encodeURIComponent(case_.patientId || case_.patientID || '')}`);
+            if (vaccinationRes.ok) {
+              const vaccinationData = await vaccinationRes.json();
+              const vaccinationDates = Array.isArray(vaccinationData) ? vaccinationData : (Array.isArray(vaccinationData?.data) ? vaccinationData.data : []);
+              
+              // Find matching vaccination dates for this case
+              const matchingVaccinationDates = vaccinationDates.filter(vd => 
+                vd.patientId === case_.patientId || 
+                vd.patientId === case_.patientID ||
+                vd.registrationNumber === case_.registrationNumber ||
+                vd.biteCaseId === case_._id
+              );
+              
+              if (matchingVaccinationDates.length > 0) {
+                // Build completedSchedules from vaccination data
+                const completedSchedules = [];
+                
+                matchingVaccinationDates.forEach(vd => {
+                  const scheduleData = [
+                    { day: 'Day 0', date: vd.d0Date, status: vd.d0Status },
+                    { day: 'Day 3', date: vd.d3Date, status: vd.d3Status },
+                    { day: 'Day 7', date: vd.d7Date, status: vd.d7Status },
+                    { day: 'Day 14', date: vd.d14Date, status: vd.d14Status },
+                    { day: 'Day 28', date: vd.d28Date, status: vd.d28Status }
+                  ];
+                  
+                  scheduleData.forEach(schedule => {
+                    if (schedule.date || schedule.status) {
+                      const record = {
+                        day: schedule.day,
+                        date: schedule.date ? new Date(schedule.date).toLocaleDateString() : 'Not scheduled',
+                        status: schedule.status || 'scheduled',
+                        vaccineType: vd.vaccineType || 'Anti-Rabies',
+                        center: vd.center || vd.centerName || 'Unknown Center',
+                        notes: vd.notes || '',
+                        biteCaseId: vd.biteCaseId,
+                        createdAt: vd.createdAt
+                      };
+                      
+                      // Only add records that have been completed, missed, or scheduled
+                      if (record.status === 'completed' || record.status === 'missed' || record.status === 'scheduled') {
+                        completedSchedules.push(record);
+                      }
+                    }
+                  });
+                });
+                
+                // Add completedSchedules to the case
+                return { ...case_, completedSchedules };
+              }
+            }
+          } catch (error) {
+            console.warn('Error loading vaccination data for case:', error);
+          }
+          
+          // Return case without vaccination data if loading fails
+          return case_;
+        }));
+        
+        setCaseHistory(processedCases.sort((a,b)=> new Date(b.createdAt||b.incidentDate||0)-new Date(a.createdAt||a.incidentDate||0)));
       }
     } catch (err) {
       console.error('Error loading case history:', err);
@@ -1172,7 +1242,14 @@ const SuperAdminPatients = () => {
           new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString()  // D28
         ],
         status: 'in_progress',
-        center: '001'
+        center: '001',
+        completedSchedules: [
+          { day: 'Day 0', date: new Date().toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
+          { day: 'Day 3', date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
+          { day: 'Day 7', date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
+          { day: 'Day 14', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
+          { day: 'Day 28', date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' }
+        ]
       }];
       setCaseHistory(mockCaseHistory);
     } finally {
