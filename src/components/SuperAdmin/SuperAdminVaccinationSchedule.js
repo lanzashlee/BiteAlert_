@@ -540,6 +540,19 @@ const SuperAdminVaccinationSchedule = () => {
     return t.toISOString().split('T')[0];
   };
 
+  const isPastByLocalDay = (iso) => {
+    try {
+      if (!iso) return false;
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return false;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const dd = new Date(d);
+      dd.setHours(0,0,0,0);
+      return dd.getTime() < today.getTime();
+    } catch (_) { return false; }
+  };
+
   // Reschedule a day in vaccinationdates (and cascade to downstream days only)
   const handleRescheduleCascadeVaccinationDates = async (dayLabel, newDateStr) => {
     try {
@@ -1464,13 +1477,18 @@ const SuperAdminVaccinationSchedule = () => {
       { label: 'Day 14', raw: vdItem.d14Date ?? auto(14), status: vdItem.d14Status },
       { label: 'Day 28', raw: vdItem.d28Date ?? auto(28), status: vdItem.d28Status }
     ];
-    // Derive status correctly from vaccinationdates fields; default only when missing
+    // Derive status correctly from vaccinationdates fields; if missing, infer by date
     return entries
-      .map(e => ({
-        label: e.label,
-        date: normalizeDate(e.raw)?.toISOString(),
-        status: (typeof e.status === 'string' && e.status) ? e.status : 'scheduled'
-      }))
+      .map(e => {
+        const iso = normalizeDate(e.raw)?.toISOString();
+        let status = (typeof e.status === 'string' && e.status) ? e.status : '';
+        if (!status) {
+          if (!iso) status = 'scheduled';
+          else if (isPastByLocalDay(iso)) status = 'missed';
+          else status = 'scheduled';
+        }
+        return { label: e.label, date: iso, status };
+      })
       .filter(e => !!e.date);
   };
 
@@ -1927,15 +1945,15 @@ const SuperAdminVaccinationSchedule = () => {
     if (statusFilter) {
       filtered = filtered.filter(v => {
         if (statusFilter === 'missed') {
-          return v.status === 'missed' || (v.status === 'scheduled' && new Date(v.scheduledDate) < new Date());
+          return v.status === 'missed' || (v.status === 'scheduled' && isPastByLocalDay(v.scheduledDate));
         }
         if (statusFilter === 'today') {
-          const today = new Date();
-          const vaccinationDate = new Date(v.scheduledDate);
-          return vaccinationDate.toDateString() === today.toDateString();
+          const today = new Date(); today.setHours(0,0,0,0);
+          const vaccinationDate = new Date(v.scheduledDate); vaccinationDate.setHours(0,0,0,0);
+          return vaccinationDate.getTime() === today.getTime();
         }
         if (statusFilter === 'scheduled') {
-          return v.status === 'scheduled' && new Date(v.scheduledDate) > new Date();
+          return v.status === 'scheduled' && !isPastByLocalDay(v.scheduledDate);
         }
         return v.status === statusFilter;
       });
