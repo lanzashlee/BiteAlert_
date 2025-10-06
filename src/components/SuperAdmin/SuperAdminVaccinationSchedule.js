@@ -586,20 +586,49 @@ const SuperAdminVaccinationSchedule = () => {
       const baseDate = new Date(newDateStr);
       const payload = {};
 
-      // Update the chosen base day date
+      // Optimistically update UI first for snappier UX
+      setScheduleModalData(prev => {
+        if (!prev) return prev;
+        const nextSchedule = (prev.schedule || []).map(item => {
+          const idx = labels.indexOf(item.label);
+          if (idx < 0) return item;
+          if (idx === idxBase) {
+            return { ...item, date: toLocalDateOnlyString(baseDate), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+          }
+          if (idx > idxBase) {
+            const nd = new Date(baseDate);
+            nd.setDate(nd.getDate() + (addDays[idx] - addDays[idxBase]));
+            return { ...item, date: toLocalDateOnlyString(nd), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+          }
+          return item;
+        });
+        return { ...prev, schedule: nextSchedule };
+      });
+
+      setVaccinations(prev => prev.map(v => {
+        if (v.vaccinationDay === dayLabel && toLocalDateOnlyString(v.scheduledDate) !== newDateStr) {
+          return { ...v, scheduledDate: newDateStr, status: 'scheduled' };
+        }
+        const idxV = labels.indexOf(v.vaccinationDay);
+        const idxBase = labels.indexOf(dayLabel);
+        if (v.patient?.patientId === (selectedPatientDetail?.patient?.patientId || scheduleModalData?.patient?.patientId) && idxV > idxBase) {
+          const d = new Date(newDateStr);
+          d.setDate(d.getDate() + (addDays[idxV] - addDays[idxBase]));
+          return { ...v, scheduledDate: toLocalDateOnlyString(d), status: 'scheduled' };
+        }
+        return v;
+      }));
+
+      // Build payload for backend
       payload[dateMap[dayLabel]] = new Date(baseDate).toISOString();
-      // Set status of this day back to scheduled if not completed
       const currentItem = (scheduleModalData?.schedule || []).find(s => s.label === dayLabel);
       if (currentItem && currentItem.status !== 'completed') {
         payload[statusMap[dayLabel]] = 'scheduled';
       }
-
-      // Cascade downstream days only
       for (let i = idxBase + 1; i < labels.length; i++) {
         const d = new Date(baseDate);
         d.setDate(d.getDate() + (addDays[i] - addDays[idxBase]));
         payload[dateMap[labels[i]]] = new Date(d).toISOString();
-        // Reset downstream status to scheduled unless it was already completed
         const schedItem = (scheduleModalData?.schedule || []).find(s => s.label === labels[i]);
         if (!schedItem || schedItem.status !== 'completed') {
           payload[statusMap[labels[i]]] = 'scheduled';
