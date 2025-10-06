@@ -638,23 +638,72 @@ const SuperAdminVaccinationSchedule = () => {
         // For ARV, only one can be selected at a time
         newState.arv = { vaxirab: false, speeda: false };
         newState.arv[vaccine] = !prev.arv[vaccine];
+        
+        // If selecting ARV, deselect all others
+        if (newState.arv[vaccine]) {
+          newState.tcv = false;
+          newState.erig = false;
+          newState.booster = { vaxirab: false, speeda: false };
+        }
       } else if (category === 'booster' && vaccine) {
         // For Booster, only one can be selected at a time
         newState.booster = { vaxirab: false, speeda: false };
         newState.booster[vaccine] = !prev.booster[vaccine];
+        
+        // If selecting Booster, deselect all others
+        if (newState.booster[vaccine]) {
+          newState.arv = { vaxirab: false, speeda: false };
+          newState.tcv = false;
+          newState.erig = false;
+        }
       } else {
         // For TCV and ERIG, simple toggle
         newState[category] = !prev[category];
+        
+        // If selecting TCV or ERIG, deselect all others
+        if (newState[category]) {
+          newState.arv = { vaxirab: false, speeda: false };
+          newState.booster = { vaxirab: false, speeda: false };
+          if (category === 'tcv') newState.erig = false;
+          if (category === 'erig') newState.tcv = false;
+        }
       }
       
       return newState;
     });
   };
 
+  // Validate that only one vaccine is selected
+  const validateVaccineSelection = () => {
+    const { arv, tcv, erig, booster } = selectedVaccines;
+    
+    // Count total selections
+    const arvSelected = arv.vaxirab || arv.speeda;
+    const boosterSelected = booster.vaxirab || booster.speeda;
+    const totalSelections = (arvSelected ? 1 : 0) + (tcv ? 1 : 0) + (erig ? 1 : 0) + (boosterSelected ? 1 : 0);
+    
+    if (totalSelections === 0) {
+      return { valid: false, message: 'Please select at least one vaccine' };
+    }
+    
+    if (totalSelections > 1) {
+      return { valid: false, message: 'Please select only one vaccine' };
+    }
+    
+    return { valid: true, message: '' };
+  };
+
   // Update vaccination status with selected vaccines
   const updateVaccinationStatus = async (scheduleItem) => {
     try {
       if (!scheduleModalData) return;
+
+      // Validate vaccine selection
+      const validation = validateVaccineSelection();
+      if (!validation.valid) {
+        showNotification(validation.message, 'error');
+        return;
+      }
 
       const { centerName } = scheduleModalData;
       
@@ -793,27 +842,41 @@ const SuperAdminVaccinationSchedule = () => {
 
       console.log('Deducting stock:', { inventoryName, deductionAmount, centerName });
 
-      // Call stock update API
-      const response = await apiFetch('/api/stock/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          centerName: centerName,
-          itemName: inventoryName,
-          quantity: deductionAmount,
-          operation: 'deduct'
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Stock deduction successful:', result);
-        return { success: true, message: `Successfully deducted ${deductionAmount} vials of ${inventoryName}` };
-      } else {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to deduct stock');
+      // Call stock update API with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const response = await apiFetch('/api/stock/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            centerName: centerName,
+            itemName: inventoryName,
+            quantity: deductionAmount,
+            operation: 'deduct'
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Stock deduction successful:', result);
+          return { success: true, message: `Successfully deducted ${deductionAmount} vials of ${inventoryName}` };
+        } else {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to deduct stock');
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout - please try again');
+        }
+        throw fetchError;
       }
     } catch (error) {
       console.error('Error deducting vaccine stock:', error);
@@ -3106,6 +3169,28 @@ const SuperAdminVaccinationSchedule = () => {
                 {/* Vaccine Selection */}
                 <div className="vaccine-selection-section">
                   <label className="vaccine-selection-label">Vaccine Took:</label>
+                  
+                  {/* Validation Warning */}
+                  {(() => {
+                    const validation = validateVaccineSelection();
+                    if (!validation.valid && validation.message.includes('only one vaccine')) {
+                      return (
+                        <div style={{ 
+                          padding: '12px', 
+                          backgroundColor: '#FEF2F2', 
+                          border: '1px solid #FECACA', 
+                          borderRadius: '8px', 
+                          marginBottom: '16px',
+                          color: '#DC2626',
+                          fontSize: '14px',
+                          fontWeight: '500'
+                        }}>
+                          ⚠️ {validation.message}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   
                   {/* ARV Section */}
                   <div className="vaccine-category">

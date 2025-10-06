@@ -373,6 +373,97 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
           </div>
         </div>
       </section>
+
+      {/* Vaccination Schedule Section */}
+      <section style={{ marginBottom: '40px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#374151', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>
+          Schedule Dates of Immunization
+        </h2>
+        
+        {caseData.completedSchedules && caseData.completedSchedules.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse', 
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#7D0C0C', color: 'white' }}>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Date Taken</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Medicine Used</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Branch No.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* ERIG Row */}
+                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ 
+                      width: '8px', 
+                      height: '8px', 
+                      backgroundColor: '#10B981', 
+                      borderRadius: '50%',
+                      display: 'inline-block'
+                    }}></span>
+                    ERIG
+                  </td>
+                  <td style={{ padding: '12px' }}>-</td>
+                  <td style={{ padding: '12px' }}>-</td>
+                </tr>
+                
+                {/* Schedule Rows */}
+                {caseData.completedSchedules.map((schedule, index) => (
+                  <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ 
+                        width: '8px', 
+                        height: '8px', 
+                        backgroundColor: '#10B981', 
+                        borderRadius: '50%',
+                        display: 'inline-block'
+                      }}></span>
+                      {schedule.day}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      {schedule.date ? new Date(schedule.date).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      }) : '-'}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      {schedule.vaccinesUsed ? (
+                        <div>
+                          {schedule.vaccinesUsed.map((vaccine, vIndex) => (
+                            <div key={vIndex} style={{ marginBottom: '4px' }}>
+                              <strong>{vaccine.type || vaccine.brand || 'Anti-Rabies'}</strong>
+                              {vaccine.route && ` (${vaccine.route})`}
+                            </div>
+                          ))}
+                        </div>
+                      ) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ 
+            padding: '20px', 
+            textAlign: 'center', 
+            color: '#6b7280', 
+            backgroundColor: '#f9fafb', 
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb'
+          }}>
+            <p style={{ margin: 0, fontSize: '14px' }}>No vaccination schedule data available for this case.</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 });
