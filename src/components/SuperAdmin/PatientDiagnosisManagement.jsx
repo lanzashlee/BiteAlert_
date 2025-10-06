@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo, useRef } from "react";
 import { apiFetch } from '../../config/api';
 
 const PatientDiagnosisManagement = memo(({ selectedPatient }) => {
@@ -245,6 +245,8 @@ const PatientDiagnosisManagement = memo(({ selectedPatient }) => {
   });
 
   const [caseHistory, setCaseHistory] = useState([]);
+  // Prevent re-hydration from overwriting user typing while editing
+  const userEditingRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [patientRegistrationNumber, setPatientRegistrationNumber] = useState('');
@@ -284,8 +286,8 @@ const PatientDiagnosisManagement = memo(({ selectedPatient }) => {
       console.log('Registration Number:', selectedPatient.registrationNumber);
       console.log('PhilHealth No:', selectedPatient.philhealthNo);
       
-      // First, populate basic patient info immediately
-      setFormData(prev => ({
+      // First, populate basic patient info immediately (only if user hasn't begun typing)
+      if (!userEditingRef.current) setFormData(prev => ({
         ...prev,
         // Registration - populate from patient data first (try multiple field names)
         registrationNumber: selectedPatient.registrationNumber || selectedPatient.regNo || selectedPatient.registration_no || selectedPatient.regNumber || '',
@@ -347,7 +349,7 @@ const PatientDiagnosisManagement = memo(({ selectedPatient }) => {
         setPatientRegistrationNumber(latestCase.registrationNumber || '');
         
         // Pre-populate form with existing case data based on actual database structure
-        setFormData(prev => ({
+        if (!userEditingRef.current) setFormData(prev => ({
           ...prev,
           // Registration - prioritize case data, fallback to patient data (try multiple field names)
           registrationNumber: latestCase.registrationNumber || selectedPatient.registrationNumber || selectedPatient.regNo || selectedPatient.registration_no || selectedPatient.regNumber || '',
@@ -613,6 +615,7 @@ const PatientDiagnosisManagement = memo(({ selectedPatient }) => {
   };
 
   const handleInputChange = (field, value) => {
+    userEditingRef.current = true;
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -653,11 +656,13 @@ const PatientDiagnosisManagement = memo(({ selectedPatient }) => {
 
   // Handle nested checkbox changes
   const handleNestedCheckboxChange = (path, value) => {
+    userEditingRef.current = true;
     setFormData(prev => setNestedValue(prev, path, value));
   };
 
   // Handle nested input changes
   const handleNestedInputChange = (path, value) => {
+    userEditingRef.current = true;
     setFormData(prev => setNestedValue(prev, path, value));
   };
 
