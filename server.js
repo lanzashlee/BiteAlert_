@@ -3169,6 +3169,7 @@ app.get('/api/bitecases', async (req, res) => {
 // Collection name: vaccinationdates
 app.get('/api/vaccinationdates', async (req, res) => {
     try {
+        console.log('🔍 GET /api/vaccinationdates called with query:', req.query);
         const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         const { patientId, biteCaseId, center, registrationNumber, name } = req.query;
@@ -3190,6 +3191,7 @@ app.get('/api/vaccinationdates', async (req, res) => {
         }
         
         const list = await VaccinationDate.find(filter).sort({ updatedAt: -1, createdAt: -1 });
+        console.log('🔍 Found vaccination dates:', list.length, 'with filter:', filter);
         res.json(list);
     } catch (err) {
         console.error('Error fetching vaccinationdates:', err);
@@ -3228,9 +3230,11 @@ app.put('/api/vaccinationdates', async (req, res) => {
 
 app.put('/api/vaccinationdates/:id', async (req, res) => {
     try {
+        console.log('🔍 PUT /api/vaccinationdates/:id called with:', { id: req.params.id, body: req.body });
         const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        const result = await VaccinationDate.findByIdAndUpdate(req.params.id, { $set: req.body || {} }, { new: true });
+        const result = await VaccinationDate.findByIdAndUpdate(req.params.id, { $set: { ...req.body, updatedAt: new Date() } }, { new: true });
         if (!result) return res.status(404).json({ success: false, message: 'Not found' });
+        console.log('🔍 Updated vaccination date result:', result);
         res.json({ success: true, data: result });
     } catch (err) {
         console.error('Error updating vaccinationdates by id:', err);

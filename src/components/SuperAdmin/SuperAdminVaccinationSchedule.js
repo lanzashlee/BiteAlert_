@@ -612,35 +612,35 @@ const SuperAdminVaccinationSchedule = () => {
     resetVaccineSelections();
   };
 
-  // Find vaccination record by patient ID and day from bitecases
+  // Find vaccination record by patient ID and day from vaccinationdates collection
   const findVaccinationRecord = async (patientId, dayLabel) => {
     try {
-      console.log('🔍 Looking for vaccination record:', { patientId, dayLabel });
+      console.log('🔍 Looking for vaccination record in vaccinationdates:', { patientId, dayLabel });
       
-      // Get the bite case for this patient
-      const response = await apiFetch(`/api/bitecases?patientId=${patientId}`);
+      // Get vaccination dates for this patient
+      const response = await apiFetch(`/api/vaccinationdates?patientId=${patientId}`);
       if (!response.ok) {
-        console.error('❌ Failed to fetch bite cases:', response.status, response.statusText);
+        console.error('❌ Failed to fetch vaccination dates:', response.status, response.statusText);
         return null;
       }
       const data = await response.json();
-      console.log('🔍 API response data:', data);
+      console.log('🔍 Vaccination dates response:', data);
       
       // Handle both array response and success/data response format
-      let biteCases = [];
+      let vaccinationDates = [];
       if (Array.isArray(data)) {
-        biteCases = data;
+        vaccinationDates = data;
       } else if (data.success && Array.isArray(data.data)) {
-        biteCases = data.data;
+        vaccinationDates = data.data;
       } else if (Array.isArray(data.data)) {
-        biteCases = data.data;
+        vaccinationDates = data.data;
       }
       
-      if (biteCases.length > 0) {
-        const biteCase = biteCases[0]; // Get the most recent bite case
-        console.log('🔍 Found bite case:', biteCase);
+      if (vaccinationDates.length > 0) {
+        const vaccinationDate = vaccinationDates[0]; // Get the most recent vaccination date
+        console.log('🔍 Found vaccination date record:', vaccinationDate);
         
-        // Map day labels to status fields
+        // Map day labels to status fields in vaccinationdates
         const dayStatusMap = {
           'Day 0': 'd0Status',
           'Day 3': 'd3Status', 
@@ -651,27 +651,26 @@ const SuperAdminVaccinationSchedule = () => {
         
         const statusField = dayStatusMap[dayLabel];
         
-        // Always create a vaccination record, even if status doesn't exist yet
-        const mockRecord = {
-          _id: `${biteCase._id}_${dayLabel}`,
-          patientId: biteCase.patientId,
-          registrationNumber: biteCase.registrationNumber,
+        // Create vaccination record from vaccinationdates data
+        const vaccinationRecord = {
+          _id: vaccinationDate._id,
+          patientId: vaccinationDate.patientId,
+          registrationNumber: vaccinationDate.registrationNumber,
           vaccinationDay: dayLabel,
-          status: biteCase[statusField] || 'scheduled', // Default to 'scheduled' if no status exists
-          biteCaseId: biteCase._id,
-          scheduledDate: biteCase[`${dayLabel.toLowerCase().replace(' ', '')}Date`] || 
-                        biteCase[`${dayLabel.toLowerCase().replace(' ', '')}_date`] || 
-                        biteCase[`d${dayLabel.split(' ')[1]}Date`] ||
-                        new Date().toISOString(), // Use current date as fallback
-          createdAt: biteCase.createdAt,
-          updatedAt: biteCase.updatedAt
+          status: vaccinationDate[statusField] || 'scheduled',
+          biteCaseId: vaccinationDate.biteCaseId,
+          scheduledDate: vaccinationDate[`${dayLabel.toLowerCase().replace(' ', '')}Date`] || 
+                        vaccinationDate[`d${dayLabel.split(' ')[1]}Date`] ||
+                        new Date().toISOString(),
+          createdAt: vaccinationDate.createdAt,
+          updatedAt: vaccinationDate.updatedAt
         };
         
-        console.log('🔍 Created vaccination record:', mockRecord);
-        return mockRecord;
+        console.log('🔍 Created vaccination record from vaccinationdates:', vaccinationRecord);
+        return vaccinationRecord;
       }
       
-      console.log('❌ No bite case found for patient:', patientId);
+      console.log('❌ No vaccination dates found for patient:', patientId);
       return null;
     } catch (error) {
       console.error('❌ Error finding vaccination record:', error);
@@ -845,9 +844,9 @@ const SuperAdminVaccinationSchedule = () => {
         updateData[dateField] = new Date().toISOString();
       }
 
-      // Update the bite case directly instead of vaccinationdates
-      console.log('🔍 Updating bite case:', vaccinationRecord.biteCaseId, 'with data:', updateData);
-      const response = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
+      // Update the vaccinationdates collection
+      console.log('🔍 Updating vaccinationdates:', vaccinationRecord._id, 'with data:', updateData);
+      const response = await apiFetch(`/api/vaccinationdates/${vaccinationRecord._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -858,6 +857,21 @@ const SuperAdminVaccinationSchedule = () => {
       console.log('🔍 Update response status:', response.status, response.ok);
 
       if (response.ok) {
+        // Also update the corresponding bite case to keep it in sync
+        try {
+          const biteCaseResponse = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateData)
+          });
+          console.log('🔍 Bite case sync response:', biteCaseResponse.status);
+        } catch (biteCaseError) {
+          console.warn('Bite case sync failed:', biteCaseError);
+          // Don't fail the entire operation if bite case sync fails
+        }
+
         // Deduct vaccine stock based on selected vaccines
         try {
           const { centerName } = scheduleModalData;
