@@ -3212,6 +3212,21 @@ app.get('/api/vaccinationdates/:id', async (req, res) => {
     }
 });
 
+// Create new vaccinationdates record
+app.post('/api/vaccinationdates', async (req, res) => {
+    try {
+        console.log('🔍 POST /api/vaccinationdates called with:', req.body);
+        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
+        const newRecord = new VaccinationDate(req.body);
+        const result = await newRecord.save();
+        console.log('🔍 Created vaccination date record:', result);
+        res.json({ success: true, data: result });
+    } catch (err) {
+        console.error('Error creating vaccinationdates:', err);
+        res.status(500).json({ success: false, message: 'Failed to create vaccination date' });
+    }
+});
+
 // Update vaccinationdates by biteCaseId (or id fallback)
 app.put('/api/vaccinationdates', async (req, res) => {
     try {
