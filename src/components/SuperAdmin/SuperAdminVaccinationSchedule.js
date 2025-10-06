@@ -3092,14 +3092,14 @@ const SuperAdminVaccinationSchedule = () => {
                                     isMissed ? 'missed' : 
                                     isScheduled ? 'scheduled' : 'pending'
                                   }`}>
-                                    {scheduleItem.label.replace('Day ', 'D')}
+                                    {scheduleItem.label ? scheduleItem.label.replace('Day ', 'D') : 'D' + (index + 1)}
                                   </div>
 
                                   {/* Content */}
                                   <div className="schedule-details">
                                     <div className="schedule-details-header">
                                       <h3 className="schedule-day-title">
-                                        {scheduleItem.label}
+                                        {scheduleItem.label || `Day ${index + 1}`}
                                       </h3>
                                       <span className={`schedule-status-badge ${
                                         isCompleted ? 'completed' : 
@@ -3141,7 +3141,7 @@ const SuperAdminVaccinationSchedule = () => {
                                             setScheduleModalData(prev => ({
                                               ...prev,
                                               schedule: prev.schedule.map(item => 
-                                                item.label === scheduleItem.label 
+                                                (item.label === scheduleItem.label) || (item === scheduleItem) 
                                                   ? { ...item, status: 'missed' } 
                                                   : item
                                               )

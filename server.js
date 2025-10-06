@@ -1559,7 +1559,7 @@ app.get('/api/prescriptive-demo', async (req, res) => {
     try {
         const data = await mongoose.connection.collection('prescriptive_analytics_demos').find({}).toArray();
 
-        // Unique prescriptive analytics algorithm
+        // WHO-based prescriptive analytics algorithm
         const weights = {
             caseDensity: 0.3,
             vaccinationCoverage: 0.25,
@@ -1785,13 +1785,21 @@ app.post('/api/prescriptions', async (req, res) => {
                 .sort((a, b) => b.riskScore - a.riskScore);
             return res.json({ interventions });
         }
-        const systemInstruction = `You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.
+        const systemInstruction = `You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City, following World Health Organization (WHO) guidelines for rabies prevention and control. Your output must be specific per barangay/center and grounded ONLY on the supplied data.
+
+WHO GUIDELINES COMPLIANCE
+- Follow WHO exposure categories: Category I (touching/feeding animals, licks on intact skin), Category II (nibbling of uncovered skin, minor scratches without bleeding), Category III (transdermal bites/scratches, licks on broken skin, mucous membrane contamination)
+- Apply WHO post-exposure prophylaxis (PEP) protocols: Category I (no PEP), Category II (vaccination + wound care), Category III (vaccination + rabies immunoglobulin + wound care)
+- Emphasize immediate wound care: thorough washing with soap and water for minimum 15 minutes
+- Prioritize high-risk exposures (Category III) for immediate intervention
+- Follow WHO vaccination schedules and immunoglobulin administration protocols
 
 STRICT REQUIREMENTS
 - Use: counts, recent dates window, age distributions, daily/weekly/monthly patterns, severity, and the topCenter (managed health center) for coordination.
 - Tailor: recommendations must be unique per barangay; avoid templates or generic phrases.
 - Justify: reasoning must cite the concrete patterns (e.g., "weekly spike on Fridays", "age 13–18 high", "5 severe in last 7 days").
 - Operations: specify what to do in the next 24–48 hours (locations, teams, materials), and who coordinates (name the top center when present).
+- WHO Compliance: Ensure all recommendations align with WHO guidelines for rabies prevention and post-exposure management.
 
 After preparing your analysis, recommendations and prediction per barangay, include ONLY ONE fenced code block that contains a JSON array with the schema below. Do not include commentary outside the code block. Keys must match exactly.
 
@@ -1826,10 +1834,17 @@ OUTPUT JSON ONLY (no markdown outside the code block)
   }
 ]
 
-PRIORITY GUIDELINES (apply strictly)
-- HIGH: >=15 total OR >=5 severe OR clear recent spike
-- MEDIUM: 5–14 total OR 2–4 severe OR moderate patterns
-- LOW: otherwise`;
+WHO-BASED PRIORITY GUIDELINES (apply strictly)
+- HIGH: >=15 total OR >=5 severe OR clear recent spike OR high Category III exposure rate
+- MEDIUM: 5–14 total OR 2–4 severe OR moderate patterns OR significant Category II exposure rate
+- LOW: otherwise OR low exposure rates with proper WHO-compliant management
+
+WHO INTERVENTION REQUIREMENTS
+- Category I exposures: No PEP required, wound care only
+- Category II exposures: Immediate vaccination + thorough wound care (15+ minutes soap/water)
+- Category III exposures: Immediate vaccination + rabies immunoglobulin + thorough wound care
+- All exposures: Immediate wound washing, tetanus prophylaxis if needed, antibiotic prophylaxis for high-risk wounds
+- Follow-up: Monitor for 10-14 days, ensure vaccination completion per WHO schedule`;
 
         const recentWindowDays = ( { week:7, month:30, quarter:90, year:365 }[timeRange] || 30 );
         const userInstruction = `Time Range: ${timeRange || 'month'} (≈${recentWindowDays} days)
@@ -2029,13 +2044,24 @@ function analyzeCasePatterns(cases, selectedBarangay) {
             monthlyPattern[month] = (monthlyPattern[month] || 0) + 1;
         });
 
-        // Severity breakdown
+        // WHO Exposure Category breakdown
+        const exposureCategoryBreakdown = { category1: 0, category2: 0, category3: 0 };
         const severityBreakdown = { low: 0, medium: 0, high: 0 };
         barangayCases.forEach(c => {
             const severity = c.severity || c.exposureCategory || 'low';
-            if (severity === 'high' || severity === 'III') severityBreakdown.high++;
-            else if (severity === 'medium' || severity === 'II') severityBreakdown.medium++;
-            else severityBreakdown.low++;
+            const category = c.exposureCategory || c.category || 'I';
+            
+            // WHO Category classification
+            if (category === 'III' || category === '3' || category === 'Category III') {
+                exposureCategoryBreakdown.category3++;
+                severityBreakdown.high++;
+            } else if (category === 'II' || category === '2' || category === 'Category II') {
+                exposureCategoryBreakdown.category2++;
+                severityBreakdown.medium++;
+            } else {
+                exposureCategoryBreakdown.category1++;
+                severityBreakdown.low++;
+            }
         });
 
         // Trend analysis (comparing recent vs older cases)
@@ -2056,6 +2082,7 @@ function analyzeCasePatterns(cases, selectedBarangay) {
                 weekly: weeklyPattern,
                 monthly: monthlyPattern
             },
+            exposureCategoryBreakdown,
             severityBreakdown,
             trendAnalysis: {
                 recentCases: recentCases.length,
@@ -5591,9 +5618,28 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                 centers.sort((a,b) => b[1] - a[1]);
                 data.topCenter = centers[0][0];
             }
+            
+            // Initialize WHO category counts
+            data.category1Cases = data.category1Cases || 0;
+            data.category2Cases = data.category2Cases || 0;
+            data.category3Cases = data.category3Cases || 0;
+            // WHO-based risk scoring with exposure category weighting
             if (data.totalCases >= 15) { factors.push('Very high case count (>=15)'); riskScore += 45; }
             else if (data.totalCases >= 7) { factors.push('Elevated case count (>=7)'); riskScore += 30; }
             else if (data.totalCases > 0) { factors.push('Cases present'); riskScore += 15; }
+            
+            // WHO Category III exposures (highest risk) - require immediate PEP
+            if (data.category3Cases > 0) { 
+                factors.push(`Category III exposures present (${data.category3Cases}) - immediate PEP required`); 
+                riskScore += 40; 
+            }
+            
+            // WHO Category II exposures (moderate risk) - require vaccination
+            if (data.category2Cases > 0) { 
+                factors.push(`Category II exposures present (${data.category2Cases}) - vaccination required`); 
+                riskScore += 25; 
+            }
+            
             if (data.recentCases >= 5) { factors.push('Recent spike in cases'); riskScore += 35; }
             else if (data.recentCases >= 2) { factors.push('Multiple recent cases'); riskScore += 20; }
             if (data.severeCases > 0) { factors.push('Severe cases present'); riskScore += 25; }

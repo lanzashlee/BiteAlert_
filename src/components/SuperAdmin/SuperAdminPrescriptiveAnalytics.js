@@ -413,7 +413,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
         data.topCenter = centers[0][0];
       }
 
-      // Risk scoring driven by counts per barangay
+      // WHO-based risk scoring with exposure category weighting
       if (data.totalCases >= 15) {
         factors.push('Very high case count (>=15)');
         riskScore += 45;
@@ -423,6 +423,18 @@ const SuperAdminPrescriptiveAnalytics = () => {
       } else if (data.totalCases > 0) {
         factors.push('Cases present');
         riskScore += 15;
+      }
+
+      // WHO Category III exposures (highest risk) - require immediate PEP
+      if (data.category3Cases > 0) {
+        factors.push(`Category III exposures present (${data.category3Cases}) - immediate PEP required`);
+        riskScore += 40;
+      }
+
+      // WHO Category II exposures (moderate risk) - require vaccination
+      if (data.category2Cases > 0) {
+        factors.push(`Category II exposures present (${data.category2Cases}) - vaccination required`);
+        riskScore += 25;
       }
 
       if (data.recentCases >= 5) {
