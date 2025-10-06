@@ -1256,11 +1256,18 @@ const SuperAdminVaccinationSchedule = () => {
         console.warn('Failed fetching vaccinationdates:', e);
       }
 
-      // Get vaccine info from bitecases as primary source
+      // Prefer building schedule from vaccinationdates when available
       let brandName = '', genericName = '', route = '', categoryOfExposure = '', caseCenter = '', patientWeight = null;
       let biteCase = null;
       let scheduleList = [];
       
+      // First: Build schedule from vaccinationdates if available
+      if (vdItem) {
+        scheduleList = buildScheduleFromVaccinationDates(vdItem);
+        console.log('🔍 Built schedule from vaccinationdates (primary):', scheduleList);
+      }
+
+      // Also fetch bite case for meta (brand/route/center/weight)
       try {
         console.log('🔍 Fetching bite case for patientId:', patientId);
         const biteCaseRes = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
@@ -1275,35 +1282,29 @@ const SuperAdminVaccinationSchedule = () => {
           }
           
           if (biteCase) {
-            brandName = biteCase.brandName || '';
-            genericName = biteCase.genericName || '';
-            route = biteCase.route || '';
-            categoryOfExposure = biteCase.categoryOfExposure || biteCase.exposureCategory || biteCase.category || '';
-            caseCenter = biteCase.center || biteCase.centerName || '';
-            patientWeight = biteCase.weight ? parseFloat(biteCase.weight) : null;
-            console.log('🔍 Found bite case vaccine info:', { brandName, genericName, route, patientWeight });
-            
-            // Set patient weight and bite case data
+            brandName = biteCase.brandName || brandName || '';
+            genericName = biteCase.genericName || genericName || '';
+            route = biteCase.route || route || '';
+            categoryOfExposure = biteCase.categoryOfExposure || biteCase.exposureCategory || biteCase.category || categoryOfExposure || '';
+            caseCenter = biteCase.center || biteCase.centerName || caseCenter || '';
+            patientWeight = biteCase.weight ? parseFloat(biteCase.weight) : patientWeight;
+            console.log('🔍 Meta from bite case:', { brandName, genericName, route, patientWeight, caseCenter });
             setPatientWeight(patientWeight);
             setBiteCaseData(biteCase);
-            
-            // Build schedule from bite case data (primary source)
-            scheduleList = buildVaccinationsForBiteCase(biteCase).map(d => ({
-              label: d.day,
-              date: d.date,
-              status: d.status || 'scheduled'
-            }));
-            console.log('🔍 Built schedule from bite case:', scheduleList);
+
+            // If vaccinationdates missing a date, fill from bitecase per-day
+            if (!scheduleList || scheduleList.length === 0) {
+              scheduleList = buildVaccinationsForBiteCase(biteCase).map(d => ({
+                label: d.day,
+                date: d.date,
+                status: d.status || 'scheduled'
+              }));
+              console.log('🔍 Built schedule from bite case (fallback):', scheduleList);
+            }
           }
         }
       } catch (e) {
         console.warn('Failed fetching bite case:', e);
-      }
-
-      // Fallback: Build schedule from vaccinationdates if no bite case data
-      if (!scheduleList || scheduleList.length === 0) {
-        scheduleList = vdItem ? buildScheduleFromVaccinationDates(vdItem) : [];
-        console.log('🔍 Built schedule from vaccinationdates (fallback):', scheduleList);
       }
 
       // Auto-populate vaccine selection for completed schedules
@@ -1463,8 +1464,13 @@ const SuperAdminVaccinationSchedule = () => {
       { label: 'Day 14', raw: vdItem.d14Date ?? auto(14), status: vdItem.d14Status },
       { label: 'Day 28', raw: vdItem.d28Date ?? auto(28), status: vdItem.d28Status }
     ];
+    // Derive status correctly from vaccinationdates fields; default only when missing
     return entries
-      .map(e => ({ label: e.label, date: normalizeDate(e.raw)?.toISOString(), status: e.status || 'scheduled' }))
+      .map(e => ({
+        label: e.label,
+        date: normalizeDate(e.raw)?.toISOString(),
+        status: (typeof e.status === 'string' && e.status) ? e.status : 'scheduled'
+      }))
       .filter(e => !!e.date);
   };
 
