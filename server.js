@@ -4170,6 +4170,8 @@ app.post('/api/vaccinestocks', async (req, res) => {
   try {
     const { center, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand } = req.body;
     
+    console.log('📦 Adding vaccine stock:', { center, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand });
+    
     if (!center || !vaccineName || quantity === undefined) {
       return res.status(400).json({ success: false, message: 'Center, vaccine name, and quantity are required' });
     }
@@ -4183,17 +4185,22 @@ app.post('/api/vaccinestocks', async (req, res) => {
       { centerName: center + ' Center' },
       { centerName: center + ' Health Center' }
     ]});
+    
     if (!doc) {
+      console.log('🏥 Creating new center document for:', center);
       doc = new VaccineStockDoc({ centerName: center, vaccines: [] });
     }
 
     if (!Array.isArray(doc.vaccines)) doc.vaccines = [];
+    
+    // Find existing vaccine or create new one
     let vac = doc.vaccines.find(v => (v.name || '').toLowerCase() === String(vaccineName).toLowerCase());
     if (!vac) {
+      console.log('💉 Creating new vaccine entry for:', vaccineName);
       vac = { name: vaccineName, type: vaccineType || '', brand: brand || '', stockEntries: [] };
       doc.vaccines.push(vac);
     } else {
-      // keep latest meta if provided
+      // Update metadata if provided
       if (vaccineType && !vac.type) vac.type = vaccineType;
       if (brand && !vac.brand) vac.brand = brand;
       if (!Array.isArray(vac.stockEntries)) vac.stockEntries = [];
@@ -4214,20 +4221,38 @@ app.post('/api/vaccinestocks', async (req, res) => {
 
     let action = 'created';
     const match = vac.stockEntries.find(en => String(en.branchNo || '').trim().toLowerCase() === batch.toLowerCase() && normalize(en.expirationDate) === desiredExpiry);
+    
     if (match) {
       let current = Number(match.stock || 0);
       if (Number.isNaN(current)) current = 0;
       match.stock = current + (Number.isNaN(qty) ? 0 : qty);
       action = 'merged';
+      console.log('🔄 Merged with existing batch:', batch, 'New total:', match.stock);
     } else {
       vac.stockEntries.push({ branchNo: batch, stock: Number.isNaN(qty) ? 0 : qty, expirationDate: expStr });
       action = 'created';
+      console.log('✨ Created new batch:', batch, 'Quantity:', qty);
     }
 
+    // Mark the document as modified to ensure MongoDB saves the changes
+    doc.markModified('vaccines');
     await doc.save();
-    res.json({ success: true, action, message: action === 'merged' ? 'Added to existing batch' : 'New batch created' });
+    
+    console.log('✅ Stock update successful:', action);
+    res.json({ 
+      success: true, 
+      action, 
+      message: action === 'merged' ? 'Added to existing batch' : 'New batch created',
+      data: {
+        center: doc.centerName,
+        vaccine: vaccineName,
+        batch: batch,
+        quantity: qty,
+        totalStock: vac.stockEntries.reduce((sum, entry) => sum + (Number(entry.stock) || 0), 0)
+      }
+    });
   } catch (err) {
-    console.error('Error adding vaccine stock:', err);
+    console.error('❌ Error adding vaccine stock:', err);
     res.status(500).json({ success: false, message: 'Failed to add vaccine stock', error: err.message });
   }
 });
@@ -4283,7 +4308,9 @@ app.delete('/api/vaccinestocks/:id', async (req, res) => {
 // Expected body: { centerName, itemName, brand, type, quantity, operation, reason, patientId }
 app.post('/api/stock/update', async (req, res) => {
   try {
-    const { centerName, itemName, brand, type, quantity, operation } = req.body || {};
+    const { centerName, itemName, brand, type, quantity, operation, patientId } = req.body || {};
+
+    console.log('🔄 Stock update request:', { centerName, itemName, brand, type, quantity, operation, patientId });
 
     if (!centerName || !itemName || !operation || quantity === undefined) {
       return res.status(400).json({ success: false, message: 'centerName, itemName, operation, quantity are required' });
@@ -4294,6 +4321,7 @@ app.post('/api/stock/update', async (req, res) => {
 
     const doc = await VaccineStockDoc.findOne({ $or: [ { centerName }, { center: centerName } ] });
     if (!doc) {
+      console.log('❌ Center not found:', centerName);
       return res.status(404).json({ success: false, message: `Center not found: ${centerName}` });
     }
 
@@ -4310,6 +4338,7 @@ app.post('/api/stock/update', async (req, res) => {
     });
 
     if (vi === -1) {
+      console.log('❌ Vaccine not found:', itemName, 'for center:', centerName);
       return res.status(404).json({ success: false, message: `Vaccine ${itemName} (${brand || ''}) not found for center ${centerName}` });
     }
 
@@ -4324,6 +4353,8 @@ app.post('/api/stock/update', async (req, res) => {
     }
 
     if (operation === 'deduct') {
+      console.log('📉 Deducting stock:', qty, 'from', itemName);
+      
       // FIFO by earliest expirationDate
       vaccineEntry.stockEntries.sort((a, b) => {
         const da = new Date(a.expirationDate).getTime() || 0;
@@ -4331,26 +4362,33 @@ app.post('/api/stock/update', async (req, res) => {
         return da - db;
       });
 
+      let remainingToDeduct = qty;
       for (const entry of vaccineEntry.stockEntries) {
         const available = parseFloat(entry.stock) || 0;
         if (available <= 0) continue;
-        const take = Math.min(available, qty);
+        const take = Math.min(available, remainingToDeduct);
         entry.stock = Number((available - take).toFixed(2));
-        qty = Number((qty - take).toFixed(2));
-        if (qty <= 0) break;
+        remainingToDeduct = Number((remainingToDeduct - take).toFixed(2));
+        console.log(`📦 Batch ${entry.branchNo}: ${available} → ${entry.stock} (took ${take})`);
+        if (remainingToDeduct <= 0) break;
       }
 
-      if (qty > 0) {
+      if (remainingToDeduct > 0) {
+        console.log('❌ Insufficient stock. Remaining to deduct:', remainingToDeduct);
         return res.status(409).json({ success: false, message: 'Insufficient stock to deduct requested quantity' });
       }
     } else if (operation === 'add') {
+      console.log('📈 Adding stock:', qty, 'to', itemName);
+      
       // Add back to the latest (or create a generic bucket)
       const nowBucket = vaccineEntry.stockEntries && vaccineEntry.stockEntries[0] ? vaccineEntry.stockEntries[0] : null;
       if (nowBucket) {
         const current = parseFloat(nowBucket.stock) || 0;
         nowBucket.stock = Number((current + qty).toFixed(2));
+        console.log(`📦 Updated batch ${nowBucket.branchNo}: ${current} → ${nowBucket.stock}`);
       } else {
         vaccineEntry.stockEntries = [ { expirationDate: null, branchNo: '000', stock: Number(qty.toFixed(2)) } ];
+        console.log('📦 Created new batch with stock:', qty);
       }
     } else {
       return res.status(400).json({ success: false, message: `Unsupported operation: ${operation}` });
@@ -4360,9 +4398,20 @@ app.post('/api/stock/update', async (req, res) => {
     doc.markModified('vaccines');
     await doc.save();
 
-    return res.json({ success: true, message: 'Stock updated', data: doc });
+    console.log('✅ Stock update successful');
+    return res.json({ 
+      success: true, 
+      message: 'Stock updated', 
+      data: {
+        center: doc.centerName,
+        vaccine: itemName,
+        operation: operation,
+        quantity: qty,
+        totalStock: vaccineEntry.stockEntries.reduce((sum, entry) => sum + (Number(entry.stock) || 0), 0)
+      }
+    });
   } catch (err) {
-    console.error('Error updating stock (center-scoped):', err);
+    console.error('❌ Error updating stock (center-scoped):', err);
     return res.status(500).json({ success: false, message: 'Failed to update stock', error: err.message });
   }
 });

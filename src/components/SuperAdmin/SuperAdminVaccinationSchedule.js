@@ -612,6 +612,23 @@ const SuperAdminVaccinationSchedule = () => {
     resetVaccineSelections();
   };
 
+  // Find vaccination record by patient ID and day
+  const findVaccinationRecord = async (patientId, dayLabel) => {
+    try {
+      const response = await apiFetch(`/api/vaccinationdates?patientId=${patientId}&vaccinationDay=${dayLabel}`);
+      const data = await response.json();
+      
+      if (data.success && data.data && data.data.length > 0) {
+        return data.data[0]; // Return the first matching record
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error finding vaccination record:', error);
+      return null;
+    }
+  };
+
   // Handle vaccine selection changes
   const handleVaccineSelection = (category, vaccine = null) => {
     setSelectedVaccines(prev => {
@@ -694,7 +711,14 @@ const SuperAdminVaccinationSchedule = () => {
         center: centerName
       };
 
-      const response = await apiFetch(`/api/vaccinations/${scheduleItem.id}`, {
+      // Find the vaccinationdates record for this patient and day
+      const vaccinationRecord = await findVaccinationRecord(scheduleModalData.patient.patientId, scheduleItem.label);
+      
+      if (!vaccinationRecord) {
+        throw new Error('Vaccination record not found for this patient and day');
+      }
+
+      const response = await apiFetch(`/api/vaccinations/${vaccinationRecord._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

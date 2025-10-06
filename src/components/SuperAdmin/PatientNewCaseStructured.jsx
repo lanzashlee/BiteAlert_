@@ -19,6 +19,24 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     return injuryTypes.filter(type => injury[type]).length;
   };
 
+  // Load vaccine stocks from database
+  const loadVaccineStocks = async () => {
+    try {
+      setStockLoading(true);
+      const response = await apiFetch('/api/vaccinestocks');
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setVaccineStocks(data.data);
+        console.log('📦 Loaded vaccine stocks:', data.data);
+      }
+    } catch (error) {
+      console.error('Error loading vaccine stocks:', error);
+    } finally {
+      setStockLoading(false);
+    }
+  };
+
   // Load centers for dropdown
   useEffect(() => {
     const loadCenters = async () => {
@@ -89,6 +107,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
       }
     };
     loadCenters();
+    loadVaccineStocks();
   }, []);
 
   // Basic info
@@ -166,6 +185,71 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     tig:false, tigDose:'', tigDate:'', toxoidDate1:'', toxoidDate2:'', toxoidDate3:'',
     hrig:false, hrigDose:'', hrigDate:'', localInfiltration:false, structured:false, unstructured:false 
   });
+
+  // Vaccine stock data
+  const [vaccineStocks, setVaccineStocks] = useState([]);
+  const [stockLoading, setStockLoading] = useState(false);
+
+  // Check if vaccine is available in stock
+  const isVaccineAvailable = (vaccineName, centerName) => {
+    const centerStock = vaccineStocks.find(stock => 
+      stock.center === centerName || stock.centerName === centerName
+    );
+    
+    if (!centerStock) return false;
+    
+    const vaccine = centerStock.vaccines?.find(v => 
+      v.name === vaccineName || v.vaccineName === vaccineName
+    );
+    
+    if (!vaccine) return false;
+    
+    const totalStock = vaccine.stockEntries?.reduce((sum, entry) => 
+      sum + (Number(entry.stock) || 0), 0
+    ) || 0;
+    
+    return totalStock > 0;
+  };
+
+  // Get available vaccines for center
+  const getAvailableVaccines = (centerName) => {
+    const centerStock = vaccineStocks.find(stock => 
+      stock.center === centerName || stock.centerName === centerName
+    );
+    
+    if (!centerStock) return [];
+    
+    return centerStock.vaccines?.filter(vaccine => {
+      const totalStock = vaccine.stockEntries?.reduce((sum, entry) => 
+        sum + (Number(entry.stock) || 0), 0
+      ) || 0;
+      return totalStock > 0;
+    }) || [];
+  };
+
+  // Deduct vaccine stock
+  const deductVaccineStock = async (vaccineName, centerName, quantity = 1) => {
+    try {
+      const response = await apiFetch('/api/stock/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          centerName: centerName,
+          itemName: vaccineName,
+          quantity: quantity,
+          operation: 'deduct'
+        })
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error deducting vaccine stock:', error);
+      return { success: false, message: 'Failed to deduct stock' };
+    }
+  };
 
   // Schedule
   const [schedule, setSchedule] = useState({ d0:'', d3:'', d7:'', d14:'', d28:'' });
@@ -394,6 +478,10 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     if (!current.active && !current.passive) return 'Please select immunization type (Active or Passive)';
     if (current.active && !current.post && !current.pre && !current.prevImm) return 'Please select exposure type for active immunization';
     
+    // Vaccine selection validation
+    if (current.active && !current.pvrv && !current.pcec) return 'Please select at least one vaccine (SPEEDA or VAXIRAB)';
+    if (current.active && !current.id && !current.im) return 'Please select route of administration (ID or IM)';
+    
     if (current.passive && !current.skinTest && !current.hrig) return 'Please select passive immunization type (SKIN TEST or HRIG)';
     if (current.skinTest && (!current.skinTime || !current.skinRead || !current.skinResult.trim() || !current.skinDate)) return 'Please complete SKIN TEST details';
     if (current.hrig && (!current.hrigDose.trim() || !current.hrigDate)) return 'Please specify HRIG dose and date';
@@ -426,6 +514,25 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     if (v) { setError(v); return; }
     setSaving(true); setError('');
     try {
+      // Deduct vaccine stock if vaccines are selected
+      if (current.active && (current.pvrv || current.pcec)) {
+        if (current.pvrv) {
+          const stockResult = await deductVaccineStock('SPEEDA', center, 1);
+          if (!stockResult.success) {
+            setError(`Failed to deduct SPEEDA stock: ${stockResult.message}`);
+            setSaving(false);
+            return;
+          }
+        }
+        if (current.pcec) {
+          const stockResult = await deductVaccineStock('VAXIRAB', center, 1);
+          if (!stockResult.success) {
+            setError(`Failed to deduct VAXIRAB stock: ${stockResult.message}`);
+            setSaving(false);
+            return;
+          }
+        }
+      }
       const payload = {
         patientId: selectedPatient?._id || selectedPatient?.patientId,
         registrationNumber,
@@ -663,6 +770,16 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             border-color: ${palette.brand} !important;
             box-shadow: 0 0 0 3px ${palette.brand}20 !important;
             outline: none !important;
+          }
+          
+          .modern-form button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.15);
+          }
+          
+          .modern-form button:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
           }
         `}
       </style>
@@ -1463,6 +1580,123 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         </div>
       </div>
 
+      {/* Vaccine Selection */}
+      <div style={card}>
+        <h3 style={h3Style}>Vaccine Selection</h3>
+        <p style={{ margin: '0 0 16px 0', color: palette.textLight, fontSize: '14px' }}>
+          Select the vaccines to be used for this patient. Stock will be automatically deducted.
+        </p>
+        
+        {stockLoading ? (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <div style={{ 
+              width: '20px', 
+              height: '20px', 
+              border: '2px solid #f3f3f3', 
+              borderTop: '2px solid #7D0C0C', 
+              borderRadius: '50%', 
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto'
+            }}></div>
+            <p style={{ margin: '8px 0 0 0', color: palette.textLight }}>Loading vaccine stocks...</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* ARV Vaccines */}
+            <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <h4 style={{ ...h3Style, fontSize: '16px', marginBottom: 12 }}>Anti-Rabies Vaccines (ARV)</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={current.pvrv} 
+                    disabled={!isVaccineAvailable('SPEEDA', center)}
+                    onChange={e => {
+                      setCurrent(s => ({ ...s, pvrv: e.target.checked }));
+                      if (e.target.checked) {
+                        deductVaccineStock('SPEEDA', center, 1);
+                      }
+                    }}
+                  />
+                  <span>SPEEDA (PVRV)</span>
+                  {!isVaccineAvailable('SPEEDA', center) && (
+                    <span style={{ color: palette.error, fontSize: '12px' }}>❌ Out of stock</span>
+                  )}
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={current.pcec} 
+                    disabled={!isVaccineAvailable('VAXIRAB', center)}
+                    onChange={e => {
+                      setCurrent(s => ({ ...s, pcec: e.target.checked }));
+                      if (e.target.checked) {
+                        deductVaccineStock('VAXIRAB', center, 1);
+                      }
+                    }}
+                  />
+                  <span>VAXIRAB (PCEC)</span>
+                  {!isVaccineAvailable('VAXIRAB', center) && (
+                    <span style={{ color: palette.error, fontSize: '12px' }}>❌ Out of stock</span>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            {/* Route Selection */}
+            <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <h4 style={{ ...h3Style, fontSize: '16px', marginBottom: 12 }}>Route of Administration</h4>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={current.id} 
+                    onChange={e => setCurrent(s => ({ ...s, id: e.target.checked, im: e.target.checked ? false : s.im }))}
+                  />
+                  <span>Intradermal (ID)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={current.im} 
+                    onChange={e => setCurrent(s => ({ ...s, im: e.target.checked, id: e.target.checked ? false : s.id }))}
+                  />
+                  <span>Intramuscular (IM)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Stock Information */}
+            {center && (
+              <div style={{ padding: '16px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #0ea5e9' }}>
+                <h4 style={{ color: '#0369a1', fontSize: '16px', marginBottom: 12 }}>Available Stock for {center}</h4>
+                {getAvailableVaccines(center).length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {getAvailableVaccines(center).map((vaccine, index) => {
+                      const totalStock = vaccine.stockEntries?.reduce((sum, entry) => 
+                        sum + (Number(entry.stock) || 0), 0
+                      ) || 0;
+                      return (
+                        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: '500' }}>{vaccine.name}</span>
+                          <span style={{ 
+                            color: totalStock > 10 ? palette.success : totalStock > 0 ? palette.warning : palette.error,
+                            fontWeight: '600'
+                          }}>
+                            {totalStock} vials
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ color: palette.error, margin: 0 }}>No vaccines available for this center</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Save/Cancel */}
       <div style={{ 
@@ -1490,14 +1724,6 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             fontWeight: 600,
             transition: 'all 0.2s ease-in-out'
           }}
-          onMouseEnter={(e) => {
-            e.target.style.background = '#E5E7EB';
-            e.target.style.borderColor = palette.textLight;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = '#F3F4F6';
-            e.target.style.borderColor = '#E5E7EB';
-          }}
         >
           Cancel
         </button>
@@ -1517,18 +1743,6 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease-in-out',
             opacity: saving ? 0.6 : 1
-          }}
-          onMouseEnter={(e) => {
-            if (!saving) {
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 6px 8px -1px rgba(0, 0, 0, 0.15)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!saving) {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-            }
           }}
         >
           {saving ? (
