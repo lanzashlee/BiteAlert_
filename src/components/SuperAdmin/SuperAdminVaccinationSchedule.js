@@ -39,9 +39,6 @@ const SuperAdminVaccinationSchedule = () => {
   const [scheduleModalLoading, setScheduleModalLoading] = useState(false);
   const [scheduleModalData, setScheduleModalData] = useState(null);
   const [showEmptyState, setShowEmptyState] = useState(false);
-  const [editingVaccine, setEditingVaccine] = useState(false);
-  const [selectedVaccineType, setSelectedVaccineType] = useState('');
-  const [selectedVaccineRoute, setSelectedVaccineRoute] = useState('');
   const [patientWeight, setPatientWeight] = useState(null);
   const [biteCaseData, setBiteCaseData] = useState(null);
   const [selectedVaccination, setSelectedVaccination] = useState(null);
@@ -73,6 +70,10 @@ const SuperAdminVaccinationSchedule = () => {
     erig: false,
     booster: { vaxirab: false, speeda: false }
   });
+
+  // Vaccination update modal state
+  const [showVaccinationUpdateModal, setShowVaccinationUpdateModal] = useState(false);
+  const [selectedScheduleItem, setSelectedScheduleItem] = useState(null);
 
   // Close popover on Escape / outside click / heavy scroll or resize
   useEffect(() => {
@@ -543,10 +544,10 @@ const SuperAdminVaccinationSchedule = () => {
         status: 'completed',
         completedDate: new Date().toISOString(),
         vaccinesUsed: {
-          type: selectedVaccineType,
-          route: selectedVaccineRoute,
-          brand: selectedVaccineType,
-          generic: selectedVaccineType === 'SPEEDA' ? 'PVRV' : 'PCEC'
+          type: scheduleData?.brand || 'SPEEDA',
+          route: scheduleData?.route || 'ID',
+          brand: scheduleData?.brand || 'SPEEDA',
+          generic: scheduleData?.generic || 'PVRV'
         },
         completedSchedules: scheduleData.schedule.map(item => ({
           day: item.label,
@@ -594,6 +595,21 @@ const SuperAdminVaccinationSchedule = () => {
       erig: false,
       booster: { vaxirab: false, speeda: false }
     });
+  };
+
+  // Open vaccination update modal
+  const openVaccinationUpdateModal = (scheduleItem) => {
+    setSelectedScheduleItem(scheduleItem);
+    setShowVaccinationUpdateModal(true);
+    // Reset vaccine selections for this specific dose
+    resetVaccineSelections();
+  };
+
+  // Close vaccination update modal
+  const closeVaccinationUpdateModal = () => {
+    setShowVaccinationUpdateModal(false);
+    setSelectedScheduleItem(null);
+    resetVaccineSelections();
   };
 
   // Handle vaccine selection changes
@@ -856,9 +872,6 @@ const SuperAdminVaccinationSchedule = () => {
       setScheduleModalLoading(true);
       setShowScheduleModal(true);
       setScheduleModalData(null);
-      setEditingVaccine(false);
-      setSelectedVaccine(''); // Reset vaccine selection
-      setSelectedVaccineBrand(''); // Reset vaccine brand selection
       
       // Reset vaccine selections when opening modal
       resetVaccineSelections();
@@ -931,9 +944,6 @@ const SuperAdminVaccinationSchedule = () => {
             setPatientWeight(patientWeight);
             setBiteCaseData(biteCase);
             
-            // Initialize vaccine selection
-            setSelectedVaccineType(brandName || 'SPEEDA');
-            setSelectedVaccineRoute(route || 'IM');
             
             // If we don't have schedule yet, or it's empty, build from bite case per-day fields
             if (!scheduleList || scheduleList.length === 0) {
@@ -2865,51 +2875,12 @@ const SuperAdminVaccinationSchedule = () => {
                   <div className="vaccine-info-grid">
                     <div className="vaccine-info-card">
                       <p className="vaccine-info-label">Vaccine Type</p>
-                      {editingVaccine ? (
-                        <select
-                          value={selectedVaccineType}
-                          onChange={(e) => setSelectedVaccineType(e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                        >
-                          <option value="SPEEDA">SPEEDA (PVRV)</option>
-                          <option value="VAXIRAB">VAXIRAB (PCEC)</option>
-                        </select>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <p className="vaccine-info-value">{selectedVaccineType || scheduleModalData?.brand || 'SPEEDA'}</p>
-                          <button
-                            onClick={() => setEditingVaccine(true)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      )}
+                      <p className="vaccine-info-value">{scheduleModalData?.brand || scheduleModalData?.generic || 'Anti-Rabies'}</p>
                     </div>
                     
                     <div className="vaccine-info-card">
                       <p className="vaccine-info-label">Route</p>
-                      {editingVaccine ? (
-                        <select
-                          value={selectedVaccineRoute}
-                          onChange={(e) => setSelectedVaccineRoute(e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                        >
-                          <option value="ID">Intradermal (ID)</option>
-                          <option value="IM">Intramuscular (IM)</option>
-                          <option value="Booster">Booster</option>
-                        </select>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <p className="vaccine-info-value">{selectedVaccineRoute || scheduleModalData?.route || 'IM'}</p>
-                          <button
-                            onClick={() => setEditingVaccine(true)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      )}
+                      <p className="vaccine-info-value">{scheduleModalData?.route || 'ID'}</p>
                     </div>
                     
                     {patientWeight && (
@@ -2941,129 +2912,7 @@ const SuperAdminVaccinationSchedule = () => {
                     )}
                   </div>
 
-                  {/* Save/Cancel buttons for vaccine editing */}
-                  {editingVaccine && (
-                    <div className="flex gap-3 mb-6">
-                      <button
-                        onClick={() => {
-                          setEditingVaccine(false);
-                          // Update schedule modal data with new vaccine info
-                          setScheduleModalData(prev => ({
-                            ...prev,
-                            brand: selectedVaccineType,
-                            route: selectedVaccineRoute
-                          }));
-                          showNotification('Vaccine selection updated', 'success');
-                        }}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                      >
-                        Save Changes
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingVaccine(false);
-                          // Reset to original values
-                          setSelectedVaccineType(scheduleModalData?.brand || 'SPEEDA');
-                          setSelectedVaccineRoute(scheduleModalData?.route || 'IM');
-                        }}
-                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
 
-                  {/* Vaccine Selection Section */}
-                  <div className="vaccine-selection-container">
-                    <div className="vaccine-selection-header">
-                      <h3 className="vaccine-selection-title">Vaccine Selection</h3>
-                      <p className="vaccine-selection-subtitle">Select vaccines administered for this patient</p>
-                    </div>
-                    
-                    <div className="vaccine-selection-content">
-                      {/* ARV Section */}
-                      <div className="vaccine-category">
-                        <h4>ARV (Anti-Rabies Vaccine)</h4>
-                        <div className="vaccine-options">
-                          <div className="vaccine-option">
-                            <input 
-                              type="checkbox" 
-                              id="vaxirab-arv"
-                              checked={selectedVaccines.arv.vaxirab}
-                              onChange={() => handleVaccineSelection('arv', 'vaxirab')}
-                            />
-                            <label htmlFor="vaxirab-arv">VAXIRAB (PCEC)</label>
-                          </div>
-                          <div className="vaccine-option">
-                            <input 
-                              type="checkbox" 
-                              id="speeda-arv"
-                              checked={selectedVaccines.arv.speeda}
-                              onChange={() => handleVaccineSelection('arv', 'speeda')}
-                            />
-                            <label htmlFor="speeda-arv">SPEEDA (PVRV)</label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* TCV Section */}
-                      <div className="vaccine-category">
-                        <h4>TCV (Tetanus Toxoid-Containing Vaccine)</h4>
-                        <div className="vaccine-options">
-                          <div className="vaccine-option">
-                            <input 
-                              type="checkbox" 
-                              id="tcv"
-                              checked={selectedVaccines.tcv}
-                              onChange={() => handleVaccineSelection('tcv')}
-                            />
-                            <label htmlFor="tcv">TCV</label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ERIG Section */}
-                      <div className="vaccine-category">
-                        <h4>ERIG (Equine Rabies Immunoglobulin)</h4>
-                        <div className="vaccine-options">
-                          <div className="vaccine-option">
-                            <input 
-                              type="checkbox" 
-                              id="erig"
-                              checked={selectedVaccines.erig}
-                              onChange={() => handleVaccineSelection('erig')}
-                            />
-                            <label htmlFor="erig">ERIG</label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Booster Section */}
-                      <div className="vaccine-category">
-                        <h4>Booster Vaccine</h4>
-                        <div className="vaccine-options">
-                          <div className="vaccine-option">
-                            <input 
-                              type="checkbox" 
-                              id="vaxirab-booster"
-                              checked={selectedVaccines.booster.vaxirab}
-                              onChange={() => handleVaccineSelection('booster', 'vaxirab')}
-                            />
-                            <label htmlFor="vaxirab-booster">VAXIRAB (BOOSTER)</label>
-                          </div>
-                          <div className="vaccine-option">
-                            <input 
-                              type="checkbox" 
-                              id="speeda-booster"
-                              checked={selectedVaccines.booster.speeda}
-                              onChange={() => handleVaccineSelection('booster', 'speeda')}
-                            />
-                            <label htmlFor="speeda-booster">SPEEDA (BOOSTER)</label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Complete Vaccination Schedule */}
                   <div className="schedule-container">
@@ -3142,7 +2991,7 @@ const SuperAdminVaccinationSchedule = () => {
                                     {isScheduled && (
                                       <div className="schedule-actions">
                                         <button
-                                          onClick={() => updateVaccinationStatus(scheduleItem)}
+                                          onClick={() => openVaccinationUpdateModal(scheduleItem)}
                                           className="schedule-action-btn complete"
                                         >
                                           Update Status
@@ -3186,6 +3035,156 @@ const SuperAdminVaccinationSchedule = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Vaccination Update Modal */}
+        {showVaccinationUpdateModal && selectedScheduleItem && (
+          <div className="vaccination-update-modal-overlay">
+            <div className="vaccination-update-modal-content">
+              {/* Modal Header */}
+              <div className="vaccination-update-modal-header">
+                <h2>UPDATE VACCINATION STATUS</h2>
+                <button 
+                  className="vaccination-update-modal-close"
+                  onClick={closeVaccinationUpdateModal}
+                >
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="vaccination-update-modal-body">
+                {/* Dose Information */}
+                <div className="dose-info-section">
+                  <h3 className="dose-title">{selectedScheduleItem.label}</h3>
+                  <div className="dose-details">
+                    <p><strong>Category of Exposure:</strong> {scheduleModalData?.categoryOfExposure || 'N/A'}</p>
+                    <p><strong>Route of Administration:</strong> {selectedScheduleItem.route || 'ID'}</p>
+                    <p><strong>Vaccine:</strong> {scheduleModalData?.brand || scheduleModalData?.generic || 'Anti-Rabies'}</p>
+                    <p><strong>Patient Weight:</strong> {patientWeight ? `${patientWeight} kg` : 'N/A'}</p>
+                    <p><strong>Center:</strong> {scheduleModalData?.centerName || 'N/A'}</p>
+                  </div>
+                </div>
+
+                {/* Status Section */}
+                <div className="status-section">
+                  <label className="status-label">Status:</label>
+                  <div className="status-checkbox">
+                    <input type="checkbox" id="completed-status" defaultChecked />
+                    <label htmlFor="completed-status" className="completed-text">Completed</label>
+                  </div>
+                </div>
+
+                {/* Vaccine Selection */}
+                <div className="vaccine-selection-section">
+                  <label className="vaccine-selection-label">Vaccine Took:</label>
+                  
+                  {/* ARV Section */}
+                  <div className="vaccine-category">
+                    <h4>ARV (Anti-Rabies Vaccine)</h4>
+                    <div className="vaccine-options">
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="vaxirab-arv"
+                          checked={selectedVaccines.arv.vaxirab}
+                          onChange={() => handleVaccineSelection('arv', 'vaxirab')}
+                        />
+                        <label htmlFor="vaxirab-arv">VAXIRAB (PCEC)</label>
+                      </div>
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="speeda-arv"
+                          checked={selectedVaccines.arv.speeda}
+                          onChange={() => handleVaccineSelection('arv', 'speeda')}
+                        />
+                        <label htmlFor="speeda-arv">SPEEDA (PVRV)</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TCV Section */}
+                  <div className="vaccine-category">
+                    <h4>TCV (Tetanus Toxoid-Containing Vaccine)</h4>
+                    <div className="vaccine-options">
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="tcv"
+                          checked={selectedVaccines.tcv}
+                          onChange={() => handleVaccineSelection('tcv')}
+                        />
+                        <label htmlFor="tcv">TCV</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ERIG Section */}
+                  <div className="vaccine-category">
+                    <h4>ERIG (Equine Rabies Immunoglobulin)</h4>
+                    <div className="vaccine-options">
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="erig"
+                          checked={selectedVaccines.erig}
+                          onChange={() => handleVaccineSelection('erig')}
+                        />
+                        <label htmlFor="erig">ERIG</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Booster Section */}
+                  <div className="vaccine-category">
+                    <h4>Booster Vaccine</h4>
+                    <div className="vaccine-options">
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="vaxirab-booster"
+                          checked={selectedVaccines.booster.vaxirab}
+                          onChange={() => handleVaccineSelection('booster', 'vaxirab')}
+                        />
+                        <label htmlFor="vaxirab-booster">VAXIRAB (BOOSTER)</label>
+                      </div>
+                      <div className="vaccine-option">
+                        <input 
+                          type="checkbox" 
+                          id="speeda-booster"
+                          checked={selectedVaccines.booster.speeda}
+                          onChange={() => handleVaccineSelection('booster', 'speeda')}
+                        />
+                        <label htmlFor="speeda-booster">SPEEDA (BOOSTER)</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="vaccination-update-modal-footer">
+                <button 
+                  className="cancel-btn"
+                  onClick={closeVaccinationUpdateModal}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="update-status-btn"
+                  onClick={() => {
+                    updateVaccinationStatus(selectedScheduleItem);
+                    closeVaccinationUpdateModal();
+                  }}
+                >
+                  Update Status
+                </button>
+              </div>
             </div>
           </div>
         )}

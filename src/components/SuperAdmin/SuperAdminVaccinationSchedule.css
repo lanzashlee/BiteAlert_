@@ -986,6 +986,229 @@
   color: #374151;
 }
 
+/* Vaccination Update Modal Styles */
+.vaccination-update-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.vaccination-update-modal-content {
+  background: white;
+  width: 90%;
+  max-width: 700px;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.vaccination-update-modal-header {
+  background: #8B0000;
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vaccination-update-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vaccination-update-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.vaccination-update-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.vaccination-update-modal-body {
+  padding: 24px;
+}
+
+.dose-info-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #8B0000;
+}
+
+.dose-title {
+  color: #8B0000;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.dose-details p {
+  margin: 8px 0;
+  color: #374151;
+  font-size: 14px;
+}
+
+.status-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.status-label {
+  color: #8B0000;
+  font-weight: 600;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.status-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #8B0000;
+}
+
+.completed-text {
+  color: #059669;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.vaccine-selection-section {
+  margin-bottom: 24px;
+}
+
+.vaccine-selection-label {
+  color: #8B0000;
+  font-weight: 600;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.vaccine-category {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.vaccine-category h4 {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.vaccine-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vaccine-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vaccine-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #8B0000;
+}
+
+.vaccine-option label {
+  color: #6b7280;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.vaccine-option input[type="checkbox"]:checked + label {
+  color: #374151;
+  font-weight: 500;
+}
+
+.vaccination-update-modal-footer {
+  padding: 20px 24px;
+  background: #f8f9fa;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cancel-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #4b5563;
+}
+
+.update-status-btn {
+  background: #8B0000;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.update-status-btn:hover {
+  background: #6B0000;
+}
+
+.update-status-btn:active {
+  transform: translateY(1px);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

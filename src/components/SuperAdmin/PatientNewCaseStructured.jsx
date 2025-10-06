@@ -393,8 +393,6 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     // Current Anti-Rabies Immunization validation
     if (!current.active && !current.passive) return 'Please select immunization type (Active or Passive)';
     if (current.active && !current.post && !current.pre && !current.prevImm) return 'Please select exposure type for active immunization';
-    if (current.active && !current.pvrv && !current.pcec) return 'Please select vaccine name (SPEEDA or VAXIRAB)';
-    if (current.active && !current.id && !current.im) return 'Please select route of administration (ID or IM)';
     
     if (current.passive && !current.skinTest && !current.hrig) return 'Please select passive immunization type (SKIN TEST or HRIG)';
     if (current.skinTest && (!current.skinTime || !current.skinRead || !current.skinResult.trim() || !current.skinDate)) return 'Please complete SKIN TEST details';
@@ -450,9 +448,9 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         exposurePlace: '', exposureType: '', exposureSource: '',
         exposureCategory: 'I',
         rig: false,
-        genericName: current.pcec ? 'PCEC' : (current.pvrv ? 'PVRV' : ''),
-        brandName: current.pcec ? 'VAXIRAB' : (current.pvrv ? 'SPEEDA' : ''),
-        route: current.id ? 'ID' : (current.im ? 'IM' : ''),
+        genericName: 'PVRV', // Default to PVRV, will be updated from bite cases
+        brandName: 'SPEEDA', // Default to SPEEDA, will be updated from bite cases
+        route: 'ID', // Default to ID, will be updated from bite cases
         lastArn: null,
         completed: '', tt: '',
         scheduleDates: [schedule.d0, schedule.d3, schedule.d7, schedule.d14, schedule.d28].map(toIsoUtcNoon).filter(Boolean),
@@ -1303,35 +1301,6 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
                 </div>
               </div>
 
-              {/* Vaccine Name */}
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Vaccine Name:</p>
-                <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.pvrv} onChange={e=>setCurrent(s=>({ ...s, pvrv:e.target.checked, pcec:e.target.checked?false:s.pcec }))} />
-                    SPEEDA (PVRV)
-                  </label>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.pcec} onChange={e=>setCurrent(s=>({ ...s, pcec:e.target.checked, pvrv:e.target.checked?false:s.pvrv }))} />
-                    VAXIRAB (PCEC)
-                  </label>
-                </div>
-              </div>
-
-              {/* Route of Administration */}
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Route of Administration:</p>
-                <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.id} onChange={e=>setCurrent(s=>({ ...s, id:e.target.checked, im:e.target.checked?false:s.im }))} />
-                    Intradermal (ID)
-                  </label>
-                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <input type="checkbox" checked={current.im} onChange={e=>setCurrent(s=>({ ...s, im:e.target.checked, id:e.target.checked?false:s.id }))} />
-                    Intramuscular (IM)
-                  </label>
-                </div>
-              </div>
 
               {/* Schedule Dates */}
               <div style={{ marginBottom: 16 }}>
