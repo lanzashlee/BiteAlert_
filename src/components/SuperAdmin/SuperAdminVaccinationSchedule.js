@@ -3273,10 +3273,21 @@ const SuperAdminVaccinationSchedule = () => {
                       {scheduleModalData?.schedule && scheduleModalData.schedule.length > 0 ? (
                         <div>
                           {scheduleModalData.schedule.map((scheduleItem, index) => {
-                            const isCompleted = scheduleItem.status === 'completed';
-                            const isMissed = scheduleItem.status === 'missed';
-                            const isScheduled = scheduleItem.status === 'scheduled';
-                            const isUpcoming = new Date(scheduleItem.date) > new Date();
+                            const itemDateStr = scheduleItem.date ? (/^\d{4}-\d{2}-\d{2}$/.test(scheduleItem.date) ? scheduleItem.date : toLocalDateOnlyString(scheduleItem.date)) : '';
+                            const todayStr = todayLocalStr();
+                            let derivedStatus = scheduleItem.status;
+                            if (derivedStatus !== 'completed') {
+                              if (!itemDateStr) {
+                                derivedStatus = 'scheduled';
+                              } else if (itemDateStr < todayStr) {
+                                derivedStatus = 'missed';
+                              } else {
+                                derivedStatus = 'scheduled';
+                              }
+                            }
+                            const isCompleted = derivedStatus === 'completed';
+                            const isMissed = derivedStatus === 'missed';
+                            const isScheduled = derivedStatus === 'scheduled';
                             
                             return (
                               <div 
