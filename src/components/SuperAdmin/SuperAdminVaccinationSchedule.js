@@ -566,7 +566,6 @@ const SuperAdminVaccinationSchedule = () => {
   // Reschedule a day in vaccinationdates (and cascade to downstream days only)
   const handleRescheduleCascadeVaccinationDates = async (dayLabel, newDateStr) => {
     try {
-      if (!scheduleModalData?.vdId) return;
       if (!newDateStr) return;
       // Block past dates
       const todayStr = getTodayDateStr();
@@ -635,15 +634,28 @@ const SuperAdminVaccinationSchedule = () => {
         }
       }
 
-      // Persist to vaccinationdates
-      const res = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(()=>({}));
-        throw new Error(err.message || 'Failed to update vaccination dates');
+      let persisted = false;
+      // Prefer vaccinationdates when available; fallback to bitecases by ID
+      if (scheduleModalData?.vdId) {
+        const res = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) persisted = true; else persisted = false;
+      }
+      if (!persisted && scheduleModalData?.biteCaseId) {
+        const res2 = await apiFetch(`${apiConfig.endpoints.bitecases}/${encodeURIComponent(scheduleModalData.biteCaseId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res2.ok) {
+          const err = await res2.json().catch(()=>({}));
+          throw new Error(err.message || 'Failed to update vaccination dates');
+        }
+      } else if (!persisted && !scheduleModalData?.biteCaseId) {
+        throw new Error('Unable to persist changes: missing record identifiers');
       }
 
       // Update local modal schedule
@@ -3389,7 +3401,14 @@ const SuperAdminVaccinationSchedule = () => {
                                     isMissed ? 'missed' : 
                                     isScheduled ? 'scheduled' : 'pending'
                                   }`}>
-                                    {scheduleItem.label ? scheduleItem.label.replace('Day ', 'D') : 'D' + (index + 1)}
+                                    {(() => {
+                                      const label = scheduleItem.label || '';
+                                      const map = { 'Day 0': 'D0', 'Day 3': 'D3', 'Day 7': 'D7', 'Day 14': 'D14', 'Day 28': 'D28' };
+                                      if (map[label]) return map[label];
+                                      const m = label.match(/Day\s*(\d+)/i);
+                                      if (m) return `D${m[1]}`;
+                                      return 'D?';
+                                    })()}
                                   </div>
 
                                   {/* Content */}
