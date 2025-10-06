@@ -174,6 +174,21 @@ const SuperAdminVaccinationSchedule = () => {
     return `${y}-${m}-${day}`;
   };
 
+  // Normalize day labels coming from various sources (Day 1..5 => Day 0/3/7/14/28)
+  const normalizeDayLabel = (label) => {
+    if (!label) return '';
+    const clean = String(label).trim();
+    const mapExact = { 'Day 0': 'Day 0', 'Day 3': 'Day 3', 'Day 7': 'Day 7', 'Day 14': 'Day 14', 'Day 28': 'Day 28' };
+    if (mapExact[clean]) return mapExact[clean];
+    const m = clean.match(/^Day\s*(\d+)$/i);
+    if (m) {
+      const n = Number(m[1]);
+      const positions = { 1: 'Day 0', 2: 'Day 3', 3: 'Day 7', 4: 'Day 14', 5: 'Day 28' };
+      return positions[n] || clean;
+    }
+    return clean;
+  };
+
   const todayLocalStr = () => {
     const now = new Date();
     const y = now.getFullYear();
@@ -635,8 +650,21 @@ const SuperAdminVaccinationSchedule = () => {
       }
 
       let persisted = false;
-      // Prefer vaccinationdates when available; fallback to bitecases by ID
+      // Try dedicated reschedule endpoint first when vdId is known
       if (scheduleModalData?.vdId) {
+        try {
+          const res0 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}/reschedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dayLabel, newDate: newDateStr })
+          });
+          if (res0.ok) {
+            persisted = true;
+          }
+        } catch (_) {}
+      }
+      // Fallback: direct PUT on vaccinationdates/:id
+      if (!persisted && scheduleModalData?.vdId) {
         const res = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
