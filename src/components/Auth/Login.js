@@ -201,7 +201,7 @@ const Login = () => {
               <h1 className="logo-modern">
                 <span className="logo-bite">Bite</span>
                 <span className="logo-alert">Alert</span>
-                <span className="paw">🐾</span>
+                <span className="paw"></span>
               </h1>
             </div>
             <div className="spinner"></div>
@@ -229,7 +229,7 @@ const Login = () => {
           <h1 className="logo-modern">
             <span className="logo-bite">Bite</span>
             <span className="logo-alert">Alert</span>
-            <span className="paw">🐾</span>
+            <span className="paw"></span>
           </h1>
           <p className="tagline">Swift Response. Safer San Juan.</p>
           <p className="desc">Effortless data recording, seamless vaccination tracking—keeping our community safe, one record at a time!</p>

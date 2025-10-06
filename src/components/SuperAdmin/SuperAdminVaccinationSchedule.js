@@ -3484,6 +3484,7 @@ const SuperAdminVaccinationSchedule = () => {
                                               disabled={!isEditableDate}
                                               onChange={(e) => {
                                                 const newDateStr = e.target.value;
+                                                console.log('Date input changed:', { label: scheduleItem.label, newDateStr });
                                                 if (!newDateStr) return;
                                                 handleRescheduleCascadeVaccinationDates(scheduleItem.label, newDateStr);
                                               }}
