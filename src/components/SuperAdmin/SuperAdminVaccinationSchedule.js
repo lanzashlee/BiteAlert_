@@ -612,20 +612,16 @@ const SuperAdminVaccinationSchedule = () => {
     resetVaccineSelections();
   };
 
-  // Find vaccination record by patient ID and day from vaccinationdates collection
-  const findVaccinationRecord = async (patientId, dayLabel) => {
+  // Find vaccination record by patient ID from vaccinationdates collection
+  const findVaccinationRecord = async (patientId) => {
     try {
       // Validate inputs
       if (!patientId) {
         console.error('❌ Patient ID is required');
         return null;
       }
-      if (!dayLabel || typeof dayLabel !== 'string') {
-        console.error('❌ Invalid day label:', dayLabel);
-        return null;
-      }
       
-      console.log('🔍 Looking for vaccination record in vaccinationdates:', { patientId, dayLabel });
+      console.log('🔍 Looking for vaccination record in vaccinationdates:', { patientId });
       
       // Get vaccination dates for this patient
       const response = await apiFetch(`/api/vaccinationdates?patientId=${patientId}`);
@@ -650,84 +646,11 @@ const SuperAdminVaccinationSchedule = () => {
         const vaccinationDate = vaccinationDates[0]; // Get the most recent vaccination date
         console.log('🔍 Found vaccination date record:', vaccinationDate);
         
-        // Map day labels to status fields in vaccinationdates
-        const dayStatusMap = {
-          'Day 0': 'd0Status',
-          'Day 3': 'd3Status', 
-          'Day 7': 'd7Status',
-          'Day 14': 'd14Status',
-          'Day 28': 'd28Status'
-        };
-        
-        const statusField = dayStatusMap[dayLabel];
-        
-        // Create vaccination record from vaccinationdates data
-        const vaccinationRecord = {
-          _id: vaccinationDate._id,
-          patientId: vaccinationDate.patientId,
-          registrationNumber: vaccinationDate.registrationNumber,
-          vaccinationDay: dayLabel,
-          status: vaccinationDate[statusField] || 'scheduled',
-          biteCaseId: vaccinationDate.biteCaseId,
-          scheduledDate: (() => {
-            // Safe date field extraction
-            if (dayLabel && typeof dayLabel === 'string') {
-              const dayNumber = dayLabel.split(' ')[1];
-              if (dayNumber) {
-                return vaccinationDate[`d${dayNumber}Date`] || new Date().toISOString();
-              }
-            }
-            return new Date().toISOString();
-          })(),
-          createdAt: vaccinationDate.createdAt,
-          updatedAt: vaccinationDate.updatedAt
-        };
-        
-        console.log('🔍 Created vaccination record from vaccinationdates:', vaccinationRecord);
-        return vaccinationRecord;
+        // Return the vaccinationdates record directly
+        return vaccinationDate;
       }
       
       console.log('❌ No vaccination dates found for patient:', patientId);
-      
-      // If no vaccination dates found, try to get bite case and create a vaccination record
-      try {
-        const biteCaseResponse = await apiFetch(`/api/bitecases?patientId=${patientId}`);
-        if (biteCaseResponse.ok) {
-          const biteCaseData = await biteCaseResponse.json();
-          let biteCases = [];
-          if (Array.isArray(biteCaseData)) {
-            biteCases = biteCaseData;
-          } else if (biteCaseData.success && Array.isArray(biteCaseData.data)) {
-            biteCases = biteCaseData.data;
-          } else if (Array.isArray(biteCaseData.data)) {
-            biteCases = biteCaseData.data;
-          }
-          
-          if (biteCases.length > 0) {
-            const biteCase = biteCases[0];
-            console.log('🔍 Found bite case, creating vaccination record:', biteCase);
-            
-            // Create a vaccination record from bite case data
-            const vaccinationRecord = {
-              _id: `${biteCase._id}_${dayLabel}`,
-              patientId: biteCase.patientId,
-              registrationNumber: biteCase.registrationNumber,
-              vaccinationDay: dayLabel,
-              status: 'scheduled',
-              biteCaseId: biteCase._id,
-              scheduledDate: new Date().toISOString(),
-              createdAt: biteCase.createdAt,
-              updatedAt: biteCase.updatedAt
-            };
-            
-            console.log('🔍 Created vaccination record from bite case:', vaccinationRecord);
-            return vaccinationRecord;
-          }
-        }
-      } catch (biteCaseError) {
-        console.warn('Failed to get bite case as fallback:', biteCaseError);
-      }
-      
       return null;
     } catch (error) {
       console.error('❌ Error finding vaccination record:', error);
@@ -896,11 +819,11 @@ const SuperAdminVaccinationSchedule = () => {
         updateData[statusField] = 'completed';
       }
 
-      // Find the bite case for this patient and day
+      // Find the vaccination record for this patient
       let vaccinationRecord = null;
       
       try {
-        vaccinationRecord = await findVaccinationRecord(scheduleModalData.patient.patientId, scheduleItem.label);
+        vaccinationRecord = await findVaccinationRecord(scheduleModalData.patient.patientId);
       } catch (findError) {
         console.warn('Error finding vaccination record:', findError);
       }
@@ -939,14 +862,7 @@ const SuperAdminVaccinationSchedule = () => {
             const newRecord = await createResponse.json();
             console.log('🔍 Created new vaccination record:', newRecord);
             // Use the created record
-            vaccinationRecord = {
-              _id: newRecord._id || newRecord.data?._id,
-              patientId: scheduleModalData.patient.patientId,
-              registrationNumber: scheduleModalData.patient.registrationNumber,
-              biteCaseId: scheduleModalData.biteCaseId,
-              vaccinationDay: scheduleItem.label,
-              status: 'completed'
-            };
+            vaccinationRecord = newRecord._id || newRecord.data?._id ? newRecord : newRecord.data;
           } else {
             const errorData = await createResponse.json().catch(() => ({}));
             throw new Error(`Failed to create vaccination record: ${errorData.message || createResponse.statusText}`);
@@ -977,14 +893,16 @@ const SuperAdminVaccinationSchedule = () => {
       if (response.ok) {
         // Also update the corresponding bite case to keep it in sync
         try {
-          const biteCaseResponse = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updateData)
-          });
-          console.log('🔍 Bite case sync response:', biteCaseResponse.status);
+          if (vaccinationRecord.biteCaseId) {
+            const biteCaseResponse = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(updateData)
+            });
+            console.log('🔍 Bite case sync response:', biteCaseResponse.status);
+          }
         } catch (biteCaseError) {
           console.warn('Bite case sync failed:', biteCaseError);
           // Don't fail the entire operation if bite case sync fails
