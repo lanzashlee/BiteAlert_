@@ -3111,6 +3111,7 @@ app.post('/api/insert-sample-centers', async (req, res) => {
 // API Endpoints for Prescriptive Analytics
 app.get('/api/bitecases', async (req, res) => {
     try {
+        console.log('🔍 GET /api/bitecases called with query:', req.query);
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         
         const { center, patientId, registrationNumber, name, firstName, lastName } = req.query;
@@ -3156,6 +3157,7 @@ app.get('/api/bitecases', async (req, res) => {
         }
 
         const cases = await BiteCase.find(filter).sort({ createdAt: -1, incidentDate: -1 });
+        console.log('🔍 Found bite cases:', cases.length, 'with filter:', filter);
         res.json(cases);
     } catch (error) {
         console.error('Error fetching bite cases:', error);
@@ -3364,6 +3366,7 @@ app.put('/api/bitecases/:id/diagnosis', async (req, res) => {
 // Generic update for bitecase (supports per-day date/status and cascade)
 app.put('/api/bitecases/:id', async (req, res) => {
     try {
+        console.log('🔍 PUT /api/bitecases/:id called with:', { id: req.params.id, body: req.body });
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         const { id } = req.params;
         const body = req.body || {};
@@ -3405,8 +3408,10 @@ app.put('/api/bitecases/:id', async (req, res) => {
         }
 
         const update = { $set: { ...body, updatedAt: new Date() } };
+        console.log('🔍 Updating bite case with:', update);
         const doc = await BiteCase.findByIdAndUpdate(id, update, { new: true });
         if (!doc) return res.status(404).json({ success: false, message: 'Bite case not found' });
+        console.log('🔍 Updated bite case result:', doc);
         
         // Check if all vaccinations are completed and update status accordingly
         const statusFields = ['d0Status', 'd3Status', 'd7Status', 'd14Status', 'd28Status'];

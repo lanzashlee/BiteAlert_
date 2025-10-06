@@ -619,10 +619,25 @@ const SuperAdminVaccinationSchedule = () => {
       
       // Get the bite case for this patient
       const response = await apiFetch(`/api/bitecases?patientId=${patientId}`);
+      if (!response.ok) {
+        console.error('❌ Failed to fetch bite cases:', response.status, response.statusText);
+        return null;
+      }
       const data = await response.json();
+      console.log('🔍 API response data:', data);
       
-      if (data.success && data.data && data.data.length > 0) {
-        const biteCase = data.data[0]; // Get the most recent bite case
+      // Handle both array response and success/data response format
+      let biteCases = [];
+      if (Array.isArray(data)) {
+        biteCases = data;
+      } else if (data.success && Array.isArray(data.data)) {
+        biteCases = data.data;
+      } else if (Array.isArray(data.data)) {
+        biteCases = data.data;
+      }
+      
+      if (biteCases.length > 0) {
+        const biteCase = biteCases[0]; // Get the most recent bite case
         console.log('🔍 Found bite case:', biteCase);
         
         // Map day labels to status fields
@@ -635,26 +650,28 @@ const SuperAdminVaccinationSchedule = () => {
         };
         
         const statusField = dayStatusMap[dayLabel];
-        if (statusField && biteCase[statusField]) {
-          // Create a mock vaccination record for the API
-          const mockRecord = {
-            _id: `${biteCase._id}_${dayLabel}`,
-            patientId: biteCase.patientId,
-            registrationNumber: biteCase.registrationNumber,
-            vaccinationDay: dayLabel,
-            status: biteCase[statusField],
-            biteCaseId: biteCase._id,
-            scheduledDate: biteCase[`${dayLabel.toLowerCase().replace(' ', '')}Date`] || biteCase[`${dayLabel.toLowerCase().replace(' ', '')}_date`] || biteCase[`d${dayLabel.split(' ')[1]}Date`],
-            createdAt: biteCase.createdAt,
-            updatedAt: biteCase.updatedAt
-          };
-          
-          console.log('🔍 Created mock vaccination record:', mockRecord);
-          return mockRecord;
-        }
+        
+        // Always create a vaccination record, even if status doesn't exist yet
+        const mockRecord = {
+          _id: `${biteCase._id}_${dayLabel}`,
+          patientId: biteCase.patientId,
+          registrationNumber: biteCase.registrationNumber,
+          vaccinationDay: dayLabel,
+          status: biteCase[statusField] || 'scheduled', // Default to 'scheduled' if no status exists
+          biteCaseId: biteCase._id,
+          scheduledDate: biteCase[`${dayLabel.toLowerCase().replace(' ', '')}Date`] || 
+                        biteCase[`${dayLabel.toLowerCase().replace(' ', '')}_date`] || 
+                        biteCase[`d${dayLabel.split(' ')[1]}Date`] ||
+                        new Date().toISOString(), // Use current date as fallback
+          createdAt: biteCase.createdAt,
+          updatedAt: biteCase.updatedAt
+        };
+        
+        console.log('🔍 Created vaccination record:', mockRecord);
+        return mockRecord;
       }
       
-      console.log('❌ No vaccination record found');
+      console.log('❌ No bite case found for patient:', patientId);
       return null;
     } catch (error) {
       console.error('❌ Error finding vaccination record:', error);
@@ -814,7 +831,22 @@ const SuperAdminVaccinationSchedule = () => {
         throw new Error('Vaccination record not found for this patient and day');
       }
 
+      // Also update the corresponding date field
+      const dayDateMap = {
+        'Day 0': 'd0Date',
+        'Day 3': 'd3Date',
+        'Day 7': 'd7Date',
+        'Day 14': 'd14Date',
+        'Day 28': 'd28Date'
+      };
+
+      const dateField = dayDateMap[scheduleItem.label];
+      if (dateField) {
+        updateData[dateField] = new Date().toISOString();
+      }
+
       // Update the bite case directly instead of vaccinationdates
+      console.log('🔍 Updating bite case:', vaccinationRecord.biteCaseId, 'with data:', updateData);
       const response = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
         method: 'PUT',
         headers: {
@@ -822,8 +854,39 @@ const SuperAdminVaccinationSchedule = () => {
         },
         body: JSON.stringify(updateData)
       });
+      
+      console.log('🔍 Update response status:', response.status, response.ok);
 
       if (response.ok) {
+        // Deduct vaccine stock based on selected vaccines
+        try {
+          const { centerName } = scheduleModalData;
+          const patientWeight = scheduleModalData.weight || 70; // Default weight if not provided
+          
+          // Deduct stock for each selected vaccine
+          if (selectedVaccines.arv.vaxirab) {
+            await deductVaccineStock('VAXIRAB', 'ID', centerName, patientWeight);
+          }
+          if (selectedVaccines.arv.speeda) {
+            await deductVaccineStock('SPEEDA', 'ID', centerName, patientWeight);
+          }
+          if (selectedVaccines.tcv) {
+            await deductVaccineStock('TCV', 'ID', centerName, patientWeight);
+          }
+          if (selectedVaccines.erig) {
+            await deductVaccineStock('ERIG', 'ID', centerName, patientWeight);
+          }
+          if (selectedVaccines.booster.vaxirab) {
+            await deductVaccineStock('VAXIRAB', 'ID', centerName, patientWeight);
+          }
+          if (selectedVaccines.booster.speeda) {
+            await deductVaccineStock('SPEEDA', 'ID', centerName, patientWeight);
+          }
+        } catch (stockError) {
+          console.warn('Vaccine stock deduction failed:', stockError);
+          // Don't fail the entire operation if stock deduction fails
+        }
+
         // Update local state
         setScheduleModalData(prev => ({
           ...prev,
@@ -854,7 +917,8 @@ const SuperAdminVaccinationSchedule = () => {
         }
       } else {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to update vaccination status');
+        console.error('❌ Update failed:', error);
+        throw new Error(error.message || `Failed to update vaccination status (${response.status})`);
       }
     } catch (error) {
       console.error('Error updating vaccination status:', error);
