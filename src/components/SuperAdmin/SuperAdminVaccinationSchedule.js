@@ -163,6 +163,25 @@ const SuperAdminVaccinationSchedule = () => {
     return { status: 'Pending', color: '#ffc107' };
   }, []);
 
+  // Date utilities for consistent local date-only handling
+  const toLocalDateOnlyString = (dateLike) => {
+    if (!dateLike) return '';
+    const d = new Date(dateLike);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const todayLocalStr = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   // Load vaccine stocks
   const loadVaccineStocks = async () => {
     try {
@@ -453,7 +472,7 @@ const SuperAdminVaccinationSchedule = () => {
       .filter(d => d.date)
       .map(d => ({
         label: d.day,
-        date: d.date.toISOString(),
+        date: toLocalDateOnlyString(d.date),
         status: d.status || 'scheduled'
       }));
   };
@@ -463,29 +482,29 @@ const SuperAdminVaccinationSchedule = () => {
     try {
       if (!raw) return 'Not scheduled';
       if (typeof raw === 'string') {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw; // already date-only
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
         const d = new Date(raw);
         if (isNaN(d.getTime())) return raw;
-        return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+        return toLocalDateOnlyString(d);
       }
       if (typeof raw === 'number') {
         const d = new Date(raw);
         if (isNaN(d.getTime())) return String(raw);
-        return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+        return toLocalDateOnlyString(d);
       }
       if (typeof raw === 'object') {
         if (raw?.$date?.$numberLong) {
           const d = new Date(Number(raw.$date.$numberLong));
-          return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+          return toLocalDateOnlyString(d);
         }
         if (raw?.$date) {
           const d = new Date(raw.$date);
-          return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+          return toLocalDateOnlyString(d);
         }
       }
       const d = new Date(raw);
       if (isNaN(d.getTime())) return String(raw);
-      return d.toLocaleDateString(undefined, { timeZone: 'UTC' });
+      return toLocalDateOnlyString(d);
     } catch (_) {
       return String(raw);
     }
@@ -534,22 +553,13 @@ const SuperAdminVaccinationSchedule = () => {
   };
 
   // Utility: get today's date string (YYYY-MM-DD) in local timezone
-  const getTodayDateStr = () => {
-    const t = new Date();
-    t.setHours(0,0,0,0);
-    return t.toISOString().split('T')[0];
-  };
+  const getTodayDateStr = () => todayLocalStr();
 
   const isPastByLocalDay = (iso) => {
     try {
       if (!iso) return false;
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return false;
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const dd = new Date(d);
-      dd.setHours(0,0,0,0);
-      return dd.getTime() < today.getTime();
+      const target = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : toLocalDateOnlyString(iso);
+      return target < todayLocalStr();
     } catch (_) { return false; }
   };
 
@@ -577,7 +587,7 @@ const SuperAdminVaccinationSchedule = () => {
       const payload = {};
 
       // Update the chosen base day date
-      payload[dateMap[dayLabel]] = baseDate.toISOString();
+      payload[dateMap[dayLabel]] = new Date(baseDate).toISOString();
       // Set status of this day back to scheduled if not completed
       const currentItem = (scheduleModalData?.schedule || []).find(s => s.label === dayLabel);
       if (currentItem && currentItem.status !== 'completed') {
@@ -588,7 +598,7 @@ const SuperAdminVaccinationSchedule = () => {
       for (let i = idxBase + 1; i < labels.length; i++) {
         const d = new Date(baseDate);
         d.setDate(d.getDate() + (addDays[i] - addDays[idxBase]));
-        payload[dateMap[labels[i]]] = d.toISOString();
+        payload[dateMap[labels[i]]] = new Date(d).toISOString();
         // Reset downstream status to scheduled unless it was already completed
         const schedItem = (scheduleModalData?.schedule || []).find(s => s.label === labels[i]);
         if (!schedItem || schedItem.status !== 'completed') {
@@ -614,12 +624,12 @@ const SuperAdminVaccinationSchedule = () => {
           const idx = labels.indexOf(item.label);
           if (idx < 0) return item;
           if (idx === idxBase) {
-            return { ...item, date: new Date(baseDate).toISOString(), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+            return { ...item, date: toLocalDateOnlyString(baseDate), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
           }
           if (idx > idxBase) {
             const nd = new Date(baseDate);
             nd.setDate(nd.getDate() + (addDays[idx] - addDays[idxBase]));
-            return { ...item, date: nd.toISOString(), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+            return { ...item, date: toLocalDateOnlyString(nd), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
           }
           // earlier days unchanged
           return item;
@@ -967,8 +977,8 @@ const SuperAdminVaccinationSchedule = () => {
           if (createResponse.ok) {
             const newRecord = await createResponse.json();
             console.log('🔍 Created new vaccination record:', newRecord);
-            // Use the created record
-            vaccinationRecord = newRecord._id || newRecord.data?._id ? newRecord : newRecord.data;
+            const doc = newRecord?.data || newRecord;
+            vaccinationRecord = doc;
           } else {
             const errorData = await createResponse.json().catch(() => ({}));
             throw new Error(`Failed to create vaccination record: ${errorData.message || createResponse.statusText}`);
@@ -1014,34 +1024,7 @@ const SuperAdminVaccinationSchedule = () => {
           // Don't fail the entire operation if bite case sync fails
         }
 
-        // Deduct vaccine stock based on selected vaccines
-        try {
-          const { centerName } = scheduleModalData;
-          const patientWeight = scheduleModalData.weight || 70; // Default weight if not provided
-          
-          // Deduct stock for each selected vaccine
-          if (selectedVaccines.arv.vaxirab) {
-            await deductVaccineStock('VAXIRAB', 'ID', centerName, patientWeight);
-          }
-          if (selectedVaccines.arv.speeda) {
-            await deductVaccineStock('SPEEDA', 'ID', centerName, patientWeight);
-          }
-          if (selectedVaccines.tcv) {
-            await deductVaccineStock('TCV', 'ID', centerName, patientWeight);
-          }
-          if (selectedVaccines.erig) {
-            await deductVaccineStock('ERIG', 'ID', centerName, patientWeight);
-          }
-          if (selectedVaccines.booster.vaxirab) {
-            await deductVaccineStock('VAXIRAB', 'ID', centerName, patientWeight);
-          }
-          if (selectedVaccines.booster.speeda) {
-            await deductVaccineStock('SPEEDA', 'ID', centerName, patientWeight);
-          }
-        } catch (stockError) {
-          console.warn('Vaccine stock deduction failed:', stockError);
-          // Don't fail the entire operation if stock deduction fails
-        }
+        // Stock deduction already handled above per selectedVaccineList
 
         // Update local state
         setScheduleModalData(prev => ({
@@ -1450,10 +1433,14 @@ const SuperAdminVaccinationSchedule = () => {
       // Primitive cases
       if (typeof raw === 'number') {
         const d = new Date(raw);
-        return isNaN(d.getTime()) ? null : d;
+        if (isNaN(d.getTime())) return null;
+        d.setHours(0,0,0,0);
+        return d;
       }
       const d = new Date(raw);
-      return isNaN(d.getTime()) ? null : d;
+      if (isNaN(d.getTime())) return null;
+      d.setHours(0,0,0,0);
+      return d;
     } catch (_) {
       return null;
     }
@@ -1480,14 +1467,14 @@ const SuperAdminVaccinationSchedule = () => {
     // Derive status correctly from vaccinationdates fields; if missing, infer by date
     return entries
       .map(e => {
-        const iso = normalizeDate(e.raw)?.toISOString();
+        const dateOnly = toLocalDateOnlyString(normalizeDate(e.raw));
         let status = (typeof e.status === 'string' && e.status) ? e.status : '';
         if (!status) {
-          if (!iso) status = 'scheduled';
-          else if (isPastByLocalDay(iso)) status = 'missed';
+          if (!dateOnly) status = 'scheduled';
+          else if (isPastByLocalDay(dateOnly)) status = 'missed';
           else status = 'scheduled';
         }
-        return { label: e.label, date: iso, status };
+        return { label: e.label, date: dateOnly, status };
       })
       .filter(e => !!e.date);
   };
@@ -1862,7 +1849,7 @@ const SuperAdminVaccinationSchedule = () => {
                 biteCaseId: biteCase._id,
                 registrationNumber: biteCase.registrationNumber,
                 vaccinationDay: vaccinationDay.day,
-                scheduledDate: normalized.toISOString(),
+                scheduledDate: toLocalDateOnlyString(normalizeDate(vaccinationDay.date)),
                 status: actualStatus, // Use the actual status from database
                 notes: '',
                 isManual: false,
@@ -1982,17 +1969,11 @@ const SuperAdminVaccinationSchedule = () => {
 
     // Date filter - improved date comparison
     if (dateFilter) {
-      const filterDate = new Date(dateFilter);
-      filterDate.setHours(0, 0, 0, 0);
-      
-      filtered = filtered.filter(v => {
-        const vaccinationDate = new Date(v.scheduledDate);
-        vaccinationDate.setHours(0, 0, 0, 0);
-        return vaccinationDate.getTime() === filterDate.getTime();
-      });
+      const want = /^\d{4}-\d{2}-\d{2}$/.test(dateFilter) ? dateFilter : toLocalDateOnlyString(dateFilter);
+      filtered = filtered.filter(v => toLocalDateOnlyString(v.scheduledDate) === want);
     }
 
-    return filtered.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+    return filtered.sort((a, b) => toLocalDateOnlyString(a.scheduledDate).localeCompare(toLocalDateOnlyString(b.scheduledDate)));
   }, [searchTerm, statusFilter, vaccinationDayFilter, dateFilter, centerFilter, vaccinations]);
 
   // Vaccination actions
@@ -2747,7 +2728,7 @@ const SuperAdminVaccinationSchedule = () => {
               biteCaseId: biteCase._id,
               registrationNumber: biteCase.registrationNumber,
               vaccinationDay: vaccinationDay.day,
-              scheduledDate: normalized.toISOString(),
+              scheduledDate: toLocalDateOnlyString(normalizeDate(vaccinationDay.date)),
               status: actualStatus, // Use the actual status from database
               notes: '',
               isManual: false,
@@ -2808,11 +2789,8 @@ const SuperAdminVaccinationSchedule = () => {
 
   const getVaccinationsForDate = (day) => {
     if (!day) return [];
-    const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
-    return filteredVaccinations.filter(v => {
-      const vaccinationDate = new Date(v.scheduledDate).toISOString().split('T')[0];
-      return vaccinationDate === dateStr;
-    });
+    const dateStr = toLocalDateOnlyString(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+    return filteredVaccinations.filter(v => toLocalDateOnlyString(v.scheduledDate) === dateStr);
   };
 
   const navigateMonth = (direction) => {
@@ -2908,8 +2886,8 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Get status badge class
   const getStatusBadgeClass = (status, scheduledDate) => {
-    const today = new Date();
-    const vaccinationDate = new Date(scheduledDate);
+    const today = todayLocalStr();
+    const vaccinationDate = toLocalDateOnlyString(scheduledDate);
     
     // Use the actual status from database first
     if (status === 'completed') return 'status-completed';
@@ -2917,7 +2895,7 @@ const SuperAdminVaccinationSchedule = () => {
     
     // Only calculate overdue if status is still 'scheduled' and date has passed
     if (status === 'scheduled' && vaccinationDate < today) return 'status-missed';
-    if (status === 'scheduled' && vaccinationDate.toDateString() === today.toDateString()) return 'status-today';
+    if (status === 'scheduled' && vaccinationDate === today) return 'status-today';
     if (status === 'scheduled') return 'status-scheduled';
     
     // Default fallback
@@ -2926,8 +2904,8 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Get status text
   const getStatusText = (status, scheduledDate) => {
-    const today = new Date();
-    const vaccinationDate = new Date(scheduledDate);
+    const today = todayLocalStr();
+    const vaccinationDate = toLocalDateOnlyString(scheduledDate);
     
     // Use the actual status from database first
     if (status === 'completed') return 'Completed';
@@ -2935,7 +2913,7 @@ const SuperAdminVaccinationSchedule = () => {
     
     // Only calculate overdue if status is still 'scheduled' and date has passed
     if (status === 'scheduled' && vaccinationDate < today) return 'Missed';
-    if (status === 'scheduled' && vaccinationDate.toDateString() === today.toDateString()) return 'Today';
+    if (status === 'scheduled' && vaccinationDate === today) return 'Today';
     if (status === 'scheduled') return 'Scheduled';
     
     // Default fallback
@@ -3367,7 +3345,7 @@ const SuperAdminVaccinationSchedule = () => {
                                             <input
                                               type="date"
                                               min={minDate}
-                                              value={(scheduleItem.date ? new Date(scheduleItem.date).toISOString().split('T')[0] : '')}
+                                              value={scheduleItem.date ? scheduleItem.date : ''}
                                               disabled={!isEditableDate}
                                               onChange={(e) => {
                                                 const newDateStr = e.target.value;
@@ -3383,7 +3361,7 @@ const SuperAdminVaccinationSchedule = () => {
                                     </div>
 
                                     {/* Action Buttons: allow update only when Today */}
-                                    {(isScheduled && new Date(scheduleItem.date).toDateString() === new Date().toDateString()) && (
+                                    {(isScheduled && (scheduleItem.date && scheduleItem.date === todayLocalStr())) && (
                                       <div className="schedule-actions">
                                         <button
                                           onClick={() => openVaccinationUpdateModal(scheduleItem)}
