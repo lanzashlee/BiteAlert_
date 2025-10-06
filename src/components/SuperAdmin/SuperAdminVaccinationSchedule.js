@@ -615,6 +615,16 @@ const SuperAdminVaccinationSchedule = () => {
   // Find vaccination record by patient ID and day from vaccinationdates collection
   const findVaccinationRecord = async (patientId, dayLabel) => {
     try {
+      // Validate inputs
+      if (!patientId) {
+        console.error('❌ Patient ID is required');
+        return null;
+      }
+      if (!dayLabel || typeof dayLabel !== 'string') {
+        console.error('❌ Invalid day label:', dayLabel);
+        return null;
+      }
+      
       console.log('🔍 Looking for vaccination record in vaccinationdates:', { patientId, dayLabel });
       
       // Get vaccination dates for this patient
@@ -659,8 +669,16 @@ const SuperAdminVaccinationSchedule = () => {
           vaccinationDay: dayLabel,
           status: vaccinationDate[statusField] || 'scheduled',
           biteCaseId: vaccinationDate.biteCaseId,
-          scheduledDate: vaccinationDate[`d${dayLabel.split(' ')[1]}Date`] || 
-                        new Date().toISOString(),
+          scheduledDate: (() => {
+            // Safe date field extraction
+            if (dayLabel && typeof dayLabel === 'string') {
+              const dayNumber = dayLabel.split(' ')[1];
+              if (dayNumber) {
+                return vaccinationDate[`d${dayNumber}Date`] || new Date().toISOString();
+              }
+            }
+            return new Date().toISOString();
+          })(),
           createdAt: vaccinationDate.createdAt,
           updatedAt: vaccinationDate.updatedAt
         };
@@ -786,6 +804,12 @@ const SuperAdminVaccinationSchedule = () => {
     try {
       if (!scheduleModalData) return;
 
+      // Validate schedule item
+      if (!scheduleItem || !scheduleItem.label) {
+        showNotification('Invalid schedule item', 'error');
+        return;
+      }
+
       // Validate vaccine selection
       const validation = validateVaccineSelection();
       if (!validation.valid) {
@@ -857,32 +881,58 @@ const SuperAdminVaccinationSchedule = () => {
         'Day 28': 'd28Status'
       };
 
+      const dayDateMap = {
+        'Day 0': 'd0Date',
+        'Day 3': 'd3Date',
+        'Day 7': 'd7Date',
+        'Day 14': 'd14Date',
+        'Day 28': 'd28Date'
+      };
+
       const statusField = dayStatusMap[scheduleItem.label];
+      const dateField = dayDateMap[scheduleItem.label];
+      
       if (statusField) {
         updateData[statusField] = 'completed';
       }
 
       // Find the bite case for this patient and day
-      let vaccinationRecord = await findVaccinationRecord(scheduleModalData.patient.patientId, scheduleItem.label);
+      let vaccinationRecord = null;
+      
+      try {
+        vaccinationRecord = await findVaccinationRecord(scheduleModalData.patient.patientId, scheduleItem.label);
+      } catch (findError) {
+        console.warn('Error finding vaccination record:', findError);
+      }
       
       if (!vaccinationRecord) {
         // Try to create a vaccination record in vaccinationdates collection
         try {
           console.log('🔍 Creating new vaccination record in vaccinationdates collection');
+          
+          // Ensure we have valid data for creation
+          const createData = {
+            patientId: scheduleModalData.patient.patientId,
+            registrationNumber: scheduleModalData.patient.registrationNumber,
+            biteCaseId: scheduleModalData.biteCaseId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          // Add status and date fields if they exist
+          if (statusField) {
+            createData[statusField] = 'completed';
+          }
+          if (dateField) {
+            createData[dateField] = new Date().toISOString();
+          }
+          
           const createResponse = await apiFetch('/api/vaccinationdates', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              patientId: scheduleModalData.patient.patientId,
-              registrationNumber: scheduleModalData.patient.registrationNumber,
-              biteCaseId: scheduleModalData.biteCaseId,
-              [statusField]: 'completed',
-              [dateField]: new Date().toISOString(),
-              createdAt: new Date(),
-              updatedAt: new Date()
-            })
+            body: JSON.stringify(createData)
           });
           
           if (createResponse.ok) {
@@ -898,24 +948,16 @@ const SuperAdminVaccinationSchedule = () => {
               status: 'completed'
             };
           } else {
-            throw new Error('Failed to create vaccination record');
+            const errorData = await createResponse.json().catch(() => ({}));
+            throw new Error(`Failed to create vaccination record: ${errorData.message || createResponse.statusText}`);
           }
         } catch (createError) {
           console.error('Failed to create vaccination record:', createError);
-          throw new Error('Vaccination record not found and could not be created');
+          throw new Error(`Vaccination record not found and could not be created: ${createError.message}`);
         }
       }
 
       // Also update the corresponding date field
-      const dayDateMap = {
-        'Day 0': 'd0Date',
-        'Day 3': 'd3Date',
-        'Day 7': 'd7Date',
-        'Day 14': 'd14Date',
-        'Day 28': 'd28Date'
-      };
-
-      const dateField = dayDateMap[scheduleItem.label];
       if (dateField) {
         updateData[dateField] = new Date().toISOString();
       }
