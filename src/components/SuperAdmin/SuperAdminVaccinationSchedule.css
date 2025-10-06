@@ -1897,6 +1897,7 @@
 .schedule-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* ensure header and body columns align */
 }
 
 .schedule-table thead th {
@@ -1914,6 +1915,23 @@
   padding: 0.75rem 0.5rem;
   border-bottom: 1px solid #e5e7eb;
   vertical-align: middle;
+}
+
+/* Column width alignment for 3-column patient/vaccination tables */
+.schedule-table thead th:nth-child(1),
+.schedule-table tbody td:nth-child(1) {
+  width: 28%;
+  white-space: nowrap;
+}
+.schedule-table thead th:nth-child(2),
+.schedule-table tbody td:nth-child(2) {
+  width: 48%;
+}
+.schedule-table thead th:nth-child(3),
+.schedule-table tbody td:nth-child(3) {
+  width: 24%;
+  white-space: nowrap;
+  text-align: left;
 }
 
 /* Dose Details Styles */
