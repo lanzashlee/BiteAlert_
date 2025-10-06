@@ -612,19 +612,52 @@ const SuperAdminVaccinationSchedule = () => {
     resetVaccineSelections();
   };
 
-  // Find vaccination record by patient ID and day
+  // Find vaccination record by patient ID and day from bitecases
   const findVaccinationRecord = async (patientId, dayLabel) => {
     try {
-      const response = await apiFetch(`/api/vaccinationdates?patientId=${patientId}&vaccinationDay=${dayLabel}`);
+      console.log('🔍 Looking for vaccination record:', { patientId, dayLabel });
+      
+      // Get the bite case for this patient
+      const response = await apiFetch(`/api/bitecases?patientId=${patientId}`);
       const data = await response.json();
       
       if (data.success && data.data && data.data.length > 0) {
-        return data.data[0]; // Return the first matching record
+        const biteCase = data.data[0]; // Get the most recent bite case
+        console.log('🔍 Found bite case:', biteCase);
+        
+        // Map day labels to status fields
+        const dayStatusMap = {
+          'Day 0': 'd0Status',
+          'Day 3': 'd3Status', 
+          'Day 7': 'd7Status',
+          'Day 14': 'd14Status',
+          'Day 28': 'd28Status'
+        };
+        
+        const statusField = dayStatusMap[dayLabel];
+        if (statusField && biteCase[statusField]) {
+          // Create a mock vaccination record for the API
+          const mockRecord = {
+            _id: `${biteCase._id}_${dayLabel}`,
+            patientId: biteCase.patientId,
+            registrationNumber: biteCase.registrationNumber,
+            vaccinationDay: dayLabel,
+            status: biteCase[statusField],
+            biteCaseId: biteCase._id,
+            scheduledDate: biteCase[`${dayLabel.toLowerCase().replace(' ', '')}Date`] || biteCase[`${dayLabel.toLowerCase().replace(' ', '')}_date`] || biteCase[`d${dayLabel.split(' ')[1]}Date`],
+            createdAt: biteCase.createdAt,
+            updatedAt: biteCase.updatedAt
+          };
+          
+          console.log('🔍 Created mock vaccination record:', mockRecord);
+          return mockRecord;
+        }
       }
       
+      console.log('❌ No vaccination record found');
       return null;
     } catch (error) {
-      console.error('Error finding vaccination record:', error);
+      console.error('❌ Error finding vaccination record:', error);
       return null;
     }
   };
@@ -760,14 +793,29 @@ const SuperAdminVaccinationSchedule = () => {
         center: centerName
       };
 
-      // Find the vaccinationdates record for this patient and day
+      // Map day labels to status fields for bite case
+      const dayStatusMap = {
+        'Day 0': 'd0Status',
+        'Day 3': 'd3Status', 
+        'Day 7': 'd7Status',
+        'Day 14': 'd14Status',
+        'Day 28': 'd28Status'
+      };
+
+      const statusField = dayStatusMap[scheduleItem.label];
+      if (statusField) {
+        updateData[statusField] = 'completed';
+      }
+
+      // Find the bite case for this patient and day
       const vaccinationRecord = await findVaccinationRecord(scheduleModalData.patient.patientId, scheduleItem.label);
       
       if (!vaccinationRecord) {
         throw new Error('Vaccination record not found for this patient and day');
       }
 
-      const response = await apiFetch(`/api/vaccinations/${vaccinationRecord._id}`, {
+      // Update the bite case directly instead of vaccinationdates
+      const response = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1001,49 +1049,54 @@ const SuperAdminVaccinationSchedule = () => {
         console.warn('Failed fetching vaccinationdates:', e);
       }
 
-      // Build schedule from vaccinationdates; fallback to bite case fields
-      let scheduleList = vdItem ? buildScheduleFromVaccinationDates(vdItem) : [];
-      console.log('🔍 Built schedule list:', scheduleList);
-
-     // Get vaccine info from bitecases if available
-    let brandName = '', genericName = '', route = '', categoryOfExposure = '', caseCenter = '', patientWeight = null;
+      // Get vaccine info from bitecases as primary source
+      let brandName = '', genericName = '', route = '', categoryOfExposure = '', caseCenter = '', patientWeight = null;
+      let biteCase = null;
+      let scheduleList = [];
+      
       try {
+        console.log('🔍 Fetching bite case for patientId:', patientId);
         const biteCaseRes = await apiFetch(`${apiConfig.endpoints.bitecases}?patientId=${encodeURIComponent(patientId)}`);
         if (biteCaseRes.ok) {
-          let biteCase = null;
           try {
-          const json = await biteCaseRes.json();
+            const json = await biteCaseRes.json();
             biteCase = Array.isArray(json) ? json[0] : (Array.isArray(json?.data) ? json.data[0] : json);
+            console.log('🔍 Found bite case:', biteCase);
           } catch (e) {
             const txt = await biteCaseRes.text();
             console.warn('Non-JSON bitecases by patientId:', txt.slice(0, 120));
           }
-         if (biteCase) {
+          
+          if (biteCase) {
             brandName = biteCase.brandName || '';
             genericName = biteCase.genericName || '';
             route = biteCase.route || '';
-           categoryOfExposure = biteCase.categoryOfExposure || biteCase.exposureCategory || biteCase.category || '';
-           caseCenter = biteCase.center || biteCase.centerName || '';
-           patientWeight = biteCase.weight ? parseFloat(biteCase.weight) : null;
+            categoryOfExposure = biteCase.categoryOfExposure || biteCase.exposureCategory || biteCase.category || '';
+            caseCenter = biteCase.center || biteCase.centerName || '';
+            patientWeight = biteCase.weight ? parseFloat(biteCase.weight) : null;
             console.log('🔍 Found bite case vaccine info:', { brandName, genericName, route, patientWeight });
             
             // Set patient weight and bite case data
             setPatientWeight(patientWeight);
             setBiteCaseData(biteCase);
             
-            
-            // If we don't have schedule yet, or it's empty, build from bite case per-day fields
-            if (!scheduleList || scheduleList.length === 0) {
-              scheduleList = buildVaccinationsForBiteCase(biteCase).map(d => ({
-                label: d.label,
-                date: d.date,
-                status: d.status || 'scheduled'
-              }));
-            }
+            // Build schedule from bite case data (primary source)
+            scheduleList = buildVaccinationsForBiteCase(biteCase).map(d => ({
+              label: d.day,
+              date: d.date,
+              status: d.status || 'scheduled'
+            }));
+            console.log('🔍 Built schedule from bite case:', scheduleList);
           }
         }
       } catch (e) {
         console.warn('Failed fetching bite case:', e);
+      }
+
+      // Fallback: Build schedule from vaccinationdates if no bite case data
+      if (!scheduleList || scheduleList.length === 0) {
+        scheduleList = vdItem ? buildScheduleFromVaccinationDates(vdItem) : [];
+        console.log('🔍 Built schedule from vaccinationdates (fallback):', scheduleList);
       }
 
       // Auto-populate vaccine selection for completed schedules

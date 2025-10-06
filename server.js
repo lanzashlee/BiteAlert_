@@ -3380,6 +3380,30 @@ app.put('/api/bitecases/:id', async (req, res) => {
         const update = { $set: { ...body, updatedAt: new Date() } };
         const doc = await BiteCase.findByIdAndUpdate(id, update, { new: true });
         if (!doc) return res.status(404).json({ success: false, message: 'Bite case not found' });
+        
+        // Check if all vaccinations are completed and update status accordingly
+        const statusFields = ['d0Status', 'd3Status', 'd7Status', 'd14Status', 'd28Status'];
+        const allCompleted = statusFields.every(field => 
+          doc[field] === 'completed' || doc[field] === 'missed'
+        );
+        
+        if (allCompleted && doc.status !== 'completed') {
+          // Move to case history
+          await BiteCase.findByIdAndUpdate(id, { 
+            $set: { 
+              status: 'completed',
+              completedAt: new Date(),
+              completedSchedules: statusFields.map(field => ({
+                day: field.replace('Status', ''),
+                date: doc[field.replace('Status', 'Date')],
+                status: doc[field],
+                vaccinesUsed: body.vaccinesUsed || []
+              }))
+            }
+          });
+          console.log('✅ Patient moved to case history - all vaccinations completed');
+        }
+        
         return res.json({ success: true, data: doc });
     } catch (error) {
         console.error('Error updating bitecase:', error);
