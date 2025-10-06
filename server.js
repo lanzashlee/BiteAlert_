@@ -3257,6 +3257,46 @@ app.put('/api/vaccinationdates/:id', async (req, res) => {
     }
 });
 
+// Reschedule helper: update a base day and cascade downstream (server-side authority)
+app.post('/api/vaccinationdates/:id/reschedule', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { dayLabel, newDate } = req.body || {};
+        if (!dayLabel || !newDate) {
+            return res.status(400).json({ success: false, message: 'dayLabel and newDate are required' });
+        }
+        const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
+        const addDays = [0,3,7,14,28];
+        const dateMap = { 'Day 0': 'd0Date', 'Day 3': 'd3Date', 'Day 7': 'd7Date', 'Day 14': 'd14Date', 'Day 28': 'd28Date' };
+        const statusMap = { 'Day 0': 'd0Status', 'Day 3': 'd3Status', 'Day 7': 'd7Status', 'Day 14': 'd14Status', 'Day 28': 'd28Status' };
+        const idxBase = labels.indexOf(dayLabel);
+        if (idxBase < 0) return res.status(400).json({ success: false, message: 'Invalid dayLabel' });
+
+        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
+        const doc = await VaccinationDate.findById(id);
+        if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
+
+        const base = new Date(newDate);
+        if (isNaN(base.getTime())) return res.status(400).json({ success: false, message: 'Invalid newDate' });
+
+        const update = {};
+        update[dateMap[dayLabel]] = base;
+        if (doc[statusMap[dayLabel]] !== 'completed') update[statusMap[dayLabel]] = 'scheduled';
+        for (let i = idxBase + 1; i < labels.length; i++) {
+            const d = new Date(base);
+            d.setDate(d.getDate() + (addDays[i] - addDays[idxBase]));
+            update[dateMap[labels[i]]] = d;
+            if (doc[statusMap[labels[i]]] !== 'completed') update[statusMap[labels[i]]] = 'scheduled';
+        }
+
+        const result = await VaccinationDate.findByIdAndUpdate(id, { $set: { ...update, updatedAt: new Date() } }, { new: true });
+        return res.json({ success: true, data: result });
+    } catch (err) {
+        console.error('Error in reschedule endpoint:', err);
+        res.status(500).json({ success: false, message: 'Failed to reschedule' });
+    }
+});
+
 // API endpoint for updating vaccination status (used by vaccination scheduler)
 app.put('/api/vaccinations/:id', async (req, res) => {
     try {
