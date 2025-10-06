@@ -1820,6 +1820,8 @@ const SuperAdminVaccinationSchedule = () => {
             }));
           }
           
+          const tempEntries = [];
+          const statuses = [];
           vaccinationDays.forEach(vaccinationDay => {
             const normalized = normalizeDate(vaccinationDay.date);
             if (normalized) {
@@ -1872,7 +1874,7 @@ const SuperAdminVaccinationSchedule = () => {
                 });
               }
               
-              vaccinationSchedule.push({
+              const entry = {
                 _id: `${biteCase._id}_${vaccinationDay.day}`,
                 originalId: biteCase._id,
                 patientId: biteCase.patientId,
@@ -1887,9 +1889,16 @@ const SuperAdminVaccinationSchedule = () => {
                 createdAt: biteCase.createdAt || new Date().toISOString(),
                 updatedAt: biteCase.updatedAt,
                 treatmentStatus: biteCase.treatmentStatus
-              });
+              };
+              tempEntries.push(entry);
+              statuses.push(actualStatus);
             }
           });
+          // Exclude bite cases where all doses are completed
+          const allCompleted = statuses.length > 0 && statuses.every(s => s === 'completed');
+          if (!allCompleted) {
+            vaccinationSchedule.push(...tempEntries);
+          }
         });
         
         setVaccinations(vaccinationSchedule);
@@ -2710,6 +2719,8 @@ const SuperAdminVaccinationSchedule = () => {
           }));
         }
 
+        const tempEntries = [];
+        const statuses = [];
         vaccinationDays.forEach(vaccinationDay => {
           const normalized = normalizeDate(vaccinationDay.date);
           if (normalized) {
@@ -2751,7 +2762,7 @@ const SuperAdminVaccinationSchedule = () => {
               biteCaseId: biteCase._id
             });
             
-            vaccinationSchedule.push({
+            const entry = {
               _id: `${biteCase._id}_${vaccinationDay.day}`,
               originalId: biteCase._id,
               patientId: biteCase.patientId,
@@ -2770,9 +2781,15 @@ const SuperAdminVaccinationSchedule = () => {
               createdAt: biteCase.createdAt || new Date().toISOString(),
               updatedAt: biteCase.updatedAt,
               treatmentStatus: biteCase.treatmentStatus
-            });
+            };
+            tempEntries.push(entry);
+            statuses.push(actualStatus);
           }
         });
+        const allCompleted = statuses.length > 0 && statuses.every(s => s === 'completed');
+        if (!allCompleted) {
+          vaccinationSchedule.push(...tempEntries);
+        }
       });
       
       console.log('Refreshed vaccination schedule:', vaccinationSchedule.length);
