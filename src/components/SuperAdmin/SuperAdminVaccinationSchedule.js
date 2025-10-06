@@ -1166,6 +1166,29 @@ const SuperAdminVaccinationSchedule = () => {
       const genericName = biteCaseData?.genericName || vaccination.vaccineGeneric || '';
       const route = biteCaseData?.route || biteCaseData?.currentImmunization?.route?.[0] || vaccination.vaccineRoute || '';
 
+      // Try to enrich with stock center/branch info
+      let centerForLookup = scheduleModalData?.centerName || vaccination.patient?.center || vaccination.patient?.centerName || '';
+      let stockMeta = null;
+      try {
+        let mappedName = null;
+        if (brandName?.includes?.('VAXIRAB') || genericName?.includes?.('PCEC')) mappedName = 'VAXIRAB (PCEC)';
+        else if (brandName?.includes?.('SPEEDA') || genericName?.includes?.('PVRV')) mappedName = 'SPEEDA (PVRV)';
+        else if (brandName?.toUpperCase?.().includes('TCV')) mappedName = 'TCV';
+        else if (brandName?.toUpperCase?.().includes('ERIG')) mappedName = 'ERIG';
+        if (mappedName) {
+          const brands = getAvailableBrands(mappedName) || [];
+          const match = brands.find(b => String(b.centerName || '').toLowerCase() === String(centerForLookup || '').toLowerCase()) || brands[0];
+          if (match) {
+            stockMeta = {
+              centerName: match.centerName,
+              branchNo: match.branchNo,
+              stockQuantity: match.quantity,
+              expirationDate: match.expirationDate
+            };
+          }
+        }
+      } catch (_) {}
+
       setSelectedVaccineInfo({
         patientName: getPatientDisplayName(vaccination.patient),
         vaccinationDay: vaccination.vaccinationDay,
@@ -1173,7 +1196,11 @@ const SuperAdminVaccinationSchedule = () => {
         brand: brandName,
         generic: genericName,
         route: route,
-        dose: dose
+        dose: dose,
+        centerName: stockMeta?.centerName || centerForLookup || '',
+        branchNo: stockMeta?.branchNo || '',
+        stockQuantity: stockMeta?.stockQuantity,
+        expirationDate: stockMeta?.expirationDate
       });
     } catch (e) {
       setSelectedVaccineInfo({
@@ -1183,7 +1210,11 @@ const SuperAdminVaccinationSchedule = () => {
         brand: vaccination.vaccineBrand || '',
         generic: vaccination.vaccineGeneric || '',
         route: vaccination.vaccineRoute || '',
-        dose: vaccination.vaccineDose || ''
+        dose: vaccination.vaccineDose || '',
+        centerName: scheduleModalData?.centerName || vaccination.patient?.center || vaccination.patient?.centerName || '',
+        branchNo: '',
+        stockQuantity: undefined,
+        expirationDate: undefined
       });
     } finally {
       setVaccineInfoLoading(false);
@@ -3371,7 +3402,7 @@ const SuperAdminVaccinationSchedule = () => {
                                       </div>
                                     </div>
 
-                                    {/* Action Buttons: allow update only when Today */}
+                                    {/* Action Buttons */}
                                     {(isScheduled && (scheduleItem.date && scheduleItem.date === todayLocalStr())) && (
                                       <div className="schedule-actions">
                                         <button
@@ -3379,6 +3410,24 @@ const SuperAdminVaccinationSchedule = () => {
                                           className="schedule-action-btn complete"
                                         >
                                           Update Status
+                                        </button>
+                                      </div>
+                                    )}
+                                    {isCompleted && (
+                                      <div className="schedule-actions">
+                                        <button
+                                          onClick={() => openVaccineInfo({
+                                            originalId: scheduleModalData?.biteCaseId,
+                                            patient: scheduleModalData?.patient,
+                                            scheduledDate: scheduleItem.date,
+                                            vaccinationDay: scheduleItem.label,
+                                            vaccineBrand: scheduleModalData?.brand,
+                                            vaccineGeneric: scheduleModalData?.generic,
+                                            vaccineRoute: scheduleModalData?.route,
+                                          })}
+                                          className="schedule-action-btn complete"
+                                        >
+                                          View Details
                                         </button>
                                       </div>
                                     )}
@@ -3403,6 +3452,60 @@ const SuperAdminVaccinationSchedule = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Vaccine Info Modal (View Details) */}
+        {showVaccineInfoModal && (
+          <div className="vaccination-update-modal-overlay">
+            <div className="vaccination-update-modal-content">
+              <div className="vaccination-update-modal-header">
+                <h2>VACCINATION DETAILS</h2>
+                <button 
+                  className="vaccination-update-modal-close"
+                  onClick={() => setShowVaccineInfoModal(false)}
+                >
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="vaccination-update-modal-body">
+                {vaccineInfoLoading || !selectedVaccineInfo ? (
+                  <div className="schedule-loading">
+                    <div className="schedule-loading-spinner"></div>
+                    <span className="schedule-loading-text">Loading vaccination details...</span>
+                  </div>
+                ) : (
+                  <div className="dose-info-section">
+                    <h3 className="dose-title">{selectedVaccineInfo.vaccinationDay}</h3>
+                    <div className="dose-details">
+                      <p><strong>Patient:</strong> {selectedVaccineInfo.patientName}</p>
+                      <p><strong>Date:</strong> {formatScheduleDate(selectedVaccineInfo.date)}</p>
+                      <p><strong>Vaccine Brand:</strong> {selectedVaccineInfo.brand || '—'}</p>
+                      <p><strong>Generic:</strong> {selectedVaccineInfo.generic || '—'}</p>
+                      <p><strong>Route:</strong> {selectedVaccineInfo.route || '—'}</p>
+                      <p><strong>Dose:</strong> {selectedVaccineInfo.dose || '—'}</p>
+                      {selectedVaccineInfo.centerName ? (
+                        <p><strong>Center:</strong> {selectedVaccineInfo.centerName}</p>
+                      ) : null}
+                      {selectedVaccineInfo.branchNo ? (
+                        <p><strong>Branch No:</strong> {selectedVaccineInfo.branchNo}</p>
+                      ) : null}
+                      {selectedVaccineInfo.stockQuantity != null ? (
+                        <p><strong>Remaining Quantity (entry):</strong> {selectedVaccineInfo.stockQuantity}</p>
+                      ) : null}
+                      {selectedVaccineInfo.expirationDate ? (
+                        <p><strong>Expiration:</strong> {formatScheduleDate(selectedVaccineInfo.expirationDate)}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="vaccination-update-modal-footer">
+                <button className="cancel-btn" onClick={() => setShowVaccineInfoModal(false)}>Close</button>
+              </div>
             </div>
           </div>
         )}
