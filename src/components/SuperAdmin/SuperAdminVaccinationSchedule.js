@@ -205,7 +205,8 @@ const SuperAdminVaccinationSchedule = () => {
       'VAXIRAB (PCEC)': route === 'ID' ? '0.2ml' : '0.5ml',
       'SPEEDA (BOOSTER)': '0.2ml',
       'VAXIRAB (BOOSTER)': '0.1ml',
-      'TCV': '1ml',
+      // Per requirement: Tetanus should deduct 0.2 ml
+      'TCV': '0.2ml',
       'ERIG': 'Weight × 0.2ml'
     };
     return dosageMap[vaccine] || '1ml';
@@ -523,11 +524,103 @@ const SuperAdminVaccinationSchedule = () => {
       if (routeType === 'id') return 0.2;
       if (routeType === 'im') return 0.5;
       if (routeType === 'booster') return 0.1;
+    } else if (type === 'tetanus toxoid-containing vaccine') {
+      return 0.2;
     } else if (type === 'erig' && weight) {
       return calculateERIGDosage(weight);
     }
     
     return 0;
+  };
+
+  // Utility: get today's date string (YYYY-MM-DD) in local timezone
+  const getTodayDateStr = () => {
+    const t = new Date();
+    t.setHours(0,0,0,0);
+    return t.toISOString().split('T')[0];
+  };
+
+  // Reschedule a day in vaccinationdates (and cascade to downstream days only)
+  const handleRescheduleCascadeVaccinationDates = async (dayLabel, newDateStr) => {
+    try {
+      if (!scheduleModalData?.vdId) return;
+      if (!newDateStr) return;
+      // Block past dates
+      const todayStr = getTodayDateStr();
+      if (newDateStr < todayStr) {
+        showNotification('Date cannot be in the past', 'error');
+        return;
+      }
+
+      const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
+      const addDays = [0,3,7,14,28];
+      const dateMap = { 'Day 0': 'd0Date', 'Day 3': 'd3Date', 'Day 7': 'd7Date', 'Day 14': 'd14Date', 'Day 28': 'd28Date' };
+      const statusMap = { 'Day 0': 'd0Status', 'Day 3': 'd3Status', 'Day 7': 'd7Status', 'Day 14': 'd14Status', 'Day 28': 'd28Status' };
+
+      const idxBase = labels.indexOf(dayLabel);
+      if (idxBase < 0) return;
+
+      const baseDate = new Date(newDateStr);
+      const payload = {};
+
+      // Update the chosen base day date
+      payload[dateMap[dayLabel]] = baseDate.toISOString();
+      // Set status of this day back to scheduled if not completed
+      const currentItem = (scheduleModalData?.schedule || []).find(s => s.label === dayLabel);
+      if (currentItem && currentItem.status !== 'completed') {
+        payload[statusMap[dayLabel]] = 'scheduled';
+      }
+
+      // Cascade downstream days only
+      for (let i = idxBase + 1; i < labels.length; i++) {
+        const d = new Date(baseDate);
+        d.setDate(d.getDate() + (addDays[i] - addDays[idxBase]));
+        payload[dateMap[labels[i]]] = d.toISOString();
+        // Reset downstream status to scheduled unless it was already completed
+        const schedItem = (scheduleModalData?.schedule || []).find(s => s.label === labels[i]);
+        if (!schedItem || schedItem.status !== 'completed') {
+          payload[statusMap[labels[i]]] = 'scheduled';
+        }
+      }
+
+      // Persist to vaccinationdates
+      const res = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.message || 'Failed to update vaccination dates');
+      }
+
+      // Update local modal schedule
+      setScheduleModalData(prev => {
+        if (!prev) return prev;
+        const nextSchedule = (prev.schedule || []).map(item => {
+          const idx = labels.indexOf(item.label);
+          if (idx < 0) return item;
+          if (idx === idxBase) {
+            return { ...item, date: new Date(baseDate).toISOString(), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+          }
+          if (idx > idxBase) {
+            const nd = new Date(baseDate);
+            nd.setDate(nd.getDate() + (addDays[idx] - addDays[idxBase]));
+            return { ...item, date: nd.toISOString(), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+          }
+          // earlier days unchanged
+          return item;
+        });
+        return { ...prev, schedule: nextSchedule };
+      });
+
+      showNotification('Schedule updated', 'success');
+      // Refresh main list softly
+      setTimeout(() => handleRefreshData(), 300);
+    } catch (e) {
+      console.error('Failed to reschedule:', e);
+      showNotification(e.message || 'Failed to reschedule', 'error');
+    }
   };
 
   // Move patient to case history when all schedules are completed
@@ -3239,32 +3332,40 @@ const SuperAdminVaccinationSchedule = () => {
                                           {scheduleModalData?.brand || scheduleModalData?.generic || 'Anti-Rabies'}
                                         </p>
                                       </div>
+                                      {/* Inline date editor for rescheduling (future-only). Allow for scheduled/missed; completed locked */}
+                                      <div className="schedule-info-item">
+                                        <p className="schedule-info-label">Edit Date</p>
+                                        {(() => {
+                                          const isCompleted = scheduleItem.status === 'completed';
+                                          const isEditableDate = !isCompleted; // allow for scheduled and missed
+                                          const minDate = getTodayDateStr();
+                                          return (
+                                            <input
+                                              type="date"
+                                              min={minDate}
+                                              value={(scheduleItem.date ? new Date(scheduleItem.date).toISOString().split('T')[0] : '')}
+                                              disabled={!isEditableDate}
+                                              onChange={(e) => {
+                                                const newDateStr = e.target.value;
+                                                if (!newDateStr) return;
+                                                handleRescheduleCascadeVaccinationDates(scheduleItem.label, newDateStr);
+                                              }}
+                                              className="filter-select"
+                                              aria-label={`Edit ${scheduleItem.label} date`}
+                                            />
+                                          );
+                                        })()}
+                                      </div>
                                     </div>
 
-                                    {/* Action Buttons */}
-                                    {isScheduled && (
+                                    {/* Action Buttons: allow update only when Today */}
+                                    {(isScheduled && new Date(scheduleItem.date).toDateString() === new Date().toDateString()) && (
                                       <div className="schedule-actions">
                                         <button
                                           onClick={() => openVaccinationUpdateModal(scheduleItem)}
                                           className="schedule-action-btn complete"
                                         >
                                           Update Status
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            setScheduleModalData(prev => ({
-                                              ...prev,
-                                              schedule: prev.schedule.map(item => 
-                                                (item.label === scheduleItem.label) || (item === scheduleItem) 
-                                                  ? { ...item, status: 'missed' } 
-                                                  : item
-                                              )
-                                            }));
-                                            showNotification('Dose marked as missed', 'warning');
-                                          }}
-                                          className="schedule-action-btn miss"
-                                        >
-                                          Mark as Missed
                                         </button>
                                       </div>
                                     )}
