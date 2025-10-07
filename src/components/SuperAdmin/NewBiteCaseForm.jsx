@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import './NewBiteCaseForm.css';
 import { apiFetch } from '../../config/api';
+import notificationService from '../../services/notificationService';
 
 
 const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
@@ -342,6 +343,15 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
           lastTreatmentDate: null,
         };
         await apiFetch('/api/vaccinationdates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vdBody) });
+        // Fire local notifications so it shows immediately
+        try {
+          const name = [payload.firstName, payload.lastName].filter(Boolean).join(' ');
+          const centerName = payload.center || payload.centerName || '';
+          notificationService.createScheduledVisitNotification(name, payload.patientId, 'Today', centerName);
+          if (Array.isArray(payload.disposition) && payload.disposition.some(d => d.includes('Transferred'))) {
+            notificationService.createReferralNotification('Another Center', centerName, name, payload.patientId);
+          }
+        } catch {}
       } catch (vdErr) {
         console.warn('Failed to create vaccinationdates record:', vdErr);
       }
