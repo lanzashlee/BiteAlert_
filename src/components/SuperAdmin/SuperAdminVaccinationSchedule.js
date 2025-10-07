@@ -3551,10 +3551,10 @@ const SuperAdminVaccinationSchedule = () => {
                                         isToday ? 'today' :
                                         isScheduled ? 'scheduled' : 'pending'
                                       }`}>
-                                        {isCompleted ? '✅ Completed' : 
-                                         isMissed ? '❌ Missed' : 
-                                         isToday ? '🔥 Today' :
-                                         isScheduled ? '📅 Scheduled' : '⏸️ Pending'}
+                                        {isCompleted ? 'Completed' : 
+                                         isMissed ? 'Missed' : 
+                                         isToday ? 'Today' :
+                                         isScheduled ? 'Scheduled' : 'Pending'}
                                       </span>
                                     </div>
 
@@ -3611,7 +3611,7 @@ const SuperAdminVaccinationSchedule = () => {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    {(isScheduled && (scheduleItem.date && scheduleItem.date === todayLocalStr())) && (
+                                    {((isScheduled || isToday) && (scheduleItem.date && scheduleItem.date === todayLocalStr())) && (
                                       <div className="schedule-actions">
                                         <button
                                           onClick={() => openVaccinationUpdateModal(scheduleItem)}
