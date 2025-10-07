@@ -198,10 +198,10 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
 
   // Current anti-rabies immunization
   const [current, setCurrent] = useState({ 
-    active:true, post:true, pre:false, prevImm:false, pvrv:false, pcec:false, id:false, im:false, 
+    active:true, post:true, pre:false, prevImm:true, pvrv:true, pcec:false, id:true, im:false, 
     passive:false, toxoid:false, skinTest:false, skinTime:'', skinRead:'', skinResult:'', skinDose:'', skinDate:'', 
     tig:false, tigDose:'', tigDate:'', toxoidDate1:'', toxoidDate2:'', toxoidDate3:'',
-    hrig:false, hrigDose:'', hrigDate:'', localInfiltration:false, structured:false, unstructured:false 
+    hrig:false, hrigDose:'', hrigDate:'', localInfiltration:false, structured:true, unstructured:false 
   });
 
   // Vaccine stock data
@@ -648,9 +648,9 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
       const payload = {
         patientId: selectedPatient?._id || selectedPatient?.patientId,
         registrationNumber,
-        philhealthNo: '',
+        philhealthNo: philhealth || '',
         dateRegistered: toIsoUtcNoon(dateRegistered),
-        arrivalDate: dateOfInquiry || null,
+        arrivalDate: dateOfInquiry ? new Date(dateOfInquiry).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null,
         arrivalTime: timeOfInjury || null,
         firstName,
         middleName: middleName || '',
@@ -676,7 +676,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         scheduleDates: [schedule.d0, schedule.d3, schedule.d7, schedule.d14, schedule.d28].map(toIsoUtcNoon).filter(Boolean),
         animalStatus: animal.healthy ? 'Alive' : (animal.died ? 'Died' : 'Unknown'),
         remarks: diagnosis || 'Completed',
-        dateOfInquiry: dateOfInquiry || null,
+        dateOfInquiry: dateOfInquiry ? new Date(dateOfInquiry).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null,
         timeOfInjury: timeOfInjury || null,
         typeOfExposure,
         siteOfBite,
@@ -763,7 +763,24 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
       const biteCaseId = created._id || created.data?._id;
 
       // Vaccination dates
-      const vdates = { biteCaseId, patientId: payload.patientId, registrationNumber, d0Date: toIsoUtcNoon(schedule.d0), d3Date: toIsoUtcNoon(schedule.d3), d7Date: toIsoUtcNoon(schedule.d7), d14Date: toIsoUtcNoon(schedule.d14), d28Date: toIsoUtcNoon(schedule.d28), treatmentStatus: 'in_progress', exposureCategory: payload.exposureCategory, lastTreatmentDate: null };
+      const vdates = { 
+        biteCaseId, 
+        patientId: payload.patientId, 
+        registrationNumber, 
+        d0Date: toIsoUtcNoon(schedule.d0), 
+        d3Date: toIsoUtcNoon(schedule.d3), 
+        d7Date: toIsoUtcNoon(schedule.d7), 
+        d14Date: toIsoUtcNoon(schedule.d14), 
+        d28Date: toIsoUtcNoon(schedule.d28), 
+        d0Status: 'completed',
+        d3Status: 'scheduled',
+        d7Status: 'scheduled',
+        d14Status: 'scheduled',
+        d28Status: 'scheduled',
+        treatmentStatus: 'in_progress', 
+        exposureCategory: 'Category 2', 
+        lastTreatmentDate: null 
+      };
       const res2 = await apiFetch('/api/vaccinationdates', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(vdates) });
       await res2.json().catch(()=>({}));
 
