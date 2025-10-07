@@ -155,32 +155,23 @@ const SuperAdminGenerate = () => {
       if (result.success) {
         let data = Array.isArray(result.data) ? result.data : (result.data?.table?.body || []);
         
-        // Apply enhanced center-based filtering for admin users
+        // Apply barangay-based filtering for admin users
         if (userCenter && userCenter !== 'all') {
           data = data.filter(item => {
-            const itemCenter = item.center || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || '';
             const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || '';
             
             // Normalize strings for comparison
-            const normalizedCenter = userCenter.toLowerCase().trim();
-            const normalizedItemCenter = itemCenter.toLowerCase().trim();
+            const normalizedUserBarangay = userCenter.toLowerCase().trim();
             const normalizedItemBarangay = itemBarangay.toLowerCase().trim();
             
-            // Check center match
-            const centerMatch = normalizedItemCenter === normalizedCenter ||
-                               normalizedItemCenter.includes(normalizedCenter) ||
-                               normalizedCenter.includes(normalizedItemCenter) ||
-                               normalizedItemCenter.replace(/\s*center$/i, '') === normalizedCenter ||
-                               normalizedCenter.includes(normalizedItemCenter.replace(/\s*center$/i, ''));
+            // Check barangay match only
+            const barangayMatch = normalizedItemBarangay === normalizedUserBarangay ||
+                                normalizedItemBarangay.includes(normalizedUserBarangay) ||
+                                normalizedUserBarangay.includes(normalizedItemBarangay) ||
+                                normalizedItemBarangay.replace(/\s*center$/i, '') === normalizedUserBarangay ||
+                                normalizedUserBarangay.includes(normalizedItemBarangay.replace(/\s*center$/i, ''));
             
-            // Check barangay match
-            const barangayMatch = normalizedItemBarangay === normalizedCenter ||
-                                normalizedItemBarangay.includes(normalizedCenter) ||
-                                normalizedCenter.includes(normalizedItemBarangay) ||
-                                normalizedItemBarangay.replace(/\s*center$/i, '') === normalizedCenter ||
-                                normalizedCenter.includes(normalizedItemBarangay.replace(/\s*center$/i, ''));
-            
-            return centerMatch || barangayMatch;
+            return barangayMatch;
           });
         }
         
@@ -381,32 +372,23 @@ const SuperAdminGenerate = () => {
       if (result.success) {
         let data = Array.isArray(result.data) ? result.data : (result.data?.table?.body || []);
         
-        // Apply enhanced center-based filtering for admin users
+        // Apply barangay-based filtering for admin users
         if (userCenter && userCenter !== 'all') {
           data = data.filter(item => {
-            const itemCenter = item.center || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || '';
             const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || '';
             
             // Normalize strings for comparison
-            const normalizedCenter = userCenter.toLowerCase().trim();
-            const normalizedItemCenter = itemCenter.toLowerCase().trim();
+            const normalizedUserBarangay = userCenter.toLowerCase().trim();
             const normalizedItemBarangay = itemBarangay.toLowerCase().trim();
             
-            // Check center match
-            const centerMatch = normalizedItemCenter === normalizedCenter ||
-                               normalizedItemCenter.includes(normalizedCenter) ||
-                               normalizedCenter.includes(normalizedItemCenter) ||
-                               normalizedItemCenter.replace(/\s*center$/i, '') === normalizedCenter ||
-                               normalizedCenter.includes(normalizedItemCenter.replace(/\s*center$/i, ''));
+            // Check barangay match only
+            const barangayMatch = normalizedItemBarangay === normalizedUserBarangay ||
+                                normalizedItemBarangay.includes(normalizedUserBarangay) ||
+                                normalizedUserBarangay.includes(normalizedItemBarangay) ||
+                                normalizedItemBarangay.replace(/\s*center$/i, '') === normalizedUserBarangay ||
+                                normalizedUserBarangay.includes(normalizedItemBarangay.replace(/\s*center$/i, ''));
             
-            // Check barangay match
-            const barangayMatch = normalizedItemBarangay === normalizedCenter ||
-                                normalizedItemBarangay.includes(normalizedCenter) ||
-                                normalizedCenter.includes(normalizedItemBarangay) ||
-                                normalizedItemBarangay.replace(/\s*center$/i, '') === normalizedCenter ||
-                                normalizedCenter.includes(normalizedItemBarangay.replace(/\s*center$/i, ''));
-            
-            return centerMatch || barangayMatch;
+            return barangayMatch;
           });
         }
         
@@ -433,32 +415,23 @@ const SuperAdminGenerate = () => {
       if (result.success) {
         let patients = Array.isArray(result.data) ? result.data : (result.data?.patients || []);
         
-        // Apply enhanced center-based filtering for admin users
+        // Apply barangay-based filtering for admin users
         if (userCenter && userCenter !== 'all') {
           patients = patients.filter(patient => {
-            const patientCenter = patient.center || patient.centerName || patient.healthCenter || patient.facility || patient.treatmentCenter || '';
             const patientBarangay = patient.barangay || patient.addressBarangay || patient.patientBarangay || patient.locationBarangay || patient.barangayName || '';
             
             // Normalize strings for comparison
-            const normalizedCenter = userCenter.toLowerCase().trim();
-            const normalizedPatientCenter = patientCenter.toLowerCase().trim();
+            const normalizedUserBarangay = userCenter.toLowerCase().trim();
             const normalizedPatientBarangay = patientBarangay.toLowerCase().trim();
             
-            // Check center match
-            const centerMatch = normalizedPatientCenter === normalizedCenter ||
-                               normalizedPatientCenter.includes(normalizedCenter) ||
-                               normalizedCenter.includes(normalizedPatientCenter) ||
-                               normalizedPatientCenter.replace(/\s*center$/i, '') === normalizedCenter ||
-                               normalizedCenter.includes(normalizedPatientCenter.replace(/\s*center$/i, ''));
+            // Check barangay match only
+            const barangayMatch = normalizedPatientBarangay === normalizedUserBarangay ||
+                                normalizedPatientBarangay.includes(normalizedUserBarangay) ||
+                                normalizedUserBarangay.includes(normalizedPatientBarangay) ||
+                                normalizedPatientBarangay.replace(/\s*center$/i, '') === normalizedUserBarangay ||
+                                normalizedUserBarangay.includes(normalizedPatientBarangay.replace(/\s*center$/i, ''));
             
-            // Check barangay match
-            const barangayMatch = normalizedPatientBarangay === normalizedCenter ||
-                                normalizedPatientBarangay.includes(normalizedCenter) ||
-                                normalizedCenter.includes(normalizedPatientBarangay) ||
-                                normalizedPatientBarangay.replace(/\s*center$/i, '') === normalizedCenter ||
-                                normalizedCenter.includes(normalizedPatientBarangay.replace(/\s*center$/i, ''));
-            
-            return centerMatch || barangayMatch;
+            return barangayMatch;
           });
         }
         
@@ -561,32 +534,23 @@ const SuperAdminGenerate = () => {
       if (result.success) {
         let filtered = result.data;
         
-        // Apply enhanced center-based filtering for admin users
+        // Apply barangay-based filtering for admin users
         if (userCenter && userCenter !== 'all') {
           filtered = result.data.filter(item => {
-            const itemCenter = item.center || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || '';
             const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || '';
             
             // Normalize strings for comparison
-            const normalizedCenter = userCenter.toLowerCase().trim();
-            const normalizedItemCenter = itemCenter.toLowerCase().trim();
+            const normalizedUserBarangay = userCenter.toLowerCase().trim();
             const normalizedItemBarangay = itemBarangay.toLowerCase().trim();
             
-            // Check center match
-            const centerMatch = normalizedItemCenter === normalizedCenter ||
-                               normalizedItemCenter.includes(normalizedCenter) ||
-                               normalizedCenter.includes(normalizedItemCenter) ||
-                               normalizedItemCenter.replace(/\s*center$/i, '') === normalizedCenter ||
-                               normalizedCenter.includes(normalizedItemCenter.replace(/\s*center$/i, ''));
+            // Check barangay match only
+            const barangayMatch = normalizedItemBarangay === normalizedUserBarangay ||
+                                normalizedItemBarangay.includes(normalizedUserBarangay) ||
+                                normalizedUserBarangay.includes(normalizedItemBarangay) ||
+                                normalizedItemBarangay.replace(/\s*center$/i, '') === normalizedUserBarangay ||
+                                normalizedUserBarangay.includes(normalizedItemBarangay.replace(/\s*center$/i, ''));
             
-            // Check barangay match
-            const barangayMatch = normalizedItemBarangay === normalizedCenter ||
-                                normalizedItemBarangay.includes(normalizedCenter) ||
-                                normalizedCenter.includes(normalizedItemBarangay) ||
-                                normalizedItemBarangay.replace(/\s*center$/i, '') === normalizedCenter ||
-                                normalizedCenter.includes(normalizedItemBarangay.replace(/\s*center$/i, ''));
-            
-            return centerMatch || barangayMatch;
+            return barangayMatch;
           });
         }
         
