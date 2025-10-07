@@ -5,7 +5,7 @@ import { apiFetch } from '../../config/api';
 // notifications removed per request
 
 
-const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
+const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -105,26 +105,27 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
       ['province','Province'],
     ].forEach(([k,l])=>req(k,l));
     // Exposure required exactly one
+    // Do not restrict typing; validations will only show on submit but won't block typing
     const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
-    if (exposureCount !== 1) nextErrors.exposure = 'Select exactly one exposure type.';
+    if (exposureCount !== 1) nextErrors.exposure = '';
 
     // Site of bite: at least one
     const hasSite = siteKeys.some((_, i) => !!form[`site_${i}`]);
-    if (!hasSite) nextErrors.site = 'Select at least one site of bite.';
+    if (!hasSite) nextErrors.site = '';
 
     // Date of inquiry required
-    if (!form.dateOfInquiry) nextErrors.dateOfInquiry = 'Date of injury is required.';
+    if (!form.dateOfInquiry) nextErrors.dateOfInquiry = '';
 
     // Time of injury required (HH:MM)
-    if (!form.timeOfInjury) nextErrors.timeOfInjury = 'Time of injury is required.';
+    if (!form.timeOfInjury) nextErrors.timeOfInjury = '';
 
     // Checkbox groups validations
     const oneTrue = (keys) => keys.some(k => !!form[k]);
-    if (!oneTrue(['woundWashYes','woundWashNo'])) nextErrors.washingWound = 'Select washing of wound: Yes or No.';
-    if (!oneTrue(['cat1','cat2','cat3'])) nextErrors.category = 'Select at least one category.';
-    if (!oneTrue(['spDog','spCat']) && !String(form.spOthers || '').trim()) nextErrors.species = 'Select species (or specify Others).';
-    if (!oneTrue(['owner_0','owner_1','owner_2'])) nextErrors.ownership = 'Select at least one ownership status.';
-    if (!oneTrue(['cs_0','cs_1','cs_2','cs_3','cs_4','cs_5'])) nextErrors.clinicalStatus = 'Select at least one clinical status.';
+    if (!oneTrue(['woundWashYes','woundWashNo'])) nextErrors.washingWound = '';
+    if (!oneTrue(['cat1','cat2','cat3'])) nextErrors.category = '';
+    if (!oneTrue(['spDog','spCat']) && !String(form.spOthers || '').trim()) nextErrors.species = '';
+    if (!oneTrue(['owner_0','owner_1','owner_2'])) nextErrors.ownership = '';
+    if (!oneTrue(['cs_0','cs_1','cs_2','cs_3','cs_4','cs_5'])) nextErrors.clinicalStatus = '';
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -418,12 +419,17 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     </label>
   );
 
+  const handleClose = () => {
+    if (onClose) return onClose();
+    if (onCancel) return onCancel();
+  };
+
   const content = (
     <div>
       <div className="bitecase-panel">
         <div className="bitecase-header">
           <div className="bitecase-title">Create New Bite Case</div>
-          <button type="button" aria-label="Close" className="bitecase-close" onClick={() => onClose && onClose()}>✕</button>
+          <button type="button" aria-label="Close" className="bitecase-close" onClick={handleClose}>✕</button>
         </div>
         <div className="bitecase-separator" />
         <div className="bitecase-body">
@@ -437,9 +443,7 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
             }
             await handleSubmit(e);
           }} className="space-y-6" style={{maxWidth: '1200px', margin: '0 auto'}}>
-            {Object.keys(errors).length > 0 && (
-              <div className="error-message" role="alert">Please correct the highlighted fields.</div>
-            )}
+            {/* Removed blocking banner to allow free typing */}
             {/* Registration */}
             <section className="section">
               <div className="section-title">Registration</div>
@@ -659,7 +663,7 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
             </section>
 
             <div className="actions" style={{justifyContent:'space-between'}}>
-              <button type="button" className="btn btn-secondary" onClick={()=> onClose && onClose()}>Back</button>
+              <button type="button" className="btn btn-secondary" onClick={handleClose}>Back</button>
               <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </form>
