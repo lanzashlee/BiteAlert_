@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import './SuperAdminAuditTrail.css';
-import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { apiFetch, apiConfig } from '../../config/api';
 import { fullLogout } from '../../utils/auth';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
@@ -246,13 +245,7 @@ const SuperAdminAuditTrail = () => {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="loading-cell">
-                      <div className="responsive-loading"><div className="responsive-spinner"></div></div>
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="empty-cell">
                       <div className="empty-state">

@@ -3186,9 +3186,7 @@ const SuperAdminVaccinationSchedule = () => {
           </div>
 
           {/* Views */}
-              {loading ? (
-                <UnifiedSpinner text="Loading vaccination schedules..." />
-              ) : Object.keys(vaccinationsByPatient).length === 0 ? (
+              {Object.keys(vaccinationsByPatient).length === 0 ? (
                 <div className="empty-state-container">
                   <div className="empty-state-message">
                     <i className="fa-solid fa-users"></i>

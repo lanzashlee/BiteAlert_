@@ -2,11 +2,12 @@ import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
+
+
 // Critical components - loaded immediately
 import Login from './components/Auth/Login';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './components/Dashboard/Dashboard';
-import UnifiedSpinner from './components/Common/UnifiedSpinner';
 
 // Lazy load non-critical components for code splitting
 const SuperAdminDashboard = React.lazy(() => import('./components/SuperAdmin/SuperAdminDashboard'));
@@ -28,10 +29,8 @@ const NewBiteCaseForm = React.lazy(() => import('./components/SuperAdmin/NewBite
 const ActivateAccount = React.lazy(() => import('./components/Auth/ActivateAccount'));
 const CreateAccount = React.lazy(() => import('./components/Auth/CreateAccount'));
 
-// Loading component for Suspense fallback
-const LoadingSpinner = () => (
-  <UnifiedSpinner text="Loading application..." />
-);
+// Minimal fallback without spinner
+const LoadingSpinner = () => null;
 
 const App = () => {
   return (

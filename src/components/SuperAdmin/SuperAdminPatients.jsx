@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState, memo, lazy, Suspense } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { fullLogout } from '../../utils/auth';
-import UnifiedSpinner from '../Common/UnifiedSpinner';
 import UnifiedModal from '../UnifiedModal';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminPatients.css';
@@ -2192,11 +2191,7 @@ const SuperAdminPatients = () => {
           </div>
         )}
 
-        {loading && (
-          <div className="loading-state">
-            <UnifiedSpinner text="Loading patients..." />
-          </div>
-        )}
+        {/* Loading removed per request */}
         {error && <div className="error-state">{error}</div>}
 
         {!loading && !error && (
@@ -2374,7 +2369,7 @@ const SuperAdminPatients = () => {
                 <div>
                   <div className="info-section">
                     <h5>Case History</h5>
-                    {historyLoading && <div className="loading-state"><UnifiedSpinner text="Loading case history..." /></div>}
+                    {/* history loading removed per request */}
                     {historyError && <div className="error-state">{historyError}</div>}
                     {!historyLoading && !historyError && (
                       caseHistory.length === 0 ? (
@@ -3500,10 +3495,7 @@ const SuperAdminPatients = () => {
                     style={{ backgroundColor: '#dc2626', color: 'white' }}
                   >
                     {addPatientLoading ? (
-                      <>
-                        <i className="fa fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
-                        Adding Patient...
-                      </>
+                      <>Adding Patient...</>
                     ) : (
                       'Add Patient'
                     )}

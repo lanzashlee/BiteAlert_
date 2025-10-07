@@ -342,11 +342,7 @@ const SuperAdminCreateAccount = () => {
                     </div>
                   </div>
 
-                  {nameCheckLoading && (
-                    <div className="name-check-loading">
-                      <i className="fa fa-spinner fa-spin" /> Checking name availability...
-                    </div>
-                  )}
+                  {/* name checking spinner removed per request */}
                   {nameAvailable === false && (
                     <div className="name-unavailable">
                       <i className="fa-solid fa-exclamation-triangle" /> An account with this full name already exists
@@ -491,22 +487,9 @@ const SuperAdminCreateAccount = () => {
                 )}
 
                 <div className="form-actions">
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary" 
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <i className="fa fa-spinner fa-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fa-solid fa-user-plus" />
-                        Create Account
-                      </>
-                    )}
+                  <button type="submit" className="btn btn-primary">
+                    <i className="fa-solid fa-user-plus" />
+                    Create Account
                   </button>
                   <button 
                     type="button" 
