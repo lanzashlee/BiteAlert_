@@ -5,6 +5,27 @@ import { apiFetch } from '../../config/api';
 // notifications removed per request
 
 
+// Reusable input component (defined outside to avoid re-creation and focus loss)
+function FormInput({ name, label, type = 'text', placeholder = '', value = '', error, onChange }) {
+  return (
+    <div className="w-full">
+      <label className="form-label">{label}</label>
+      <input
+        type={type}
+        value={value ?? ''}
+        id={name}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="form-input"
+        aria-invalid={!!error}
+      />
+      {error && (
+        <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{error}</div>
+      )}
+    </div>
+  );
+}
+
 const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
@@ -61,7 +82,24 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     }));
   }, []);
 
-  const handleChange = (name, value) => setForm((p) => ({ ...p, [name]: value }));
+  const handleChange = (name, value) => {
+    setForm((p) => ({ ...p, [name]: value }));
+    if (errors[name]) clearError(name);
+  };
+
+  // Adapter so existing usages continue to work while FormInput lives outside
+  const Input = (props) => (
+    <FormInput
+      {...props}
+      value={form[props.name] ?? ''}
+      error={errors[props.name]}
+      onChange={(e) => {
+        const next = e.target.value;
+        if (typeof props.onChange === 'function') props.onChange(e);
+        handleChange(props.name, next);
+      }}
+    />
+  );
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
