@@ -78,6 +78,21 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     return Object.keys(nextErrors).length === 0;
   };
 
+  const toIsoUtcNoon = (dateString) => {
+    if (!dateString) return null;
+    try {
+      const d = new Date(dateString);
+      return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0)).toISOString();
+    } catch { return null; }
+  };
+
+  const toLongDate = (dateString) => {
+    if (!dateString) return null;
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    } catch { return null; }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -85,13 +100,48 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     try {
       const selectedSites = siteKeys.filter((_, i) => !!form[`site_${i}`]);
       const typeOfExposure = form.bite ? ['BITE'] : ['NON-BITE'];
+      const natureOptions = ['Abrasion','Avulsion','Burn','Concussion','Contusion','Open wound/laceration','Trauma'];
+      const natureOfInjury = [
+        ...(form.multiInjuries ? ['Multiple Injuries'] : []),
+        ...natureOptions.filter((_, i) => !!form[`inj_${i}`]).map(v => v.replace('Open wound/laceration', 'Open Wound')),
+      ];
+      const placeOptions = ['Home','School','Road','Neighbor'];
+      const placeOfOccurrence = placeOptions.filter((_, i) => !!form[`place_${i}`]);
+
+      const species = [
+        ...(form.spDog ? ['Dog'] : []),
+        ...(form.spCat ? ['Cat'] : []),
+        ...(form.spOthers ? ['Others'] : []),
+      ];
+      const ownership = [
+        ...(form.owner_0 ? ['Pet'] : []),
+        ...(form.owner_1 ? ['Neighbor'] : []),
+        ...(form.owner_2 ? ['Stray'] : []),
+      ];
+      const clinical = ['Healthy','Sick','Died','Killed','No Brain Exam Done','Unknown']
+        .filter((_, i) => !!form[`cs_${i}`]);
+      const washingWound = [
+        ...(form.woundWashYes ? ['Yes'] : []),
+        ...(form.woundWashNo ? ['No'] : []),
+      ];
+      const category = [
+        ...(form.cat1 ? ['Category 1'] : []),
+        ...(form.cat2 ? ['Category 2'] : []),
+        ...(form.cat3 ? ['Category 3'] : []),
+      ];
+
+      const scheduleDates = [0,1,2,3,4]
+        .map(i => toIsoUtcNoon(form[`sched_${i}`]))
+        .filter(Boolean);
 
       const payload = {
         // registration/meta
         registrationNumber: form.registrationNumber || '',
         philhealthNo: form.philhealthNo || '',
-        dateRegistered: form.dateRegistered ? new Date(form.dateRegistered).toISOString() : null,
-        centerName: form.centerName || '',
+        dateRegistered: toIsoUtcNoon(form.dateRegistered),
+        arrivalDate: toLongDate(form.dateOfInquiry),
+        arrivalTime: form.timeOfInjury || '',
+        center: form.centerName || '',
 
         // patient linkage
         patientId: selectedPatient?._id || selectedPatient?.patientId,
@@ -123,8 +173,76 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
         // history of bite
         typeOfExposure,
         siteOfBite: selectedSites,
-        dateOfInquiry: form.dateOfInquiry ? new Date(form.dateOfInquiry).toISOString() : null,
+        dateOfInquiry: toLongDate(form.dateOfInquiry),
         timeOfInjury: form.timeOfInjury || '',
+        natureOfInjury,
+        burnDegree: 1,
+        burnSite: form.burnSite || '',
+        othersInjuryDetails: form.injOthers || '',
+        externalCause: [
+          ...(form.causeBiteSting ? ['Bite/Sting'] : []),
+          ...(form.causeChemical ? ['Chemical Substance'] : []),
+        ],
+        biteStingDetails: form.causeBiteStingDetail || '',
+        chemicalSubstanceDetails: form.causeChemicalDetail || '',
+        placeOfOccurrence,
+        placeOthersDetails: form.placeOthers || '',
+        disposition: [
+          ...(form.treatedHome ? ['Treated & Sent Home'] : []),
+          ...(form.transferred ? ['Transferred to another facility/hospital'] : []),
+        ],
+        transferredTo: form.transferredTo || '',
+        circumstanceOfBite: [
+          ...(form.provoked ? ['Provoked'] : []),
+          ...(form.unprovoked ? ['Unprovoked'] : []),
+        ],
+
+        // schedule
+        scheduleDates,
+
+        // animal profile
+        animalProfile: {
+          species,
+          othersSpecify: form.spOthers ? (form.spOthersSpecify || '') : null,
+          clinicalStatus: clinical.length ? clinical : ['Healthy'],
+          brainExam: [],
+          vaccinationStatus: form.animalImmunized ? ['Immunized'] : ['Not Immunized'],
+          vaccinationDate: form.animalImmunizedYear || null,
+          ownership: ownership.length ? ownership : ['Pet'],
+        },
+
+        // management
+        management: {
+          washingWound,
+          category: category.length ? category : ['Category 2'],
+          diagnosis: form.diagnosis || '',
+          allergyHistory: form.allergy || '',
+          maintenanceMedications: form.maintenance || '',
+          managementDetails: form.management || '',
+        },
+
+        patientImmunization: {},
+
+        currentImmunization: {
+          erig: { dateTaken: '', medicineUsed: '', branchNo: '' },
+          type: ['Active'],
+          vaccine: form.vacVaxirab ? ['PCEC'] : ['PVRV'],
+          route: form.routeIM ? ['IM'] : ['ID'],
+          passive: false,
+          skinTest: false,
+          skinTestTime: null,
+          skinTestReadTime: null,
+          skinTestResult: null,
+          skinTestDate: null,
+          hrig: false,
+          hrigDose: null,
+          hrigDate: '',
+          localInfiltration: !!form.localInfiltration,
+          schedule: [],
+          doseMedicines: [],
+        },
+
+        status: 'completed',
       };
 
       const res = await apiFetch('/api/bitecases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
