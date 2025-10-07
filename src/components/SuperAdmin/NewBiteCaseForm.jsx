@@ -1,13 +1,141 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import './NewBiteCaseForm.css';
+import { apiFetch } from '../../config/api';
 
 
-const NewBiteCaseForm = ({ onClose }) => {
+const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
   const [form, setForm] = useState({});
+  const [errors, setErrors] = useState({});
+
+  // Prefill from selected patient
+  useEffect(() => {
+    if (!selectedPatient) return;
+    setForm(prev => ({
+      ...prev,
+      firstName: selectedPatient.firstName || '',
+      middleName: selectedPatient.middleName || '',
+      lastName: selectedPatient.lastName || '',
+      weight: selectedPatient.weight || '',
+      civilStatus: selectedPatient.civilStatus || '',
+      sex: selectedPatient.sex || '',
+      birthdate: selectedPatient.birthdate ? new Date(selectedPatient.birthdate).toISOString().slice(0,10) : '',
+      birthplace: selectedPatient.birthplace || '',
+      age: selectedPatient.birthdate ? String(new Date().getFullYear() - new Date(selectedPatient.birthdate).getFullYear()) : (selectedPatient.age || ''),
+      nationality: selectedPatient.nationality || '',
+      religion: selectedPatient.religion || '',
+      occupation: selectedPatient.occupation || '',
+      contactNo: selectedPatient.phone || selectedPatient.contactNo || '',
+      // Address
+      houseNo: selectedPatient.houseNo || '',
+      street: selectedPatient.street || '',
+      barangay: selectedPatient.barangay || selectedPatient.addressBarangay || '',
+      subdivision: selectedPatient.subdivision || '',
+      city: selectedPatient.city || '',
+      province: selectedPatient.province || '',
+      zipCode: selectedPatient.zipCode || '',
+      centerName: selectedPatient.barangay ? `${selectedPatient.barangay} Center` : (prev.centerName || ''),
+    }));
+  }, [selectedPatient]);
 
   const handleChange = (name, value) => setForm((p) => ({ ...p, [name]: value }));
-  const handleSubmit = (e) => { e.preventDefault(); };
+
+  const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
+  const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
+
+  // Single-select for exposure: "bite" or "nonBite"
+  const toggleExposure = (key) => {
+    const next = key === 'bite' ? { bite: true, nonBite: false } : { bite: false, nonBite: true };
+    setForm(prev => ({ ...prev, ...next }));
+    clearError('exposure');
+  };
+
+  // Site of bite helpers
+  const siteKeys = useMemo(() => ['Head','Chest','Upper Extremities','Face','Back','Lower Extremities','Neck','Abdomen'], []);
+  const toggleSite = (idx) => {
+    const key = `site_${idx}`;
+    setForm(prev => ({ ...prev, [key]: !prev[key] }));
+    clearError('site');
+  };
+
+  const validate = () => {
+    const nextErrors = {};
+    // Exposure required exactly one
+    const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
+    if (exposureCount !== 1) nextErrors.exposure = 'Select exactly one exposure type.';
+
+    // Site of bite: at least one
+    const hasSite = siteKeys.some((_, i) => !!form[`site_${i}`]);
+    if (!hasSite) nextErrors.site = 'Select at least one site of bite.';
+
+    // Date of inquiry required
+    if (!form.dateOfInquiry) nextErrors.dateOfInquiry = 'Date of injury is required.';
+
+    // Time of injury required (HH:MM)
+    if (!form.timeOfInjury) nextErrors.timeOfInjury = 'Time of injury is required.';
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    try {
+      const selectedSites = siteKeys.filter((_, i) => !!form[`site_${i}`]);
+      const typeOfExposure = form.bite ? ['BITE'] : ['NON-BITE'];
+
+      const payload = {
+        // registration/meta
+        registrationNumber: form.registrationNumber || '',
+        philhealthNo: form.philhealthNo || '',
+        dateRegistered: form.dateRegistered ? new Date(form.dateRegistered).toISOString() : null,
+        centerName: form.centerName || '',
+
+        // patient linkage
+        patientId: selectedPatient?._id || selectedPatient?.patientId,
+
+        // personal
+        firstName: form.firstName || '',
+        middleName: form.middleName || '',
+        lastName: form.lastName || '',
+        weight: form.weight || '',
+        civilStatus: form.civilStatus || '',
+        sex: form.sex || '',
+        birthdate: form.birthdate ? new Date(form.birthdate).toISOString() : null,
+        birthplace: form.birthplace || '',
+        age: form.age || '',
+        nationality: form.nationality || '',
+        religion: form.religion || '',
+        occupation: form.occupation || '',
+        contactNo: form.contactNo || '',
+
+        // address
+        houseNo: form.houseNo || '',
+        street: form.street || '',
+        barangay: form.barangay || '',
+        subdivision: form.subdivision || '',
+        city: form.city || '',
+        province: form.province || '',
+        zipCode: form.zipCode || '',
+
+        // history of bite
+        typeOfExposure,
+        siteOfBite: selectedSites,
+        dateOfInquiry: form.dateOfInquiry ? new Date(form.dateOfInquiry).toISOString() : null,
+        timeOfInjury: form.timeOfInjury || '',
+      };
+
+      const res = await apiFetch('/api/bitecases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || 'Failed to save bite case');
+      if (onSaved) onSaved(data);
+      if (onClose) onClose();
+    } catch (err) {
+      setError('submit', String(err.message || err));
+    }
+  };
 
   const Input = ({ name, label, type = 'text', placeholder='' }) => (
     <div className="w-full">
@@ -19,6 +147,7 @@ const NewBiteCaseForm = ({ onClose }) => {
         placeholder={placeholder}
         className="form-input"
       />
+      {errors[name] && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors[name]}</div>}
     </div>
   );
 
@@ -31,12 +160,13 @@ const NewBiteCaseForm = ({ onClose }) => {
         onChange={(e)=>handleChange(name, e.target.value)}
         className="form-textarea"
       />
+      {errors[name] && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors[name]}</div>}
     </div>
   );
 
-  const Check = ({ name, label }) => (
+  const Check = ({ name, label, onChange }) => (
     <label className="checkbox-item">
-      <input type="checkbox" checked={!!form[name]} onChange={(e)=>handleChange(name, e.target.checked)} />
+      <input type="checkbox" checked={!!form[name]} onChange={onChange ? onChange : ((e)=>handleChange(name, e.target.checked))} />
       {label}
     </label>
   );
@@ -101,19 +231,22 @@ const NewBiteCaseForm = ({ onClose }) => {
               <div className="section-title">History of Bite</div>
               <div className="form-label">Type of Exposure</div>
               <div className="checkbox-row">
-                <Check name="nonBite" label="NON-BITE" />
-                <Check name="bite" label="BITE" />
-            </div>
+                <Check name="nonBite" label="NON-BITE" onChange={() => toggleExposure('nonBite')} />
+                <Check name="bite" label="BITE" onChange={() => toggleExposure('bite')} />
+              </div>
+              {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
+
               <div className="form-label">Site of Bite</div>
               <div className="checkbox-row">
-                {['Head','Chest','Upper Extremities','Face','Back','Lower Extremities','Neck','Abdomen'].map((lbl,i)=> (
-                  <Check key={i} name={`site_${i}`} label={lbl} />
-          ))}
-        </div>
-              <Input name="siteOthers" label="Others (specify)" />
+                {siteKeys.map((lbl,i)=> (
+                  <Check key={i} name={`site_${i}`} label={lbl} onChange={() => toggleSite(i)} />
+                ))}
+              </div>
+              {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
+
               <div className="form-grid grid-2" style={{marginTop: '10px'}}>
-                <Input name="dateOfInquiry" type="date" label="Date of Inquiry *" />
-                <Input name="timeOfInjury" label="Time of Injury (am/pm) *" />
+                <Input name="dateOfInquiry" type="date" label="Date of Injury *" />
+                <Input name="timeOfInjury" type="time" label="Time of Injury *" />
               </div>
             </section>
 
