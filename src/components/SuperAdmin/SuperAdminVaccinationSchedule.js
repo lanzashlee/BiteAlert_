@@ -581,6 +581,7 @@ const SuperAdminVaccinationSchedule = () => {
   // Reschedule a day in vaccinationdates (and cascade to downstream days only)
   const handleRescheduleCascadeVaccinationDates = async (dayLabel, newDateStr) => {
     try {
+      console.log('handleRescheduleCascadeVaccinationDates called:', { dayLabel, newDateStr });
       if (!newDateStr) return;
       // Block past dates
       const todayStr = getTodayDateStr();
@@ -653,15 +654,19 @@ const SuperAdminVaccinationSchedule = () => {
       // Try dedicated reschedule endpoint first when vdId is known
       if (scheduleModalData?.vdId) {
         try {
+          console.log('Trying reschedule endpoint:', { vdId: scheduleModalData.vdId, dayLabel, newDate: newDateStr });
           const res0 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}/reschedule`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dayLabel, newDate: newDateStr })
           });
+          console.log('Reschedule endpoint response:', { ok: res0.ok, status: res0.status });
           if (res0.ok) {
             persisted = true;
           }
-        } catch (_) {}
+        } catch (error) {
+          console.error('Reschedule endpoint error:', error);
+        }
       }
       // Fallback: direct PUT on vaccinationdates/:id
       if (!persisted && scheduleModalData?.vdId) {
@@ -3484,6 +3489,13 @@ const SuperAdminVaccinationSchedule = () => {
                                               disabled={!isEditableDate}
                                               onChange={(e) => {
                                                 const newDateStr = e.target.value;
+                                                console.log('Date input changed:', { 
+                                                  label: scheduleItem.label, 
+                                                  newDateStr, 
+                                                  currentDate: scheduleItem.date,
+                                                  vdId: scheduleModalData?.vdId,
+                                                  biteCaseId: scheduleModalData?.biteCaseId
+                                                });
                                                 if (!newDateStr) return;
                                                 handleRescheduleCascadeVaccinationDates(scheduleItem.label, newDateStr);
                                               }}
