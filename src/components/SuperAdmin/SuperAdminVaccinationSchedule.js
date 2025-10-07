@@ -3468,7 +3468,24 @@ const SuperAdminVaccinationSchedule = () => {
                     <div className="schedule-content">
                       {scheduleModalData?.schedule && scheduleModalData.schedule.length > 0 ? (
                         <div>
-                          {scheduleModalData.schedule.map((scheduleItem, index) => {
+                          {scheduleModalData.schedule
+                            .sort((a, b) => {
+                              const todayStr = todayLocalStr();
+                              const aDateStr = a.date ? (/^\d{4}-\d{2}-\d{2}$/.test(a.date) ? a.date : toLocalDateOnlyString(a.date)) : '';
+                              const bDateStr = b.date ? (/^\d{4}-\d{2}-\d{2}$/.test(b.date) ? b.date : toLocalDateOnlyString(b.date)) : '';
+                              
+                              // Today's items first
+                              if (aDateStr === todayStr && bDateStr !== todayStr) return -1;
+                              if (bDateStr === todayStr && aDateStr !== todayStr) return 1;
+                              
+                              // Then by date (earliest first)
+                              if (aDateStr && bDateStr) return aDateStr.localeCompare(bDateStr);
+                              if (aDateStr) return -1;
+                              if (bDateStr) return 1;
+                              
+                              return 0;
+                            })
+                            .map((scheduleItem, index) => {
                             console.log('🔍 Rendering schedule item:', scheduleItem);
                             const itemDateStr = scheduleItem.date ? (/^\d{4}-\d{2}-\d{2}$/.test(scheduleItem.date) ? scheduleItem.date : toLocalDateOnlyString(scheduleItem.date)) : '';
                             const todayStr = todayLocalStr();
@@ -3478,6 +3495,8 @@ const SuperAdminVaccinationSchedule = () => {
                                 derivedStatus = 'scheduled';
                               } else if (itemDateStr < todayStr) {
                                 derivedStatus = 'missed';
+                              } else if (itemDateStr === todayStr) {
+                                derivedStatus = 'today';
                               } else {
                                 derivedStatus = 'scheduled';
                               }
@@ -3485,6 +3504,7 @@ const SuperAdminVaccinationSchedule = () => {
                             const isCompleted = derivedStatus === 'completed';
                             const isMissed = derivedStatus === 'missed';
                             const isScheduled = derivedStatus === 'scheduled';
+                            const isToday = derivedStatus === 'today';
                             
                             return (
                               <div 
@@ -3528,10 +3548,12 @@ const SuperAdminVaccinationSchedule = () => {
                                       <span className={`schedule-status-badge ${
                                         isCompleted ? 'completed' : 
                                         isMissed ? 'missed' : 
+                                        isToday ? 'today' :
                                         isScheduled ? 'scheduled' : 'pending'
                                       }`}>
                                         {isCompleted ? '✅ Completed' : 
                                          isMissed ? '❌ Missed' : 
+                                         isToday ? '🔥 Today' :
                                          isScheduled ? '📅 Scheduled' : '⏸️ Pending'}
                                       </span>
                                     </div>

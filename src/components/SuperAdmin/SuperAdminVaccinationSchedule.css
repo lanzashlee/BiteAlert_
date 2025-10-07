@@ -1507,6 +1507,22 @@
   color: #1e40af;
 }
 
+.schedule-status-badge.today {
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
 .schedule-status-badge.pending {
   background: #f3f4f6;
   color: #374151;
