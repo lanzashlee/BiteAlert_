@@ -903,11 +903,7 @@ const SuperAdminDashboard = () => {
               </div>
             )}
             
-            {/* Notifications */}
-            <NotificationSystem 
-              userRole={currentUser?.role || 'superadmin'} 
-              centerName={currentUser?.centerName || 'all'} 
-            />
+            {/* Notifications removed per request */}
             
             {/* User Profile */}
             <div className="user-profile" onClick={() => {

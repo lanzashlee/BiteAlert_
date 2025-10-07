@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import './NewBiteCaseForm.css';
 import { apiFetch } from '../../config/api';
-import notificationService from '../../services/notificationService';
+// notifications removed per request
 
 
 const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
@@ -339,19 +339,13 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
           d14Status: payload.d14Status || (payload.scheduleDates?.[3] ? 'scheduled' : undefined),
           d28Status: payload.d28Status || (payload.scheduleDates?.[4] ? 'scheduled' : undefined),
           treatmentStatus: 'in_progress',
-          exposureCategory: (Array.isArray(category) && category.includes('Category 3')) ? 'Category 3' : (category?.[0] || 'Category 2'),
+          exposureCategory: Array.isArray(payload.management?.category) ? payload.management.category[0] : 'Category 2',
           lastTreatmentDate: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         };
         await apiFetch('/api/vaccinationdates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vdBody) });
-        // Fire local notifications so it shows immediately
-        try {
-          const name = [payload.firstName, payload.lastName].filter(Boolean).join(' ');
-          const centerName = payload.center || payload.centerName || '';
-          notificationService.createScheduledVisitNotification(name, payload.patientId, 'Today', centerName);
-          if (Array.isArray(payload.disposition) && payload.disposition.some(d => d.includes('Transferred'))) {
-            notificationService.createReferralNotification('Another Center', centerName, name, payload.patientId);
-          }
-        } catch {}
+        // notifications removed per request
       } catch (vdErr) {
         console.warn('Failed to create vaccinationdates record:', vdErr);
       }
