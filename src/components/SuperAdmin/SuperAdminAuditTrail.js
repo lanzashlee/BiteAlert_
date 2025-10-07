@@ -117,7 +117,32 @@ const SuperAdminAuditTrail = () => {
         const allData = Array.isArray(json) ? json : (json.data || []);
         
         // Apply client-side filtering for admin users
-        const filteredData = filterByCenter(allData, 'centerName');
+        let filteredData = allData;
+        
+        // For admin users, filter by center/barangay
+        if (userCenter && userCenter !== 'all') {
+          filteredData = allData.filter(entry => {
+            const entryCenter = entry.centerName || entry.center || '';
+            const entryBarangay = entry.barangay || entry.addressBarangay || '';
+            
+            // Normalize strings for comparison
+            const normalizedCenter = userCenter.toLowerCase().trim();
+            const normalizedEntryCenter = entryCenter.toLowerCase().trim();
+            const normalizedEntryBarangay = entryBarangay.toLowerCase().trim();
+            
+            // Check if entry matches user's center or barangay
+            const centerMatch = normalizedEntryCenter === normalizedCenter ||
+                               normalizedEntryCenter.includes(normalizedCenter) ||
+                               normalizedCenter.includes(normalizedEntryCenter);
+            
+            const barangayMatch = normalizedEntryBarangay === normalizedCenter ||
+                                normalizedEntryBarangay.includes(normalizedCenter) ||
+                                normalizedCenter.includes(normalizedEntryBarangay);
+            
+            return centerMatch || barangayMatch;
+          });
+        }
+        
         console.log('🔍 AUDIT TRAIL DEBUG: Total entries before filtering:', allData.length);
         console.log('🔍 AUDIT TRAIL DEBUG: Filtered entries for center:', filteredData.length);
         
@@ -208,6 +233,10 @@ const SuperAdminAuditTrail = () => {
         <div className="content-body">
           <div className="filters-section">
             <div className="filter-group">
+              <label className="filter-label">
+                <i className="fa-solid fa-search"></i>
+                Search
+              </label>
               <input 
                 type="text" 
                 placeholder="Search by ID, name, action..." 
@@ -217,11 +246,16 @@ const SuperAdminAuditTrail = () => {
               />
             </div>
             <div className="filter-group">
+              <label className="filter-label">
+                <i className="fa-solid fa-calendar"></i>
+                Date Range
+              </label>
               <input 
                 type="date" 
                 value={from} 
                 onChange={e => setFrom(e.target.value)}
                 className="form-control"
+                placeholder="From"
               />
               <span className="filter-separator">to</span>
               <input 
@@ -229,9 +263,14 @@ const SuperAdminAuditTrail = () => {
                 value={to} 
                 onChange={e => setTo(e.target.value)}
                 className="form-control"
+                placeholder="To"
               />
             </div>
             <div className="filter-group">
+              <label className="filter-label">
+                <i className="fa-solid fa-user-tag"></i>
+                Role
+              </label>
               <select value={role} onChange={e => setRole(e.target.value)} className="form-control">
                 <option value="">All Roles</option>
                 <option value="admin">Admin</option>
@@ -241,6 +280,10 @@ const SuperAdminAuditTrail = () => {
               </select>
             </div>
             <div className="filter-group">
+              <label className="filter-label">
+                <i className="fa-solid fa-building"></i>
+                Center
+              </label>
               <select value={center} onChange={e => setCenter(e.target.value)} className="form-control">
                 <option value="">All Centers</option>
                 {centerOptions.map(c => (
