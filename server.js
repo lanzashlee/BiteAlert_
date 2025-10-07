@@ -10,13 +10,39 @@ const PORT = process.env.API_PORT || 10000;
 
 // Middleware
 app.use(cors({
-  origin: [
-    'https://bitealert-frontend.onrender.com', 
-    'https://bitealert-frontend-doga.onrender.com', 
-    'https://bite-alert-clgv-6qkbz4z1b-lanzashlees-projects.vercel.app',
-    'https://bite-alert-clgv.vercel.app',
-    'http://localhost:3000'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow Render deployments
+    if (origin.includes('bitealert-frontend.onrender.com') || 
+        origin.includes('bitealert-frontend-doga.onrender.com')) {
+      return callback(null, true);
+    }
+    
+    // Allow Vercel deployments (any subdomain)
+    if (origin.includes('vercel.app') || origin.includes('lanzashlees-projects.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow specific known origins
+    const allowedOrigins = [
+      'https://bitealert-frontend.onrender.com',
+      'https://bitealert-frontend-doga.onrender.com',
+      'http://localhost:3000'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
