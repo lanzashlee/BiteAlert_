@@ -1683,7 +1683,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
                             color: totalStock > 10 ? palette.success : totalStock > 0 ? palette.warning : palette.error,
                             fontWeight: '600'
                           }}>
-                            {totalStock} vials
+                            {Math.round(totalStock * 100) / 100} vials
                           </span>
                         </div>
                       );

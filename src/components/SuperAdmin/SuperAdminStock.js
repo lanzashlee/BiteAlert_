@@ -1092,7 +1092,7 @@ const SuperAdminStock = () => {
                           <span className="total-vaccines">{totalVaccines}</span>
                         </td>
                         <td>
-                          <span className="total-stock">{totalStock}</span>
+                          <span className="total-stock">{Math.round(totalStock * 100) / 100}</span>
                         </td>
                         <td>
                           <span className="low-stock-count">{lowStockItems}</span>
@@ -1212,7 +1212,7 @@ const SuperAdminStock = () => {
                                             fontWeight: '600',
                                             color: vaccineStock === 0 ? '#e74c3c' : vaccineStock <= 10 ? '#f39c12' : '#27ae60'
                                           }}>
-                                            {vaccineStock} units
+                                            {Math.round(vaccineStock * 100) / 100} units
                                           </span>
                                         </div>
                                       </div>
@@ -1231,7 +1231,7 @@ const SuperAdminStock = () => {
                                                   <div className="stock-entry-expiry">Expires: {entry.expirationDate || 'N/A'}</div>
                                                 </div>
                                                 <div className="stock-entry-right">
-                                                  <span className="stock-entry-qty">{isNaN(qty) ? '0' : qty}</span>
+                                                  <span className="stock-entry-qty">{isNaN(qty) ? '0' : Math.round(qty * 100) / 100}</span>
                                       </div>
                                               </div>
                                             );
