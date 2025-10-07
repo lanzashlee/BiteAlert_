@@ -8,7 +8,7 @@ import './SuperAdminPatients.css';
 import { apiFetch, apiConfig } from '../../config/api';
 
 // Lazy load heavy components to reduce initial bundle size
-const NewBiteCaseForm = lazy(() => import('./NewBiteCaseForm.js'));
+const NewBiteCaseForm = lazy(() => import('./NewBiteCaseForm.jsx'));
 
 const PAGE_SIZE = 50;
 
