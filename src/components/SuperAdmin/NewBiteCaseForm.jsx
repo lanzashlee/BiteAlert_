@@ -308,6 +308,33 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
       const res = await apiFetch('/api/bitecases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || 'Failed to save bite case');
+
+      // Create vaccinationdates record so it shows up in scheduler
+      try {
+        const created = data?.data || data; // support {success,data}
+        const vdBody = {
+          biteCaseId: created?._id,
+          patientId: payload.patientId,
+          registrationNumber: payload.registrationNumber,
+          d0Date: payload.d0Date || (payload.scheduleDates?.[0] || null),
+          d3Date: payload.d3Date || (payload.scheduleDates?.[1] || null),
+          d7Date: payload.d7Date || (payload.scheduleDates?.[2] || null),
+          d14Date: payload.d14Date || (payload.scheduleDates?.[3] || null),
+          d28Date: payload.d28Date || (payload.scheduleDates?.[4] || null),
+          d0Status: payload.d0Status || (payload.scheduleDates?.[0] ? 'scheduled' : undefined),
+          d3Status: payload.d3Status || (payload.scheduleDates?.[1] ? 'scheduled' : undefined),
+          d7Status: payload.d7Status || (payload.scheduleDates?.[2] ? 'scheduled' : undefined),
+          d14Status: payload.d14Status || (payload.scheduleDates?.[3] ? 'scheduled' : undefined),
+          d28Status: payload.d28Status || (payload.scheduleDates?.[4] ? 'scheduled' : undefined),
+          treatmentStatus: 'in_progress',
+          exposureCategory: (Array.isArray(category) && category.includes('Category 3')) ? 'Category 3' : (category?.[0] || 'Category 2'),
+          lastTreatmentDate: null,
+        };
+        await apiFetch('/api/vaccinationdates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vdBody) });
+      } catch (vdErr) {
+        console.warn('Failed to create vaccinationdates record:', vdErr);
+      }
+
       if (onSaved) onSaved(data);
       if (onClose) onClose();
     } catch (err) {
