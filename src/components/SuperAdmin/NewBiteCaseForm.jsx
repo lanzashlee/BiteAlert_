@@ -50,7 +50,7 @@ const NewBiteCaseForm = ({ onClose }) => {
         </div>
         <div className="bitecase-separator" />
         <div className="bitecase-body">
-          <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-6" style={{maxWidth: '1200px', margin: '0 auto'}}>
             {/* Registration */}
             <section className="section">
               <div className="section-title">Registration</div>
