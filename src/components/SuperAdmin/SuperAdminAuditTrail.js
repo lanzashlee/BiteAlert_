@@ -279,18 +279,6 @@ const SuperAdminAuditTrail = () => {
                 <option value="patient">Patient</option>
               </select>
             </div>
-            <div className="filter-group">
-              <label className="filter-label">
-                <i className="fa-solid fa-building"></i>
-                Center
-              </label>
-              <select value={center} onChange={e => setCenter(e.target.value)} className="form-control">
-                <option value="">All Centers</option>
-                {centerOptions.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
           <div className="table-container">
@@ -301,7 +289,6 @@ const SuperAdminAuditTrail = () => {
                   <th>Role</th>
                   <th>Name</th>
                   <th>Action</th>
-                  <th>Center</th>
                   <th>Timestamp</th>
                 </tr>
               </thead>
@@ -348,9 +335,6 @@ const SuperAdminAuditTrail = () => {
                       </td>
                       <td>
                         <span className="action-text">{entry.action}</span>
-                      </td>
-                      <td>
-                        <span className="center-name">{entry.centerName || entry.center || 'N/A'}</span>
                       </td>
                       <td>
                         <span className="timestamp">{formatDateTime(entry.timestamp)}</span>
