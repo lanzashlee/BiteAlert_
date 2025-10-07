@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import './NewBiteCaseForm.css';
 
 
@@ -40,7 +41,7 @@ const NewBiteCaseForm = ({ onClose }) => {
     </label>
   );
 
-  return (
+  const content = (
     <div>
       <div className="bitecase-overlay" onClick={() => onClose && onClose()} />
       <div className="bitecase-panel">
@@ -259,6 +260,9 @@ const NewBiteCaseForm = ({ onClose }) => {
           </div>
       </div>
     </div>
+  );
+
+  return ReactDOM.createPortal(content, document.body);
   );
 };
 

@@ -9,7 +9,8 @@
 
 .bitecase-panel {
   position: fixed;
-  inset: 2vh auto auto 50%;
+  left: 50%;
+  top: 2vh;
   transform: translateX(-50%);
   width: min(96vw, 1400px);
   height: 92vh;
