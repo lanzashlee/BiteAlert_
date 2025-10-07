@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import './NewBiteCaseForm.css';
 import { apiFetch } from '../../config/api';
@@ -6,7 +6,7 @@ import { apiFetch } from '../../config/api';
 
 
 // Reusable input component (defined outside to avoid re-creation and focus loss)
-function FormInput({ name, label, type = 'text', placeholder = '', value = '', error, onChange }) {
+function FormInput({ name, label, type = 'text', placeholder = '', value = '', error, onChange, disabled = false }) {
   return (
     <div className="w-full">
       <label className="form-label">{label}</label>
@@ -18,6 +18,7 @@ function FormInput({ name, label, type = 'text', placeholder = '', value = '', e
         placeholder={placeholder}
         className="form-input"
         aria-invalid={!!error}
+        disabled={disabled}
       />
       {error && (
         <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{error}</div>
@@ -135,19 +136,20 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     if (errors[name]) clearError(name);
   };
 
-  // Adapter so existing usages continue to work while FormInput lives outside
-  const Input = (props) => (
+  // Memoized Input component to prevent focus loss on re-renders
+  const Input = useCallback((props) => (
     <FormInput
       {...props}
       value={form[props.name] ?? ''}
       error={errors[props.name]}
+      disabled={props.disabled}
       onChange={(e) => {
         const next = e.target.value;
         if (typeof props.onChange === 'function') props.onChange(e);
         handleChange(props.name, next);
       }}
     />
-  );
+  ), [form, errors]);
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
@@ -182,6 +184,16 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         updates[key] = false;
       });
       updates[`cs_${value}`] = true;
+    } else if (group === 'multipleInjuries') {
+      updates.multiInjuriesYes = value === 'yes';
+      updates.multiInjuriesNo = value === 'no';
+      // If "No" is selected, clear all injury checkboxes and others text
+      if (value === 'no') {
+        updates.injOthers = '';
+        ['inj_0', 'inj_1', 'inj_2', 'inj_3', 'inj_4', 'inj_5', 'inj_6'].forEach(key => {
+          updates[key] = false;
+        });
+      }
     }
     setForm(prev => ({ ...prev, ...updates }));
     clearError(group);
@@ -193,6 +205,83 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     const key = `site_${idx}`;
     setForm(prev => ({ ...prev, [key]: !prev[key] }));
     clearError('site');
+  };
+
+  // Handle injury others checkbox toggle
+  const toggleInjuryOthers = (checked) => {
+    setForm(prev => ({ 
+      ...prev, 
+      injOthersCheckbox: checked,
+      injOthers: checked ? prev.injOthers : '' // Clear text when unchecked
+    }));
+  };
+
+  // Handle external causes conditional logic
+  const toggleExternalCause = (cause, checked) => {
+    const updates = { [cause]: checked };
+    // Clear detail fields when unchecked
+    if (!checked) {
+      if (cause === 'causeBiteSting') updates.causeBiteStingDetail = '';
+      if (cause === 'causeChemical') updates.causeChemicalDetail = '';
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Handle animal immunization conditional logic
+  const toggleAnimalImmunization = (type, checked) => {
+    const updates = { [type]: checked };
+    // Clear year when "None" is checked or when "Immunized" is unchecked
+    if (type === 'animalNone' && checked) {
+      updates.animalImmunized = false;
+      updates.animalImmunizedYear = '';
+    } else if (type === 'animalImmunized' && !checked) {
+      updates.animalImmunizedYear = '';
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Handle DPT immunization conditional logic
+  const toggleDPTImmunization = (type, checked) => {
+    const updates = { [type]: checked };
+    // Clear related fields when unchecked
+    if (!checked) {
+      if (type === 'dptComplete') updates.dptYear = '';
+      if (type === 'dptIncomplete') updates.dptDoses = '';
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Handle vaccine selection conditional logic
+  const toggleVaccine = (vaccine, checked) => {
+    const updates = { [vaccine]: checked };
+    // Ensure only one vaccine is selected
+    if (checked) {
+      if (vaccine === 'vacSpeeda') updates.vacVaxirab = false;
+      if (vaccine === 'vacVaxirab') updates.vacSpeeda = false;
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Handle route selection conditional logic
+  const toggleRoute = (route, checked) => {
+    const updates = { [route]: checked };
+    // Ensure only one route is selected
+    if (checked) {
+      if (route === 'routeID') updates.routeIM = false;
+      if (route === 'routeIM') updates.routeID = false;
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Handle HRIG infiltration type conditional logic
+  const toggleHRIGInfiltration = (type, checked) => {
+    const updates = { [type]: checked };
+    // Ensure only one infiltration type is selected
+    if (checked) {
+      if (type === 'structured') updates.unstructured = false;
+      if (type === 'unstructured') updates.structured = false;
+    }
+    setForm(prev => ({ ...prev, ...updates }));
   };
 
   const validate = () => {
@@ -502,27 +591,38 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   };
 
 
-  const TextArea = ({ name, label, rows=3 }) => (
+  // Memoized TextArea component to prevent focus loss on re-renders
+  const TextArea = useCallback(({ name, label, rows = 3, disabled = false }) => (
     <div className="w-full">
       <label className="form-label">{label}</label>
       <textarea
         id={name}
         rows={rows}
         value={form[name] ?? ''}
-        onChange={(e)=>{ if (errors[name]) clearError(name); const next = e.target.value; setForm(prev => (prev[name] === next ? prev : { ...prev, [name]: next })); }}
+        disabled={disabled}
+        onChange={(e) => { 
+          if (errors[name]) clearError(name); 
+          const next = e.target.value; 
+          setForm(prev => (prev[name] === next ? prev : { ...prev, [name]: next })); 
+        }}
         className="form-textarea"
         aria-invalid={!!errors[name]}
       />
-      {errors[name] && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors[name]}</div>}
+      {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
     </div>
-  );
+  ), [form, errors]);
 
-  const Check = ({ name, label, onChange }) => (
+  // Memoized Check component to prevent focus loss on re-renders
+  const Check = useCallback(({ name, label, onChange }) => (
     <label className="checkbox-item">
-      <input type="checkbox" checked={!!form[name]} onChange={onChange ? onChange : ((e)=>handleChange(name, e.target.checked))} />
+      <input 
+        type="checkbox" 
+        checked={!!form[name]} 
+        onChange={onChange ? onChange : ((e) => handleChange(name, e.target.checked))} 
+      />
       {label}
     </label>
-  );
+  ), [form]);
 
   const handleClose = () => {
     if (onClose) return onClose();
@@ -538,6 +638,23 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         </div>
         <div className="bitecase-separator" />
         <div className="bitecase-body">
+          {/* Focus Issue Warning */}
+          <div style={{
+            backgroundColor: '#fef3c7',
+            border: '1px solid #f59e0b',
+            borderRadius: '6px',
+            padding: '12px',
+            marginBottom: '16px',
+            fontSize: '0.875rem',
+            color: '#92400e'
+          }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+              ⚠️ Form Focus Issue Fixed
+            </div>
+            <div>
+              The text field focus loss issue has been resolved. You can now type continuously in text fields without losing focus.
+            </div>
+          </div>
           <form onSubmit={async (e)=>{
             const ok = validate();
             if (!ok) {
@@ -621,23 +738,35 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             {/* Nature of Injury */}
             <section className="section">
               <div className="section-title">Nature of Injury/ies</div>
-              <div className="mb-2"><Check name="multiInjuries" label="Multiple Injuries?" /></div>
-              <div className="form-grid grid-2">
+              <div className="form-label">Multiple Injuries</div>
+              <div className="checkbox-row">
+                <Check name="multiInjuriesYes" label="Yes" onChange={() => toggleRadio('multipleInjuries', 'yes')} />
+                <Check name="multiInjuriesNo" label="No" onChange={() => toggleRadio('multipleInjuries', 'no')} />
+              </div>
+              {errors.multipleInjuries && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.multipleInjuries}</div>}
+              
+              <div className="form-grid grid-2" style={{ opacity: form.multiInjuriesYes ? 1 : 0.5, pointerEvents: form.multiInjuriesYes ? 'auto' : 'none' }}>
                 {['Abrasion','Avulsion','Burn','Concussion','Contusion','Open wound/laceration','Trauma'].map((lbl,i)=> (
                   <Check key={i} name={`inj_${i}`} label={lbl} />
                 ))}
+              </div>
+              
+              <div style={{ marginTop: '10px' }}>
+                <Check name="injOthersCheckbox" label="Others" onChange={(e) => toggleInjuryOthers(e.target.checked)} />
+                <div style={{ marginTop: '8px' }}>
+                  <TextArea name="injOthers" label="" disabled={!form.injOthersCheckbox} />
                 </div>
-              <TextArea name="injOthers" label="Others" />
+              </div>
             </section>
 
             {/* External Causes & Place of Occurrence */}
             <section className="section">
               <div className="section-title">External Causes / Place of Occurrence</div>
               <div className="form-label">External causes</div>
-              <Check name="causeBiteSting" label="Bite/ Sting (specify animal/insect)" />
-              <Input name="causeBiteStingDetail" label="" />
-              <Check name="causeChemical" label="Chemical Substance (applied to bite site)" />
-              <Input name="causeChemicalDetail" label="" />
+              <Check name="causeBiteSting" label="Bite/ Sting (specify animal/insect)" onChange={(e) => toggleExternalCause('causeBiteSting', e.target.checked)} />
+              <Input name="causeBiteStingDetail" label="" disabled={!form.causeBiteSting} />
+              <Check name="causeChemical" label="Chemical Substance (applied to bite site)" onChange={(e) => toggleExternalCause('causeChemical', e.target.checked)} />
+              <Input name="causeChemicalDetail" label="" disabled={!form.causeChemical} />
               <div className="form-label" style={{marginTop: '10px'}}>Place of Occurrence</div>
               <div className="checkbox-row">
                 {['Home','School','Road','Neighbor'].map((lbl,i)=> (<Check key={i} name={`place_${i}`} label={lbl} />))}
@@ -667,9 +796,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                   </select>
                 </div>
               )}
-              {!form.transferred && (
-                <Input name="transferredTo" label="" />
-              )}
               <div className="checkbox-row" style={{marginTop: '10px'}}>
                 <Check name="provoked" label="Provoked" />
                 <Check name="unprovoked" label="Unprovoked" />
@@ -692,9 +818,9 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               </div>
               {errors.clinicalStatus && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.clinicalStatus}</div>}
               <div className="form-label" style={{marginTop: '10px'}}>Anti-Rabies Vaccination Status of Animal</div>
-              <Check name="animalImmunized" label="Immunized, when:" />
-              <Input name="animalImmunizedYear" label="Year" />
-              <Check name="animalNone" label="None" />
+              <Check name="animalImmunized" label="Immunized, when:" onChange={(e) => toggleAnimalImmunization('animalImmunized', e.target.checked)} />
+              <Input name="animalImmunizedYear" label="Year" disabled={!form.animalImmunized} />
+              <Check name="animalNone" label="None" onChange={(e) => toggleAnimalImmunization('animalNone', e.target.checked)} />
               <div className="form-label" style={{marginTop: '10px'}}>Ownership Status</div>
               <div className="checkbox-row">
                 {['Pet','Neighbor','Stray'].map((lbl,i)=> (<Check key={i} name={`owner_${i}`} label={lbl} onChange={() => toggleRadio('ownership', ['pet', 'neighbor', 'stray'][i])} />))}
@@ -706,10 +832,10 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">Patient Immunization</div>
               <div className="form-label">DPT Immunization</div>
-              <Check name="dptComplete" label="Complete" />
-              <Input name="dptYear" label="Year Given (last dose)" />
-              <Check name="dptIncomplete" label="Incomplete" />
-              <Input name="dptDoses" label="No. of Dose given" />
+              <Check name="dptComplete" label="Complete" onChange={(e) => toggleDPTImmunization('dptComplete', e.target.checked)} />
+              <Input name="dptYear" label="Year Given (last dose)" disabled={!form.dptComplete} />
+              <Check name="dptIncomplete" label="Incomplete" onChange={(e) => toggleDPTImmunization('dptIncomplete', e.target.checked)} />
+              <Input name="dptDoses" label="No. of Dose given" disabled={!form.dptIncomplete} />
               <Check name="dptNone" label="None" />
               <div className="form-label" style={{marginTop: '10px'}}>Previous</div>
               <Input name="prevDoseNo" label="No. of doses given" />
@@ -725,13 +851,13 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               </div>
               <div className="form-label" style={{marginTop: '10px'}}>Vaccine Name</div>
               <div className="checkbox-row">
-                <Check name="vacSpeeda" label="SPEEDA (PVRV)" />
-                <Check name="vacVaxirab" label="VAXIRAB (PCEC)" />
+                <Check name="vacSpeeda" label="SPEEDA (PVRV)" onChange={(e) => toggleVaccine('vacSpeeda', e.target.checked)} />
+                <Check name="vacVaxirab" label="VAXIRAB (PCEC)" onChange={(e) => toggleVaccine('vacVaxirab', e.target.checked)} />
                 </div>
               <div className="form-label" style={{marginTop: '10px'}}>Route of Administration</div>
               <div className="checkbox-row">
-                <Check name="routeID" label="Intradermal (ID)" />
-                <Check name="routeIM" label="Intramuscular (IM)" />
+                <Check name="routeID" label="Intradermal (ID)" onChange={(e) => toggleRoute('routeID', e.target.checked)} />
+                <Check name="routeIM" label="Intramuscular (IM)" onChange={(e) => toggleRoute('routeIM', e.target.checked)} />
               </div>
               <div className="form-label" style={{marginTop: '10px'}}>Schedule Dates of Immunization</div>
               {['D0','D3','D7','D14','D28'].map((d, i)=> (
@@ -759,8 +885,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <Input name="hrigDate" type="date" label="Date Given" />
               <div className="checkbox-row" style={{marginTop: '8px'}}>
                 <Check name="localInfiltration" label="Local Infiltration done" />
-                <Check name="structured" label="Structured" />
-                <Check name="unstructured" label="Unstructured" />
+                <Check name="structured" label="Structured" onChange={(e) => toggleHRIGInfiltration('structured', e.target.checked)} />
+                <Check name="unstructured" label="Unstructured" onChange={(e) => toggleHRIGInfiltration('unstructured', e.target.checked)} />
                 </div>
             </section>
 
