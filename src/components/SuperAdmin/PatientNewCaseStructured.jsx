@@ -371,6 +371,71 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
   const handleTimeOfInjuryChange = useCallback((e) => setTimeOfInjury(e.target.value), []);
   
   // Memoized handlers for complex state updates
+  const handleSiteChange = useCallback((key) => (e) => {
+    setSite(s => ({ ...s, [key]: e.target.checked }));
+  }, []);
+  
+  const handleSiteOthersTextChange = useCallback((e) => {
+    setSite(s => ({ ...s, othersText: e.target.value }));
+  }, []);
+  
+  const handleInjuryChange = useCallback((key) => (e) => {
+    setInjury(s => ({ ...s, [key]: e.target.checked }));
+  }, []);
+  
+  const handleInjuryOthersTextChange = useCallback((e) => {
+    setInjury(s => ({ ...s, othersText: e.target.value }));
+  }, []);
+  
+  const handleInjuryBurnDegreeChange = useCallback((e) => {
+    setInjury(s => ({ ...s, burnDegree: Number(e.target.value || 1) }));
+  }, []);
+  
+  const handleInjuryBurnSiteChange = useCallback((e) => {
+    setInjury(s => ({ ...s, burnSite: e.target.value }));
+  }, []);
+  
+  const handleBiteStingChange = useCallback((e) => setBiteSting(e.target.checked), []);
+  const handleBiteStingDetailsChange = useCallback((e) => setBiteStingDetails(e.target.value), []);
+  const handleChemicalSubstanceChange = useCallback((e) => setChemicalSubstance(e.target.checked), []);
+  const handleChemicalDetailsChange = useCallback((e) => setChemicalDetails(e.target.value), []);
+  
+  const handlePlaceChange = useCallback((key) => (e) => {
+    setPlace(s => ({ ...s, [key]: e.target.checked }));
+  }, []);
+  
+  const handlePlaceOthersTextChange = useCallback((e) => {
+    setPlace(s => ({ ...s, othersText: e.target.value }));
+  }, []);
+  
+  const handleTransferredToChange = useCallback((e) => setTransferredTo(e.target.value), []);
+  
+  const handleAnimalChange = useCallback((key) => (e) => {
+    setAnimal(s => ({ ...s, [key]: e.target.checked }));
+  }, []);
+  
+  const handleAnimalOthersTextChange = useCallback((e) => {
+    setAnimal(s => ({ ...s, otherText: e.target.value }));
+  }, []);
+  
+  const handleAnimalImmunizedYearChange = useCallback((e) => {
+    setAnimal(s => ({ ...s, immunizedYear: e.target.value }));
+  }, []);
+  
+  const handleAnimalImmunizedChange = useCallback((e) => {
+    setAnimal(s => ({ ...s, immunized: e.target.checked, notImmunized: e.target.checked ? false : s.notImmunized }));
+  }, []);
+  
+  const handleAnimalNotImmunizedChange = useCallback((e) => {
+    setAnimal(s => ({ ...s, notImmunized: e.target.checked, immunized: e.target.checked ? false : s.immunized }));
+  }, []);
+  
+  const handleDiagnosisChange = useCallback((e) => setDiagnosis(e.target.value), []);
+  const handleAllergyHistoryChange = useCallback((e) => setAllergyHistory(e.target.value), []);
+  const handleMaintenanceMedicationsChange = useCallback((e) => setMaintenanceMedications(e.target.value), []);
+  const handleManagementChange = useCallback((e) => setManagement(e.target.value), []);
+  
+  // Memoized handlers for complex state updates
   const handleTypeNonBiteChange = useCallback((e) => {
     const checked = e.target.checked;
     setTypeNonBite(checked);
@@ -926,7 +991,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     }
   };
 
-  const Labeled = ({ labelText, children, required = false }) => (
+  const Labeled = React.memo(({ labelText, children, required = false }) => (
     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 140, marginBottom: 16 }}>
       <label style={label}>
         {labelText}
@@ -934,7 +999,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
       </label>
       {children}
     </div>
-  );
+  ));
 
   return (
     <>
@@ -1075,10 +1140,10 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         </div>
         <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:8 }}>
         {['head','face','neck','chest','back','abdomen','upper','lower'].map(k => (
-          <label key={k}><input type="checkbox" checked={site[k]} onChange={e=>setSite(s=>({ ...s, [k]: e.target.checked }))} /> {k === 'upper' ? 'Upper Extremities' : k === 'lower' ? 'Lower Extremities' : k.charAt(0).toUpperCase()+k.slice(1)}</label>
+          <label key={k}><input type="checkbox" checked={site[k]} onChange={handleSiteChange(k)} /> {k === 'upper' ? 'Upper Extremities' : k === 'lower' ? 'Lower Extremities' : k.charAt(0).toUpperCase()+k.slice(1)}</label>
         ))}
-        <label><input type="checkbox" checked={site.others} onChange={e=>setSite(s=>({ ...s, others: e.target.checked }))} /> Others</label>
-          <input style={{ ...inputCss, maxWidth:320 }} placeholder="Others (specify)" value={site.othersText} onChange={e=>setSite(s=>({ ...s, othersText: e.target.value }))} />
+        <label><input type="checkbox" checked={site.others} onChange={handleSiteChange('others')} /> Others</label>
+          <input style={{ ...inputCss, maxWidth:320 }} placeholder="Others (specify)" value={site.othersText} onChange={handleSiteOthersTextChange} />
         </div>
       </div>
 
@@ -1091,7 +1156,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>Multiple Injuries?</p>
           <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" checked={injury.multiple} onChange={e=>setInjury(s=>({ ...s, multiple: e.target.checked }))} />
+              <input type="checkbox" checked={injury.multiple} onChange={handleInjuryChange('multiple')} />
               Yes
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1111,7 +1176,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
               type="checkbox" 
               checked={injury.abrasion} 
               disabled={!injury.multiple}
-              onChange={e=>setInjury(s=>({ ...s, abrasion: e.target.checked }))} 
+              onChange={handleInjuryChange('abrasion')} 
             />
             Abrasion
           </label>
@@ -1213,42 +1278,42 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         <h3 style={h3Style}>External Cause/s of Injury/ies:</h3>
         <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={biteSting} onChange={e=>setBiteSting(e.target.checked)} />
+            <input type="checkbox" checked={biteSting} onChange={handleBiteStingChange} />
             Bite/ Sting, Specify animal/insect
           </label>
-          {biteSting ? <input style={{ ...inputCss, maxWidth:400, marginLeft:24 }} placeholder="Specify animal/insect" value={biteStingDetails} onChange={e=>setBiteStingDetails(e.target.value)} /> : null}
+          {biteSting ? <input style={{ ...inputCss, maxWidth:400, marginLeft:24 }} placeholder="Specify animal/insect" value={biteStingDetails} onChange={handleBiteStingDetailsChange} /> : null}
           
           <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <input type="checkbox" checked={chemicalSubstance} onChange={e=>setChemicalSubstance(e.target.checked)} />
+            <input type="checkbox" checked={chemicalSubstance} onChange={handleChemicalSubstanceChange} />
             Chemical Substance, specify (applied to bite site)
           </label>
-          {chemicalSubstance ? <input style={{ ...inputCss, maxWidth:400, marginLeft:24 }} placeholder="Specify chemical substance" value={chemicalDetails} onChange={e=>setChemicalDetails(e.target.value)} /> : null}
+          {chemicalSubstance ? <input style={{ ...inputCss, maxWidth:400, marginLeft:24 }} placeholder="Specify chemical substance" value={chemicalDetails} onChange={handleChemicalDetailsChange} /> : null}
         </div>
 
         <h3 style={{ ...h3Style, marginTop:14 }}>Place of Occurrence:</h3>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <input type="checkbox" checked={place.home} onChange={e=>setPlace(s=>({ ...s, home: e.target.checked }))} />
+              <input type="checkbox" checked={place.home} onChange={handlePlaceChange('home')} />
               Home
             </label>
             <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <input type="checkbox" checked={place.road} onChange={e=>setPlace(s=>({ ...s, road: e.target.checked }))} />
+              <input type="checkbox" checked={place.road} onChange={handlePlaceChange('road')} />
               Road
             </label>
             <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <input type="checkbox" checked={place.others} onChange={e=>setPlace(s=>({ ...s, others: e.target.checked }))} />
+              <input type="checkbox" checked={place.others} onChange={handlePlaceChange('others')} />
               Others:
             </label>
-            {place.others ? <input style={{ ...inputCss, marginLeft:24 }} placeholder="Others (specify)" value={place.othersText} onChange={e=>setPlace(s=>({ ...s, othersText: e.target.value }))} /> : null}
+            {place.others ? <input style={{ ...inputCss, marginLeft:24 }} placeholder="Others (specify)" value={place.othersText} onChange={handlePlaceOthersTextChange} /> : null}
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <input type="checkbox" checked={place.school} onChange={e=>setPlace(s=>({ ...s, school: e.target.checked }))} />
+              <input type="checkbox" checked={place.school} onChange={handlePlaceChange('school')} />
               School
             </label>
             <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <input type="checkbox" checked={place.neighbor} onChange={e=>setPlace(s=>({ ...s, neighbor: e.target.checked }))} />
+              <input type="checkbox" checked={place.neighbor} onChange={handlePlaceChange('neighbor')} />
               Neighbor
             </label>
           </div>
@@ -1267,9 +1332,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           {transferred ? (
             <div style={{ marginLeft:24 }}>
               <label style={{ display:'block', marginBottom:4, fontWeight:'bold' }}>Specify facility/hospital:</label>
-              <select style={inputCss} value={transferredTo} onChange={e=>{
-                setTransferredTo(e.target.value);
-              }}>
+              <select style={inputCss} value={transferredTo} onChange={handleTransferredToChange}>
                 <option value="">Select facility/hospital</option>
                 {centers.length > 0 ? (
                   centers.map(center => (
@@ -1432,7 +1495,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           }} 
           placeholder="Enter diagnosis..."
           value={diagnosis} 
-          onChange={e=>setDiagnosis(e.target.value)} 
+          onChange={handleDiagnosisChange} 
         />
       </div>
 
@@ -1469,7 +1532,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           }} 
           placeholder="Enter allergy history..."
           value={allergyHistory} 
-          onChange={e=>setAllergyHistory(e.target.value)} 
+          onChange={handleAllergyHistoryChange} 
         />
       </div>
 
@@ -1487,7 +1550,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           }} 
           placeholder="Enter maintenance medications..."
           value={maintenanceMedications} 
-          onChange={e=>setMaintenanceMedications(e.target.value)} 
+          onChange={handleMaintenanceMedicationsChange} 
         />
       </div>
 
@@ -1505,7 +1568,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           }} 
           placeholder="Enter management plan..."
           value={management} 
-          onChange={e=>setManagement(e.target.value)} 
+          onChange={handleManagementChange} 
         />
       </div>
 
