@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import './NewBiteCaseForm.css';
 import { apiFetch } from '../../config/api';
@@ -9,9 +9,11 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
-  // Prefill from selected patient
+  // Prefill from selected patient (only when patient identity changes)
+  const prefilledRef = useRef(false);
   useEffect(() => {
-    if (!selectedPatient) return;
+    if (!selectedPatient || prefilledRef.current) return;
+    prefilledRef.current = true;
     setForm(prev => ({
       ...prev,
       firstName: selectedPatient.firstName || '',
@@ -37,7 +39,7 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
       zipCode: selectedPatient.zipCode || '',
       centerName: selectedPatient.barangay ? `${selectedPatient.barangay} Center` : (prev.centerName || ''),
     }));
-  }, [selectedPatient]);
+  }, [selectedPatient?._id]);
 
   // Initialize defaults once (registration number, dateRegistered, initial schedule)
   useEffect(() => {
@@ -356,11 +358,13 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
       <label className="form-label">{label}</label>
       <input
         type={type}
-        value={form[name] || ''}
+        value={form[name] ?? ''}
         id={name}
         onChange={(e)=> {
           if (errors[name]) clearError(name);
-          return onChange ? onChange(e) : handleChange(name, e.target.value);
+          const next = e.target.value;
+          if (onChange) onChange(e);
+          else setForm(prev => (prev[name] === next ? prev : { ...prev, [name]: next }));
         }}
         placeholder={placeholder}
         className="form-input"
@@ -376,8 +380,8 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
       <textarea
         id={name}
         rows={rows}
-        value={form[name] || ''}
-        onChange={(e)=>{ if (errors[name]) clearError(name); handleChange(name, e.target.value); }}
+        value={form[name] ?? ''}
+        onChange={(e)=>{ if (errors[name]) clearError(name); const next = e.target.value; setForm(prev => (prev[name] === next ? prev : { ...prev, [name]: next })); }}
         className="form-textarea"
         aria-invalid={!!errors[name]}
       />
