@@ -1411,6 +1411,33 @@ const SuperAdminVaccinationSchedule = () => {
               console.log('🔍 Built schedule from bite case (fallback):', scheduleList);
             }
             
+            // Ensure schedule items have proper structure with labels
+            if (scheduleList && scheduleList.length > 0 && !scheduleList[0].label) {
+              console.log('🔍 Fixing schedule items missing labels:', scheduleList);
+              
+              // If scheduleList contains raw vaccinationdates record, convert it to proper schedule items
+              if (scheduleList[0].d0Date !== undefined) {
+                const rawRecord = scheduleList[0];
+                scheduleList = [
+                  { label: 'Day 0', date: rawRecord.d0Date, status: rawRecord.d0Status },
+                  { label: 'Day 3', date: rawRecord.d3Date, status: rawRecord.d3Status },
+                  { label: 'Day 7', date: rawRecord.d7Date, status: rawRecord.d7Status },
+                  { label: 'Day 14', date: rawRecord.d14Date, status: rawRecord.d14Status },
+                  { label: 'Day 28', date: rawRecord.d28Date, status: rawRecord.d28Status }
+                ].filter(item => item.date); // Only include items with dates
+                console.log('🔍 Converted raw vaccinationdates to schedule items:', scheduleList);
+              } else {
+                // Fallback for other cases
+                const labels = ['Day 0', 'Day 3', 'Day 7', 'Day 14', 'Day 28'];
+                scheduleList = scheduleList.map((item, idx) => ({
+                  label: labels[idx] || `Day ${idx}`,
+                  date: item.date || item.d0Date || item.d3Date || item.d7Date || item.d14Date || item.d28Date,
+                  status: item.status || item.d0Status || item.d3Status || item.d7Status || item.d14Status || item.d28Status
+                }));
+                console.log('🔍 Fixed schedule items:', scheduleList);
+              }
+            }
+            
             // If still no vdItem but we have biteCase, use biteCase data
             if (!vdItem && biteCase) {
               vdItem = {
@@ -3419,6 +3446,7 @@ const SuperAdminVaccinationSchedule = () => {
                       {scheduleModalData?.schedule && scheduleModalData.schedule.length > 0 ? (
                         <div>
                           {scheduleModalData.schedule.map((scheduleItem, index) => {
+                            console.log('🔍 Rendering schedule item:', scheduleItem);
                             const itemDateStr = scheduleItem.date ? (/^\d{4}-\d{2}-\d{2}$/.test(scheduleItem.date) ? scheduleItem.date : toLocalDateOnlyString(scheduleItem.date)) : '';
                             const todayStr = todayLocalStr();
                             let derivedStatus = scheduleItem.status;
