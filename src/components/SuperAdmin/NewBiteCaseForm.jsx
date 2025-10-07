@@ -7,6 +7,7 @@ import { apiFetch } from '../../config/api';
 const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
 
   // Prefill from selected patient
   useEffect(() => {
@@ -81,17 +82,25 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     const nextErrors = {};
     // Basic required fields
     const req = (key, label) => { if (!String(form[key] || '').trim()) nextErrors[key] = `${label} is required.`; };
-    req('registrationNumber','Registration Number');
-    req('dateRegistered','Date Registered');
-    req('centerName','Center Name');
-    req('firstName','First Name');
-    req('lastName','Last Name');
-    req('sex','Sex');
-    req('birthdate','Birthdate');
-    req('contactNo','Contact No.');
-    req('barangay','Barangay');
-    req('city','City');
-    req('province','Province');
+    [
+      ['registrationNumber','Registration Number'],
+      ['dateRegistered','Date Registered'],
+      ['centerName','Center Name'],
+      ['firstName','First Name'],
+      ['lastName','Last Name'],
+      ['sex','Sex'],
+      ['birthdate','Birthdate'],
+      ['birthplace','Birthplace'],
+      ['age','Age'],
+      ['weight','Weight'],
+      ['nationality','Nationality'],
+      ['religion','Religion'],
+      ['occupation','Occupation'],
+      ['contactNo','Contact No.'],
+      ['barangay','Barangay'],
+      ['city','City'],
+      ['province','Province'],
+    ].forEach(([k,l])=>req(k,l));
     // Exposure required exactly one
     const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
     if (exposureCount !== 1) nextErrors.exposure = 'Select exactly one exposure type.';
@@ -348,12 +357,14 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
       <input
         type={type}
         value={form[name] || ''}
+        id={name}
         onChange={(e)=> {
           if (errors[name]) clearError(name);
           return onChange ? onChange(e) : handleChange(name, e.target.value);
         }}
         placeholder={placeholder}
         className="form-input"
+        aria-invalid={!!errors[name]}
       />
       {errors[name] && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors[name]}</div>}
     </div>
@@ -363,10 +374,12 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     <div className="w-full">
       <label className="form-label">{label}</label>
       <textarea
+        id={name}
         rows={rows}
         value={form[name] || ''}
         onChange={(e)=>{ if (errors[name]) clearError(name); handleChange(name, e.target.value); }}
         className="form-textarea"
+        aria-invalid={!!errors[name]}
       />
       {errors[name] && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors[name]}</div>}
     </div>
@@ -388,7 +401,19 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
         </div>
         <div className="bitecase-separator" />
         <div className="bitecase-body">
-          <form onSubmit={handleSubmit} className="space-y-6" style={{maxWidth: '1200px', margin: '0 auto'}}>
+          <form onSubmit={async (e)=>{
+            const ok = validate();
+            if (!ok) {
+              e.preventDefault();
+              const firstKey = Object.keys(errors).concat(Object.keys(form))[0];
+              try { document.getElementById(firstKey)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+              return;
+            }
+            await handleSubmit(e);
+          }} className="space-y-6" style={{maxWidth: '1200px', margin: '0 auto'}}>
+            {Object.keys(errors).length > 0 && (
+              <div className="error-message" role="alert">Please correct the highlighted fields.</div>
+            )}
             {/* Registration */}
             <section className="section">
               <div className="section-title">Registration</div>
@@ -600,8 +625,9 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
               <TextArea name="management" label="Management:" rows={4} />
             </section>
 
-            <div className="actions">
-              <button type="submit" className="btn btn-primary">Save</button>
+            <div className="actions" style={{justifyContent:'space-between'}}>
+              <button type="button" className="btn btn-secondary" onClick={()=> onClose && onClose()}>Back</button>
+              <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </form>
           </div>
