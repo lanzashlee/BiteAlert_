@@ -54,17 +54,8 @@ const NewBiteCaseForm = ({ onClose }) => {
           <button type="button" aria-label="Close" className="h-9 w-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center" onClick={() => onClose && onClose()}>✕</button>
         </div>
 
-        {/* Progress Bar */}
-        <div className="flex items-center justify-between px-8 py-5 bg-slate-50/70 border-b">
-          {steps.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 group">
-              <div className={`relative flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold transition-all duration-300 shadow-sm ${step >= s.id ? 'bg-gradient-to-r from-blue-600 to-fuchsia-600 text-white ring-2 ring-white' : 'bg-white text-slate-500 ring-1 ring-slate-200'}`}>
-                {s.id}
-              </div>
-              <div className={`text-sm font-medium ${step >= s.id ? 'text-slate-900' : 'text-slate-500'}`}>{s.label}</div>
-            </div>
-          ))}
-        </div>
+        {/* Separator */}
+        <div className="border-b bg-slate-50/70" />
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
@@ -121,13 +112,13 @@ const NewBiteCaseForm = ({ onClose }) => {
               <div className="flex flex-wrap mb-3">
                 <Check name="nonBite" label="NON-BITE" />
                 <Check name="bite" label="BITE" />
-              </div>
+            </div>
               <div className="mb-2 text-red-700 font-semibold">Site of Bite:</div>
               <div className="flex flex-wrap mb-4">
                 {['Head','Chest','Upper Extremities','Face','Back','Lower Extremities','Neck','Abdomen'].map((lbl,i)=> (
                   <Check key={i} name={`site_${i}`} label={lbl} />
-                ))}
-              </div>
+          ))}
+        </div>
               <Input name="siteOthers" label="Others (specify)" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <Input name="dateOfInquiry" type="date" label="Date of Inquiry *" />
@@ -143,7 +134,7 @@ const NewBiteCaseForm = ({ onClose }) => {
                 {['Abrasion','Avulsion','Burn','Concussion','Contusion','Open wound/laceration','Trauma'].map((lbl,i)=> (
                   <Check key={i} name={`inj_${i}`} label={lbl} />
                 ))}
-              </div>
+                </div>
               <TextArea name="injOthers" label="Others" />
             </section>
 
@@ -158,7 +149,7 @@ const NewBiteCaseForm = ({ onClose }) => {
               <div className="mt-4 mb-2 font-semibold text-red-700">Place of Occurrence</div>
               <div className="flex flex-wrap">
                 {['Home','School','Road','Neighbor'].map((lbl,i)=> (<Check key={i} name={`place_${i}`} label={lbl} />))}
-              </div>
+                </div>
               <Input name="placeOthers" label="Others" />
             </section>
 
@@ -194,7 +185,7 @@ const NewBiteCaseForm = ({ onClose }) => {
               <div className="mt-3 mb-2 font-semibold text-red-700">Ownership Status</div>
               <div className="flex flex-wrap">
                 {['Pet','Neighbor','Stray'].map((lbl,i)=> (<Check key={i} name={`owner_${i}`} label={lbl} />))}
-              </div>
+            </div>
             </section>
 
             {/* Patient Immunization */}
@@ -222,7 +213,7 @@ const NewBiteCaseForm = ({ onClose }) => {
               <div className="flex flex-wrap">
                 <Check name="vacSpeeda" label="SPEEDA (PVRV)" />
                 <Check name="vacVaxirab" label="VAXIRAB (PCEC)" />
-              </div>
+                </div>
               <div className="mt-2 mb-2 font-semibold text-red-700">Route of Administration</div>
               <div className="flex flex-wrap">
                 <Check name="routeID" label="Intradermal (ID)" />
@@ -249,7 +240,7 @@ const NewBiteCaseForm = ({ onClose }) => {
                 <Check name="localInfiltration" label="Local Infiltration done" />
                 <Check name="structured" label="Structured" />
                 <Check name="unstructured" label="Unstructured" />
-              </div>
+            </div>
             </section>
 
             {/* Management */}
@@ -274,7 +265,7 @@ const NewBiteCaseForm = ({ onClose }) => {
               <button type="submit" className="px-6 py-2 rounded-full bg-red-700 text-white font-semibold shadow">Save</button>
             </div>
           </form>
-        </div>
+          </div>
       </div>
     </div>
   );
