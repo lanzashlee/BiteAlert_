@@ -313,7 +313,10 @@ const SuperAdminGenerate = () => {
       }
 
       console.log('Loaded animal bite data:', normalized.length);
-      setAnimalBiteData(normalized);
+      // Apply center-based filtering for admin users
+      const filteredData = filterByCenter(normalized, 'center');
+      console.log('Filtered animal bite data by center:', filteredData.length);
+      setAnimalBiteData(filteredData);
     } catch (error) {
       console.error('Error loading animal bite data:', error);
       // Add sample data on error for testing
