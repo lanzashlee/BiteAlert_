@@ -670,11 +670,11 @@ const SuperAdminVaccinationSchedule = () => {
       }
       // Fallback: direct PUT on vaccinationdates/:id
       if (!persisted && scheduleModalData?.vdId) {
-        const res = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+      const res = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
         if (res.ok) persisted = true; else persisted = false;
       }
       if (!persisted && scheduleModalData?.biteCaseId) {
@@ -685,7 +685,7 @@ const SuperAdminVaccinationSchedule = () => {
         });
         if (!res2.ok) {
           const err = await res2.json().catch(()=>({}));
-          throw new Error(err.message || 'Failed to update vaccination dates');
+        throw new Error(err.message || 'Failed to update vaccination dates');
         }
       } else if (!persisted && !scheduleModalData?.biteCaseId) {
         throw new Error('Unable to persist changes: missing record identifiers');
@@ -1495,7 +1495,7 @@ const SuperAdminVaccinationSchedule = () => {
         vdId: vdItem?._id || vdItem?.id,
         biteCaseId: vdItem?.biteCaseId
       });
-      
+
       setScheduleModalData({
         patient: patientData?.patient,
         biteCaseId: vdItem?.biteCaseId,
@@ -2041,12 +2041,12 @@ const SuperAdminVaccinationSchedule = () => {
               tempEntries.push(entry);
               statuses.push(actualStatus);
             }
-          });
+              });
           // Exclude bite cases where all doses are completed
           const allCompleted = statuses.length > 0 && statuses.every(s => s === 'completed');
           if (!allCompleted) {
             vaccinationSchedule.push(...tempEntries);
-          }
+            }
         });
         
         setVaccinations(vaccinationSchedule);
@@ -2933,11 +2933,11 @@ const SuperAdminVaccinationSchedule = () => {
             tempEntries.push(entry);
             statuses.push(actualStatus);
           }
-        });
+            });
         const allCompleted = statuses.length > 0 && statuses.every(s => s === 'completed');
         if (!allCompleted) {
           vaccinationSchedule.push(...tempEntries);
-        }
+          }
       });
       
       console.log('Refreshed vaccination schedule:', vaccinationSchedule.length);

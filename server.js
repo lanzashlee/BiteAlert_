@@ -145,56 +145,6 @@ async function getWorkingGeminiModel(preferredModel) {
     return null;
 }
 
-// ------------------ Prescriptive Helpers: Incidence Bands ------------------
-function classifyIncidenceBand(totalCases) {
-    const n = Number(totalCases) || 0;
-    if (n <= 50) return 'low';
-    if (n <= 100) return 'moderate';
-    if (n <= 200) return 'high';
-    return 'very_high';
-}
-
-function bandToPriority(band) {
-    if (band === 'low') return 'low';
-    if (band === 'moderate') return 'medium';
-    // high and very_high treated as high priority
-    return 'high';
-}
-
-function getBandRecommendationsText(band) {
-    switch (band) {
-        case 'low':
-            return [
-                'Conduct community awareness campaigns on rabies prevention and proper wound management.',
-                'Encourage responsible pet ownership (dog registration, leashing, vaccination).',
-                'Train barangay health workers in first-aid for animal bites and referral procedures.',
-                'Strengthen reporting and monitoring through local health centers.'
-            ].join(' ');
-        case 'moderate':
-            return [
-                'Implement targeted dog vaccination campaigns in affected areas.',
-                'Ensure availability of rabies vaccines and immunoglobulin (RIG) at local health units.',
-                'Launch school-based education programs on rabies prevention.',
-                'Introduce surveillance systems to trace rabid or unvaccinated dogs.'
-            ].join(' ');
-        case 'high':
-            return [
-                'Organize mass dog vaccination campaigns aiming for 70% coverage.',
-                'Strengthen Integrated Bite Case Management (IBCM) and coordinate between human and veterinary services.',
-                'Set up mobile bite treatment centers in hotspots.',
-                'Conduct door-to-door awareness drives in high-risk communities.'
-            ].join(' ');
-        case 'very_high':
-        default:
-            return [
-                'Declare a public health emergency response and allocate additional funding.',
-                'Roll out large-scale vaccination drives with region-wide coverage.',
-                'Deploy rapid response teams for case detection, bite management, and rabies testing.',
-                'Intensify One Health collaboration across health, veterinary, LGU, and NGOs, and strengthen border monitoring.'
-            ].join(' ');
-    }
-}
-
 // MongoDB Configuration
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://lricamara6:Lanz0517@bitealert.febjlgm.mongodb.net/bitealert?retryWrites=true&w=majority";
 const MONGODB_OPTIONS = {
@@ -5767,8 +5717,8 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
             else data.priority = 'low';
         });
 
-        // Generate banded, incidence-based interventions (deterministic)
-        // We'll still optionally use AI to elaborate reasoning, but actions are band-driven.
+        // Generate interventions using existing AI endpoint logic (reuse route internals)
+        // We'll call the same generation flow locally to avoid HTTP overhead
         let interventions = [];
         try {
             // Reuse analyzeCasePatterns from this file for AI context
@@ -5821,33 +5771,26 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
             }
 
             if (!genAI) {
-                // Deterministic banded output without AI
+                // Heuristic fallback
                 interventions = barangaySummaries
-                    .map(s => {
-                        const band = classifyIncidenceBand(s.totalCases || 0);
-                        const priority = bandToPriority(band);
-                        const baseIntervention = getBandRecommendationsText(band);
-                        const reasoningBits = [
-                            `Incidence band: ${band.replace('_',' ').toUpperCase()} (total cases: ${s.totalCases || 0}).`,
-                            s.recentCases ? `Recent cases in last 7 days: ${s.recentCases}.` : '',
-                            s.severeCases ? `Severe/high exposures present: ${s.severeCases}.` : '',
-                            (s.factors || []).length ? `Factors: ${(s.factors || []).join('; ')}` : ''
-                        ].filter(Boolean).join(' ');
-                        return {
-                            barangay: s.barangay,
-                            riskScore: Number(s.riskScore) || 0,
-                            priority,
-                            reasoning: reasoningBits,
-                            intervention: baseIntervention,
-                            ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
-                            timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
-                            resourceNeeds: priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : (priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies'),
-                            coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
-                            totalCases: s.totalCases || 0,
-                            recentCases: s.recentCases || 0,
-                            severeCases: s.severeCases || 0
-                        };
-                    })
+                    .map(s => ({
+                        barangay: s.barangay,
+                        riskScore: Number(s.riskScore) || 0,
+                        priority: s.priority || 'low',
+                        reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
+                        intervention: s.priority === 'high'
+                            ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
+                            : s.priority === 'medium'
+                                ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                                : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+                        ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
+                        timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
+                        resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
+                        coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
+                        totalCases: s.totalCases || 0,
+                        recentCases: s.recentCases || 0,
+                        severeCases: s.severeCases || 0
+                    }))
                     .sort((a, b) => b.riskScore - a.riskScore);
             } else {
                 const model = await getWorkingGeminiModel();
@@ -5864,33 +5807,21 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                 let json;
                 try { json = JSON.parse(text); } catch (e) { const am = text.match(/\[\s*{[\s\S]*}\s*\]/); json = am ? JSON.parse(am[0]) : []; }
                 const ensureLength = (s) => { if (!s) return s; const count = (s.match(/[.!?]/g) || []).length; return count < 4 ? s + ' Provide targeted risk communication, coordinate with the top center, and ensure sufficient vaccine and ERIG stocks while monitoring age‑specific attendance over the next two weeks.' : s; };
-                // Use AI only to elaborate reasoning; actions are band-driven
-                interventions = (Array.isArray(json) ? json : []).map(it => {
-                    const summary = barangaySummaries.find(b => b.barangay === it.barangay) || {};
-                    const band = classifyIncidenceBand(summary.totalCases || 0);
-                    const priority = bandToPriority(band);
-                    const baseIntervention = getBandRecommendationsText(band);
-                    const aiReason = ensureLength(it.analysis || it.reasoning || '');
-                    const reasoning = [
-                        `Incidence band: ${band.replace('_',' ').toUpperCase()} (total cases: ${summary.totalCases || 0}).`,
-                        aiReason
-                    ].filter(Boolean).join(' ');
-                    return {
-                        barangay: it.barangay,
-                        riskScore: Number(it.riskScore) || Number(summary.riskScore) || 0,
-                        priority,
-                        reasoning,
-                        intervention: baseIntervention,
-                        prediction: it.prediction || '',
-                        ageGroupFocus: it.ageGroupFocus || '',
-                        timePattern: it.timePattern || '',
-                        resourceNeeds: it.resourceNeeds || (priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : (priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies')),
-                        coordinationRequired: it.coordinationRequired || (summary.topCenter ? `Coordinate with ${summary.topCenter}` : 'Coordinate with nearest health center'),
-                        totalCases: summary.totalCases || 0,
-                        recentCases: summary.recentCases || 0,
-                        severeCases: summary.severeCases || 0
-                    };
-                }).sort((a, b) => b.riskScore - a.riskScore);
+                interventions = (Array.isArray(json) ? json : []).map(it => ({
+                    barangay: it.barangay,
+                    riskScore: Number(it.riskScore) || 0,
+                    priority: it.priority || 'low',
+                    reasoning: ensureLength(it.analysis || it.reasoning || ''),
+                    intervention: ensureLength(it.recommendation || it.recommendations || ''),
+                    prediction: it.prediction || '',
+                    ageGroupFocus: it.ageGroupFocus || '',
+                    timePattern: it.timePattern || '',
+                    resourceNeeds: it.resourceNeeds || '',
+                    coordinationRequired: it.coordinationRequired || '',
+                    totalCases: barangaySummaries.find(b => b.barangay === it.barangay)?.totalCases || 0,
+                    recentCases: barangaySummaries.find(b => b.barangay === it.barangay)?.recentCases || 0,
+                    severeCases: barangaySummaries.find(b => b.barangay === it.barangay)?.severeCases || 0
+                })).sort((a, b) => b.riskScore - a.riskScore);
             }
         } catch (genErr) {
             console.warn('Prescriptive analytics generation failed, using heuristic fallback:', genErr.message);
