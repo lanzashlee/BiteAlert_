@@ -3575,8 +3575,8 @@ const SuperAdminVaccinationSchedule = () => {
                                       <div className="schedule-info-item">
                                         <p className="schedule-info-label">Edit Date</p>
                                         {(() => {
-                                          const isCompleted = scheduleItem.status === 'completed';
-                                          const isEditableDate = !isCompleted; // allow for scheduled and missed
+                                          const isCompleted = derivedStatus === 'completed';
+                                          const isEditableDate = !isCompleted; // allow for scheduled, missed, and today
                                           const minDate = getTodayDateStr();
                                           return (
                                             <input
