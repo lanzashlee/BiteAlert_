@@ -78,6 +78,23 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     return Object.keys(nextErrors).length === 0;
   };
 
+  // Auto-calc schedule dates from D0
+  const setScheduleFromD0 = (d0Str) => {
+    if (!d0Str) return;
+    try {
+      const base = new Date(d0Str);
+      const addDays = (n) => new Date(base.getTime() + n * 86400000).toISOString().slice(0,10);
+      setForm(prev => ({
+        ...prev,
+        sched_0: d0Str,
+        sched_1: addDays(3),
+        sched_2: addDays(7),
+        sched_3: addDays(14),
+        sched_4: addDays(28),
+      }));
+    } catch {}
+  };
+
   const toIsoUtcNoon = (dateString) => {
     if (!dateString) return null;
     try {
@@ -243,6 +260,17 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
         },
 
         status: 'completed',
+        // explicit day fields like in sample
+        d0Date: scheduleDates[0] || null,
+        d3Date: scheduleDates[1] || null,
+        d7Date: scheduleDates[2] || null,
+        d14Date: scheduleDates[3] || null,
+        d28Date: scheduleDates[4] || null,
+        d0Status: scheduleDates[0] ? 'scheduled' : undefined,
+        d3Status: scheduleDates[1] ? 'scheduled' : undefined,
+        d7Status: scheduleDates[2] ? 'scheduled' : undefined,
+        d14Status: scheduleDates[3] ? 'scheduled' : undefined,
+        d28Status: scheduleDates[4] ? 'scheduled' : undefined,
       };
 
       const res = await apiFetch('/api/bitecases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -255,13 +283,13 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     }
   };
 
-  const Input = ({ name, label, type = 'text', placeholder='' }) => (
+  const Input = ({ name, label, type = 'text', placeholder='', onChange }) => (
     <div className="w-full">
       <label className="form-label">{label}</label>
       <input
         type={type}
         value={form[name] || ''}
-        onChange={(e)=>handleChange(name, e.target.value)}
+        onChange={(e)=> (onChange ? onChange(e) : handleChange(name, e.target.value))}
         placeholder={placeholder}
         className="form-input"
       />
@@ -463,7 +491,14 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
               </div>
               <div className="form-label" style={{marginTop: '10px'}}>Schedule Dates of Immunization</div>
               {['D0','D3','D7','D14','D28'].map((d, i)=> (
-                <div key={d} className="flex items-center gap-8 mb-2"><span className="w-10" style={{color:'#374151'}}>{d}</span><Input name={`sched_${i}`} type="date" label="" /></div>
+                <div key={d} className="flex items-center gap-8 mb-2">
+                  <span className="w-10" style={{color:'#374151'}}>{d}</span>
+                  {i === 0 ? (
+                    <Input name={`sched_${i}`} type="date" label="" onChange={(e)=> setScheduleFromD0(e.target.value)} />
+                  ) : (
+                    <Input name={`sched_${i}`} type="date" label="" />
+                  )}
+                </div>
               ))}
             </section>
 
