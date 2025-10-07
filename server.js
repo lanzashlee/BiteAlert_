@@ -3546,16 +3546,20 @@ app.post('/api/bitecases', async (req, res) => {
         
         // Clean and validate data with better error handling
         // Normalize per-day dates and key fields
+        const toDate = (v) => {
+            try { const d = new Date(v); return isNaN(d.getTime()) ? null : d; } catch { return null; }
+        };
         const dayFields = ['d0Date','d3Date','d7Date','d14Date','d28Date'];
         const normalizedDays = {};
-        dayFields.forEach(k => { if (payload[k]) normalizedDays[k] = new Date(payload[k]); });
+        dayFields.forEach(k => { if (payload[k]) normalizedDays[k] = toDate(payload[k]); });
 
         const cleanPayload = {
             ...payload,
             // Ensure dates are properly formatted
-            arrivalDate: payload.arrivalDate ? new Date(payload.arrivalDate) : new Date(),
-            dateRegistered: payload.dateRegistered ? new Date(payload.dateRegistered) : new Date(),
-            birthdate: payload.birthdate ? new Date(payload.birthdate) : null,
+            arrivalDate: payload.arrivalDate || null,
+            arrivalDateTime: payload.arrivalDate ? toDate(payload.arrivalDate) : null,
+            dateRegistered: payload.dateRegistered ? toDate(payload.dateRegistered) : new Date(),
+            birthdate: payload.birthdate ? toDate(payload.birthdate) : null,
             createdAt: new Date(),
             updatedAt: new Date(),
             // Ensure arrays are properly formatted
@@ -3564,7 +3568,7 @@ app.post('/api/bitecases', async (req, res) => {
             natureOfInjury: Array.isArray(payload.natureOfInjury) ? payload.natureOfInjury : [],
             externalCause: Array.isArray(payload.externalCause) ? payload.externalCause : [],
             placeOfOccurrence: Array.isArray(payload.placeOfOccurrence) ? payload.placeOfOccurrence : [],
-            scheduleDates: Array.isArray(payload.scheduleDates) ? payload.scheduleDates : [],
+            scheduleDates: Array.isArray(payload.scheduleDates) ? payload.scheduleDates.map(toDate).filter(Boolean) : [],
             // Ensure required fields have default values
             status: payload.status || 'in_progress',
             registrationNumber: payload.registrationNumber || '',
