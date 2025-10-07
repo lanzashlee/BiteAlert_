@@ -51,53 +51,36 @@ const NewBiteCaseForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50 flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-4xl bg-white/90 backdrop-blur rounded-2xl shadow-2xl ring-1 ring-slate-200 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center py-6">
-          <h1 className="text-2xl font-bold">New Bite Case Form</h1>
-          <p className="text-sm text-blue-100">Step {step} of {steps.length}</p>
+        <div className="bg-gradient-to-r from-rose-500 via-red-500 to-fuchsia-600 text-white text-center py-7">
+          <h1 className="text-3xl font-extrabold tracking-tight">New Bite Case Form</h1>
+          <p className="text-[13px] text-white/80 mt-1">Step {step} of {steps.length}</p>
         </div>
 
         {/* Progress Bar */}
-        <div className="flex items-center justify-between px-8 py-4 bg-gray-50 border-b">
-          {steps.map((s, index) => (
-            <div key={s.id} className="flex items-center relative">
-              <div
-                className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
-                  step >= s.id
-                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                    : "bg-gray-200 text-gray-500"
-                }`}
-              >
+        <div className="flex items-center justify-between px-8 py-5 bg-slate-50/70 border-b">
+          {steps.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 group">
+              <div className={`relative flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold transition-all duration-300 shadow-sm ${step >= s.id ? 'bg-gradient-to-r from-blue-600 to-fuchsia-600 text-white ring-2 ring-white' : 'bg-white text-slate-500 ring-1 ring-slate-200'}`}>
                 {s.id}
               </div>
-              <div className="absolute top-1/2 left-8 right-[-50%] -translate-y-1/2 h-1 bg-gray-200 z-0">
-                {step > s.id && (
-                  <div className="h-1 bg-gradient-to-r from-blue-500 to-purple-600 w-full transition-all"></div>
-                )}
-              </div>
-              <p
-                className={`ml-3 text-sm font-medium ${
-                  step >= s.id ? "text-blue-600" : "text-gray-500"
-                }`}
-              >
-                {s.label}
-              </p>
+              <div className={`text-sm font-medium ${step >= s.id ? 'text-slate-900' : 'text-slate-500'}`}>{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
           {step === 1 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4 text-gray-700">
+              <h2 className="text-xl font-semibold mb-5 text-slate-800">
                 Patient Information
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-700">
                     Patient Name
                   </label>
                   <input
@@ -105,10 +88,11 @@ const NewBiteCaseForm = () => {
                     name="patientName"
                     value={form.patientName}
                     onChange={handleChange}
-                    className={`mt-1 w-full border rounded-lg p-2.5 text-sm ${
+                    placeholder="Juan Dela Cruz"
+                    className={`mt-1 w-full border rounded-xl p-3 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 transition ${
                       errors.patientName
-                        ? "border-red-500 focus:ring-red-300"
-                        : "border-gray-300 focus:ring-blue-300"
+                        ? "border-red-500 focus:ring-red-100"
+                        : "border-slate-300 focus:ring-blue-100"
                     }`}
                   />
                   {errors.patientName && (
@@ -119,7 +103,7 @@ const NewBiteCaseForm = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-700">
                     Age
                   </label>
                   <input
@@ -127,10 +111,11 @@ const NewBiteCaseForm = () => {
                     name="age"
                     value={form.age}
                     onChange={handleChange}
-                    className={`mt-1 w-full border rounded-lg p-2.5 text-sm ${
+                    placeholder="25"
+                    className={`mt-1 w-full border rounded-xl p-3 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 transition ${
                       errors.age
-                        ? "border-red-500 focus:ring-red-300"
-                        : "border-gray-300 focus:ring-blue-300"
+                        ? "border-red-500 focus:ring-red-100"
+                        : "border-slate-300 focus:ring-blue-100"
                     }`}
                   />
                   {errors.age && (
@@ -140,7 +125,7 @@ const NewBiteCaseForm = () => {
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-700">
                   Contact Number
                 </label>
                 <input
@@ -148,10 +133,11 @@ const NewBiteCaseForm = () => {
                   name="contactNumber"
                   value={form.contactNumber}
                   onChange={handleChange}
-                  className={`mt-1 w-full border rounded-lg p-2.5 text-sm ${
+                  placeholder="09XXXXXXXXX"
+                  className={`mt-1 w-full border rounded-xl p-3 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 transition ${
                     errors.contactNumber
-                      ? "border-red-500 focus:ring-red-300"
-                      : "border-gray-300 focus:ring-blue-300"
+                      ? "border-red-500 focus:ring-red-100"
+                      : "border-slate-300 focus:ring-blue-100"
                   }`}
                 />
                 {errors.contactNumber && (
@@ -165,12 +151,12 @@ const NewBiteCaseForm = () => {
 
           {step === 2 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4 text-gray-700">
+              <h2 className="text-xl font-semibold mb-5 text-slate-800">
                 Bite Details
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-700">
                     Bite Location on Body
                   </label>
                   <input
@@ -178,10 +164,11 @@ const NewBiteCaseForm = () => {
                     name="biteLocation"
                     value={form.biteLocation}
                     onChange={handleChange}
-                    className={`mt-1 w-full border rounded-lg p-2.5 text-sm ${
+                    placeholder="Right forearm"
+                    className={`mt-1 w-full border rounded-xl p-3 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 transition ${
                       errors.biteLocation
-                        ? "border-red-500 focus:ring-red-300"
-                        : "border-gray-300 focus:ring-blue-300"
+                        ? "border-red-500 focus:ring-red-100"
+                        : "border-slate-300 focus:ring-blue-100"
                     }`}
                   />
                   {errors.biteLocation && (
@@ -192,7 +179,7 @@ const NewBiteCaseForm = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-700">
                     Animal Type
                   </label>
                   <input
@@ -200,10 +187,11 @@ const NewBiteCaseForm = () => {
                     name="animalType"
                     value={form.animalType}
                     onChange={handleChange}
-                    className={`mt-1 w-full border rounded-lg p-2.5 text-sm ${
+                    placeholder="Dog / Cat / Others"
+                    className={`mt-1 w-full border rounded-xl p-3 text-sm bg-white shadow-sm focus:outline-none focus:ring-4 transition ${
                       errors.animalType
-                        ? "border-red-500 focus:ring-red-300"
-                        : "border-gray-300 focus:ring-blue-300"
+                        ? "border-red-500 focus:ring-red-100"
+                        : "border-slate-300 focus:ring-blue-100"
                     }`}
                   />
                   {errors.animalType && (
@@ -218,21 +206,22 @@ const NewBiteCaseForm = () => {
 
           {step === 3 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4 text-gray-700">
+              <h2 className="text-xl font-semibold mb-5 text-slate-800">
                 Additional Details
               </h2>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-700">
                   Description
                 </label>
                 <textarea
                   name="description"
                   value={form.description}
                   onChange={handleChange}
-                  className={`mt-1 w-full border rounded-lg p-2.5 text-sm h-24 ${
+                  placeholder="Brief description of the incident"
+                  className={`mt-1 w-full border rounded-xl p-3 text-sm h-28 bg-white shadow-sm focus:outline-none focus:ring-4 transition ${
                     errors.description
-                      ? "border-red-500 focus:ring-red-300"
-                      : "border-gray-300 focus:ring-blue-300"
+                      ? "border-red-500 focus:ring-red-100"
+                      : "border-slate-300 focus:ring-blue-100"
                   }`}
                 />
                 {errors.description && (
@@ -250,7 +239,7 @@ const NewBiteCaseForm = () => {
               <button
                 type="button"
                 onClick={prevStep}
-                className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition"
+                className="px-4 py-2 bg-white text-slate-700 font-semibold rounded-lg shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 transition"
               >
                 Previous
               </button>
@@ -261,14 +250,14 @@ const NewBiteCaseForm = () => {
               <button
                 type="button"
                 onClick={nextStep}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition"
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-fuchsia-600 text-white font-semibold rounded-lg shadow hover:from-blue-700 hover:to-fuchsia-700 transition"
               >
                 Next
               </button>
             ) : (
               <button
                 type="submit"
-                className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition"
+                className="px-5 py-2.5 bg-emerald-600 text-white font-semibold rounded-lg shadow hover:bg-emerald-700 transition"
               >
                 Submit
               </button>
