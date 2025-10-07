@@ -1216,12 +1216,12 @@ const SuperAdminGenerate = () => {
     
     setLoading(true);
     const filteredData = filterAnimalBiteData();
-    const summaryRows = buildBiteSummaryRows(filteredData);
     
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
       await addHeaderLogos(doc);
+      
       // Build a compact filters summary line
       const filterLine = [
         animalBiteFilters.barangay !== 'all' ? `Barangay: ${animalBiteFilters.barangay}` : null,
@@ -1235,27 +1235,78 @@ const SuperAdminGenerate = () => {
         animalBiteFilters.booster !== 'all' ? `Booster: ${animalBiteFilters.booster}` : null,
         animalBiteFilters.status !== 'all' ? `Status: ${animalBiteFilters.status}` : null
       ].filter(Boolean).join('  •  ');
-      const startY = addCenteredHeading(doc, 'ANIMAL BITE EXPOSURE REPORT', [
+      
+      const startY = addCenteredHeading(doc, 'ANIMAL BITE RECORDS REPORT', [
         'NAME OF FACILITY: Animal Bite Treatment Center',
-        filterLine
+        filterLine,
+        `Total Records: ${filteredData.length}`
       ]);
 
-      const columns = ['Metric', 'Count'];
-      const rows = summaryRows.map(r => [r.label, String(r.count)]);
+      // Prepare table data - export the actual filtered records
+      const columns = [
+        'CASE NO.',
+        'DATE',
+        'PATIENT NAME',
+        'AGE',
+        'SEX',
+        'ADDRESS',
+        'ANIMAL TYPE',
+        'BITE SITE',
+        'STATUS'
+      ];
+      
+      const rows = filteredData.map(record => [
+        record.registrationNumber || record.caseNumber || 'N/A',
+        record.dateRegistered ? new Date(record.dateRegistered).toLocaleDateString('en-US') : 'N/A',
+        `${record.firstName || ''} ${record.lastName || ''}`.trim() || 'N/A',
+        record.age || 'N/A',
+        record.sex || 'N/A',
+        record.address || record.patientAddress || 'N/A',
+        record.animalProfile?.species || record.species || 'N/A',
+        record.woundLocation || record.biteSite || 'N/A',
+        record.status || 'N/A'
+      ]);
 
       doc.autoTable({
         startY,
         head: [columns],
         body: rows,
-        styles: { fontSize: 10, cellPadding: 3 },
-        headStyles: { fillColor: [128, 0, 0], textColor: 255, fontStyle: 'bold' },
+        styles: { 
+          fontSize: 8, 
+          cellPadding: 2,
+          overflow: 'linebreak',
+          halign: 'left'
+        },
+        headStyles: { 
+          fillColor: [128, 0, 0], 
+          textColor: 255, 
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        columnStyles: {
+          0: { cellWidth: 20 }, // CASE NO.
+          1: { cellWidth: 18 }, // DATE
+          2: { cellWidth: 25 }, // PATIENT NAME
+          3: { cellWidth: 12 }, // AGE
+          4: { cellWidth: 12 }, // SEX
+          5: { cellWidth: 35 }, // ADDRESS
+          6: { cellWidth: 15 }, // ANIMAL TYPE
+          7: { cellWidth: 20 }, // BITE SITE
+          8: { cellWidth: 18 }  // STATUS
+        },
         theme: 'grid',
-        margin: { left: 14, right: 14 },
+        margin: { left: 10, right: 10 },
         tableLineColor: [128, 0, 0],
-        tableLineWidth: 0.3
+        tableLineWidth: 0.3,
+        pageBreak: 'auto',
+        didDrawPage: (data) => {
+          const page = doc.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.text(`Page ${page}`, 148, 200, { align: 'center' });
+        }
       });
 
-      doc.save('animal_bite_exposure_report.pdf');
+      doc.save('animal_bite_records_report.pdf');
     } catch (error) {
       console.error('PDF generation error:', error);
       alert('Error generating PDF. Please try again.');

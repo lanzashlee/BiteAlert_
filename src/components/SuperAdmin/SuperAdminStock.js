@@ -77,10 +77,10 @@ const SuperAdminStock = () => {
       const desiredBatch = String(qa.batchNumber || '').trim();
       const desiredExpiry = qa.expiryDate ? normalizeDate(qa.expiryDate) : '';
       const entries = Array.isArray(vaccine.stockEntries) ? vaccine.stockEntries : [];
-      const foundSameBatchSameExpiry = entries.find(en => {
+      // Find existing entry with same branch number (batch number) - merge regardless of expiry
+      const foundSameBatch = entries.find(en => {
         const enBatch = String(en.branchNo || '').trim();
-        const enExpiry = en.expirationDate ? normalizeDate(en.expirationDate) : '';
-        return enBatch.toLowerCase() === desiredBatch.toLowerCase() && enExpiry === desiredExpiry;
+        return enBatch.toLowerCase() === desiredBatch.toLowerCase();
       });
 
       // Use the standard endpoint for both new and existing vaccines
@@ -156,19 +156,22 @@ const SuperAdminStock = () => {
           
           if (!Array.isArray(vac.stockEntries)) vac.stockEntries = [];
           
-          if (foundSameBatchSameExpiry) {
-            // Merge quantities with existing batch
+          if (foundSameBatch) {
+            // Merge quantities with existing branch
             const target = vac.stockEntries.find(en => {
               const enBatch = String(en.branchNo || '').trim();
-              const enExpiry = en.expirationDate ? normalizeDate(en.expirationDate) : '';
-              return enBatch.toLowerCase() === desiredBatch.toLowerCase() && enExpiry === desiredExpiry;
+              return enBatch.toLowerCase() === desiredBatch.toLowerCase();
             });
             if (target) {
               let cur = Number(target.stock || 0);
               cur = isNaN(cur) ? 0 : cur;
               target.stock = cur + (isNaN(qty) ? 0 : qty);
+              // Update expiry date if provided
+              if (qa.expiryDate && qa.expiryDate.trim()) {
+                target.expirationDate = qa.expiryDate;
+              }
             }
-            showToast('Added to existing batch', 'success');
+            showToast('Added to existing branch', 'success');
           } else {
             // Create new stock entry
             vac.stockEntries.push({ 
@@ -176,7 +179,7 @@ const SuperAdminStock = () => {
               stock: qty, 
               expirationDate: qa.expiryDate || '' 
             });
-            showToast('New batch created', 'success');
+            showToast('New branch created', 'success');
           }
           return copy;
         });

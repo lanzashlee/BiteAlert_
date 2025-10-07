@@ -16,6 +16,10 @@ const SuperAdminStaffManagement = () => {
   const [centerFilter, setCenterFilter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
   
+  // Determine role: superadmin sees all, admin is limited to their center
+  const userCenter = getUserCenter();
+  const isSuperAdmin = !userCenter || userCenter === 'all';
+  
   // Pagination states
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -360,8 +364,13 @@ const SuperAdminStaffManagement = () => {
     fetchStaff();
   }, []);
 
-  // Load centers from Center Data Management for the filter dropdown
+  // Load centers from Center Data Management for the filter dropdown (superadmin only)
   useEffect(() => {
+    if (!isSuperAdmin) {
+      setCenterOptions([]);
+      return;
+    }
+    
     const fetchCenters = async () => {
       try {
         const res = await apiFetch('/api/centers');
@@ -378,7 +387,7 @@ const SuperAdminStaffManagement = () => {
       }
     };
     fetchCenters();
-  }, []);
+  }, [isSuperAdmin]);
 
   // Get unique roles for filter dropdown
   const uniqueRoles = useMemo(() => {
@@ -523,18 +532,20 @@ const SuperAdminStaffManagement = () => {
             </div>
             
             <div className="filter-controls">
-              <select 
-                value={centerFilter} 
-                onChange={(e) => setCenterFilter(e.target.value)}
-                className="filter-select"
-                aria-label="Filter by health center"
-                title="Filter by center"
-              >
-                <option value="">All Centers</option>
-                {centerOptions.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
+              {isSuperAdmin && (
+                <select 
+                  value={centerFilter} 
+                  onChange={(e) => setCenterFilter(e.target.value)}
+                  className="filter-select"
+                  aria-label="Filter by health center"
+                  title="Filter by center"
+                >
+                  <option value="">All Centers</option>
+                  {centerOptions.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              )}
                              <select 
                  value={roleFilter} 
                  onChange={(e) => setRoleFilter(e.target.value)}

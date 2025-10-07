@@ -76,15 +76,103 @@ const SuperAdminCenterHours = () => {
     return 'N/A';
   };
 
+  const getWeekdaysHours = (center) => {
+    const persisted = hoursByCenterId[String(center._id)] || {};
+    const hours = persisted.hours || center.hours || {};
+    
+    // Check if there's a general weekday hours setting
+    if (hours.weekday && hours.weekday.start && hours.weekday.end) {
+      return `${hours.weekday.start} - ${hours.weekday.end}`;
+    }
+    
+    // Check individual weekday hours and find the most common pattern
+    const weekdayHours = [];
+    days.forEach(day => {
+      const key = day.toLowerCase();
+      const slot = hours[key];
+      if (slot && slot.start && slot.end) {
+        weekdayHours.push(`${slot.start} - ${slot.end}`);
+      }
+    });
+    
+    // If all weekdays have the same hours, show them once
+    if (weekdayHours.length > 0) {
+      const uniqueHours = [...new Set(weekdayHours)];
+      if (uniqueHours.length === 1) {
+        return uniqueHours[0];
+      } else if (uniqueHours.length > 1) {
+        return 'Varies';
+      }
+    }
+    
+    return 'N/A';
+  };
+
+  const getWeekendHours = (center) => {
+    const persisted = hoursByCenterId[String(center._id)] || {};
+    const hours = persisted.hours || center.hours || {};
+    
+    // Check if there's a general weekend hours setting
+    if (hours.weekend && hours.weekend.start && hours.weekend.end) {
+      return `${hours.weekend.start} - ${hours.weekend.end}`;
+    }
+    
+    // Check Saturday and Sunday individually
+    const saturday = hours.saturday;
+    const sunday = hours.sunday;
+    
+    if (saturday && saturday.start && saturday.end && sunday && sunday.start && sunday.end) {
+      const satHours = `${saturday.start} - ${saturday.end}`;
+      const sunHours = `${sunday.start} - ${sunday.end}`;
+      if (satHours === sunHours) {
+        return satHours;
+      } else {
+        return `Sat: ${satHours}, Sun: ${sunHours}`;
+      }
+    } else if (saturday && saturday.start && saturday.end) {
+      return `Sat: ${saturday.start} - ${saturday.end}`;
+    } else if (sunday && sunday.start && sunday.end) {
+      return `Sun: ${sunday.start} - ${sunday.end}`;
+    }
+    
+    return 'N/A';
+  };
+
   const beginEdit = (center) => {
     const persisted = hoursByCenterId[String(center._id)] || {};
-    const values = { contact: (persisted.contactNumber || center.contactNumber || '') };
-    days.forEach((d) => {
-      const key = d.toLowerCase();
-      const baseHours = (persisted.hours || center.hours || {});
-      const src = baseHours[key] || baseHours.weekday || {};
-      values[key] = { start: src.start || '', end: src.end || '' };
-    });
+    const baseHours = (persisted.hours || center.hours || {});
+    
+    // Get weekday hours (check for general weekday setting or use first available weekday)
+    let weekdayHours = baseHours.weekday || {};
+    if (!weekdayHours.start || !weekdayHours.end) {
+      // Find first weekday with hours
+      for (const day of days) {
+        const dayHours = baseHours[day.toLowerCase()];
+        if (dayHours && dayHours.start && dayHours.end) {
+          weekdayHours = dayHours;
+          break;
+        }
+      }
+    }
+    
+    // Get weekend hours (check for general weekend setting or use Saturday/Sunday)
+    let weekendHours = baseHours.weekend || {};
+    if (!weekendHours.start || !weekendHours.end) {
+      const saturday = baseHours.saturday || {};
+      const sunday = baseHours.sunday || {};
+      if (saturday.start && saturday.end) {
+        weekendHours = saturday;
+      } else if (sunday.start && sunday.end) {
+        weekendHours = sunday;
+      }
+    }
+    
+    const values = {
+      contact: (persisted.contactNumber || center.contactNumber || ''),
+      weekday: { start: weekdayHours.start || '', end: weekdayHours.end || '' },
+      weekend: { start: weekendHours.start || '', end: weekendHours.end || '' }
+    };
+    
     setEditingId(center._id);
     setEditValues(values);
     setShowEditModal(true);
@@ -105,17 +193,31 @@ const SuperAdminCenterHours = () => {
 
   const saveEdit = async (center) => {
     try {
-      // Validate and clean hours — only send days with both start and end
+      // Validate and clean hours — check weekday and weekend
       const cleanedHours = {};
-      for (const key of ['monday','tuesday','wednesday','thursday','friday']) {
-        const slot = editValues[key] || {};
-        const start = (slot.start || '').trim();
-        const end = (slot.end || '').trim();
-        if ((start && !end) || (!start && end)) {
-          alert(`Please provide both start and end for ${key.charAt(0).toUpperCase()+key.slice(1)}.`);
-          return;
-        }
-        if (start && end) cleanedHours[key] = { start, end };
+      
+      // Validate weekday hours
+      const weekdaySlot = editValues.weekday || {};
+      const weekdayStart = (weekdaySlot.start || '').trim();
+      const weekdayEnd = (weekdaySlot.end || '').trim();
+      if ((weekdayStart && !weekdayEnd) || (!weekdayStart && weekdayEnd)) {
+        alert('Please provide both start and end times for Weekdays.');
+        return;
+      }
+      if (weekdayStart && weekdayEnd) {
+        cleanedHours.weekday = { start: weekdayStart, end: weekdayEnd };
+      }
+      
+      // Validate weekend hours
+      const weekendSlot = editValues.weekend || {};
+      const weekendStart = (weekendSlot.start || '').trim();
+      const weekendEnd = (weekendSlot.end || '').trim();
+      if ((weekendStart && !weekendEnd) || (!weekendStart && weekendEnd)) {
+        alert('Please provide both start and end times for Weekend.');
+        return;
+      }
+      if (weekendStart && weekendEnd) {
+        cleanedHours.weekend = { start: weekendStart, end: weekendEnd };
       }
 
       // Build center_hours document for persistence
@@ -239,11 +341,8 @@ const SuperAdminCenterHours = () => {
               <thead>
                 <tr>
                   <th>Center</th>
-                  <th>Monday</th>
-                  <th>Tuesday</th>
-                  <th>Wednesday</th>
-                  <th>Thursday</th>
-                  <th>Friday</th>
+                  <th>Weekdays</th>
+                  <th>Weekend</th>
                   <th>Contact</th>
                   <th>Actions</th>
                 </tr>
@@ -253,9 +352,8 @@ const SuperAdminCenterHours = () => {
                   return (
                     <tr key={c._id}>
                       <td>{c.centerName || c.name}</td>
-                      {days.map((d) => (
-                        <td key={`${c._id}-${d.toLowerCase()}`}>{getHoursForDay(c, d)}</td>
-                      ))}
+                      <td>{getWeekdaysHours(c)}</td>
+                      <td>{getWeekendHours(c)}</td>
                       <td>{(hoursByCenterId[String(c._id)]?.contactNumber || c.contactNumber || '—')}</td>
                       <td style={{ textAlign:'right' }}>
                         <button className="btn btn-primary" onClick={() => beginEdit(c)} aria-label={`Edit service hours for ${c.name}`} title="Edit">Edit</button>
@@ -277,20 +375,23 @@ const SuperAdminCenterHours = () => {
               <h4 className="react-modal-title">Edit Service Hours</h4>
               <button className="modal-close-btn" onClick={cancelEdit} aria-label="Close">✕</button>
             </div>
-            <div className="react-modal-body" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px,1fr))', gap:12 }}>
-              {days.map((d) => {
-                const key = d.toLowerCase();
-                return (
-                  <div key={key} className="form-row">
-                    <label>{d}</label>
-                    <div style={{ display:'flex', gap:8 }}>
-                      <input type="time" value={editValues[key]?.start || ''} onChange={(e)=>updateField(key,'start',e.target.value)} />
-                      <span style={{ alignSelf:'center' }}>–</span>
-                      <input type="time" value={editValues[key]?.end || ''} onChange={(e)=>updateField(key,'end',e.target.value)} />
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="react-modal-body" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px,1fr))', gap:16 }}>
+              <div className="form-row">
+                <label>Weekdays (Monday - Friday)</label>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input type="time" value={editValues.weekday?.start || ''} onChange={(e)=>updateField('weekday','start',e.target.value)} />
+                  <span style={{ alignSelf:'center' }}>–</span>
+                  <input type="time" value={editValues.weekday?.end || ''} onChange={(e)=>updateField('weekday','end',e.target.value)} />
+                </div>
+              </div>
+              <div className="form-row">
+                <label>Weekend (Saturday - Sunday)</label>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input type="time" value={editValues.weekend?.start || ''} onChange={(e)=>updateField('weekend','start',e.target.value)} />
+                  <span style={{ alignSelf:'center' }}>–</span>
+                  <input type="time" value={editValues.weekend?.end || ''} onChange={(e)=>updateField('weekend','end',e.target.value)} />
+                </div>
+              </div>
               <div className="form-row">
                 <label>Contact Number</label>
                 <input type="text" value={editValues.contact || ''} onChange={(e)=>setEditValues((p)=>({...p, contact:e.target.value}))} placeholder="Contact number" />

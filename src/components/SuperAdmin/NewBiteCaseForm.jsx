@@ -439,30 +439,59 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       // Create vaccinationdates record so it shows up in scheduler
       try {
         const created = data?.data || data; // support {success,data}
+        console.log('🔍 Creating vaccinationdates record for bite case:', created?._id);
+        
+        // Get the schedule dates from the form data
+        const scheduleDates = [
+          form.sched_0, // D0
+          form.sched_1, // D3
+          form.sched_2, // D7
+          form.sched_3, // D14
+          form.sched_4  // D28
+        ];
+        
         const vdBody = {
           biteCaseId: created?._id,
           patientId: payload.patientId,
           registrationNumber: payload.registrationNumber,
-          d0Date: toDateOnly(payload.d0Date || payload.scheduleDates?.[0]) || null,
-          d3Date: toDateOnly(payload.d3Date || payload.scheduleDates?.[1]) || null,
-          d7Date: toDateOnly(payload.d7Date || payload.scheduleDates?.[2]) || null,
-          d14Date: toDateOnly(payload.d14Date || payload.scheduleDates?.[3]) || null,
-          d28Date: toDateOnly(payload.d28Date || payload.scheduleDates?.[4]) || null,
-          d0Status: payload.d0Status || (payload.scheduleDates?.[0] ? 'scheduled' : undefined),
-          d3Status: payload.d3Status || (payload.scheduleDates?.[1] ? 'scheduled' : undefined),
-          d7Status: payload.d7Status || (payload.scheduleDates?.[2] ? 'scheduled' : undefined),
-          d14Status: payload.d14Status || (payload.scheduleDates?.[3] ? 'scheduled' : undefined),
-          d28Status: payload.d28Status || (payload.scheduleDates?.[4] ? 'scheduled' : undefined),
+          d0Date: toDateOnly(scheduleDates[0]) || null,
+          d3Date: toDateOnly(scheduleDates[1]) || null,
+          d7Date: toDateOnly(scheduleDates[2]) || null,
+          d14Date: toDateOnly(scheduleDates[3]) || null,
+          d28Date: toDateOnly(scheduleDates[4]) || null,
+          d0Status: scheduleDates[0] ? 'scheduled' : undefined,
+          d3Status: scheduleDates[1] ? 'scheduled' : undefined,
+          d7Status: scheduleDates[2] ? 'scheduled' : undefined,
+          d14Status: scheduleDates[3] ? 'scheduled' : undefined,
+          d28Status: scheduleDates[4] ? 'scheduled' : undefined,
           treatmentStatus: 'in_progress',
           exposureCategory: Array.isArray(payload.management?.category) ? payload.management.category[0] : 'Category 2',
           lastTreatmentDate: null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        await apiFetch('/api/vaccinationdates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vdBody) });
-        // notifications removed per request
+        
+        console.log('🔍 Vaccinationdates payload:', vdBody);
+        
+        const vdResponse = await apiFetch('/api/vaccinationdates', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(vdBody) 
+        });
+        
+        if (vdResponse.ok) {
+          const vdResult = await vdResponse.json();
+          console.log('🔍 Successfully created vaccinationdates record:', vdResult);
+        } else {
+          const vdError = await vdResponse.json().catch(() => ({}));
+          console.error('🔍 Failed to create vaccinationdates record:', vdError);
+          throw new Error(vdError.message || 'Failed to create vaccination schedule');
+        }
       } catch (vdErr) {
-        console.warn('Failed to create vaccinationdates record:', vdErr);
+        console.error('🔍 Failed to create vaccinationdates record:', vdErr);
+        // Don't throw here - bite case was created successfully, just vaccinationdates failed
+        // Show a warning but don't block the form submission
+        alert(`Bite case created successfully, but vaccination schedule creation failed: ${vdErr.message}`);
       }
 
       if (onSaved) onSaved(data);

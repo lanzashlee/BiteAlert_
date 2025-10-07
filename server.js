@@ -4343,7 +4343,7 @@ app.post('/api/vaccinestocks', async (req, res) => {
     const batch = String(batchNumber || '').trim();
     const expStr = expiryDate ? String(expiryDate) : '';
 
-    // Match rule: same batch AND same expiry → merge; same batch with different expiry → create new entry
+    // Match rule: same branch number → merge regardless of expiry date
     const normalize = (v) => {
       if (!v) return '';
       const d = new Date(v);
@@ -4353,18 +4353,25 @@ app.post('/api/vaccinestocks', async (req, res) => {
     const desiredExpiry = normalize(expStr);
 
     let action = 'created';
-    const match = vac.stockEntries.find(en => String(en.branchNo || '').trim().toLowerCase() === batch.toLowerCase() && normalize(en.expirationDate) === desiredExpiry);
+    // Find existing entry with same branch number (batch number)
+    const match = vac.stockEntries.find(en => String(en.branchNo || '').trim().toLowerCase() === batch.toLowerCase());
     
     if (match) {
       let current = Number(match.stock || 0);
       if (Number.isNaN(current)) current = 0;
       match.stock = current + (Number.isNaN(qty) ? 0 : qty);
+      
+      // Update expiry date to the latest one if provided
+      if (expStr && expStr.trim()) {
+        match.expirationDate = expStr;
+      }
+      
       action = 'merged';
-      console.log('🔄 Merged with existing batch:', batch, 'New total:', match.stock);
+      console.log('🔄 Merged with existing branch:', batch, 'New total:', match.stock, 'Updated expiry:', match.expirationDate);
     } else {
       vac.stockEntries.push({ branchNo: batch, stock: Number.isNaN(qty) ? 0 : qty, expirationDate: expStr });
       action = 'created';
-      console.log('✨ Created new batch:', batch, 'Quantity:', qty);
+      console.log('✨ Created new branch:', batch, 'Quantity:', qty);
     }
 
     // Mark the document as modified to ensure MongoDB saves the changes

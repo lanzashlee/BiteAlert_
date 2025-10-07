@@ -35,32 +35,29 @@
   table-layout: fixed; /* ensure headers and cells align based on set widths */
 }
 
-/* Column sizing for horizontal weekday layout */
+/* Column sizing for weekdays/weekend layout */
 .accounts-table th:nth-child(1),
 .accounts-table td:nth-child(1) { /* Center */
-  width: 22%;
+  width: 25%;
 }
 .accounts-table th:nth-child(2),
-.accounts-table td:nth-child(2),
-.accounts-table th:nth-child(3),
-.accounts-table td:nth-child(3),
-.accounts-table th:nth-child(4),
-.accounts-table td:nth-child(4),
-.accounts-table th:nth-child(5),
-.accounts-table td:nth-child(5),
-.accounts-table th:nth-child(6),
-.accounts-table td:nth-child(6) { /* Mon-Fri */
-  width: 10%;
+.accounts-table td:nth-child(2) { /* Weekdays */
+  width: 20%;
   text-align: center;
 }
-.accounts-table th:nth-child(7),
-.accounts-table td:nth-child(7) { /* Contact */
-  width: 14%;
+.accounts-table th:nth-child(3),
+.accounts-table td:nth-child(3) { /* Weekend */
+  width: 20%;
+  text-align: center;
+}
+.accounts-table th:nth-child(4),
+.accounts-table td:nth-child(4) { /* Contact */
+  width: 20%;
   white-space: nowrap;
 }
-.accounts-table th:nth-child(8),
-.accounts-table td:nth-child(8) { /* Actions */
-  width: 10%;
+.accounts-table th:nth-child(5),
+.accounts-table td:nth-child(5) { /* Actions */
+  width: 15%;
   text-align: right;
 }
 

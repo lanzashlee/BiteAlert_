@@ -1243,26 +1243,57 @@ const SuperAdminVaccinationSchedule = () => {
         biteCaseData,
         vaccination,
         dose,
+        currentImmunizationVaccine: biteCaseData?.currentImmunization?.vaccine,
+        currentImmunizationRoute: biteCaseData?.currentImmunization?.route,
         biteCaseBrand: biteCaseData?.brandName,
         biteCaseGeneric: biteCaseData?.genericName,
         biteCaseRoute: biteCaseData?.route
       });
       
       // Try multiple sources for vaccine information
-      const brandName = biteCaseData?.brandName || 
-                       biteCaseData?.currentImmunization?.doseMedicines?.find?.(d => d.dose === dose)?.medicineUsed || 
-                       vaccination.vaccineBrand || 
-                       scheduleModalData?.brand || 
-                       '';
-      const genericName = biteCaseData?.genericName || 
-                         vaccination.vaccineGeneric || 
-                         scheduleModalData?.generic || 
-                         '';
-      const route = biteCaseData?.route || 
-                   biteCaseData?.currentImmunization?.route?.[0] || 
-                   vaccination.vaccineRoute || 
-                   scheduleModalData?.route || 
+      let brandName = '';
+      let genericName = '';
+      let route = '';
+      
+      // Extract from currentImmunization.vaccine array (from NewBiteCaseForm)
+      if (biteCaseData?.currentImmunization?.vaccine && Array.isArray(biteCaseData.currentImmunization.vaccine)) {
+        const vaccineType = biteCaseData.currentImmunization.vaccine[0];
+        if (vaccineType === 'PCEC') {
+          brandName = 'VAXIRAB';
+          genericName = 'PCEC';
+        } else if (vaccineType === 'PVRV') {
+          brandName = 'SPEEDA';
+          genericName = 'PVRV';
+        }
+      }
+      
+      // Extract route from currentImmunization.route array
+      if (biteCaseData?.currentImmunization?.route && Array.isArray(biteCaseData.currentImmunization.route)) {
+        const routeType = biteCaseData.currentImmunization.route[0];
+        route = routeType === 'IM' ? 'Intramuscular' : 'Intradermal';
+      }
+      
+      // Fallback to other sources if not found
+      if (!brandName) {
+        brandName = biteCaseData?.brandName || 
+                   biteCaseData?.currentImmunization?.doseMedicines?.find?.(d => d.dose === dose)?.medicineUsed || 
+                   vaccination.vaccineBrand || 
+                   scheduleModalData?.brand || 
                    '';
+      }
+      if (!genericName) {
+        genericName = biteCaseData?.genericName || 
+                     vaccination.vaccineGeneric || 
+                     scheduleModalData?.generic || 
+                     '';
+      }
+      if (!route) {
+        route = biteCaseData?.route || 
+               biteCaseData?.currentImmunization?.route?.[0] || 
+               vaccination.vaccineRoute || 
+               scheduleModalData?.route || 
+               '';
+      }
       
       console.log('🔍 Extracted vaccine info:', { brandName, genericName, route });
 
@@ -1400,6 +1431,8 @@ const SuperAdminVaccinationSchedule = () => {
       if (vdItem) {
         scheduleList = buildScheduleFromVaccinationDates(vdItem);
         console.log('🔍 Built schedule from vaccinationdates (primary):', scheduleList);
+      } else {
+        console.log('🔍 No vaccinationdates found, will try to build from bite case data');
       }
 
       // Also fetch bite case for meta (brand/route/center/weight)
@@ -1417,6 +1450,7 @@ const SuperAdminVaccinationSchedule = () => {
           }
           
           if (biteCase) {
+            console.log('🔍 Full bite case data:', biteCase);
             brandName = biteCase.brandName || brandName || '';
             genericName = biteCase.genericName || genericName || '';
             route = biteCase.route || route || '';
@@ -1424,6 +1458,16 @@ const SuperAdminVaccinationSchedule = () => {
             caseCenter = biteCase.center || biteCase.centerName || caseCenter || '';
             patientWeight = biteCase.weight ? parseFloat(biteCase.weight) : patientWeight;
             console.log('🔍 Meta from bite case:', { brandName, genericName, route, patientWeight, caseCenter });
+            console.log('🔍 Bite case date fields:', {
+              d0Date: biteCase.d0Date,
+              d3Date: biteCase.d3Date,
+              d7Date: biteCase.d7Date,
+              d14Date: biteCase.d14Date,
+              d28Date: biteCase.d28Date,
+              scheduleDates: biteCase.scheduleDates,
+              exposureDate: biteCase.exposureDate,
+              dateRegistered: biteCase.dateRegistered
+            });
             setPatientWeight(patientWeight);
             setBiteCaseData(biteCase);
 
@@ -1435,6 +1479,13 @@ const SuperAdminVaccinationSchedule = () => {
                 status: d.status || 'scheduled'
               }));
               console.log('🔍 Built schedule from bite case (fallback):', scheduleList);
+              
+              // If still no schedule, create one from base date
+              if (scheduleList.length === 0) {
+                console.log('🔍 No explicit dates found in bite case, creating schedule from base date');
+                scheduleList = buildScheduleFromBiteCase(biteCase);
+                console.log('🔍 Created schedule from base date:', scheduleList);
+              }
             }
             
             // Ensure schedule items have proper structure with labels
@@ -1655,6 +1706,59 @@ const SuperAdminVaccinationSchedule = () => {
           if (!dateOnly) status = 'scheduled';
           else if (isPastByLocalDay(dateOnly)) status = 'missed';
           else status = 'scheduled';
+        }
+        return { label: e.label, date: dateOnly, status };
+      })
+      .filter(e => !!e.date);
+  };
+
+  // Build schedule from bite case data when vaccinationdates record doesn't exist
+  const buildScheduleFromBiteCase = (biteCase) => {
+    if (!biteCase) return [];
+    
+    // Try to get schedule dates from various possible fields
+    const scheduleDates = biteCase.scheduleDates || 
+                         [biteCase.d0Date, biteCase.d3Date, biteCase.d7Date, biteCase.d14Date, biteCase.d28Date] ||
+                         [];
+    
+    // If no explicit dates, use incident date as Day 0 and calculate others
+    let baseDate = null;
+    if (scheduleDates.length > 0 && scheduleDates[0]) {
+      baseDate = normalizeDate(scheduleDates[0]);
+    } else if (biteCase.exposureDate) {
+      baseDate = normalizeDate(biteCase.exposureDate);
+    } else if (biteCase.dateRegistered) {
+      baseDate = normalizeDate(biteCase.dateRegistered);
+    }
+    
+    if (!baseDate) {
+      console.log('🔍 No base date found for bite case, cannot build schedule');
+      return [];
+    }
+    
+    console.log('🔍 Building schedule from bite case with base date:', baseDate);
+    
+    // Calculate schedule dates
+    const auto = (daysAfter) => {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + daysAfter);
+      return d;
+    };
+    
+    const entries = [
+      { label: 'Day 0',  raw: scheduleDates[0] || baseDate,  status: 'scheduled' },
+      { label: 'Day 3',  raw: scheduleDates[1] || auto(3),  status: 'scheduled' },
+      { label: 'Day 7',  raw: scheduleDates[2] || auto(7),  status: 'scheduled' },
+      { label: 'Day 14', raw: scheduleDates[3] || auto(14), status: 'scheduled' },
+      { label: 'Day 28', raw: scheduleDates[4] || auto(28), status: 'scheduled' }
+    ];
+    
+    return entries
+      .map(e => {
+        const dateOnly = toLocalDateOnlyString(normalizeDate(e.raw));
+        let status = 'scheduled';
+        if (dateOnly && isPastByLocalDay(dateOnly)) {
+          status = 'missed';
         }
         return { label: e.label, date: dateOnly, status };
       })

@@ -189,47 +189,42 @@ const SuperAdminAuditTrail = () => {
         </div>
 
         <div className="content-body">
-          <div className="filters-section">
-            <div className="filter-group">
-              <label className="filter-label">
-                <i className="fa-solid fa-search"></i>
-                Search
-              </label>
-              <input 
-                type="text" 
-                placeholder="Search by ID, name, action..." 
-                value={search} 
+          {/* Search and Filters */}
+          <div className="filters-container">
+            <div className="search-box">
+              <i className="fa fa-search" />
+              <input
+                type="text"
+                placeholder="Search by ID, name, action..."
+                value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="form-control"
               />
             </div>
-            <div className="filter-group">
-              <label className="filter-label">
-                <i className="fa-solid fa-calendar"></i>
-                Date Range
-              </label>
+            
+            <div className="filter-controls">
               <input 
                 type="date" 
                 value={from} 
                 onChange={e => setFrom(e.target.value)}
-                className="form-control"
-                placeholder="From"
+                className="filter-select"
+                placeholder="From Date"
+                title="Filter from date"
               />
-              <span className="filter-separator">to</span>
               <input 
                 type="date" 
                 value={to} 
                 onChange={e => setTo(e.target.value)}
-                className="form-control"
-                placeholder="To"
+                className="filter-select"
+                placeholder="To Date"
+                title="Filter to date"
               />
-            </div>
-            <div className="filter-group">
-              <label className="filter-label">
-                <i className="fa-solid fa-user-tag"></i>
-                Role
-              </label>
-              <select value={role} onChange={e => setRole(e.target.value)} className="form-control">
+              <select 
+                value={role} 
+                onChange={e => setRole(e.target.value)}
+                className="filter-select"
+                aria-label="Filter by role"
+                title="Filter by role"
+              >
                 <option value="">All Roles</option>
                 <option value="admin">Admin</option>
                 <option value="superadmin">Superadmin</option>

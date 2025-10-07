@@ -2556,7 +2556,17 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                if (currentCase?.currentImmunization?.erig?.dateTaken) {
+                                  return new Date(currentCase.currentImmunization.erig.dateTaken).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  });
+                                }
+                                return '-';
+                              })()}
                             </td>
                             <td style={{ 
                               padding: '12px 16px', 
@@ -2565,7 +2575,10 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                return currentCase?.currentImmunization?.erig?.medicineUsed || '-';
+                              })()}
                             </td>
                             <td style={{ 
                               padding: '12px 16px', 
@@ -2574,7 +2587,10 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                return currentCase?.currentImmunization?.erig?.branchNo || currentCase?.center || currentCase?.centerName || '-';
+                              })()}
                             </td>
                           </tr>
                           
@@ -2624,7 +2640,18 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              VAXIRAB (BOOSTER)
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                if (currentCase?.currentImmunization?.vaccine) {
+                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
+                                  if (vaccineType === 'PCEC') {
+                                    return 'VAXIRAB (PCEC)';
+                                  } else if (vaccineType === 'PVRV') {
+                                    return 'SPEEDA (PVRV)';
+                                  }
+                                }
+                                return currentCase?.brandName || currentCase?.genericName || 'VAXIRAB (BOOSTER)';
+                              })()}
                             </td>
                             <td style={{ 
                               padding: '12px 16px', 
@@ -2633,7 +2660,10 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              001
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                return currentCase?.center || currentCase?.centerName || '001';
+                              })()}
                             </td>
                           </tr>
                           
@@ -2683,7 +2713,18 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              VAXIRAB (BOOSTER)
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                if (currentCase?.currentImmunization?.vaccine) {
+                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
+                                  if (vaccineType === 'PCEC') {
+                                    return 'VAXIRAB (PCEC)';
+                                  } else if (vaccineType === 'PVRV') {
+                                    return 'SPEEDA (PVRV)';
+                                  }
+                                }
+                                return currentCase?.brandName || currentCase?.genericName || 'VAXIRAB (BOOSTER)';
+                              })()}
                             </td>
                             <td style={{ 
                               padding: '12px 16px', 
@@ -2692,7 +2733,10 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              001
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                return currentCase?.center || currentCase?.centerName || '001';
+                              })()}
                             </td>
                           </tr>
                           
@@ -2742,7 +2786,18 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                if (currentCase?.currentImmunization?.vaccine) {
+                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
+                                  if (vaccineType === 'PCEC') {
+                                    return 'VAXIRAB (PCEC)';
+                                  } else if (vaccineType === 'PVRV') {
+                                    return 'SPEEDA (PVRV)';
+                                  }
+                                }
+                                return currentCase?.brandName || currentCase?.genericName || '-';
+                              })()}
                             </td>
                             <td style={{ 
                               padding: '12px 16px', 
@@ -2751,7 +2806,10 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                return currentCase?.center || currentCase?.centerName || '001';
+                              })()}
                             </td>
                           </tr>
                           
@@ -2801,7 +2859,18 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                if (currentCase?.currentImmunization?.vaccine) {
+                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
+                                  if (vaccineType === 'PCEC') {
+                                    return 'VAXIRAB (PCEC)';
+                                  } else if (vaccineType === 'PVRV') {
+                                    return 'SPEEDA (PVRV)';
+                                  }
+                                }
+                                return currentCase?.brandName || currentCase?.genericName || '-';
+                              })()}
                             </td>
                             <td style={{ 
                               padding: '12px 16px', 
@@ -2810,7 +2879,10 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                return currentCase?.center || currentCase?.centerName || '001';
+                              })()}
                             </td>
                           </tr>
                           
@@ -2860,7 +2932,18 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                if (currentCase?.currentImmunization?.vaccine) {
+                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
+                                  if (vaccineType === 'PCEC') {
+                                    return 'VAXIRAB (PCEC)';
+                                  } else if (vaccineType === 'PVRV') {
+                                    return 'SPEEDA (PVRV)';
+                                  }
+                                }
+                                return currentCase?.brandName || currentCase?.genericName || '-';
+                              })()}
                             </td>
                             <td style={{ 
                               padding: '12px 16px', 
@@ -2869,7 +2952,10 @@ const SuperAdminPatients = () => {
                               border: '1px solid #dc2626',
                               textAlign: 'center'
                             }}>
-                              -
+                              {(() => {
+                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                return currentCase?.center || currentCase?.centerName || '001';
+                              })()}
                             </td>
                           </tr>
                         </tbody>
