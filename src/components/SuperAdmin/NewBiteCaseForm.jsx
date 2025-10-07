@@ -194,6 +194,17 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     } catch { return null; }
   };
 
+  const toDateOnly = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const d = new Date(dateString);
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    } catch { return ''; }
+  };
+
   const toLongDate = (dateString) => {
     if (!dateString) return null;
     try {
@@ -247,12 +258,12 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         registrationNumber: form.registrationNumber || '',
         philhealthNo: form.philhealthNo || '',
         dateRegistered: toIsoUtcNoon(form.dateRegistered),
-        arrivalDate: toLongDate(form.dateOfInquiry),
+        arrivalDate: toDateOnly(form.dateOfInquiry) || toLongDate(form.dateOfInquiry),
         arrivalTime: form.timeOfInjury || '',
         center: form.centerName || '',
 
         // patient linkage
-        patientId: selectedPatient?._id || selectedPatient?.patientId,
+        patientId: selectedPatient?.patientId || selectedPatient?._id || '',
 
         // personal
         firstName: form.firstName || '',
@@ -375,11 +386,11 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
           biteCaseId: created?._id,
           patientId: payload.patientId,
           registrationNumber: payload.registrationNumber,
-          d0Date: payload.d0Date || (payload.scheduleDates?.[0] || null),
-          d3Date: payload.d3Date || (payload.scheduleDates?.[1] || null),
-          d7Date: payload.d7Date || (payload.scheduleDates?.[2] || null),
-          d14Date: payload.d14Date || (payload.scheduleDates?.[3] || null),
-          d28Date: payload.d28Date || (payload.scheduleDates?.[4] || null),
+          d0Date: toDateOnly(payload.d0Date || payload.scheduleDates?.[0]) || null,
+          d3Date: toDateOnly(payload.d3Date || payload.scheduleDates?.[1]) || null,
+          d7Date: toDateOnly(payload.d7Date || payload.scheduleDates?.[2]) || null,
+          d14Date: toDateOnly(payload.d14Date || payload.scheduleDates?.[3]) || null,
+          d28Date: toDateOnly(payload.d28Date || payload.scheduleDates?.[4]) || null,
           d0Status: payload.d0Status || (payload.scheduleDates?.[0] ? 'scheduled' : undefined),
           d3Status: payload.d3Status || (payload.scheduleDates?.[1] ? 'scheduled' : undefined),
           d7Status: payload.d7Status || (payload.scheduleDates?.[2] ? 'scheduled' : undefined),
@@ -460,7 +471,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Input name="philhealthNo" label="Philhealth No." />
                 <Input name="dateRegistered" type="date" label="Date Registered *" />
                 <Input name="centerName" label="Center Name *" />
-              </div>
+        </div>
             </section>
 
             {/* Personal Information */}
@@ -504,7 +515,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <div className="checkbox-row">
                 <Check name="nonBite" label="NON-BITE" onChange={() => toggleExposure('nonBite')} />
                 <Check name="bite" label="BITE" onChange={() => toggleExposure('bite')} />
-              </div>
+            </div>
               {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
               {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
 
@@ -512,8 +523,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <div className="checkbox-row">
                 {siteKeys.map((lbl,i)=> (
                   <Check key={i} name={`site_${i}`} label={lbl} onChange={() => toggleSite(i)} />
-                ))}
-              </div>
+          ))}
+        </div>
               {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
               {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
 
@@ -647,7 +658,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Check name="localInfiltration" label="Local Infiltration done" />
                 <Check name="structured" label="Structured" />
                 <Check name="unstructured" label="Unstructured" />
-            </div>
+                </div>
             </section>
 
             {/* Management */}
@@ -663,7 +674,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Check name="cat1" label="Category 1" />
                 <Check name="cat2" label="Category 2" />
                 <Check name="cat3" label="Category 3" />
-              </div>
+            </div>
               {errors.category && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.category}</div>}
               <Input name="allergy" label="Any History of Allergy" />
               <Input name="maintenance" label="Maintenance Medications" />
@@ -673,8 +684,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <div className="actions" style={{justifyContent:'space-between'}}>
               <button type="button" className="btn btn-secondary" onClick={handleClose}>Back</button>
               <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-            </div>
-          </form>
+          </div>
+        </form>
           </div>
       </div>
     </div>
