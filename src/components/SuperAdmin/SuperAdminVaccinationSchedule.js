@@ -3370,10 +3370,7 @@ const SuperAdminVaccinationSchedule = () => {
 
                   {/* Vaccine Selection and Editing */}
                   <div className="vaccine-info-grid">
-                    <div className="vaccine-info-card">
-                      <p className="vaccine-info-label">Vaccine Type</p>
-                      <p className="vaccine-info-value">{scheduleModalData?.brand || scheduleModalData?.generic || 'Anti-Rabies'}</p>
-                    </div>
+                    {/* Removed vaccine type display per request */}
                     
                     <div className="vaccine-info-card">
                       <p className="vaccine-info-label">Route</p>
@@ -3517,12 +3514,7 @@ const SuperAdminVaccinationSchedule = () => {
                                           {scheduleItem.date ? formatScheduleDate(scheduleItem.date) : 'Not scheduled'}
                                         </p>
                                       </div>
-                                      <div className="schedule-info-item">
-                                        <p className="schedule-info-label">Vaccine Type</p>
-                                        <p className="schedule-info-value">
-                                          {scheduleModalData?.brand || scheduleModalData?.generic || 'Anti-Rabies'}
-                                        </p>
-                                      </div>
+                                      {/* Removed vaccine type display per request */}
                                       {/* Inline date editor for rescheduling (future-only). Allow for scheduled/missed; completed locked */}
                                       <div className="schedule-info-item">
                                         <p className="schedule-info-label">Edit Date</p>
