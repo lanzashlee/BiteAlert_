@@ -1341,6 +1341,9 @@ const SuperAdminVaccinationSchedule = () => {
         if (list.length > 0) {
           vdItem = list[0];
           console.log('🔍 Using vaccinationdates record:', vdItem);
+          console.log('🔍 vdItem has _id:', vdItem._id, 'biteCaseId:', vdItem.biteCaseId);
+        } else {
+          console.log('🔍 No vaccinationdates records found for patientId:', patientId);
         }
 
         // Fallback: fetch all and filter on client if API filter is not working
@@ -1351,7 +1354,12 @@ const SuperAdminVaccinationSchedule = () => {
           vdItem = all.find(v => norm(v.patientId || v.patientID) === norm(patientId))
                 || all.find(v => norm(v.registrationNumber) === norm(patientData?.vaccinations?.[0]?.registrationNumber))
                 || all.find(v => norm(v.biteCaseId) === norm(patientData?.vaccinations?.[0]?.biteCaseId));
-          if (vdItem) console.log('✅ Client-side matched vaccinationdates record:', vdItem);
+          if (vdItem) {
+            console.log('✅ Client-side matched vaccinationdates record:', vdItem);
+            console.log('✅ vdItem has _id:', vdItem._id, 'biteCaseId:', vdItem.biteCaseId);
+          } else {
+            console.log('❌ No vaccinationdates record found in fallback search');
+          }
         }
       } catch (e) {
         console.warn('Failed fetching vaccinationdates:', e);
@@ -1401,6 +1409,16 @@ const SuperAdminVaccinationSchedule = () => {
                 status: d.status || 'scheduled'
               }));
               console.log('🔍 Built schedule from bite case (fallback):', scheduleList);
+            }
+            
+            // If still no vdItem but we have biteCase, use biteCase data
+            if (!vdItem && biteCase) {
+              vdItem = {
+                _id: biteCase._id,
+                biteCaseId: biteCase._id,
+                patientId: patientId
+              };
+              console.log('🔍 Created vdItem from biteCase:', vdItem);
             }
           }
         }
