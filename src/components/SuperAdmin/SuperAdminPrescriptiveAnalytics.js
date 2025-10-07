@@ -123,19 +123,48 @@ const SuperAdminPrescriptiveAnalytics = () => {
     return (text.trim().endsWith('.') ? text.trim() : text.trim() + '.') + ' ' + plan;
   };
 
+  const randFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
   const buildPriorityPlan = (priority, barangay, coord, metrics = { total:0, recent:0, severe:0, risk:0 }) => {
     const coordLine = coord && coord !== 'Coordinate with nearest health center' ? `${coord}.` : 'Coordinate with the nearest health center.';
     const { total = 0, recent = 0, severe = 0, risk = 0 } = metrics || {};
     const surge = recent >= Math.max(2, Math.round(total * 0.25));
     const severityFocus = severe > 0 ? 'Prioritize Category III exposures; ensure ERIG availability and trained staff for infiltration.' : 'Maintain readiness for potential severe exposures; refresh staff on ERIG protocols.';
     if (priority === 'high') {
-      return `Deploy a mobile vaccination team in ${barangay} within 48 hours and set up a pop‑up clinic at the barangay hall. ${severityFocus} ${surge ? 'Extend clinic hours for 7 days to absorb the current surge; perform daily line‑listing and follow‑ups.' : 'Add two extra clinic days this week to clear backlog and conduct home visits for defaulters.'} Ensure cold‑chain checks and pre‑position supplies based on ${total} total and ${recent} recent cases (risk score ${risk}). ${coordLine}`;
+      const openers = [
+        `Deploy a mobile vaccination team in ${barangay} within 48 hours`,
+        `Stand up a pop‑up ARV clinic in ${barangay} within two days`,
+        `Activate surge operations for ${barangay} and mobilize a field team`
+      ];
+      const surgeOps = surge
+        ? randFrom([
+            'Extend clinic hours for the next 7 days to absorb the current surge; perform daily line‑listing and follow‑ups.',
+            'Run a 1‑week intensified campaign with daily monitoring and quick home visits for defaulters.',
+            'Implement weekend operations and daily case reviews until the surge subsides.'
+          ])
+        : randFrom([
+            'Add two extra clinic days this week to clear backlog and conduct home visits for defaulters.',
+            'Schedule mid‑week and weekend sessions to accommodate working households.',
+            'Run a 3‑day micro‑campaign to sweep missed patients.'
+          ]);
+      const stock = `Ensure cold‑chain checks and pre‑position supplies based on ${total} total and ${recent} recent cases (risk ${risk}).`;
+      return `${randFrom(openers)} at the barangay hall. ${severityFocus} ${surgeOps} ${stock} ${coordLine}`;
     }
     if (priority === 'medium') {
-      return `Schedule an additional vaccination day in ${barangay} next week and publish clear triage/queueing instructions. ${severityFocus} Run information drives via barangay channels focused on bite prevention and defaulter tracing. Verify stock and prepare ${Math.max(10, recent * 2)} ARV doses and ERIG contingency; line‑list ${recent} recent patients for follow‑up. ${coordLine}`;
+      const plan = randFrom([
+        `Schedule an additional vaccination day in ${barangay} next week and publish clear triage/queueing instructions.`,
+        `Open an overflow clinic half‑day in ${barangay} and streamline triage for faster throughput.`,
+        `Designate a fast‑track lane in ${barangay} for follow‑ups to reduce waiting time.`
+      ]);
+      return `${plan} ${severityFocus} Run information drives via barangay channels focused on bite prevention and defaulter tracing. Verify stock and prepare ${Math.max(10, recent * 2)} ARV doses and ERIG contingency; line‑list ${recent} recent patients for follow‑up. ${coordLine}`;
     }
     // For low priority (including 0 cases), provide preventive measures
-    return `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels. Conduct quarterly school/community IEC with emphasis on wound washing and early consultation. Review stock minimums and keep at least ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; monitor trends for any uptick. ${coordLine}`;
+    const lowOps = randFrom([
+      `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels.`,
+      `Keep routine services steady in ${barangay} and circulate monthly IEC through schools and barangay pages.`,
+      `Sustain baseline ARV services in ${barangay} and run brief IEC during clinic hours.`
+    ]);
+    return `${lowOps} Conduct quarterly school/community IEC with emphasis on wound washing and early consultation. Review stock minimums and keep at least ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; monitor trends for any uptick. ${coordLine}`;
   };
 
   // Ensure analysis text reaches 3–5 sentences by building an explanatory paragraph
