@@ -1,92 +1,129 @@
-/* Form container */
+/* New Bite Case Modal - System Theming (solid red header, compact inputs) */
 
-.form-section {
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+.bitecase-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1000;
 }
 
-/* Section colors */
-.section-blue { background-color: #e0f2fe; }
-.section-green { background-color: #dcfce7; }
-.section-red { background-color: #fee2e2; }
-.section-yellow { background-color: #fef9c3; }
-.section-purple { background-color: #ede9fe; }
-.section-teal { background-color: #ccfbf1; }
-
-/* Section title */
-.section-title {
-  font-weight: bold;
-  margin-bottom: 10px;
-  font-size: 1.1rem;
-}
-
-/* Input fields */
-.input-field {
-  display: block;
-  width: 100%;
-  padding: 8px 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 0.95rem;
-}
-
-/* Checkbox groups */
-.checkbox-group {
-  margin-bottom: 12px;
-}
-
-.checkbox-label {
-  font-weight: bold;
-  display: block;
-  margin-bottom: 5px;
-}
-
-.checkbox-container {
+.bitecase-panel {
+  position: fixed;
+  inset: 2vh auto auto 50%;
+  transform: translateX(-50%);
+  width: 96vw;
+  height: 92vh;
+  max-width: 1200px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+  border: 1px solid #e5e7eb;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.checkbox-item {
+.bitecase-header {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
+  background: #b91c1c; /* solid red */
+  color: #ffffff;
+  padding: 12px 16px;
 }
 
-/* Buttons */
-.form-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 15px;
+.bitecase-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
-.btn-save, .btn-cancel {
-  padding: 8px 14px;
-  border-radius: 5px;
-  border: none;
+.bitecase-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.15);
+  color: #ffffff;
+  border: 0;
   cursor: pointer;
-  font-weight: bold;
-  font-size: 0.95rem;
 }
 
-.btn-save {
-  background-color: #3b82f6;
-  color: white;
+.bitecase-separator {
+  border: 0;
+  height: 1px;
+  background: #f1f5f9;
 }
 
-.btn-save:hover {
-  background-color: #2563eb;
+.bitecase-body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px 20px 28px;
 }
 
-.btn-cancel {
-  background-color: #9ca3af;
-  color: white;
+.section {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 
-.btn-cancel:hover {
-  background-color: #6b7280;
+.section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
 }
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+@media (max-width: 1024px) {
+  .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7f1d1d;
+  margin-bottom: 6px;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid rgba(185, 28, 28, 0.6);
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 0.9rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.form-textarea { min-height: 100px; resize: vertical; }
+
+.form-input:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #b91c1c;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15);
+}
+
+.checkbox-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.checkbox-item { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #374151; }
+.checkbox-item input { width: 16px; height: 16px; }
+
+.actions { display: flex; justify-content: center; padding: 12px 0 6px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 9999px; border: 0; cursor: pointer; font-weight: 700; }
+.btn-primary { background: #b91c1c; color: #ffffff; box-shadow: 0 6px 14px rgba(185,28,28,0.25); }
+.btn-primary:hover { background: #991b1b; }
