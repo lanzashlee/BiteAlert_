@@ -8,7 +8,7 @@ import './SuperAdminPatients.css';
 import { apiFetch, apiConfig } from '../../config/api';
 
 // Lazy load heavy components to reduce initial bundle size
-const PatientNewCaseStructured = lazy(() => import('./PatientNewCaseStructured.jsx'));
+const NewBiteCaseForm = lazy(() => import('./NewBiteCaseForm.js'));
 
 const PAGE_SIZE = 50;
 
@@ -2361,7 +2361,7 @@ const SuperAdminPatients = () => {
               {showCaseForm ? (
                 <div>
                   <Suspense fallback={<div style={{padding: '2rem', textAlign: 'center'}}>Loading case form...</div>}>
-                    <PatientNewCaseStructured 
+                    <NewBiteCaseForm 
                       selectedPatient={selectedPatient}
                       onSaved={() => {
                         try { setShowPatientModal(false); } catch(e) {}

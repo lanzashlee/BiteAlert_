@@ -24,7 +24,7 @@ const SuperAdminPatientManagement = React.lazy(() => import('./components/SuperA
 const SuperAdminVaccinationSchedule = React.lazy(() => import('./components/SuperAdmin/SuperAdminVaccinationSchedule'));
 const SuperAdminPatients = React.lazy(() => import('./components/SuperAdmin/SuperAdminPatients'));
 const SuperAdminPrescriptiveAnalytics = React.lazy(() => import('./components/SuperAdmin/SuperAdminPrescriptiveAnalytics'));
-const PatientDiagnosisManagement = React.lazy(() => import('./components/SuperAdmin/PatientDiagnosisManagement'));
+const NewBiteCaseForm = React.lazy(() => import('./components/SuperAdmin/NewBiteCaseForm'));
 const ActivateAccount = React.lazy(() => import('./components/Auth/ActivateAccount'));
 const CreateAccount = React.lazy(() => import('./components/Auth/CreateAccount'));
 
@@ -79,7 +79,7 @@ const App = () => {
         <Route path="/superadmin/vaccination-schedule" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminVaccinationSchedule /></ProtectedRoute>} />
         <Route path="/superadmin/patients" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminPatients /></ProtectedRoute>} />
         <Route path="/superadmin/prescriptive-analytics" element={<ProtectedRoute requiredRole="superadmin"><SuperAdminPrescriptiveAnalytics /></ProtectedRoute>} />
-        <Route path="/superadmin/diagnosis" element={<ProtectedRoute requiredRole="superadmin"><PatientDiagnosisManagement /></ProtectedRoute>} />
+        <Route path="/superadmin/diagnosis" element={<ProtectedRoute requiredRole="superadmin"><NewBiteCaseForm /></ProtectedRoute>} />
 
         {/* Analytics - Removed non-existent route */}
 
