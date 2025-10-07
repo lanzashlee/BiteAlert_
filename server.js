@@ -3545,10 +3545,16 @@ app.post('/api/bitecases', async (req, res) => {
         }
         
         // Clean and validate data with better error handling
+        // Normalize per-day dates and key fields
+        const dayFields = ['d0Date','d3Date','d7Date','d14Date','d28Date'];
+        const normalizedDays = {};
+        dayFields.forEach(k => { if (payload[k]) normalizedDays[k] = new Date(payload[k]); });
+
         const cleanPayload = {
             ...payload,
             // Ensure dates are properly formatted
             arrivalDate: payload.arrivalDate ? new Date(payload.arrivalDate) : new Date(),
+            dateRegistered: payload.dateRegistered ? new Date(payload.dateRegistered) : new Date(),
             birthdate: payload.birthdate ? new Date(payload.birthdate) : null,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -3565,7 +3571,14 @@ app.post('/api/bitecases', async (req, res) => {
             philhealthNo: payload.philhealthNo || '',
             // Ensure numeric fields are properly formatted
             age: payload.age ? parseInt(payload.age) : null,
-            weight: payload.weight ? parseFloat(payload.weight) : null
+            weight: payload.weight ? parseFloat(payload.weight) : null,
+            // Attach normalized per-day fields if provided
+            ...normalizedDays,
+            d0Status: payload.d0Status || (payload.d0Date ? 'scheduled' : undefined),
+            d3Status: payload.d3Status || (payload.d3Date ? 'scheduled' : undefined),
+            d7Status: payload.d7Status || (payload.d7Date ? 'scheduled' : undefined),
+            d14Status: payload.d14Status || (payload.d14Date ? 'scheduled' : undefined),
+            d28Status: payload.d28Status || (payload.d28Date ? 'scheduled' : undefined)
         };
         
         console.log('Creating bite case with clean payload:', cleanPayload);

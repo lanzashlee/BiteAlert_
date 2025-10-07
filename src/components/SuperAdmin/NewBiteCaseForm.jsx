@@ -338,7 +338,7 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
       <textarea
         rows={rows}
         value={form[name] || ''}
-        onChange={(e)=>handleChange(name, e.target.value)}
+        onChange={(e)=>{ if (errors[name]) clearError(name); handleChange(name, e.target.value); }}
         className="form-textarea"
       />
       {errors[name] && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors[name]}</div>}
