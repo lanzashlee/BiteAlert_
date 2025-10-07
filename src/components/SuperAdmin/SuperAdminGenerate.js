@@ -111,17 +111,10 @@ const SuperAdminGenerate = () => {
     "Pasadena Center", "Salapan Center", "Tibagan Center", "West Crame Center"
   ];
 
-  // Load data on component mount
+  // Load only animal bite records on mount per request
   useEffect(() => {
-    console.log('Loading all report data...');
-    loadRabiesUtilData();
+    console.log('Loading animal bite records...');
     loadAnimalBiteData();
-    loadCustomDemoData();
-    loadPatientsData();
-    loadVaccinationData();
-    loadBarangayData();
-    loadStaffData();
-    loadAdminData();
   }, []);
 
   // Debug effect to log data changes
@@ -1590,12 +1583,12 @@ const SuperAdminGenerate = () => {
 
       <main className="main-content">
         <div className="content-header">
-          <h2>Generate Reports</h2>
-          <p className="subtitle">Generate and download detailed reports in PDF format</p>
+          <h2>Animal Bite Records</h2>
+          <p className="subtitle">Complete vaccination timeline and status</p>
         </div>
 
         <div className="reports-container">
-          {/* Animal Bite - Single Table with optional Summary */}
+          {/* Animal Bite - Single Table only */}
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-list"></i>
@@ -1754,7 +1747,8 @@ const SuperAdminGenerate = () => {
             </div>
           </div>
 
-          {/* Rabies Utilization Report */}
+          {/* Rabies Utilization Report removed per request */}
+          {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-syringe"></i>
@@ -1863,8 +1857,7 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
 
-          {/* Animal Bite Exposure Report - consolidated into the single table above (removed duplicate) */}
-          {/* Removed duplicate Animal Bite Exposure Report card to keep one table only */}
+          {/* Animal Bite Exposure Report - removed per request */}
           {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
@@ -2082,7 +2075,8 @@ const SuperAdminGenerate = () => {
             </div>
           )}
 
-          {/* Custom Demographic Report */}
+          {/* Custom Demographic Report removed per request */}
+          {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-user-friends"></i>
@@ -2213,8 +2207,11 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
           </div>
+          )}
+          )}
 
-          {/* Patients Registration Report */}
+          {/* Patients Registration Report removed per request */}
+          {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-user-plus"></i>
@@ -2363,8 +2360,10 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Vaccination Schedule Report */}
+          {/* Vaccination Schedule Report removed per request */}
+          {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-syringe"></i>
@@ -2494,8 +2493,10 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Barangay Analytics Report */}
+          {/* Barangay Analytics Report removed per request */}
+          {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-chart-bar"></i>
@@ -2593,8 +2594,10 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Staff Management Report */}
+          {/* Staff Management Report removed per request */}
+          {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-users-cog"></i>
@@ -2702,8 +2705,10 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Administrator Report */}
+          {/* Administrator Report removed per request */}
+          {false && (
           <div className="report-card card-fade-in">
             <div className="report-header">
               <i className="fas fa-user-shield"></i>
@@ -2795,6 +2800,7 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
           </div>
+          )}
         </div>
       </main>
 
