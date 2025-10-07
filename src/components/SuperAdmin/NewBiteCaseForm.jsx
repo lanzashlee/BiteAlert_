@@ -30,6 +30,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [centers, setCenters] = useState([]);
 
   // Prefill from selected patient (only when patient identity changes)
   const prefilledRef = useRef(false);
@@ -82,6 +83,22 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     }));
   }, []);
 
+  // Fetch centers data
+  useEffect(() => {
+    const fetchCenters = async () => {
+      try {
+        const response = await apiFetch('/api/centers');
+        const data = await response.json();
+        if (response.ok) {
+          setCenters(data.data || data || []);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch centers:', error);
+      }
+    };
+    fetchCenters();
+  }, []);
+
   const handleChange = (name, value) => {
     // Auto-calc age if birthdate changes
     if (name === 'birthdate') {
@@ -104,6 +121,13 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       const centerName = value ? `${value} Center` : '';
       setForm((p) => ({ ...p, barangay: value, centerName }));
       if (errors['barangay']) clearError('barangay');
+      if (errors['centerName']) clearError('centerName');
+      return;
+    }
+    // Sync centerName when transferred center is chosen
+    if (name === 'transferredTo') {
+      const centerName = value || '';
+      setForm((p) => ({ ...p, transferredTo: value, centerName }));
       if (errors['centerName']) clearError('centerName');
       return;
     }
@@ -135,6 +159,34 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     clearError('exposure');
   };
 
+  // Single-select radio button helpers
+  const toggleRadio = (group, value) => {
+    const updates = {};
+    // Reset all options in the group to false
+    if (group === 'woundWash') {
+      updates.woundWashYes = value === 'yes';
+      updates.woundWashNo = value === 'no';
+    } else if (group === 'category') {
+      updates.cat1 = value === 'cat1';
+      updates.cat2 = value === 'cat2';
+      updates.cat3 = value === 'cat3';
+    } else if (group === 'species') {
+      updates.spDog = value === 'dog';
+      updates.spCat = value === 'cat';
+    } else if (group === 'ownership') {
+      updates.owner_0 = value === 'pet';
+      updates.owner_1 = value === 'neighbor';
+      updates.owner_2 = value === 'stray';
+    } else if (group === 'clinicalStatus') {
+      ['cs_0', 'cs_1', 'cs_2', 'cs_3', 'cs_4', 'cs_5'].forEach(key => {
+        updates[key] = false;
+      });
+      updates[`cs_${value}`] = true;
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+    clearError(group);
+  };
+
   // Site of bite helpers
   const siteKeys = useMemo(() => ['Head','Chest','Upper Extremities','Face','Back','Lower Extremities','Neck','Abdomen'], []);
   const toggleSite = (idx) => {
@@ -145,43 +197,24 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
 
   const validate = () => {
     const nextErrors = {};
-    // Basic required fields
+    // Only validate essential fields - make form less strict
     const req = (key, label) => { if (!String(form[key] || '').trim()) nextErrors[key] = `${label} is required.`; };
     [
       ['registrationNumber','Registration Number'],
-      ['dateRegistered','Date Registered'],
-      ['centerName','Center Name'],
       ['firstName','First Name'],
       ['lastName','Last Name'],
-      ['sex','Sex'],
-      ['birthdate','Birthdate'],
-      ['birthplace','Birthplace'],
-      ['age','Age'],
-      ['weight','Weight'],
-      ['nationality','Nationality'],
-      ['religion','Religion'],
-      ['occupation','Occupation'],
-      ['contactNo','Contact No.'],
       ['barangay','Barangay'],
-      ['city','City'],
-      ['province','Province'],
     ].forEach(([k,l])=>req(k,l));
+    
     // Exposure required exactly one
-    // Do not restrict typing; validations will only show on submit but won't block typing
     const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
-    if (exposureCount !== 1) nextErrors.exposure = '';
+    if (exposureCount !== 1) nextErrors.exposure = 'Please select type of exposure';
 
     // Site of bite: at least one
     const hasSite = siteKeys.some((_, i) => !!form[`site_${i}`]);
-    if (!hasSite) nextErrors.site = '';
+    if (!hasSite) nextErrors.site = 'Please select at least one site of bite';
 
-    // Date of inquiry required
-    if (!form.dateOfInquiry) nextErrors.dateOfInquiry = 'Date of injury is required';
-
-    // Time of injury required (HH:MM)
-    if (!form.timeOfInjury) nextErrors.timeOfInjury = 'Time of injury is required';
-
-    // Checkbox groups validations
+    // Simple radio button validations
     const oneTrue = (keys) => keys.some(k => !!form[k]);
     if (!oneTrue(['woundWashYes','woundWashNo'])) nextErrors.washingWound = 'Please indicate wound washing';
     if (!oneTrue(['cat1','cat2','cat3'])) nextErrors.category = 'Please select a category';
@@ -496,9 +529,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Input name="dateRegistered" type="date" label="Date Registered *" />
                 <Input name="centerName" label="Center Name *" />
         </div>
-              {errors.registrationNumber && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Registration Number is required.</div>}
-              {errors.dateRegistered && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Date Registered is required.</div>}
-              {errors.centerName && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Center Name is required.</div>}
             </section>
 
             {/* Personal Information */}
@@ -519,9 +549,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Input name="occupation" label="Occupation *" />
                 <Input name="contactNo" label="Contact No. *" />
               </div>
-              {(errors.firstName || errors.lastName || errors.sex || errors.birthdate || errors.age || errors.contactNo) && (
-                <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Please complete the required personal information fields.</div>
-              )}
             </section>
 
             {/* Address */}
@@ -536,9 +563,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Input name="province" label="Province" />
                 <Input name="zipCode" label="Zip Code" />
               </div>
-              {(errors.barangay || errors.city || errors.province) && (
-                <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Please complete the required address fields.</div>
-              )}
             </section>
 
             {/* History of Bite */}
@@ -597,7 +621,26 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <div className="section-title">Disposition & Circumstance</div>
               <Check name="treatedHome" label="Treated & Sent Home" />
               <Check name="transferred" label="Transferred to another facility/hospital (specify)" />
-              <Input name="transferredTo" label="" />
+              {form.transferred && (
+                <div className="w-full" style={{marginTop: '10px'}}>
+                  <label className="form-label">Select Center/Hospital:</label>
+                  <select
+                    value={form.transferredTo || ''}
+                    onChange={(e) => handleChange('transferredTo', e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="">Select a center...</option>
+                    {centers.map((center, index) => (
+                      <option key={index} value={center.centerName || center.name || center}>
+                        {center.centerName || center.name || center}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {!form.transferred && (
+                <Input name="transferredTo" label="" />
+              )}
               <div className="checkbox-row" style={{marginTop: '10px'}}>
                 <Check name="provoked" label="Provoked" />
                 <Check name="unprovoked" label="Unprovoked" />
@@ -609,14 +652,14 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <div className="section-title">Animal Profile</div>
               <div className="form-label">Species</div>
               <div className="checkbox-row">
-                <Check name="spDog" label="Dog" />
-                <Check name="spCat" label="Cat" />
+                <Check name="spDog" label="Dog" onChange={() => toggleRadio('species', 'dog')} />
+                <Check name="spCat" label="Cat" onChange={() => toggleRadio('species', 'cat')} />
               </div>
               <Input name="spOthers" label="Others (specify)" />
               {errors.species && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.species}</div>}
               <div className="form-label" style={{marginTop: '10px'}}>Clinical Status</div>
               <div className="checkbox-row">
-                {['Healthy','Sick','Died','Killed','No Brain Exam Done','Unknown'].map((lbl,i)=> (<Check key={i} name={`cs_${i}`} label={lbl} />))}
+                {['Healthy','Sick','Died','Killed','No Brain Exam Done','Unknown'].map((lbl,i)=> (<Check key={i} name={`cs_${i}`} label={lbl} onChange={() => toggleRadio('clinicalStatus', i)} />))}
               </div>
               {errors.clinicalStatus && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.clinicalStatus}</div>}
               <div className="form-label" style={{marginTop: '10px'}}>Anti-Rabies Vaccination Status of Animal</div>
@@ -625,7 +668,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <Check name="animalNone" label="None" />
               <div className="form-label" style={{marginTop: '10px'}}>Ownership Status</div>
               <div className="checkbox-row">
-                {['Pet','Neighbor','Stray'].map((lbl,i)=> (<Check key={i} name={`owner_${i}`} label={lbl} />))}
+                {['Pet','Neighbor','Stray'].map((lbl,i)=> (<Check key={i} name={`owner_${i}`} label={lbl} onChange={() => toggleRadio('ownership', ['pet', 'neighbor', 'stray'][i])} />))}
             </div>
             {errors.ownership && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.ownership}</div>}
             </section>
@@ -696,15 +739,15 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">Management</div>
               <div className="checkbox-row">
-                <Check name="woundWashYes" label="Washing of wound: Yes" />
-                <Check name="woundWashNo" label="No" />
+                <Check name="woundWashYes" label="Washing of wound: Yes" onChange={() => toggleRadio('woundWash', 'yes')} />
+                <Check name="woundWashNo" label="No" onChange={() => toggleRadio('woundWash', 'no')} />
               </div>
               {errors.washingWound && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.washingWound}</div>}
               <Input name="diagnosis" label="Diagnosis" />
               <div className="checkbox-row" style={{marginTop: '10px'}}>
-                <Check name="cat1" label="Category 1" />
-                <Check name="cat2" label="Category 2" />
-                <Check name="cat3" label="Category 3" />
+                <Check name="cat1" label="Category 1" onChange={() => toggleRadio('category', 'cat1')} />
+                <Check name="cat2" label="Category 2" onChange={() => toggleRadio('category', 'cat2')} />
+                <Check name="cat3" label="Category 3" onChange={() => toggleRadio('category', 'cat3')} />
             </div>
               {errors.category && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.category}</div>}
               <Input name="allergy" label="Any History of Allergy" />
