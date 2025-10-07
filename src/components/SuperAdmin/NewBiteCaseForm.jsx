@@ -263,7 +263,6 @@ const NewBiteCaseForm = ({ onClose }) => {
   );
 
   return ReactDOM.createPortal(content, document.body);
-  );
 };
 
 export default NewBiteCaseForm;
