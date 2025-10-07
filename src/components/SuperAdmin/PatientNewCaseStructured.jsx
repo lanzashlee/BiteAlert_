@@ -311,35 +311,39 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
     };
   });
 
+  // Initialize form only once when component mounts
   useEffect(() => {
-    const p = selectedPatient || {};
     setRegistrationNumber(initialRegistrationNumber);
     setDateRegistered(initialDateRegistered);
-    setCenter((p.barangay ? (p.barangay.endsWith('Center')? p.barangay : `${p.barangay} Center`) : '') || '');
-
-    setFirstName(p.firstName||'');
-    setMiddleName(p.middleName||'');
-    setLastName(p.lastName||'');
-    setBirthdate(p.birthdate ? new Date(p.birthdate).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' }) : '');
-    setSex(p.sex||'');
-    setAge(p.birthdate ? String(new Date().getFullYear() - new Date(p.birthdate).getFullYear()) : '');
-    setPhone(p.phone||'');
-    setBirthPlace(p.birthPlace||'');
-    setCivilStatus(p.civilStatus||'');
-    setNationality(p.nationality||'');
-    setReligion(p.religion||'');
-    setOccupation(p.occupation||'');
-    setHouseNo(p.houseNo||'');
-    setStreet(p.street||'');
-    setBarangay(p.barangay||'');
-    setSubdivision(p.subdivision||'');
-    setCity(p.city||'');
-    setProvince(p.province||'');
-    setZipCode(p.zipCode||'');
-
-    // Set the pre-generated schedule
     setSchedule(initialSchedule);
-  }, [selectedPatient, initialRegistrationNumber, initialDateRegistered, initialSchedule]);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Populate form with selected patient data only when selectedPatient changes
+  useEffect(() => {
+    if (selectedPatient) {
+      const p = selectedPatient;
+      setCenter((p.barangay ? (p.barangay.endsWith('Center')? p.barangay : `${p.barangay} Center`) : '') || '');
+      setFirstName(p.firstName||'');
+      setMiddleName(p.middleName||'');
+      setLastName(p.lastName||'');
+      setBirthdate(p.birthdate ? new Date(p.birthdate).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' }) : '');
+      setSex(p.sex||'');
+      setAge(p.birthdate ? String(new Date().getFullYear() - new Date(p.birthdate).getFullYear()) : '');
+      setPhone(p.phone||'');
+      setBirthPlace(p.birthPlace||'');
+      setCivilStatus(p.civilStatus||'');
+      setNationality(p.nationality||'');
+      setReligion(p.religion||'');
+      setOccupation(p.occupation||'');
+      setHouseNo(p.houseNo||'');
+      setStreet(p.street||'');
+      setBarangay(p.barangay||'');
+      setSubdivision(p.subdivision||'');
+      setCity(p.city||'');
+      setProvince(p.province||'');
+      setZipCode(p.zipCode||'');
+    }
+  }, [selectedPatient]);
 
   // Memoized onChange handlers to prevent re-renders
   const handleFirstNameChange = useCallback((e) => setFirstName(e.target.value), []);
@@ -362,6 +366,9 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
   const handleCivilStatusChange = useCallback((e) => setCivilStatus(e.target.value), []);
   const handleSubdivisionChange = useCallback((e) => setSubdivision(e.target.value), []);
   const handlePhilhealthChange = useCallback((e) => setPhilhealth(e.target.value), []);
+  const handleBirthdateChange = useCallback((e) => setBirthdate(e.target.value), []);
+  const handleDateOfInquiryChange = useCallback((e) => setDateOfInquiry(e.target.value), []);
+  const handleTimeOfInjuryChange = useCallback((e) => setTimeOfInjury(e.target.value), []);
   
   // Memoized handlers for complex state updates
   const handleTypeNonBiteChange = useCallback((e) => {
@@ -1020,7 +1027,7 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           <Labeled labelText="First Name"><input style={inputCss} value={firstName} onChange={handleFirstNameChange} /></Labeled>
           <Labeled labelText="Middle Name"><input style={inputCss} value={middleName} onChange={handleMiddleNameChange} /></Labeled>
           <Labeled labelText="Last Name"><input style={inputCss} value={lastName} onChange={handleLastNameChange} /></Labeled>
-          <Labeled labelText="Birthdate"><input type="date" style={inputCss} value={birthdate} onChange={e=>setBirthdate(e.target.value)} /></Labeled>
+          <Labeled labelText="Birthdate"><input type="date" style={inputCss} value={birthdate} onChange={handleBirthdateChange} /></Labeled>
           <Labeled labelText="Sex"><input style={inputCss} value={sex} onChange={handleSexChange} /></Labeled>
           <Labeled labelText="Age"><input style={inputCss} value={age} onChange={handleAgeChange} /></Labeled>
           <Labeled labelText="Weight (kg)"><input style={inputCss} value={weight} onChange={handleWeightChange} /></Labeled>
@@ -1063,8 +1070,8 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
         <label><input type="checkbox" checked={typeBite} onChange={handleTypeBiteChange} /> BITE</label>
         </div>
         <div style={row}>
-          <Labeled labelText="Date of Inquiry"><input type="date" style={inputCss} value={dateOfInquiry} onChange={e=>setDateOfInquiry(e.target.value)} /></Labeled>
-          <Labeled labelText="Time of Injury"><input type="time" style={inputCss} value={timeOfInjury} onChange={e=>setTimeOfInjury(e.target.value)} /></Labeled>
+          <Labeled labelText="Date of Inquiry"><input type="date" style={inputCss} value={dateOfInquiry} onChange={handleDateOfInquiryChange} /></Labeled>
+          <Labeled labelText="Time of Injury"><input type="time" style={inputCss} value={timeOfInjury} onChange={handleTimeOfInjuryChange} /></Labeled>
         </div>
         <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:8 }}>
         {['head','face','neck','chest','back','abdomen','upper','lower'].map(k => (
