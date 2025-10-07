@@ -38,6 +38,25 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     }));
   }, [selectedPatient]);
 
+  // Initialize defaults once (registration number, dateRegistered, initial schedule)
+  useEffect(() => {
+    const genReg = () => {
+      const yy = String(new Date().getFullYear()).slice(2);
+      const six = Math.floor(100000 + Math.random() * 900000);
+      return `${yy}-${six}`;
+    };
+    setForm(prev => ({
+      ...prev,
+      registrationNumber: prev.registrationNumber || genReg(),
+      dateRegistered: prev.dateRegistered || new Date().toISOString().slice(0,10),
+      sched_0: prev.sched_0 || new Date().toISOString().slice(0,10),
+      sched_1: prev.sched_1 || new Date(Date.now()+3*86400000).toISOString().slice(0,10),
+      sched_2: prev.sched_2 || new Date(Date.now()+7*86400000).toISOString().slice(0,10),
+      sched_3: prev.sched_3 || new Date(Date.now()+14*86400000).toISOString().slice(0,10),
+      sched_4: prev.sched_4 || new Date(Date.now()+28*86400000).toISOString().slice(0,10),
+    }));
+  }, []);
+
   const handleChange = (name, value) => setForm((p) => ({ ...p, [name]: value }));
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
@@ -60,6 +79,19 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
 
   const validate = () => {
     const nextErrors = {};
+    // Basic required fields
+    const req = (key, label) => { if (!String(form[key] || '').trim()) nextErrors[key] = `${label} is required.`; };
+    req('registrationNumber','Registration Number');
+    req('dateRegistered','Date Registered');
+    req('centerName','Center Name');
+    req('firstName','First Name');
+    req('lastName','Last Name');
+    req('sex','Sex');
+    req('birthdate','Birthdate');
+    req('contactNo','Contact No.');
+    req('barangay','Barangay');
+    req('city','City');
+    req('province','Province');
     // Exposure required exactly one
     const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
     if (exposureCount !== 1) nextErrors.exposure = 'Select exactly one exposure type.';
@@ -289,7 +321,10 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
       <input
         type={type}
         value={form[name] || ''}
-        onChange={(e)=> (onChange ? onChange(e) : handleChange(name, e.target.value))}
+        onChange={(e)=> {
+          if (errors[name]) clearError(name);
+          return onChange ? onChange(e) : handleChange(name, e.target.value);
+        }}
         placeholder={placeholder}
         className="form-input"
       />
