@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../../config/api';
+import './NewBiteCaseForm.css';
 
 const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
   const [saving, setSaving] = useState(false);
@@ -367,68 +368,62 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="new-bite-case-form">
+      <div className="form-container">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="form-header">
+          <div className="form-header-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">New Bite Case</h1>
-          <p className="text-gray-600">Create a new bite case record for patient treatment</p>
+          <h1 className="form-title">New Bite Case</h1>
+          <p className="form-subtitle">Create a new bite case record for patient treatment</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="form-card">
           {/* Progress Indicator */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-            <div className="flex items-center justify-between text-white">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-                <span className="text-sm font-medium">Patient Information</span>
+          <div className="progress-bar">
+            <div className="progress-steps">
+              <div className="progress-step active">
+                <div className="step-dot"></div>
+                <span className="step-text">Patient Information</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
-                <span className="text-sm">Bite Details</span>
+              <div className="progress-step inactive">
+                <div className="step-dot"></div>
+                <span className="step-text">Bite Details</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
-                <span className="text-sm">Management</span>
+              <div className="progress-step inactive">
+                <div className="step-dot"></div>
+                <span className="step-text">Management</span>
               </div>
             </div>
           </div>
 
-          <div className="p-8">
+          <div className="form-content">
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-r-lg">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
+              <div className="error-message">
+                <div className="error-content">
+                  <svg className="error-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <p className="error-text">{error}</p>
                 </div>
               </div>
             )}
 
-            <form className="space-y-10">
+            <form>
             {/* Basic Information */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-              <div className="flex items-center mb-6">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
+            <div className="form-section section-blue">
+              <div className="section-header">
+                <div className="section-icon" style={{backgroundColor: '#3b82f6'}}>
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-bold text-gray-900">Patient Information</h3>
-                  <p className="text-xs text-gray-600">Basic patient details and contact information</p>
+                <div>
+                  <h3 className="section-title">Patient Information</h3>
+                  <p className="section-description">Basic patient details and contact information</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
