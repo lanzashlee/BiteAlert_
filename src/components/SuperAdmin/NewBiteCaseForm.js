@@ -367,29 +367,78 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">New Bite Case</h2>
-          
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-              {error}
-            </div>
-          )}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">New Bite Case</h1>
+          <p className="text-gray-600">Create a new bite case record for patient treatment</p>
+        </div>
 
-          <form className="space-y-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          {/* Progress Indicator */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
+            <div className="flex items-center justify-between text-white">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+                <span className="text-sm font-medium">Patient Information</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+                <span className="text-sm">Bite Details</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+                <span className="text-sm">Management</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-r-lg">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <form className="space-y-10">
             {/* Basic Information */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8">
+              <div className="flex items-center mb-6">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-xl font-bold text-gray-900">Patient Information</h3>
+                  <p className="text-sm text-gray-600">Basic patient details and contact information</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
                   <input
                     type="text"
                     value={registrationNumber}
                     readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 bg-opacity-50 text-gray-600 font-medium"
                   />
                 </div>
                 <div>
@@ -416,7 +465,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     required
                   />
                 </div>
@@ -426,7 +475,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.middleName}
                     onChange={(e) => handleInputChange('middleName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
                 <div>
@@ -435,7 +484,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     required
                   />
                 </div>
@@ -445,7 +494,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="date"
                     value={formData.birthdate}
                     onChange={(e) => handleInputChange('birthdate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
                 <div>
@@ -453,7 +502,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                   <select
                     value={formData.sex}
                     onChange={(e) => handleInputChange('sex', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     required
                   >
                     <option value="">Select Sex</option>
@@ -467,7 +516,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.age}
                     onChange={(e) => handleInputChange('age', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
                 <div>
@@ -476,7 +525,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.weight}
                     onChange={(e) => handleInputChange('weight', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
                 <div>
@@ -485,15 +534,28 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.contactNo}
                     onChange={(e) => handleInputChange('contactNo', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
               </div>
             </div>
 
             {/* Address */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Address</h3>
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-8">
+              <div className="flex items-center mb-6">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-xl font-bold text-gray-900">Address Information</h3>
+                  <p className="text-sm text-gray-600">Patient's residential address details</p>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">House No.</label>
@@ -501,7 +563,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.houseNo}
                     onChange={(e) => handleInputChange('houseNo', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
                 <div>
@@ -510,7 +572,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.street}
                     onChange={(e) => handleInputChange('street', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
                 <div>
@@ -519,7 +581,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.barangay}
                     onChange={(e) => handleInputChange('barangay', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     required
                   />
                 </div>
@@ -529,7 +591,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     required
                   />
                 </div>
@@ -539,7 +601,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.province}
                     onChange={(e) => handleInputChange('province', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     required
                   />
                 </div>
@@ -549,15 +611,27 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="text"
                     value={formData.zipCode}
                     onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
               </div>
             </div>
 
             {/* Bite Information */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Bite Information</h3>
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-8">
+              <div className="flex items-center mb-6">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-xl font-bold text-gray-900">Bite Information</h3>
+                  <p className="text-sm text-gray-600">Details about the bite incident and injury</p>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date of Inquiry</label>
@@ -565,7 +639,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                     type="date"
                     value={formData.dateOfInquiry}
                     onChange={(e) => handleInputChange('dateOfInquiry', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
                 <div>
@@ -573,7 +647,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                   <select
                     value={formData.timeOfInjury}
                     onChange={(e) => handleInputChange('timeOfInjury', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                   >
                     <option value="AM">AM</option>
                     <option value="PM">PM</option>
@@ -584,39 +658,39 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Type of Exposure</label>
                 <div className="flex space-x-4">
-                  <label className="flex items-center">
+                  <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition-all duration-200">
                     <input
                       type="checkbox"
                       checked={formData.typeOfExposure.includes('BITE')}
                       onChange={(e) => handleArrayChange('typeOfExposure', 'BITE', e.target.checked)}
-                      className="mr-2"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    BITE
+                    <span className="ml-3 text-sm font-medium text-gray-700">BITE</span>
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition-all duration-200">
                     <input
                       type="checkbox"
                       checked={formData.typeOfExposure.includes('NON-BITE')}
                       onChange={(e) => handleArrayChange('typeOfExposure', 'NON-BITE', e.target.checked)}
-                      className="mr-2"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    NON-BITE
+                    <span className="ml-3 text-sm font-medium text-gray-700">NON-BITE</span>
                   </label>
                 </div>
               </div>
 
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Site of Bite *</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {['Head', 'Face', 'Neck', 'Chest', 'Back', 'Abdomen', 'Upper Extremities', 'Lower Extremities'].map(site => (
-                    <label key={site} className="flex items-center">
+                    <label key={site} className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:border-red-300 cursor-pointer transition-all duration-200">
                       <input
                         type="checkbox"
                         checked={formData.siteOfBite.includes(site)}
                         onChange={(e) => handleArrayChange('siteOfBite', site, e.target.checked)}
-                        className="mr-2"
+                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
                       />
-                      {site}
+                      <span className="ml-3 text-sm font-medium text-gray-700">{site}</span>
                     </label>
                   ))}
                 </div>
@@ -641,8 +715,20 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
             </div>
 
             {/* Animal Profile */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Animal Profile</h3>
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-8">
+              <div className="flex items-center mb-6">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-xl font-bold text-gray-900">Animal Profile</h3>
+                  <p className="text-sm text-gray-600">Information about the animal involved in the incident</p>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Species</label>
@@ -690,15 +776,27 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
             </div>
 
             {/* Management */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Management</h3>
+            <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-xl p-8">
+              <div className="flex items-center mb-6">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-xl font-bold text-gray-900">Treatment Management</h3>
+                  <p className="text-sm text-gray-600">Medical diagnosis and treatment plan</p>
+                </div>
+              </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
                   <textarea
                     value={formData.management.diagnosis}
                     onChange={(e) => handleNestedChange('management', 'diagnosis', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     rows="3"
                   />
                 </div>
@@ -707,7 +805,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                   <textarea
                     value={formData.management.allergyHistory}
                     onChange={(e) => handleNestedChange('management', 'allergyHistory', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     rows="3"
                   />
                 </div>
@@ -716,7 +814,7 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                   <textarea
                     value={formData.management.managementDetails}
                     onChange={(e) => handleNestedChange('management', 'managementDetails', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                     rows="3"
                   />
                 </div>
@@ -724,22 +822,39 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Saving...' : 'Save Case'}
-              </button>
+            <div className="bg-gray-50 rounded-xl p-6">
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-8 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 transition-all duration-200 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                >
+                  {saving ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Save Case
+                    </div>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </div>
