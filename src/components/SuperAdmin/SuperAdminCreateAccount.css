@@ -19,36 +19,40 @@
   font-weight: 800;
 }
 
-.create-account-body { padding: 20px; }
+.create-account-body { padding: 28px; }
 
-.create-account-form .form-section { margin-bottom: 24px; }
+.create-account-form .form-section { margin-bottom: 32px; }
 .create-account-form h3 {
-  margin: 0 0 12px 0;
-  font-size: 18px;
+  margin: 0 0 16px 0;
+  font-size: 20px;
   font-weight: 700;
   color: #374151;
 }
 .create-account-form .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
 }
 .create-account-form .form-group label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #6b7280;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   display: block;
 }
 .create-account-form .form-control {
   width: 100%;
-  padding: 12px;
+  padding: 12px 14px;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   font-size: 14px;
   transition: box-shadow .2s, border-color .2s;
   background: #fff;
+  height: 44px;
+  line-height: 1.2;
 }
+.create-account-form .form-control[type="date"] { padding-right: 10px; }
+.create-account-form select.form-control { appearance: none; background-image: none; }
 .create-account-form .form-control:focus {
   outline: none;
   border-color: #dc2626;
@@ -66,7 +70,7 @@
   padding: 12px; border-radius: 10px; display: flex; gap: 8px; align-items: center;
 }
 
-.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+.form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 18px; }
 .btn.btn-primary {
   background: #dc2626; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer;
   box-shadow: 0 6px 16px rgba(220,38,38,0.25);
@@ -76,6 +80,13 @@
   background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer;
 }
 .btn.btn-secondary:hover { background: #f9fafb; }
+
+/* Responsive refinements */
+@media (max-width: 768px) {
+  .create-account-body { padding: 20px; }
+  .create-account-form .form-row { gap: 14px; grid-template-columns: 1fr; }
+  .create-account-form .form-section { margin-bottom: 24px; }
+}
 
 @import './ResponsiveSidebar.css';
 @import '../GlobalResponsive.css';
