@@ -10,7 +10,13 @@ const PORT = process.env.API_PORT || 10000;
 
 // Middleware
 app.use(cors({
-  origin: ['https://bitealert-frontend.onrender.com', 'https://bitealert-frontend-doga.onrender.com', 'http://localhost:3000'],
+  origin: [
+    'https://bitealert-frontend.onrender.com', 
+    'https://bitealert-frontend-doga.onrender.com', 
+    'https://bite-alert-clgv-6qkbz4z1b-lanzashlees-projects.vercel.app',
+    'https://bite-alert-clgv.vercel.app',
+    'http://localhost:3000'
+  ],
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
