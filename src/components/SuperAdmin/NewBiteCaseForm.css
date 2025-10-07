@@ -1,11 +1,6 @@
 /* New Bite Case Modal - System Theming (solid red header, compact inputs) */
 
-.bitecase-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.35);
-  z-index: 1000;
-}
+/* overlay removed */
 
 .bitecase-panel {
   position: fixed;

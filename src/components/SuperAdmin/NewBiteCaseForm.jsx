@@ -43,7 +43,6 @@ const NewBiteCaseForm = ({ onClose }) => {
 
   const content = (
     <div>
-      <div className="bitecase-overlay" onClick={() => onClose && onClose()} />
       <div className="bitecase-panel">
         <div className="bitecase-header">
           <div className="bitecase-title">Create New Bite Case</div>
