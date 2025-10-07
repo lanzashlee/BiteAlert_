@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../../config/api';
+import './NewBiteCaseForm.css';
+
 
 const NewBiteCaseForm = () => {
   const [step, setStep] = useState(1);
