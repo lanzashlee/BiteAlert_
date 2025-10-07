@@ -855,10 +855,9 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
                   )}
                 </button>
               </div>
-              </div>
             </div>
           </form>
-          </div>
+        </div>
         </div>
       </div>
     </div>
