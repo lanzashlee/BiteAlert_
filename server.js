@@ -55,7 +55,8 @@ const allowedOrigins = [
     'https://bite-alert-clgv-m9dh0ta88-lanzashlees-projects.vercel.app',
     'https://bite-alert-clgv-b5f0vy73z-lanzashlees-projects.vercel.app',
     'https://bite-alert-clgv-80rrcz0y1-lanzashlees-projects.vercel.app',
-    'https://bite-alert-clgv-git-main-lanzashlees-projects.vercel.app'
+    'https://bite-alert-clgv-git-main-lanzashlees-projects.vercel.app',
+    'https://bite-alert-clgv-fd8vwcmaj-lanzashlees-projects.vercel.app'
 ].filter(Boolean);
 
 const corsOptions = {
@@ -66,8 +67,8 @@ const corsOptions = {
             console.log('CORS allowing request with no origin');
             return callback(null, true);
         }
-        // Allow exact matches or Vercel preview subdomains for this project
-        const isVercelPreview = /https:\/\/bite-alert-clgv(-[a-z0-9-]+)?(-[a-z0-9-]+)?(-git-[a-z0-9-]+)?\.vercel\.app$/i.test(origin || '');
+        // Allow exact matches or any Vercel preview subdomains for this project
+        const isVercelPreview = /https:\/\/bite-alert-clgv.*\.vercel\.app$/i.test(origin || '');
         if (allowedOrigins.includes(origin) || isVercelPreview) {
             console.log('CORS allowed for origin:', origin);
             return callback(null, true);
