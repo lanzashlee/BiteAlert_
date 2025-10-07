@@ -118,6 +118,14 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     // Time of injury required (HH:MM)
     if (!form.timeOfInjury) nextErrors.timeOfInjury = 'Time of injury is required.';
 
+    // Checkbox groups validations
+    const oneTrue = (keys) => keys.some(k => !!form[k]);
+    if (!oneTrue(['woundWashYes','woundWashNo'])) nextErrors.washingWound = 'Select washing of wound: Yes or No.';
+    if (!oneTrue(['cat1','cat2','cat3'])) nextErrors.category = 'Select at least one category.';
+    if (!oneTrue(['spDog','spCat']) && !String(form.spOthers || '').trim()) nextErrors.species = 'Select species (or specify Others).';
+    if (!oneTrue(['owner_0','owner_1','owner_2'])) nextErrors.ownership = 'Select at least one ownership status.';
+    if (!oneTrue(['cs_0','cs_1','cs_2','cs_3','cs_4','cs_5'])) nextErrors.clinicalStatus = 'Select at least one clinical status.';
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -476,6 +484,7 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
                 <Check name="bite" label="BITE" onChange={() => toggleExposure('bite')} />
               </div>
               {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
+              {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
 
               <div className="form-label">Site of Bite</div>
               <div className="checkbox-row">
@@ -483,6 +492,7 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
                   <Check key={i} name={`site_${i}`} label={lbl} onChange={() => toggleSite(i)} />
                 ))}
               </div>
+              {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
               {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
 
               <div className="form-grid grid-2" style={{marginTop: '10px'}}>
@@ -539,10 +549,12 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
                 <Check name="spCat" label="Cat" />
               </div>
               <Input name="spOthers" label="Others (specify)" />
+              {errors.species && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.species}</div>}
               <div className="form-label" style={{marginTop: '10px'}}>Clinical Status</div>
               <div className="checkbox-row">
                 {['Healthy','Sick','Died','Killed','No Brain Exam Done','Unknown'].map((lbl,i)=> (<Check key={i} name={`cs_${i}`} label={lbl} />))}
               </div>
+              {errors.clinicalStatus && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.clinicalStatus}</div>}
               <div className="form-label" style={{marginTop: '10px'}}>Anti-Rabies Vaccination Status of Animal</div>
               <Check name="animalImmunized" label="Immunized, when:" />
               <Input name="animalImmunizedYear" label="Year" />
@@ -551,6 +563,7 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
               <div className="checkbox-row">
                 {['Pet','Neighbor','Stray'].map((lbl,i)=> (<Check key={i} name={`owner_${i}`} label={lbl} />))}
             </div>
+            {errors.ownership && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.ownership}</div>}
             </section>
 
             {/* Patient Immunization */}
@@ -622,12 +635,14 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
                 <Check name="woundWashYes" label="Washing of wound: Yes" />
                 <Check name="woundWashNo" label="No" />
               </div>
+              {errors.washingWound && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.washingWound}</div>}
               <Input name="diagnosis" label="Diagnosis" />
               <div className="checkbox-row" style={{marginTop: '10px'}}>
                 <Check name="cat1" label="Category 1" />
                 <Check name="cat2" label="Category 2" />
                 <Check name="cat3" label="Category 3" />
               </div>
+              {errors.category && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.category}</div>}
               <Input name="allergy" label="Any History of Allergy" />
               <Input name="maintenance" label="Maintenance Medications" />
               <TextArea name="management" label="Management:" rows={4} />
