@@ -226,21 +226,34 @@ const NewBiteCaseForm = ({ selectedPatient, onSaved, onCancel }) => {
     }));
   }, []);
 
-  // Validation
+  // Enhanced validation
   const validateForm = () => {
-    if (!formData.firstName || !formData.lastName || !formData.sex) {
-      return 'Basic information is incomplete';
-    }
-    if (!formData.barangay || !formData.city || !formData.province) {
-      return 'Address is incomplete';
-    }
-    if (formData.siteOfBite.length === 0) {
-      return 'Please select at least one bite site';
-    }
-    if (formData.natureOfInjury.length === 0) {
-      return 'Please select at least one injury type';
-    }
-    return '';
+    const errors = [];
+    
+    // Basic Information validation
+    if (!formData.firstName.trim()) errors.push('First name is required');
+    if (!formData.lastName.trim()) errors.push('Last name is required');
+    if (!formData.sex) errors.push('Sex is required');
+    if (!formData.birthdate) errors.push('Birthdate is required');
+    
+    // Address validation
+    if (!formData.barangay.trim()) errors.push('Barangay is required');
+    if (!formData.city.trim()) errors.push('City is required');
+    if (!formData.province.trim()) errors.push('Province is required');
+    
+    // Bite Information validation
+    if (formData.siteOfBite.length === 0) errors.push('Please select at least one bite site');
+    if (formData.natureOfInjury.length === 0) errors.push('Please select nature of injury');
+    if (formData.typeOfExposure.length === 0) errors.push('Please select type of exposure');
+    
+    // Animal Profile validation
+    if (formData.animalProfile.species.length === 0) errors.push('Please select animal species');
+    if (formData.animalProfile.clinicalStatus.length === 0) errors.push('Please select clinical status');
+    
+    // Management validation
+    if (!formData.management.diagnosis.trim()) errors.push('Diagnosis is required');
+    
+    return errors.length > 0 ? errors.join(', ') : '';
   };
 
   // Save function
