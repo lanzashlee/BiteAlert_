@@ -136,9 +136,9 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
 
   // History of bite
   const [typeNonBite, setTypeNonBite] = useState(false);
-  const [typeBite, setTypeBite] = useState(false);
-  const [dateOfInquiry, setDateOfInquiry] = useState('');
-  const [timeOfInjury, setTimeOfInjury] = useState('');
+  const [typeBite, setTypeBite] = useState(true); // Default to bite
+  const [dateOfInquiry, setDateOfInquiry] = useState(new Date().toISOString().split('T')[0]);
+  const [timeOfInjury, setTimeOfInjury] = useState('AM');
   const [site, setSite] = useState({ head:false, face:false, neck:false, chest:false, back:false, abdomen:false, upper:false, lower:false, others:false, othersText:'' });
 
   // Nature of injury
@@ -157,22 +157,40 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
   const [unprovoked, setUnprovoked] = useState(false);
   
   // Washing of Wound
-  const [woundWashing, setWoundWashing] = useState(false);
+  const [woundWashing, setWoundWashing] = useState(true); // Default to yes
   const [noWoundWashing, setNoWoundWashing] = useState(false);
   
   // Diagnosis and Category
-  const [diagnosis, setDiagnosis] = useState('');
+  const [diagnosis, setDiagnosis] = useState('Okay na');
   const [category1, setCategory1] = useState(false);
-  const [category2, setCategory2] = useState(false);
+  const [category2, setCategory2] = useState(true); // Default to category 2
   const [category3, setCategory3] = useState(false);
   
   // Medical History
-  const [allergyHistory, setAllergyHistory] = useState('');
+  const [allergyHistory, setAllergyHistory] = useState('None');
   const [maintenanceMedications, setMaintenanceMedications] = useState('');
-  const [management, setManagement] = useState('');
+  const [management, setManagement] = useState('Sent Home');
 
   // Animal profile
-  const [animal, setAnimal] = useState({ dog:false, cat:false, other:false, otherText:'', healthy:false, sick:false, died:false, killed:false, brainExam:false, noBrainExam:false, unknown:false, immunized:false, notImmunized:false, immunizedYear:'' , pet:false, neighbor:false, stray:false});
+  const [animal, setAnimal] = useState({ 
+    dog: true, // Default to dog
+    cat: false, 
+    other: false, 
+    otherText: '', 
+    healthy: true, // Default to healthy
+    sick: false, 
+    died: false, 
+    killed: false, 
+    brainExam: false, 
+    noBrainExam: true, // Default to no brain exam
+    unknown: false, 
+    immunized: false, 
+    notImmunized: true, // Default to not immunized
+    immunizedYear: '', 
+    pet: true, // Default to pet
+    neighbor: false, 
+    stray: false
+  });
 
   // Patient immunization (DPT / TT)
   const [dpt, setDpt] = useState({ complete:false, incomplete:false, none:false, year:'', doses:'', previousDoses:'', previousYear:'' });
@@ -533,57 +551,210 @@ export default function PatientNewCaseStructured({ selectedPatient, onSaved, onC
           }
         }
       }
+      // Build arrays for multi-select fields
+      const typeOfExposure = [];
+      if (typeNonBite) typeOfExposure.push('NON-BITE');
+      if (typeBite) typeOfExposure.push('BITE');
+      
+      const siteOfBite = [];
+      if (site.head) siteOfBite.push('Head');
+      if (site.face) siteOfBite.push('Face');
+      if (site.neck) siteOfBite.push('Neck');
+      if (site.chest) siteOfBite.push('Chest');
+      if (site.back) siteOfBite.push('Back');
+      if (site.abdomen) siteOfBite.push('Abdomen');
+      if (site.upper) siteOfBite.push('Upper Extremities');
+      if (site.lower) siteOfBite.push('Lower Extremities');
+      if (site.others) siteOfBite.push('Others');
+      
+      const natureOfInjury = [];
+      if (injury.multiple) natureOfInjury.push('Multiple Injuries');
+      if (injury.abrasion) natureOfInjury.push('Abrasion');
+      if (injury.avulsion) natureOfInjury.push('Avulsion');
+      if (injury.burn) natureOfInjury.push('Burn');
+      if (injury.concussion) natureOfInjury.push('Concussion');
+      if (injury.contusion) natureOfInjury.push('Contusion');
+      if (injury.openWound) natureOfInjury.push('Open Wound');
+      if (injury.trauma) natureOfInjury.push('Trauma');
+      if (injury.others) natureOfInjury.push('Others');
+      
+      const placeOfOccurrence = [];
+      if (place.home) placeOfOccurrence.push('Home');
+      if (place.school) placeOfOccurrence.push('School');
+      if (place.road) placeOfOccurrence.push('Road');
+      if (place.neighbor) placeOfOccurrence.push('Neighbor');
+      if (place.others) placeOfOccurrence.push('Others');
+      
+      const disposition = [];
+      if (treated) disposition.push('Treated & Sent Home');
+      if (transferred) disposition.push('Transferred');
+      
+      const circumstanceOfBite = [];
+      if (provoked) circumstanceOfBite.push('Provoked');
+      if (unprovoked) circumstanceOfBite.push('Unprovoked');
+      
+      const animalSpecies = [];
+      if (animal.dog) animalSpecies.push('Dog');
+      if (animal.cat) animalSpecies.push('Cat');
+      if (animal.other) animalSpecies.push('Others');
+      
+      const animalClinicalStatus = [];
+      if (animal.healthy) animalClinicalStatus.push('Healthy');
+      if (animal.sick) animalClinicalStatus.push('Sick');
+      if (animal.died) animalClinicalStatus.push('Died');
+      if (animal.killed) animalClinicalStatus.push('Killed');
+      
+      const animalBrainExam = [];
+      if (animal.brainExam) animalBrainExam.push('Done');
+      if (animal.noBrainExam) animalBrainExam.push('Not Done');
+      if (animal.unknown) animalBrainExam.push('Unknown');
+      
+      const animalVaccinationStatus = [];
+      if (animal.immunized) animalVaccinationStatus.push('Immunized');
+      if (animal.notImmunized) animalVaccinationStatus.push('Not Immunized');
+      
+      const animalOwnership = [];
+      if (animal.pet) animalOwnership.push('Pet');
+      if (animal.neighbor) animalOwnership.push('Neighbor');
+      if (animal.stray) animalOwnership.push('Stray');
+      
+      const externalCause = [];
+      if (biteSting) externalCause.push('Bite/Sting');
+      if (chemicalSubstance) externalCause.push('Chemical Substance');
+      
+      const washingWound = [];
+      if (woundWashing) washingWound.push('Yes');
+      if (noWoundWashing) washingWound.push('No');
+      
+      const category = [];
+      if (category1) category.push('Category 1');
+      if (category2) category.push('Category 2');
+      if (category3) category.push('Category 3');
+      
+      const currentImmunizationType = [];
+      if (current.active) currentImmunizationType.push('Active');
+      if (current.post) currentImmunizationType.push('Post-exposure');
+      if (current.pre) currentImmunizationType.push('Pre-exposure');
+      if (current.prevImm) currentImmunizationType.push('Previously Immunized');
+      
+      const currentImmunizationVaccine = [];
+      if (current.pvrv) currentImmunizationVaccine.push('PVRV');
+      if (current.pcec) currentImmunizationVaccine.push('PCEC');
+      
+      const currentImmunizationRoute = [];
+      if (current.id) currentImmunizationRoute.push('ID');
+      if (current.im) currentImmunizationRoute.push('IM');
+      
       const payload = {
         patientId: selectedPatient?._id || selectedPatient?.patientId,
         registrationNumber,
         philhealthNo: '',
         dateRegistered: toIsoUtcNoon(dateRegistered),
-        arrivalDate: null,
-        arrivalTime: null,
-        firstName, middleName: middleName||null, lastName,
-        civilStatus: civilStatus||null,
+        arrivalDate: dateOfInquiry || null,
+        arrivalTime: timeOfInjury || null,
+        firstName,
+        middleName: middleName || '',
+        lastName,
+        civilStatus: civilStatus || null,
         birthdate: toIsoUtcNoon(birthdate),
-        birthplace: birthPlace||null,
-        nationality: nationality||null,
-        religion: religion||null,
-        occupation: occupation||null,
-        contactNo: phone||null,
-        houseNo, street, barangay, subdivision, city, province, zipCode,
-        age, weight, sex, center,
-        typeOfProphylaxis: current.post ? 'Post-exposure' : (current.pre ? 'Pre-exposure' : 'Active'),
-        exposureDate: toIsoUtcNoon(dateRegistered),
-        exposurePlace: '', exposureType: '', exposureSource: '',
-        exposureCategory: 'I',
-        rig: false,
-        genericName: 'PVRV', // Default to PVRV, will be updated from bite cases
-        brandName: 'SPEEDA', // Default to SPEEDA, will be updated from bite cases
-        route: 'ID', // Default to ID, will be updated from bite cases
-        lastArn: null,
-        completed: '', tt: '',
+        birthplace: birthPlace || null,
+        nationality: nationality || null,
+        religion: religion || null,
+        occupation: occupation || null,
+        contactNo: phone || null,
+        houseNo,
+        street,
+        barangay,
+        subdivision,
+        city,
+        province,
+        zipCode,
+        age,
+        weight,
+        sex,
+        center,
         scheduleDates: [schedule.d0, schedule.d3, schedule.d7, schedule.d14, schedule.d28].map(toIsoUtcNoon).filter(Boolean),
-        animalStatus: '', remarks: '', status: 'in_progress', branchNo: center,
-        dateOfInquiry: dateOfInquiry||null, timeOfInjury: timeOfInjury||null,
-        typeNonBite, typeBite,
-        headBite: site.head, faceBite: site.face, neckBite: site.neck, chestBite: site.chest, backBite: site.back, abdomenBite: site.abdomen, upperExtremitiesBite: site.upper, lowerExtremitiesBite: site.lower, othersBite: site.others, othersBiteSpecify: site.othersText||null,
-        multipleInjuries: injury.multiple, abrasion: injury.abrasion, avulsion: injury.avulsion, burn: injury.burn, burnDegree: injury.burnDegree, burnSite: injury.burnSite||null, concussion: injury.concussion, contusion: injury.contusion, openWound: injury.openWound, trauma: injury.trauma, othersInjury: injury.others, othersInjuryDetails: injury.othersText||null,
-        biteSting, biteStingDetails: biteStingDetails||null, chemicalSubstance, chemicalSubstanceDetails: chemicalDetails||null,
-        placeHome: place.home, placeSchool: place.school, placeRoad: place.road, placeNeighbor: place.neighbor, placeOthers: place.others, placeOthersDetails: place.othersText||null,
-        dispositionTreated: treated, dispositionTransferred: transferred, transferredTo: transferred ? transferredTo : null,
-        animalDog: animal.dog, animalCat: animal.cat, animalOthers: animal.other, animalOthersSpecify: animal.otherText||null,
-        animalHealthy: animal.healthy, animalSick: animal.sick, animalDied: animal.died, animalKilled: animal.killed,
-        animalBrainExamDone: animal.brainExam, animalNoBrainExam: animal.noBrainExam, animalUnknown: animal.unknown,
-        animalImmunized: animal.immunized, animalNotImmunized: animal.notImmunized, animalVaccinationDate: animal.immunized ? (animal.immunizedYear||'') : null,
-        animalPet: animal.pet, animalNeighbor: animal.neighbor, animalStray: animal.stray,
-        diagnosis: null,
-        category1: false, category2: false, category3: false,
-        allergyHistory: null, maintenanceMedications: null, managementDetails: null,
-        dptComplete: dpt.complete, dptIncomplete: dpt.incomplete, dptNone: dpt.none, dptYearGiven: dpt.year||null, dptDosesGiven: dpt.doses||null,
-        ttActive: tt.active, ttPassive: tt.passive, tt1Date: tt.tt1||null, tt2Date: tt.tt2||null, tt3Date: tt.tt3||null,
-        currentActive: current.active, currentPostExposure: current.post, currentPreExposure: current.pre, currentPreviouslyImmunized: current.prevImm,
-        currentPvrv: current.pvrv, currentPcec: current.pcec, currentId: current.id, currentIm: current.im,
-        currentPassive: current.passive, currentSkinTest: current.skinTest, currentSkinTestTime: current.skinTime||null, currentSkinTestReadTime: current.skinRead||null, currentSkinTestResult: current.skinResult||null, currentSkinTestDate: current.skinDate||null,
-        currentHrig: current.hrig, hrigDose: current.hrigDose||null, hrigDate: current.hrigDate||null,
-        currentLocalInfiltration: current.localInfiltration, currentStructured: current.structured, currentUnstructured: current.unstructured,
+        animalStatus: animal.healthy ? 'Alive' : (animal.died ? 'Died' : 'Unknown'),
+        remarks: diagnosis || 'Completed',
+        dateOfInquiry: dateOfInquiry || null,
+        timeOfInjury: timeOfInjury || null,
+        typeOfExposure,
+        siteOfBite,
+        othersBiteSpecify: site.othersText || '',
+        natureOfInjury,
+        burnDegree: injury.burnDegree,
+        burnSite: injury.burnSite || '',
+        othersInjuryDetails: injury.othersText || '',
+        externalCause,
+        biteStingDetails: biteStingDetails || '',
+        chemicalSubstanceDetails: chemicalDetails || '',
+        placeOfOccurrence,
+        placeOthersDetails: place.othersText || '',
+        disposition,
+        transferredTo: transferred ? transferredTo : '',
+        circumstanceOfBite,
+        animalProfile: {
+          species: animalSpecies,
+          othersSpecify: animal.otherText || '',
+          clinicalStatus: animalClinicalStatus,
+          brainExam: animalBrainExam,
+          vaccinationStatus: animalVaccinationStatus,
+          vaccinationDate: animal.immunizedYear || '',
+          ownership: animalOwnership
+        },
+        management: {
+          washingWound,
+          category,
+          diagnosis: diagnosis || 'Okay na',
+          allergyHistory: allergyHistory || 'None',
+          maintenanceMedications: maintenanceMedications || '',
+          managementDetails: management || 'Sent Home'
+        },
+        patientImmunization: {
+          dpt: [],
+          dptYearGiven: dpt.year || null,
+          dptDosesGiven: dpt.doses || null,
+          tt: [],
+          ttDates: [],
+          skinTest: current.skinTest,
+          skinTestTime: current.skinTime || null,
+          skinTestReadTime: current.skinRead || null,
+          skinTestResult: current.skinResult || null,
+          skinTestDose: null,
+          skinTestDate: current.skinDate || null,
+          tig: current.hrig,
+          tigDose: current.hrigDose || null,
+          tigDate: current.hrigDate || null
+        },
+        currentImmunization: {
+          type: currentImmunizationType,
+          vaccine: currentImmunizationVaccine,
+          route: currentImmunizationRoute,
+          passive: current.passive,
+          skinTest: current.skinTest,
+          skinTestTime: current.skinTime || '',
+          skinTestReadTime: current.skinRead || '',
+          skinTestResult: current.skinResult || '',
+          skinTestDate: current.skinDate || '',
+          hrig: current.hrig,
+          hrigDose: current.hrigDose || '',
+          hrigDate: current.hrigDate || '',
+          localInfiltration: current.localInfiltration,
+          schedule: [],
+          doseMedicines: [{
+            dose: 'D0',
+            medicineUsed: 'SPEEDA (BOOSTER)',
+            branchNo: '002'
+          }],
+          erig: {
+            dateTaken: '',
+            medicineUsed: '',
+            branchNo: ''
+          }
+        },
+        status: 'completed',
+        initiallyAssessedBy: 'Duke Reyes',
+        finalAssessedBy: 'Duke Reyes'
       };
 
       const res = await apiFetch('/api/bitecases', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
