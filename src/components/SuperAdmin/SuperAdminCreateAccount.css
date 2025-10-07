@@ -1,3 +1,82 @@
+/* Modern red theme to match system */
+.create-account-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.create-account-header {
+  background-color: #dc2626; /* solid red */
+  color: #fff;
+  padding: 18px 24px;
+}
+
+.create-account-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.create-account-body { padding: 20px; }
+
+.create-account-form .form-section { margin-bottom: 24px; }
+.create-account-form h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #374151;
+}
+.create-account-form .form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.create-account-form .form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 6px;
+  display: block;
+}
+.create-account-form .form-control {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: box-shadow .2s, border-color .2s;
+  background: #fff;
+}
+.create-account-form .form-control:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+.create-account-form .form-control.error { border-color: #ef4444; }
+.error-message { color: #b91c1c; font-size: 12px; margin-top: 6px; }
+
+.password-requirements small { color: #6b7280; }
+.password-requirements ul { margin: 6px 0 0 16px; padding: 0; color: #6b7280; }
+.password-requirements li.met { color: #16a34a; }
+
+.error-alert {
+  background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
+  padding: 12px; border-radius: 10px; display: flex; gap: 8px; align-items: center;
+}
+
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+.btn.btn-primary {
+  background: #dc2626; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 6px 16px rgba(220,38,38,0.25);
+}
+.btn.btn-primary:hover { background: #b91c1c; }
+.btn.btn-secondary {
+  background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer;
+}
+.btn.btn-secondary:hover { background: #f9fafb; }
+
 @import './ResponsiveSidebar.css';
 @import '../GlobalResponsive.css';
 

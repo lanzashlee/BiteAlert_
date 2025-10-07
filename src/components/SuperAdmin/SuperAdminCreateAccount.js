@@ -295,7 +295,9 @@ const SuperAdminCreateAccount = () => {
               </div>
             </div>
           ) : (
-            <div className="form-container">
+            <div className="form-container create-account-card">
+              <div className="create-account-header"><h3>Create New Account</h3></div>
+              <div className="create-account-body">
               <form onSubmit={handleSubmit} className="create-account-form">
                 <div className="form-section">
                   <h3>Personal Information</h3>
@@ -515,6 +517,7 @@ const SuperAdminCreateAccount = () => {
                   </button>
                 </div>
               </form>
+              </div>
             </div>
           )}
         </div>
