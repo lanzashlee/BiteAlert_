@@ -365,24 +365,34 @@ const NewBiteCaseForm = ({ onClose, selectedPatient, onSaved }) => {
     }
   };
 
-  const Input = ({ name, label, type = 'text', placeholder='', onChange }) => (
+  const Input = ({ name, label, type = 'text', placeholder = '', onChange }) => (
     <div className="w-full">
       <label className="form-label">{label}</label>
       <input
         type={type}
         value={form[name] ?? ''}
         id={name}
-        onChange={(e)=> {
-          if (errors[name]) clearError(name);
+        onChange={(e) => {
           const next = e.target.value;
+
+          // Always update form state first so typing always works
+          setForm((prev) => ({ ...prev, [name]: next }));
+
+          // Clear validation errors while typing
+          if (errors[name]) clearError(name);
+
+          // Still allow custom logic like schedule recalculation
           if (onChange) onChange(e);
-          else setForm(prev => (prev[name] === next ? prev : { ...prev, [name]: next }));
         }}
         placeholder={placeholder}
         className="form-input"
         aria-invalid={!!errors[name]}
       />
-      {errors[name] && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors[name]}</div>}
+      {errors[name] && (
+        <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>
+          {errors[name]}
+        </div>
+      )}
     </div>
   );
 
