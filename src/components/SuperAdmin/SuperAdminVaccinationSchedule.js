@@ -1236,9 +1236,32 @@ const SuperAdminVaccinationSchedule = () => {
       }
 
       const dose = getDoseCodeFromDay(vaccination.vaccinationDay);
-      const brandName = biteCaseData?.brandName || biteCaseData?.currentImmunization?.doseMedicines?.find?.(d => d.dose === dose)?.medicineUsed || vaccination.vaccineBrand || '';
-      const genericName = biteCaseData?.genericName || vaccination.vaccineGeneric || '';
-      const route = biteCaseData?.route || biteCaseData?.currentImmunization?.route?.[0] || vaccination.vaccineRoute || '';
+      console.log('🔍 Vaccine info debug:', {
+        biteCaseData,
+        vaccination,
+        dose,
+        biteCaseBrand: biteCaseData?.brandName,
+        biteCaseGeneric: biteCaseData?.genericName,
+        biteCaseRoute: biteCaseData?.route
+      });
+      
+      // Try multiple sources for vaccine information
+      const brandName = biteCaseData?.brandName || 
+                       biteCaseData?.currentImmunization?.doseMedicines?.find?.(d => d.dose === dose)?.medicineUsed || 
+                       vaccination.vaccineBrand || 
+                       scheduleModalData?.brand || 
+                       '';
+      const genericName = biteCaseData?.genericName || 
+                         vaccination.vaccineGeneric || 
+                         scheduleModalData?.generic || 
+                         '';
+      const route = biteCaseData?.route || 
+                   biteCaseData?.currentImmunization?.route?.[0] || 
+                   vaccination.vaccineRoute || 
+                   scheduleModalData?.route || 
+                   '';
+      
+      console.log('🔍 Extracted vaccine info:', { brandName, genericName, route });
 
       // Try to enrich with stock center/branch info
       let centerForLookup = scheduleModalData?.centerName || vaccination.patient?.center || vaccination.patient?.centerName || '';
