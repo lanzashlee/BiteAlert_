@@ -67,7 +67,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
       // Enforce 3–4 sentence recommendations and analyses
       const enriched = interventions.map((it) => ({
         ...it,
-        intervention: ensureRecommendationLength(it.intervention, it.priority, it.barangay, it.coordinationRequired),
+        intervention: ensureRecommendationLength(it.intervention, it.priority, it.barangay, it.coordinationRequired, { total: it.totalCases, recent: it.recentCases, severe: it.severeCases, risk: it.riskScore }),
         reasoning: ensureAnalysisLength(it.reasoning, it.barangay, it.totalCases, it.recentCases, it.severeCases, it.priority, it.ageGroupFocus, it.timePattern, it.coordinationRequired)
       }));
       setAnalyticsData({ ...data, interventionRecommendations: enriched });
@@ -99,7 +99,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
           riskScore: d.riskScore || 0,
           priority: d.priority || 'low',
           reasoning: buildAnalysisParagraph(barangay, d),
-          intervention: ensureRecommendationLength('', d.priority || 'low', barangay, d.topCenter),
+          intervention: ensureRecommendationLength('', d.priority || 'low', barangay, d.topCenter, { total: d.totalCases, recent: d.recentCases, severe: d.severeCases, risk: d.riskScore }),
           totalCases: d.totalCases || 0,
           recentCases: d.recentCases || 0,
           severeCases: d.severeCases || 0,
@@ -115,24 +115,27 @@ const SuperAdminPrescriptiveAnalytics = () => {
   };
 
   // Ensure recommendation text is at least 3 sentences by appending a standard plan
-  const ensureRecommendationLength = (text = '', priority = 'low', barangay = '', coord = '') => {
+  const ensureRecommendationLength = (text = '', priority = 'low', barangay = '', coord = '', metrics = { total:0, recent:0, severe:0, risk:0 }) => {
     const sentenceCount = (String(text).match(/[.!?]+\s/g) || []).length + (text.endsWith('.') ? 1 : 0);
     if (sentenceCount >= 3 && text.trim()) return text;
-    const plan = buildPriorityPlan(priority, barangay, coord);
+    const plan = buildPriorityPlan(priority, barangay, coord, metrics);
     if (!text || !text.trim()) return plan;
     return (text.trim().endsWith('.') ? text.trim() : text.trim() + '.') + ' ' + plan;
   };
 
-  const buildPriorityPlan = (priority, barangay, coord) => {
+  const buildPriorityPlan = (priority, barangay, coord, metrics = { total:0, recent:0, severe:0, risk:0 }) => {
     const coordLine = coord && coord !== 'Coordinate with nearest health center' ? `${coord}.` : 'Coordinate with the nearest health center.';
+    const { total = 0, recent = 0, severe = 0, risk = 0 } = metrics || {};
+    const surge = recent >= Math.max(2, Math.round(total * 0.25));
+    const severityFocus = severe > 0 ? 'Prioritize Category III exposures; ensure ERIG availability and trained staff for infiltration.' : 'Maintain readiness for potential severe exposures; refresh staff on ERIG protocols.';
     if (priority === 'high') {
-      return `Deploy a mobile vaccination team in ${barangay} within 48 hours and set up a pop‑up clinic at the barangay hall. Conduct door‑to‑door risk communication and announce schedules via barangay channels and schools. Ensure ERIG and vaccines are available with cold‑chain checks and pre‑position supplies. ${coordLine}`;
+      return `Deploy a mobile vaccination team in ${barangay} within 48 hours and set up a pop‑up clinic at the barangay hall. ${severityFocus} ${surge ? 'Extend clinic hours for 7 days to absorb the current surge; perform daily line‑listing and follow‑ups.' : 'Add two extra clinic days this week to clear backlog and conduct home visits for defaulters.'} Ensure cold‑chain checks and pre‑position supplies based on ${total} total and ${recent} recent cases (risk score ${risk}). ${coordLine}`;
     }
     if (priority === 'medium') {
-      return `Schedule an additional vaccination day in ${barangay} next week and publish clear triage/queueing instructions. Run information drives through barangay social media and health workers, focusing on recent cases and bite prevention. Verify stock levels and line‑list recent patients for follow‑up. ${coordLine}`;
+      return `Schedule an additional vaccination day in ${barangay} next week and publish clear triage/queueing instructions. ${severityFocus} Run information drives via barangay channels focused on bite prevention and defaulter tracing. Verify stock and prepare ${Math.max(10, recent * 2)} ARV doses and ERIG contingency; line‑list ${recent} recent patients for follow‑up. ${coordLine}`;
     }
     // For low priority (including 0 cases), provide preventive measures
-    return `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels. Continue preventive education about animal bite safety and rabies awareness. Monitor for any emerging cases and maintain baseline vaccination capacity. ${coordLine}`;
+    return `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels. Conduct quarterly school/community IEC with emphasis on wound washing and early consultation. Review stock minimums and keep at least ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; monitor trends for any uptick. ${coordLine}`;
   };
 
   // Ensure analysis text reaches 3–5 sentences by building an explanatory paragraph
