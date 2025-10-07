@@ -1422,6 +1422,12 @@ const SuperAdminVaccinationSchedule = () => {
         }
       }
 
+      console.log('🔍 Setting schedule modal data:', {
+        scheduleList,
+        vdId: vdItem?._id || vdItem?.id,
+        biteCaseId: vdItem?.biteCaseId
+      });
+      
       setScheduleModalData({
         patient: patientData?.patient,
         biteCaseId: vdItem?.biteCaseId,
@@ -3490,6 +3496,7 @@ const SuperAdminVaccinationSchedule = () => {
                                               onChange={(e) => {
                                                 const newDateStr = e.target.value;
                                                 console.log('Date input changed:', { 
+                                                  scheduleItem,
                                                   label: scheduleItem.label, 
                                                   newDateStr, 
                                                   currentDate: scheduleItem.date,
@@ -3497,6 +3504,11 @@ const SuperAdminVaccinationSchedule = () => {
                                                   biteCaseId: scheduleModalData?.biteCaseId
                                                 });
                                                 if (!newDateStr) return;
+                                                if (!scheduleItem.label) {
+                                                  console.error('Schedule item missing label:', scheduleItem);
+                                                  showNotification('Error: Schedule item missing label', 'error');
+                                                  return;
+                                                }
                                                 handleRescheduleCascadeVaccinationDates(scheduleItem.label, newDateStr);
                                               }}
                                               className="filter-select"
