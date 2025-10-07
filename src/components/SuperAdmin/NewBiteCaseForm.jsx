@@ -83,6 +83,30 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   }, []);
 
   const handleChange = (name, value) => {
+    // Auto-calc age if birthdate changes
+    if (name === 'birthdate') {
+      try {
+        const d = new Date(value);
+        const t = new Date();
+        let calculatedAge = t.getFullYear() - d.getFullYear();
+        const m = t.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && t.getDate() < d.getDate())) calculatedAge--;
+        setForm((p)=> ({ ...p, birthdate: value, age: String(Math.max(0, calculatedAge)) }));
+      } catch {
+        setForm((p)=> ({ ...p, birthdate: value }));
+      }
+      if (errors['birthdate']) clearError('birthdate');
+      if (errors['age']) clearError('age');
+      return;
+    }
+    // Sync centerName when barangay changes
+    if (name === 'barangay') {
+      const centerName = value ? `${value} Center` : '';
+      setForm((p) => ({ ...p, barangay: value, centerName }));
+      if (errors['barangay']) clearError('barangay');
+      if (errors['centerName']) clearError('centerName');
+      return;
+    }
     setForm((p) => ({ ...p, [name]: value }));
     if (errors[name]) clearError(name);
   };
@@ -152,18 +176,18 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     if (!hasSite) nextErrors.site = '';
 
     // Date of inquiry required
-    if (!form.dateOfInquiry) nextErrors.dateOfInquiry = '';
+    if (!form.dateOfInquiry) nextErrors.dateOfInquiry = 'Date of injury is required';
 
     // Time of injury required (HH:MM)
-    if (!form.timeOfInjury) nextErrors.timeOfInjury = '';
+    if (!form.timeOfInjury) nextErrors.timeOfInjury = 'Time of injury is required';
 
     // Checkbox groups validations
     const oneTrue = (keys) => keys.some(k => !!form[k]);
-    if (!oneTrue(['woundWashYes','woundWashNo'])) nextErrors.washingWound = '';
-    if (!oneTrue(['cat1','cat2','cat3'])) nextErrors.category = '';
-    if (!oneTrue(['spDog','spCat']) && !String(form.spOthers || '').trim()) nextErrors.species = '';
-    if (!oneTrue(['owner_0','owner_1','owner_2'])) nextErrors.ownership = '';
-    if (!oneTrue(['cs_0','cs_1','cs_2','cs_3','cs_4','cs_5'])) nextErrors.clinicalStatus = '';
+    if (!oneTrue(['woundWashYes','woundWashNo'])) nextErrors.washingWound = 'Please indicate wound washing';
+    if (!oneTrue(['cat1','cat2','cat3'])) nextErrors.category = 'Please select a category';
+    if (!oneTrue(['spDog','spCat']) && !String(form.spOthers || '').trim()) nextErrors.species = 'Please select species or specify others';
+    if (!oneTrue(['owner_0','owner_1','owner_2'])) nextErrors.ownership = 'Please select ownership';
+    if (!oneTrue(['cs_0','cs_1','cs_2','cs_3','cs_4','cs_5'])) nextErrors.clinicalStatus = 'Please select clinical status';
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -472,6 +496,9 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Input name="dateRegistered" type="date" label="Date Registered *" />
                 <Input name="centerName" label="Center Name *" />
         </div>
+              {errors.registrationNumber && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Registration Number is required.</div>}
+              {errors.dateRegistered && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Date Registered is required.</div>}
+              {errors.centerName && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Center Name is required.</div>}
             </section>
 
             {/* Personal Information */}
@@ -492,6 +519,9 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Input name="occupation" label="Occupation *" />
                 <Input name="contactNo" label="Contact No. *" />
               </div>
+              {(errors.firstName || errors.lastName || errors.sex || errors.birthdate || errors.age || errors.contactNo) && (
+                <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Please complete the required personal information fields.</div>
+              )}
             </section>
 
             {/* Address */}
@@ -506,6 +536,9 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Input name="province" label="Province" />
                 <Input name="zipCode" label="Zip Code" />
               </div>
+              {(errors.barangay || errors.city || errors.province) && (
+                <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>Please complete the required address fields.</div>
+              )}
             </section>
 
             {/* History of Bite */}
@@ -517,7 +550,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Check name="bite" label="BITE" onChange={() => toggleExposure('bite')} />
             </div>
               {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
-              {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
 
               <div className="form-label">Site of Bite</div>
               <div className="checkbox-row">
@@ -525,7 +557,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                   <Check key={i} name={`site_${i}`} label={lbl} onChange={() => toggleSite(i)} />
           ))}
         </div>
-              {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
               {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
 
               <div className="form-grid grid-2" style={{marginTop: '10px'}}>

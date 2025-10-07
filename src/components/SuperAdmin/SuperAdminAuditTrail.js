@@ -30,6 +30,8 @@ const SuperAdminAuditTrail = () => {
   const [role, setRole] = useState('');
   const [center, setCenter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
+  const userCenterForRole = getUserCenter();
+  const isSuperAdmin = !userCenterForRole || userCenterForRole === 'all';
   
   // Pagination states
   const [page, setPage] = useState(1);
@@ -111,6 +113,10 @@ const SuperAdminAuditTrail = () => {
 
   // fetch centers for filter options
   useEffect(() => {
+    if (!isSuperAdmin) {
+      setCenterOptions([]);
+      return;
+    }
     const fetchCenters = async () => {
       try {
         const res = await apiFetch(apiConfig.endpoints.centers);
@@ -126,7 +132,7 @@ const SuperAdminAuditTrail = () => {
       }
     };
     fetchCenters();
-  }, []);
+  }, [isSuperAdmin]);
 
   const filtered = useMemo(() => {
     let arr = [...data];

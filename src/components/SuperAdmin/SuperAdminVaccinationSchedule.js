@@ -17,6 +17,8 @@ const SuperAdminVaccinationSchedule = () => {
   const [vaccinationDayFilter, setVaccinationDayFilter] = useState('');
   const [centerFilter, setCenterFilter] = useState('');
   const [centerOptions, setCenterOptions] = useState([]);
+  const userCenterForRole = getUserCenter();
+  const isSuperAdmin = !userCenterForRole || userCenterForRole === 'all';
   const clearFilters = useCallback(() => {
     setSearchTerm('');
     setStatusFilter('');
@@ -2023,6 +2025,10 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Load centers for Center filter
   useEffect(() => {
+    if (!isSuperAdmin) {
+      setCenterOptions([]);
+      return;
+    }
     const fetchCenters = async () => {
       try {
         const res = await apiFetch(apiConfig.endpoints.centers);
@@ -2039,7 +2045,7 @@ const SuperAdminVaccinationSchedule = () => {
       }
     };
     fetchCenters();
-  }, []);
+  }, [isSuperAdmin]);
 
   // Filtered vaccination data
   const filteredVaccinations = useMemo(() => {
@@ -3127,18 +3133,20 @@ const SuperAdminVaccinationSchedule = () => {
             </div>
             
             <div className="filter-controls">
-              <select 
-                value={centerFilter}
-                onChange={(e) => setCenterFilter(e.target.value)}
-                className="filter-select"
-                aria-label="Filter by health center"
-                title="Filter by health center"
-              >
-                <option value="">All Centers</option>
-                {centerOptions.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
+              {isSuperAdmin && (
+                <select 
+                  value={centerFilter}
+                  onChange={(e) => setCenterFilter(e.target.value)}
+                  className="filter-select"
+                  aria-label="Filter by health center"
+                  title="Filter by health center"
+                >
+                  <option value="">All Centers</option>
+                  {centerOptions.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              )}
 
               <select 
                 value={statusFilter} 

@@ -97,6 +97,10 @@ const SuperAdminGenerate = () => {
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const location = useLocation();
 
+  // Determine role: superadmin sees all, admin is limited to their barangay/center
+  const userCenterForRole = getUserCenter();
+  const isSuperAdmin = !userCenterForRole || userCenterForRole === 'all';
+
   // San Juan Barangays
   const sanJuanBarangays = [
     "Addition Hills", "Balong-Bato", "Batis", "Corazon de Jesus", "Ermitaño",
@@ -1614,13 +1618,15 @@ const SuperAdminGenerate = () => {
                       <label htmlFor="animalBiteTo">TO:</label>
                       <input type="date" id="animalBiteTo" className="form-control" value={animalBiteFilters.to} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, to:e.target.value})} />
                     </div>
-                    <div className="filter-group">
-                      <label htmlFor="animalBiteBarangay">BARANGAY:</label>
-                      <select id="animalBiteBarangay" className="form-control" value={animalBiteFilters.barangay} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, barangay:e.target.value})}>
-                        <option value="all">All Barangays</option>
-                        {sanJuanBarangays.map(b=>(<option key={b} value={b}>{b}</option>))}
-                      </select>
-                    </div>
+                    {isSuperAdmin && (
+                      <div className="filter-group">
+                        <label htmlFor="animalBiteBarangay">BARANGAY:</label>
+                        <select id="animalBiteBarangay" className="form-control" value={animalBiteFilters.barangay} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, barangay:e.target.value})}>
+                          <option value="all">All Barangays</option>
+                          {sanJuanBarangays.map(b=>(<option key={b} value={b}>{b}</option>))}
+                        </select>
+                      </div>
+                    )}
                     <div className="filter-group">
                       <label htmlFor="animalBiteSex">SEX:</label>
                       <select id="animalBiteSex" className="form-control" value={animalBiteFilters.sex} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, sex:e.target.value})}>
@@ -1856,6 +1862,7 @@ const SuperAdminGenerate = () => {
                 </div>
               </div>
             </div>
+          )}
 
           {/* Animal Bite Exposure Report - removed per request */}
           {false && (
@@ -2071,8 +2078,8 @@ const SuperAdminGenerate = () => {
                   </div>
                 </div>
                 </div>
-              </div>
             </div>
+          </div>
           )}
 
           {/* Custom Demographic Report removed per request */}
@@ -2136,20 +2143,22 @@ const SuperAdminGenerate = () => {
                         <option value="61+">61+</option>
                       </select>
                     </div>
-                    <div className="filter-group">
-                      <label htmlFor="customDemoBarangay">BARANGAY:</label>
-                      <select
-                        id="customDemoBarangay"
-                        className="form-control"
-                        value={customDemoFilters.barangay}
-                        onChange={(e) => setCustomDemoFilters({...customDemoFilters, barangay: e.target.value})}
-                      >
-                        <option value="all">All Barangays</option>
-                        {sanJuanBarangays.map(barangay => (
-                          <option key={barangay} value={barangay}>{barangay}</option>
-                        ))}
-                      </select>
-                    </div>
+                    {isSuperAdmin && (
+                      <div className="filter-group">
+                        <label htmlFor="customDemoBarangay">BARANGAY:</label>
+                        <select
+                          id="customDemoBarangay"
+                          className="form-control"
+                          value={customDemoFilters.barangay}
+                          onChange={(e) => setCustomDemoFilters({...customDemoFilters, barangay: e.target.value})}
+                        >
+                          <option value="all">All Barangays</option>
+                          {sanJuanBarangays.map(barangay => (
+                            <option key={barangay} value={barangay}>{barangay}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <div className="search-group filter-group">
                       <label htmlFor="customDemoSearch" style={{visibility: 'hidden'}}>Search</label>
                       <div className="search-input-wrapper">
@@ -2207,7 +2216,6 @@ const SuperAdminGenerate = () => {
               </div>
             </div>
           </div>
-          )}
           )}
 
           {/* Patients Registration Report removed per request */}
@@ -2271,20 +2279,22 @@ const SuperAdminGenerate = () => {
                         <option value="61+">61+</option>
                       </select>
                     </div>
-                    <div className="filter-group">
-                      <label htmlFor="patientsBarangay">BARANGAY:</label>
-                      <select
-                        id="patientsBarangay"
-                        className="form-control"
-                        value={patientsFilters.barangay}
-                        onChange={(e) => setPatientsFilters({...patientsFilters, barangay: e.target.value})}
-                      >
-                        <option value="all">All Barangays</option>
-                        {sanJuanBarangays.map(barangay => (
-                          <option key={barangay} value={barangay}>{barangay}</option>
-                        ))}
-                      </select>
-                    </div>
+                    {isSuperAdmin && (
+                      <div className="filter-group">
+                        <label htmlFor="patientsBarangay">BARANGAY:</label>
+                        <select
+                          id="patientsBarangay"
+                          className="form-control"
+                          value={patientsFilters.barangay}
+                          onChange={(e) => setPatientsFilters({...patientsFilters, barangay: e.target.value})}
+                        >
+                          <option value="all">All Barangays</option>
+                          {sanJuanBarangays.map(barangay => (
+                            <option key={barangay} value={barangay}>{barangay}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <div className="filter-group">
                       <label htmlFor="patientsStatus">STATUS:</label>
                       <select
