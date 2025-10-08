@@ -32,6 +32,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [centers, setCenters] = useState([]);
+  const [toast, setToast] = useState(null);
 
   // Prefill from selected patient (only when patient identity changes)
   const prefilledRef = useRef(false);
@@ -153,6 +154,12 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
+
+  // Toast notification helper
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   // Single-select for exposure: "bite" or "nonBite"
   const toggleExposure = (key) => {
@@ -280,6 +287,83 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     if (checked) {
       if (type === 'structured') updates.unstructured = false;
       if (type === 'unstructured') updates.structured = false;
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Single choice helper for place of occurrence
+  const togglePlace = (idx, checked) => {
+    const updates = {};
+    if (checked) {
+      // Clear all other place selections
+      for (let i = 0; i < 4; i++) {
+        if (i !== idx) updates[`place_${i}`] = false;
+      }
+      updates[`place_${idx}`] = true;
+    } else {
+      updates[`place_${idx}`] = false;
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Single choice helper for disposition
+  const toggleDisposition = (type, checked) => {
+    const updates = { [type]: checked };
+    if (checked) {
+      if (type === 'treatedHome') {
+        updates.transferred = false;
+        updates.transferredTo = '';
+      } else if (type === 'transferred') {
+        updates.treatedHome = false;
+      }
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Single choice helper for provoked/unprovoked
+  const toggleProvoked = (type, checked) => {
+    const updates = { [type]: checked };
+    if (checked) {
+      if (type === 'provoked') updates.unprovoked = false;
+      if (type === 'unprovoked') updates.provoked = false;
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Single choice helper for DPT immunization
+  const toggleDPTSingle = (type, checked) => {
+    const updates = { [type]: checked };
+    if (checked) {
+      // Clear other DPT options and their related fields
+      if (type === 'dptComplete') {
+        updates.dptIncomplete = false;
+        updates.dptNone = false;
+        updates.dptDoses = '';
+      } else if (type === 'dptIncomplete') {
+        updates.dptComplete = false;
+        updates.dptNone = false;
+        updates.dptYear = '';
+      } else if (type === 'dptNone') {
+        updates.dptComplete = false;
+        updates.dptIncomplete = false;
+        updates.dptYear = '';
+        updates.dptDoses = '';
+      }
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Single choice helper for current anti-rabies options
+  const toggleCurrentAntiRabies = (idx, checked) => {
+    const updates = {};
+    if (checked) {
+      // Clear all other current options
+      for (let i = 0; i < 3; i++) {
+        if (i !== idx) updates[`cur_${i}`] = false;
+      }
+      updates[`cur_${idx}`] = true;
+    } else {
+      updates[`cur_${idx}`] = false;
     }
     setForm(prev => ({ ...prev, ...updates }));
   };
@@ -580,12 +664,14 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         console.error('🔍 Failed to create vaccinationdates record:', vdErr);
         // Don't throw here - bite case was created successfully, just vaccinationdates failed
         // Show a warning but don't block the form submission
-        alert(`Bite case created successfully, but vaccination schedule creation failed: ${vdErr.message}`);
+        showToast(`Bite case created successfully, but vaccination schedule creation failed: ${vdErr.message}`, 'warning');
       }
 
       if (onSaved) onSaved(data);
+      showToast('Bite case created successfully!', 'success');
       if (onClose) onClose();
     } catch (err) {
+      showToast(`Error: ${err.message || 'Failed to create bite case'}`, 'error');
       setError('submit', String(err.message || err));
     }
   };
@@ -638,23 +724,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         </div>
         <div className="bitecase-separator" />
         <div className="bitecase-body">
-          {/* Focus Issue Warning */}
-          <div style={{
-            backgroundColor: '#fef3c7',
-            border: '1px solid #f59e0b',
-            borderRadius: '6px',
-            padding: '12px',
-            marginBottom: '16px',
-            fontSize: '0.875rem',
-            color: '#92400e'
-          }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-              ⚠️ Form Focus Issue Fixed
-            </div>
-            <div>
-              The text field focus loss issue has been resolved. You can now type continuously in text fields without losing focus.
-            </div>
-          </div>
           <form onSubmit={async (e)=>{
             const ok = validate();
             if (!ok) {
@@ -769,7 +838,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <Input name="causeChemicalDetail" label="" disabled={!form.causeChemical} />
               <div className="form-label" style={{marginTop: '10px'}}>Place of Occurrence</div>
               <div className="checkbox-row">
-                {['Home','School','Road','Neighbor'].map((lbl,i)=> (<Check key={i} name={`place_${i}`} label={lbl} />))}
+                {['Home','School','Road','Neighbor'].map((lbl,i)=> (<Check key={i} name={`place_${i}`} label={lbl} onChange={(e) => togglePlace(i, e.target.checked)} />))}
                 </div>
               <Input name="placeOthers" label="Others" />
             </section>
@@ -777,8 +846,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             {/* Disposition & Circumstance */}
             <section className="section">
               <div className="section-title">Disposition & Circumstance</div>
-              <Check name="treatedHome" label="Treated & Sent Home" />
-              <Check name="transferred" label="Transferred to another facility/hospital (specify)" />
+              <Check name="treatedHome" label="Treated & Sent Home" onChange={(e) => toggleDisposition('treatedHome', e.target.checked)} />
+              <Check name="transferred" label="Transferred to another facility/hospital (specify)" onChange={(e) => toggleDisposition('transferred', e.target.checked)} />
               {form.transferred && (
                 <div className="w-full" style={{marginTop: '10px'}}>
                   <label className="form-label">Select Center/Hospital:</label>
@@ -797,8 +866,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 </div>
               )}
               <div className="checkbox-row" style={{marginTop: '10px'}}>
-                <Check name="provoked" label="Provoked" />
-                <Check name="unprovoked" label="Unprovoked" />
+                <Check name="provoked" label="Provoked" onChange={(e) => toggleProvoked('provoked', e.target.checked)} />
+                <Check name="unprovoked" label="Unprovoked" onChange={(e) => toggleProvoked('unprovoked', e.target.checked)} />
               </div>
             </section>
 
@@ -832,11 +901,11 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">Patient Immunization</div>
               <div className="form-label">DPT Immunization</div>
-              <Check name="dptComplete" label="Complete" onChange={(e) => toggleDPTImmunization('dptComplete', e.target.checked)} />
+              <Check name="dptComplete" label="Complete" onChange={(e) => toggleDPTSingle('dptComplete', e.target.checked)} />
               <Input name="dptYear" label="Year Given (last dose)" disabled={!form.dptComplete} />
-              <Check name="dptIncomplete" label="Incomplete" onChange={(e) => toggleDPTImmunization('dptIncomplete', e.target.checked)} />
+              <Check name="dptIncomplete" label="Incomplete" onChange={(e) => toggleDPTSingle('dptIncomplete', e.target.checked)} />
               <Input name="dptDoses" label="No. of Dose given" disabled={!form.dptIncomplete} />
-              <Check name="dptNone" label="None" />
+              <Check name="dptNone" label="None" onChange={(e) => toggleDPTSingle('dptNone', e.target.checked)} />
               <div className="form-label" style={{marginTop: '10px'}}>Previous</div>
               <Input name="prevDoseNo" label="No. of doses given" />
               <Input name="prevYearLastDose" label="Year last dose given" />
@@ -847,7 +916,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <div className="section-title">Current Anti-Rabies Immunization</div>
               <Check name="curActive" label="Active" />
               <div className="checkbox-row">
-                {['Post Exposure','Pre-Exposure Prophylaxis','Previously Immunized(PEP)'].map((lbl,i)=> (<Check key={i} name={`cur_${i}`} label={lbl} />))}
+                {['Post Exposure','Pre-Exposure Prophylaxis','Previously Immunized(PEP)'].map((lbl,i)=> (<Check key={i} name={`cur_${i}`} label={lbl} onChange={(e) => toggleCurrentAntiRabies(i, e.target.checked)} />))}
               </div>
               <div className="form-label" style={{marginTop: '10px'}}>Vaccine Name</div>
               <div className="checkbox-row">
@@ -917,6 +986,27 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         </form>
           </div>
       </div>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          backgroundColor: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#f59e0b',
+          color: 'white',
+          padding: '12px 16px',
+          borderRadius: '6px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          zIndex: 9999,
+          fontSize: '14px',
+          fontWeight: '500',
+          minWidth: '250px',
+          maxWidth: '400px'
+        }}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 
