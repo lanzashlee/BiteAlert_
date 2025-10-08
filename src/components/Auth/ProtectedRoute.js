@@ -70,8 +70,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
         height: '100vh',
         flexDirection: 'column',
         gap: '20px',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white'
+        background: 'linear-gradient(135deg,rgb(241, 241, 241) 0%,rgb(250, 250, 250) 100%)',
       }}>
         <div style={{
           width: '40px',
