@@ -2560,6 +2560,15 @@ app.get('/api/centers', async (req, res) => {
     console.log('Fetching all centers...');
     const centers = await Center.find({}).sort({ lastUpdated: -1 });
     console.log(`Found ${centers.length} centers`);
+    
+    // Log hours data for each center
+    centers.forEach(center => {
+      console.log(`🔍 Center ${center.name || center.centerName}:`, {
+        hasHours: !!center.hours,
+        hours: center.hours
+      });
+    });
+    
     res.json({ success: true, data: centers });
   } catch (err) {
     console.error('Error fetching centers:', err);
@@ -4702,6 +4711,7 @@ app.put('/api/centers/:id/hours', async (req, res) => {
     }
 
     console.log('Center hours updated successfully:', center);
+    console.log('Updated center hours field:', JSON.stringify(center.hours));
     res.json({ success: true, data: center });
   } catch (err) {
     console.error('Error updating center hours:', err);

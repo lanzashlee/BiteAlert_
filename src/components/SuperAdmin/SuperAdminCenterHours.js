@@ -25,24 +25,55 @@ const SuperAdminCenterHours = () => {
 
   const fetchData = async () => {
     try {
-      console.log('Fetching centers data...');
-      const centersRes = await apiFetch('/api/centers');
-      const data = await centersRes.json();
-      console.log('Centers API response:', data);
+      console.log('Fetching centers and hours data...');
       
-      const list = Array.isArray(data) ? data : (data.data || data.centers || []);
-      console.log('🔍 Centers list:', list);
+      // Fetch both centers and center hours in parallel
+      const [centersRes, hoursRes] = await Promise.all([
+        apiFetch('/api/centers'),
+        apiFetch('/api/center_hours?existingOnly=true')
+      ]);
       
-      // Log each center's hours structure
-      list.forEach(center => {
-        console.log(`🔍 Center: ${center.name || center.centerName}, Hours:`, center.hours);
-      });
+      // Process centers data
+      const centersData = await centersRes.json();
+      const centersList = Array.isArray(centersData) ? centersData : (centersData.data || centersData.centers || []);
+      console.log('🔍 Centers loaded:', centersList.length);
       
-      setCenters(list);
-      console.log('Centers loaded:', list.length);
+      // Process hours data
+      let hoursMap = {};
+      if (hoursRes.ok) {
+        const hoursData = await hoursRes.json();
+        const hoursList = Array.isArray(hoursData) ? hoursData : (hoursData.data || hoursData.centerHours || []);
+        console.log('🔍 Center hours loaded:', hoursList.length);
+        
+        // Create a map of hours by center ID and name
+        hoursList.forEach(hours => {
+          if (hours.centerId) {
+            hoursMap[String(hours.centerId)] = {
+              hours: hours.hours || {},
+              contactNumber: hours.contactNumber || ''
+            };
+          }
+          if (hours.centerName) {
+            // Also map by center name for fallback
+            const center = centersList.find(c => 
+              (c.centerName || c.name) === hours.centerName
+            );
+            if (center) {
+              hoursMap[String(center._id)] = {
+                hours: hours.hours || {},
+                contactNumber: hours.contactNumber || ''
+              };
+            }
+          }
+        });
+        
+        console.log('🔍 Hours map created:', hoursMap);
+      }
       
-      // Since hours are stored directly in centers, we don't need a separate API call
-      setHoursByCenterId({});
+      setCenters(centersList);
+      setHoursByCenterId(hoursMap);
+      console.log('Data loading complete');
+      
     } catch (e) {
       console.error('Error fetching data:', e);
     } finally {
@@ -63,16 +94,20 @@ const SuperAdminCenterHours = () => {
       };
 
       const promises = centers.map(async (center) => {
-        const hasHours = center.hours && Object.keys(center.hours).length > 0;
+        const hasHours = hoursByCenterId[String(center._id)] && Object.keys(hoursByCenterId[String(center._id)].hours || {}).length > 0;
         if (!hasHours) {
           const updateDoc = {
             hours: defaultHours,
           };
 
-          const res = await apiFetch(`/api/centers/${encodeURIComponent(center._id)}/hours`, {
+          const res = await apiFetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updateDoc),
+            body: JSON.stringify({
+              centerId: center._id,
+              centerName: center.centerName || center.name,
+              hours: defaultHours
+            }),
           });
 
           if (res.ok) {
@@ -121,7 +156,8 @@ const SuperAdminCenterHours = () => {
   };
 
   const getWeekdaysHours = (center) => {
-    const hours = center.hours || {};
+    const persisted = hoursByCenterId[String(center._id)] || {};
+    const hours = persisted.hours || center.hours || {};
     console.log('🔍 Getting weekday hours for center:', center.name, 'hours:', hours);
     
     // Check if there's a general weekday hours setting
@@ -156,7 +192,8 @@ const SuperAdminCenterHours = () => {
   };
 
   const getWeekendHours = (center) => {
-    const hours = center.hours || {};
+    const persisted = hoursByCenterId[String(center._id)] || {};
+    const hours = persisted.hours || center.hours || {};
     console.log('🔍 Getting weekend hours for center:', center.name, 'hours:', hours);
     
     // Check if there's a general weekend hours setting
@@ -191,7 +228,8 @@ const SuperAdminCenterHours = () => {
   const beginEdit = (center) => {
     console.log('🔍 beginEdit called for center:', center);
     
-    const baseHours = center.hours || {};
+    const persisted = hoursByCenterId[String(center._id)] || {};
+    const baseHours = persisted.hours || center.hours || {};
     console.log('🔍 Base hours from center:', baseHours);
     
     // Get weekday hours (check for general weekday setting or use first available weekday)
@@ -309,11 +347,16 @@ const SuperAdminCenterHours = () => {
 
       console.log('🔍 Final update document:', updateDoc);
 
-      // Update the center hours using the new endpoint
-      const res = await apiFetch(`/api/centers/${encodeURIComponent(center._id)}/hours`, {
+      // Update the center hours using the center_hours endpoint
+      const res = await apiFetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateDoc),
+        body: JSON.stringify({
+          centerId: center._id,
+          centerName: center.centerName || center.name,
+          hours: cleanedHours,
+          contactNumber: updateDoc.contactNumber
+        }),
       });
       
       console.log('🔍 Save response status:', res.status);
@@ -337,14 +380,14 @@ const SuperAdminCenterHours = () => {
       const result = await res.json();
       console.log('🔍 Save result:', result);
 
-      // Update local centers data
-      setCenters(prevCenters => 
-        prevCenters.map(c => 
-          c._id === center._id 
-            ? { ...c, hours: cleanedHours, contactNumber: updateDoc.contactNumber }
-            : c
-        )
-      );
+      // Update local hours data
+      setHoursByCenterId(prev => ({
+        ...prev,
+        [String(center._id)]: {
+          hours: cleanedHours,
+          contactNumber: updateDoc.contactNumber
+        }
+      }));
       
       alert('Center hours saved successfully!');
       cancelEdit();
@@ -467,7 +510,7 @@ const SuperAdminCenterHours = () => {
                       <td>{c.centerName || c.name}</td>
                       <td>{getWeekdaysHours(c)}</td>
                       <td>{getWeekendHours(c)}</td>
-                      <td>{c.contactNumber || '—'}</td>
+                      <td>{(hoursByCenterId[String(c._id)]?.contactNumber || c.contactNumber || '—')}</td>
                       <td style={{ textAlign:'right' }}>
                         <button className="btn btn-primary" onClick={() => beginEdit(c)} aria-label={`Edit service hours for ${c.name}`} title="Edit">Edit</button>
                       </td>
