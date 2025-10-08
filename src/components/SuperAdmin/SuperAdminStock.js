@@ -61,29 +61,25 @@ const SuperAdminStock = () => {
     console.log('Batch Number:', qa.batchNumber);
     console.log('Expiry Date:', qa.expiryDate);
     
-    if (!centerName || !vaccine?.name || isNaN(qty)) {
-      alert('Center, vaccine name, and quantity are required');
+    if (!centerName || !vaccine?.name || isNaN(qty) || qty <= 0) {
+      showToast('Center, vaccine name, and valid quantity are required', 'error');
       return;
     }
+    
+    if (!qa.batchNumber || !qa.batchNumber.trim()) {
+      showToast('Batch number is required', 'error');
+      return;
+    }
+    
+    if (!qa.expiryDate || !qa.expiryDate.trim()) {
+      showToast('Expiry date is required', 'error');
+      return;
+    }
+    
     try {
       setFormLoading(true);
-      // Determine merge vs create in UI first (optimistic behavior)
-      const normalizeDate = (d) => {
-        if (!d) return '';
-        const date = new Date(d);
-        if (isNaN(date.getTime())) return '';
-        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-      };
-      const desiredBatch = String(qa.batchNumber || '').trim();
-      const desiredExpiry = qa.expiryDate ? normalizeDate(qa.expiryDate) : '';
-      const entries = Array.isArray(vaccine.stockEntries) ? vaccine.stockEntries : [];
-      // Find existing entry with same branch number (batch number) - merge regardless of expiry
-      const foundSameBatch = entries.find(en => {
-        const enBatch = String(en.branchNo || '').trim();
-        return enBatch.toLowerCase() === desiredBatch.toLowerCase();
-      });
-
-      // Use the standard endpoint for both new and existing vaccines
+      
+      // Prepare payload for API
       const payload = {
         center: centerName,
         centerName: centerName,
@@ -91,109 +87,44 @@ const SuperAdminStock = () => {
         vaccineType: vaccine.type || '',
         brand: vaccine.brand || '',
         quantity: qty,
-        expiryDate: qa.expiryDate || '',
-        batchNumber: qa.batchNumber || ''
+        expiryDate: qa.expiryDate,
+        batchNumber: qa.batchNumber
       };
       
-      console.log('🔍 Adding vaccine stock:', vaccine.name, 'to center:', centerName);
+      console.log('🔍 Adding vaccine stock with payload:', payload);
       
-      const res = await apiFetch('/api/vaccinestocks', {
+      const response = await apiFetch('/api/vaccinestocks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       
-      console.log('🔍 Response status:', res.status);
-      console.log('🔍 Response ok:', res.ok);
+      console.log('🔍 Response status:', response.status);
       
-      if (!res.ok) {
-        const errorText = await res.text();
+      if (!response.ok) {
+        const errorText = await response.text();
         console.error('🔍 API Error Response:', errorText);
-        showToast(`Server error: ${res.status} - ${errorText}`, 'error');
+        showToast(`Server error: ${response.status} - ${errorText}`, 'error');
         return;
       }
       
-      let result;
-      try {
-        result = await res.json();
-        console.log('🔍 API RESPONSE:', result);
-      } catch (error) {
-        console.error('🔍 Failed to parse JSON response:', error);
-        const responseText = await res.text();
-        console.log('🔍 Response text:', responseText);
-        showToast('Server error: Invalid response format', 'error');
-        return;
-      }
+      const result = await response.json();
+      console.log('🔍 API Response:', result);
       
       if (result.success) {
-        console.log('🔍 API SUCCESS - Action:', result.action);
-        // Optimistic UI update: merge or create locally for instant feedback
-        setData(prevData => {
-          const copy = JSON.parse(JSON.stringify(prevData || []));
-          let center = copy.find(c => (c.centerName || '') === centerName);
-          
-          if (!center) {
-            // Create new center if it doesn't exist
-            center = {
-              centerName: centerName,
-              vaccines: []
-            };
-            copy.push(center);
-          }
-          
-          let vac = (center.vaccines || []).find(v => (v.name || '') === vaccine.name);
-          
-          if (!vac) {
-            // Create new vaccine if it doesn't exist
-            vac = {
-              name: vaccine.name,
-              type: vaccine.type || '',
-              brand: vaccine.brand || '',
-              stockEntries: []
-            };
-            center.vaccines.push(vac);
-          }
-          
-          if (!Array.isArray(vac.stockEntries)) vac.stockEntries = [];
-          
-          if (foundSameBatch) {
-            // Merge quantities with existing branch
-            const target = vac.stockEntries.find(en => {
-              const enBatch = String(en.branchNo || '').trim();
-              return enBatch.toLowerCase() === desiredBatch.toLowerCase();
-            });
-            if (target) {
-              let cur = Number(target.stock || 0);
-              cur = isNaN(cur) ? 0 : cur;
-              target.stock = cur + (isNaN(qty) ? 0 : qty);
-              // Update expiry date if provided
-              if (qa.expiryDate && qa.expiryDate.trim()) {
-                target.expirationDate = qa.expiryDate;
-              }
-            }
-            showToast('Added to existing branch', 'success');
-          } else {
-            // Create new stock entry
-            vac.stockEntries.push({ 
-              branchNo: desiredBatch, 
-              stock: qty, 
-              expirationDate: qa.expiryDate || '' 
-            });
-            showToast('New branch created', 'success');
-          }
-          return copy;
-        });
+        showToast(result.message || 'Vaccine stock added successfully!', 'success');
+        
         // Clear inputs and close modal
         setQuickAdd(prev => ({ ...prev, [key]: { quantity: '', batchNumber: '', expiryDate: '' } }));
-        setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' });
-        // Background refresh to stay accurate with server
-        console.log('🔍 REFRESHING DATA AFTER STOCK ADD...');
-        loadData();
+        setQuickModal({ open: false, centerName: '', vaccine: null, quantity: '', batchNumber: '', expiryDate: '' });
+        
+        // Refresh data to get the latest from server
+        await loadData();
       } else {
         showToast(result.message || 'Failed to add vaccine stock', 'error');
       }
-    } catch (e) {
-      console.error('Quick add failed:', e);
+    } catch (error) {
+      console.error('Quick add failed:', error);
       showToast('Error adding vaccine stock. Please try again.', 'error');
     } finally {
       setFormLoading(false);
@@ -228,96 +159,93 @@ const SuperAdminStock = () => {
 
   const loadData = async () => {
     try {
+      setLoading(true);
       const userCenter = getUserCenter();
       
-      // Build API URL WITHOUT server-side center filtering.
-      // We fetch broadly, then apply robust client-side filtering by center
-      // to avoid missing data when backend fields vary across records.
+      // Build API URL with proper center filtering
       let apiUrl = '/api/vaccinestocks';
       if (userCenter && userCenter !== 'all') {
-        console.log('Admin center detected, using client-side filtering for vaccine stocks:', userCenter);
-      } else if (!userCenter) {
-        console.log('No user center detected, fetching all vaccine stocks for client-side filtering');
+        apiUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
+      console.log('🔍 Loading vaccine stocks from:', apiUrl);
       const response = await apiFetch(apiUrl);
       const result = await response.json();
-      if (result.success) {
-        // Apply client-side filtering by center
-        const allData = result.data || [];
-        console.log('Total vaccine stocks before filtering:', allData.length);
+      
+      console.log('🔍 API Response:', result);
+      
+      // Handle different response structures
+      let stocksData = [];
+      if (Array.isArray(result)) {
+        stocksData = result;
+      } else if (result.success && Array.isArray(result.data)) {
+        stocksData = result.data;
+      } else if (result.data && Array.isArray(result.data)) {
+        stocksData = result.data;
+      }
+      
+      console.log('🔍 Processed stocks data:', stocksData);
+      
+      // Group data by center and vaccine
+      const groupedData = {};
+      
+      stocksData.forEach(stock => {
+        const centerName = stock.centerName || stock.center || 'Unknown Center';
+        const vaccineName = stock.vaccineName || stock.name || 'Unknown Vaccine';
         
-        // Map the data to ensure consistent field names
-        const mappedData = allData.map(stock => ({
-          ...stock,
-          center: stock.center || stock.centerName
-        }));
-        
-        // Apply center-based filtering for admin users
-        let filteredData = mappedData;
-        if (userCenter && userCenter !== 'all') {
-          filteredData = mappedData.filter(stock => {
-            const stockCenter = stock.center || stock.centerName || '';
-            const normalizedCenter = stockCenter.toLowerCase().trim();
-            const normalizedUserCenter = userCenter.toLowerCase().trim();
-            
-            console.log('Stock filtering:', {
-              stockCenter,
-              normalizedCenter,
-              normalizedUserCenter,
-              matches: normalizedCenter === normalizedUserCenter || 
-                      normalizedCenter.includes(normalizedUserCenter) || 
-                      normalizedUserCenter.includes(normalizedCenter)
-            });
-            
-            return normalizedCenter === normalizedUserCenter || 
-                   normalizedCenter.includes(normalizedUserCenter) || 
-                   normalizedUserCenter.includes(normalizedCenter);
-          });
+        // Initialize center if not exists
+        if (!groupedData[centerName]) {
+          groupedData[centerName] = {
+            centerName: centerName,
+            vaccines: []
+          };
         }
         
-        console.log('Filtered vaccine stocks for center:', filteredData.length);
-        console.log('🔍 SAMPLE FILTERED DATA:', filteredData.slice(0, 2));
+        // Find or create vaccine
+        let vaccine = groupedData[centerName].vaccines.find(v => v.name === vaccineName);
+        if (!vaccine) {
+          vaccine = {
+            name: vaccineName,
+            type: stock.vaccineType || stock.type || '',
+            brand: stock.brand || stock.vaccineBrand || '',
+            stockEntries: []
+          };
+          groupedData[centerName].vaccines.push(vaccine);
+        }
         
-        // Group flat data by center to match component expectations
-        const groupedData = {};
-        filteredData.forEach((stock, index) => {
-          const centerName = stock.center;
+        // Add stock entry - handle MongoDB number types
+        if (stock.batchNumber || stock.branchNo) {
+          let stockQuantity = stock.quantity || stock.stock || 0;
           
-          if (!groupedData[centerName]) {
-            groupedData[centerName] = {
-              centerName: centerName,
-              vaccines: []
-            };
+          // Handle MongoDB number types
+          if (typeof stockQuantity === 'object') {
+            if (stockQuantity.$numberInt !== undefined) {
+              stockQuantity = parseInt(stockQuantity.$numberInt);
+            } else if (stockQuantity.$numberDouble !== undefined) {
+              stockQuantity = parseFloat(stockQuantity.$numberDouble);
+            } else {
+              stockQuantity = 0;
+            }
+          } else {
+            stockQuantity = Number(stockQuantity) || 0;
           }
           
-          // Find existing vaccine or create new one
-          let vaccine = groupedData[centerName].vaccines.find(v => v.name === stock.vaccineName);
-          if (!vaccine) {
-            vaccine = {
-              name: stock.vaccineName,
-              brand: stock.vaccineType,
-              type: stock.category,
-              stockEntries: []
-            };
-            groupedData[centerName].vaccines.push(vaccine);
-          }
-          
-          // Add stock entry
           vaccine.stockEntries.push({
-            branchNo: stock.batchNumber,
-            stock: stock.quantity,
-            expirationDate: stock.expiryDate
+            branchNo: stock.batchNumber || stock.branchNo || '',
+            stock: stockQuantity,
+            expirationDate: stock.expiryDate || stock.expirationDate || ''
           });
-        });
-        
-        // Convert to array format expected by component
-        const finalData = Object.values(groupedData);
-        console.log('🔍 FINAL GROUPED DATA:', finalData);
-        setData(finalData);
-      }
+        }
+      });
+      
+      // Convert to array format
+      const finalData = Object.values(groupedData);
+      console.log('🔍 Final grouped data:', finalData);
+      setData(finalData);
+      
     } catch (error) {
       console.error('Error loading vaccine stocks:', error);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -490,17 +418,31 @@ const SuperAdminStock = () => {
     setFormLoading(true);
     
     try {
-      // Prepare data in the new structure
+      // Validate required fields
+      if (!formData.center || !formData.vaccineName || !formData.quantity) {
+        showToast('Center, vaccine name, and quantity are required', 'error');
+        return;
+      }
+      
+      const quantity = parseInt(formData.quantity);
+      if (isNaN(quantity) || quantity <= 0) {
+        showToast('Please enter a valid quantity', 'error');
+        return;
+      }
+      
+      // Prepare data in the correct structure
       const stockData = {
         center: formData.center,
-        centerName: formData.center, // keep for backward compatibility
+        centerName: formData.center,
         vaccineName: formData.vaccineName,
-        vaccineType: formData.vaccineType,
-        brand: formData.brand,
-        quantity: parseInt(formData.quantity),
-        expiryDate: formData.expiryDate,
-        batchNumber: formData.batchNumber
+        vaccineType: formData.vaccineType || '',
+        brand: formData.brand || '',
+        quantity: quantity,
+        expiryDate: formData.expiryDate || '',
+        batchNumber: formData.batchNumber || ''
       };
+      
+      console.log('🔍 Adding vaccine stock:', stockData);
       
       const response = await apiFetch('/api/vaccinestocks', {
         method: 'POST',
@@ -510,7 +452,17 @@ const SuperAdminStock = () => {
         body: JSON.stringify(stockData),
       });
       
+      console.log('🔍 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🔍 API Error Response:', errorText);
+        showToast(`Server error: ${response.status} - ${errorText}`, 'error');
+        return;
+      }
+      
       const result = await response.json();
+      console.log('🔍 API Response:', result);
       
       if (result.success) {
         showToast(result.message || 'Vaccine stock added successfully!', 'success');
@@ -525,7 +477,7 @@ const SuperAdminStock = () => {
           batchNumber: ''
         });
         setAvailableVaccines([]);
-        loadData(); // Reload data
+        await loadData(); // Reload data
       } else {
         showToast(result.message || 'Failed to add vaccine stock', 'error');
       }

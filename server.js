@@ -4270,16 +4270,35 @@ app.get('/api/vaccinestocks', async (req, res) => {
         doc.vaccines.forEach(vaccine => {
           if (vaccine.stockEntries && Array.isArray(vaccine.stockEntries)) {
             vaccine.stockEntries.forEach(entry => {
+              // Handle MongoDB number types properly
+              let stockQuantity = entry.stock;
+              if (typeof stockQuantity === 'object') {
+                if (stockQuantity.$numberInt !== undefined) {
+                  stockQuantity = parseInt(stockQuantity.$numberInt);
+                } else if (stockQuantity.$numberDouble !== undefined) {
+                  stockQuantity = parseFloat(stockQuantity.$numberDouble);
+                } else {
+                  stockQuantity = 0;
+                }
+              } else {
+                stockQuantity = Number(stockQuantity) || 0;
+              }
+              
               stocks.push({
                 _id: entry._id,
                 center: doc.centerName,
+                centerName: doc.centerName,
                 vaccineName: vaccine.name,
-                vaccineType: vaccine.brand,
+                vaccineType: vaccine.type, // Fixed: type not brand
+                brand: vaccine.brand,     // Fixed: brand not type
                 category: vaccine.type,
                 batchNumber: entry.branchNo,
-                quantity: entry.stock,
+                branchNo: entry.branchNo,
+                quantity: stockQuantity,
+                stock: stockQuantity,
                 expiryDate: entry.expirationDate,
-                status: entry.stock <= 0 ? 'out' : entry.stock <= 10 ? 'low' : 'active',
+                expirationDate: entry.expirationDate,
+                status: stockQuantity <= 0 ? 'out' : stockQuantity <= 10 ? 'low' : 'active',
                 lastUpdated: new Date()
               });
             });
@@ -4301,11 +4320,12 @@ app.get('/api/vaccinestocks', async (req, res) => {
 // API: Add new vaccine stock
 app.post('/api/vaccinestocks', async (req, res) => {
   try {
-    const { center, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand } = req.body;
+    const { center, centerName, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand } = req.body;
     
-    console.log('📦 Adding vaccine stock:', { center, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand });
+    console.log('📦 Adding vaccine stock:', { center, centerName, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand });
     
-    if (!center || !vaccineName || quantity === undefined) {
+    const centerToUse = center || centerName;
+    if (!centerToUse || !vaccineName || quantity === undefined) {
       return res.status(400).json({ success: false, message: 'Center, vaccine name, and quantity are required' });
     }
 
@@ -4314,14 +4334,14 @@ app.post('/api/vaccinestocks', async (req, res) => {
 
     // Find or create the center document
     let doc = await VaccineStockDoc.findOne({ $or: [
-      { centerName: center },
-      { centerName: center + ' Center' },
-      { centerName: center + ' Health Center' }
+      { centerName: centerToUse },
+      { centerName: centerToUse + ' Center' },
+      { centerName: centerToUse + ' Health Center' }
     ]});
     
     if (!doc) {
-      console.log('🏥 Creating new center document for:', center);
-      doc = new VaccineStockDoc({ centerName: center, vaccines: [] });
+      console.log('🏥 Creating new center document for:', centerToUse);
+      doc = new VaccineStockDoc({ centerName: centerToUse, vaccines: [] });
     }
 
     if (!Array.isArray(doc.vaccines)) doc.vaccines = [];
@@ -4330,7 +4350,12 @@ app.post('/api/vaccinestocks', async (req, res) => {
     let vac = doc.vaccines.find(v => (v.name || '').toLowerCase() === String(vaccineName).toLowerCase());
     if (!vac) {
       console.log('💉 Creating new vaccine entry for:', vaccineName);
-      vac = { name: vaccineName, type: vaccineType || '', brand: brand || '', stockEntries: [] };
+      vac = { 
+        name: vaccineName, 
+        type: vaccineType || '', 
+        brand: brand || '', 
+        stockEntries: [] 
+      };
       doc.vaccines.push(vac);
     } else {
       // Update metadata if provided
@@ -4343,23 +4368,31 @@ app.post('/api/vaccinestocks', async (req, res) => {
     const batch = String(batchNumber || '').trim();
     const expStr = expiryDate ? String(expiryDate) : '';
 
-    // Match rule: same branch number → merge regardless of expiry date
-    const normalize = (v) => {
-      if (!v) return '';
-      const d = new Date(v);
-      if (!isNaN(d.getTime())) return d.toISOString().slice(0,10);
-      return String(v).trim();
-    };
-    const desiredExpiry = normalize(expStr);
+    // Validate quantity
+    if (isNaN(qty) || qty < 0) {
+      return res.status(400).json({ success: false, message: 'Invalid quantity. Must be a positive number.' });
+    }
 
     let action = 'created';
     // Find existing entry with same branch number (batch number)
     const match = vac.stockEntries.find(en => String(en.branchNo || '').trim().toLowerCase() === batch.toLowerCase());
     
     if (match) {
-      let current = Number(match.stock || 0);
-      if (Number.isNaN(current)) current = 0;
-      match.stock = current + (Number.isNaN(qty) ? 0 : qty);
+      // Handle MongoDB number types properly
+      let current = match.stock;
+      if (typeof current === 'object') {
+        if (current.$numberInt !== undefined) {
+          current = parseInt(current.$numberInt);
+        } else if (current.$numberDouble !== undefined) {
+          current = parseFloat(current.$numberDouble);
+        } else {
+          current = 0;
+        }
+      } else {
+        current = Number(current) || 0;
+      }
+      
+      match.stock = current + qty;
       
       // Update expiry date to the latest one if provided
       if (expStr && expStr.trim()) {
@@ -4369,7 +4402,11 @@ app.post('/api/vaccinestocks', async (req, res) => {
       action = 'merged';
       console.log('🔄 Merged with existing branch:', batch, 'New total:', match.stock, 'Updated expiry:', match.expirationDate);
     } else {
-      vac.stockEntries.push({ branchNo: batch, stock: Number.isNaN(qty) ? 0 : qty, expirationDate: expStr });
+      vac.stockEntries.push({ 
+        branchNo: batch, 
+        stock: qty, 
+        expirationDate: expStr 
+      });
       action = 'created';
       console.log('✨ Created new branch:', batch, 'Quantity:', qty);
     }
@@ -4377,6 +4414,23 @@ app.post('/api/vaccinestocks', async (req, res) => {
     // Mark the document as modified to ensure MongoDB saves the changes
     doc.markModified('vaccines');
     await doc.save();
+    
+    // Calculate total stock for this vaccine
+    const totalStock = vac.stockEntries.reduce((sum, entry) => {
+      let stock = entry.stock;
+      if (typeof stock === 'object') {
+        if (stock.$numberInt !== undefined) {
+          stock = parseInt(stock.$numberInt);
+        } else if (stock.$numberDouble !== undefined) {
+          stock = parseFloat(stock.$numberDouble);
+        } else {
+          stock = 0;
+        }
+      } else {
+        stock = Number(stock) || 0;
+      }
+      return sum + stock;
+    }, 0);
     
     console.log('✅ Stock update successful:', action);
     res.json({ 
@@ -4388,7 +4442,7 @@ app.post('/api/vaccinestocks', async (req, res) => {
         vaccine: vaccineName,
         batch: batch,
         quantity: qty,
-        totalStock: vac.stockEntries.reduce((sum, entry) => sum + (Number(entry.stock) || 0), 0)
+        totalStock: totalStock
       }
     });
   } catch (err) {
