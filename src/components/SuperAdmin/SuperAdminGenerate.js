@@ -1216,6 +1216,8 @@ const SuperAdminGenerate = () => {
     
     setLoading(true);
     const filteredData = filterAnimalBiteData();
+    console.log('🔍 Exporting Animal Bite PDF with', filteredData.length, 'records');
+    console.log('🔍 Sample record:', filteredData[0]);
     
     try {
       const { jsPDF } = window.jspdf;
@@ -1255,27 +1257,90 @@ const SuperAdminGenerate = () => {
         'STATUS'
       ];
       
-      const rows = filteredData.map(record => [
-        record.registrationNumber || record.caseNumber || 'N/A',
-        record.dateRegistered ? new Date(record.dateRegistered).toLocaleDateString('en-US') : 'N/A',
-        `${record.firstName || ''} ${record.lastName || ''}`.trim() || 'N/A',
-        record.age || 'N/A',
-        record.sex || 'N/A',
-        record.address || record.patientAddress || 'N/A',
-        record.animalProfile?.species || record.species || 'N/A',
-        record.woundLocation || record.biteSite || 'N/A',
-        record.status || 'N/A'
-      ]);
+      const rows = filteredData.map(record => {
+        // Extract case number from various possible fields
+        const caseNumber = record.registrationNumber || 
+                          record.caseNumber || 
+                          record.caseNo || 
+                          record.id || 
+                          record._id || 
+                          'N/A';
+        
+        // Extract and format date
+        const dateValue = record.dateRegistered || 
+                         record.dateCreated || 
+                         record.createdAt || 
+                         record.date || 
+                         record.registrationDate;
+        const formattedDate = dateValue ? new Date(dateValue).toLocaleDateString('en-US') : 'N/A';
+        
+        // Extract patient name from various possible fields
+        const patientName = `${record.firstName || record.first_name || ''} ${record.lastName || record.last_name || ''}`.trim() ||
+                           record.patientName || 
+                           record.patient_name || 
+                           record.fullName || 
+                           record.name || 
+                           'N/A';
+        
+        // Extract address from various possible fields
+        const address = record.address || 
+                       record.patientAddress || 
+                       record.address || 
+                       record.location || 
+                       record.fullAddress || 
+                       record.patientLocation ||
+                       'N/A';
+        
+        // Extract animal type/species
+        const animalType = record.animalProfile?.species || 
+                          record.species || 
+                          record.animalType || 
+                          record.animal_type || 
+                          record.animal?.species ||
+                          'N/A';
+        
+        // Extract bite site/wound location
+        const biteSite = record.woundLocation || 
+                        record.biteSite || 
+                        record.wound_location || 
+                        record.bite_site || 
+                        record.injuryLocation ||
+                        record.injury_location ||
+                        'N/A';
+        
+        // Extract status with better mapping
+        const status = record.status || 
+                      record.completionStatus || 
+                      record.completion_status || 
+                      record.caseStatus ||
+                      record.case_status ||
+                      'N/A';
+        
+        return [
+          String(caseNumber).substring(0, 15), // Limit case number length
+          formattedDate,
+          patientName.substring(0, 30), // Limit name length
+          record.age || record.patientAge || 'N/A',
+          record.sex || record.gender || record.patientSex || 'N/A',
+          address.substring(0, 50), // Limit address length
+          animalType,
+          biteSite.substring(0, 25), // Limit bite site length
+          status.substring(0, 20) // Limit status length
+        ];
+      });
 
       doc.autoTable({
         startY,
         head: [columns],
         body: rows,
         styles: { 
-          fontSize: 8, 
-          cellPadding: 2,
+          fontSize: 7, // Slightly smaller font to fit more content
+          cellPadding: 3, // Increased padding for better readability
           overflow: 'linebreak',
-          halign: 'left'
+          halign: 'left',
+          valign: 'top', // Align content to top of cells
+          lineColor: [128, 0, 0], // Red border lines
+          lineWidth: 0.1 // Thinner border lines
         },
         headStyles: { 
           fillColor: [128, 0, 0], 
@@ -1284,18 +1349,18 @@ const SuperAdminGenerate = () => {
           fontSize: 9
         },
         columnStyles: {
-          0: { cellWidth: 20 }, // CASE NO.
-          1: { cellWidth: 18 }, // DATE
-          2: { cellWidth: 25 }, // PATIENT NAME
-          3: { cellWidth: 12 }, // AGE
-          4: { cellWidth: 12 }, // SEX
-          5: { cellWidth: 35 }, // ADDRESS
-          6: { cellWidth: 15 }, // ANIMAL TYPE
-          7: { cellWidth: 20 }, // BITE SITE
-          8: { cellWidth: 18 }  // STATUS
+          0: { cellWidth: 25 }, // CASE NO. - increased
+          1: { cellWidth: 22 }, // DATE - increased
+          2: { cellWidth: 35 }, // PATIENT NAME - increased
+          3: { cellWidth: 15 }, // AGE - increased
+          4: { cellWidth: 15 }, // SEX - increased
+          5: { cellWidth: 55 }, // ADDRESS - significantly increased
+          6: { cellWidth: 20 }, // ANIMAL TYPE - increased
+          7: { cellWidth: 30 }, // BITE SITE - increased
+          8: { cellWidth: 25 }  // STATUS - increased
         },
         theme: 'grid',
-        margin: { left: 10, right: 10 },
+        margin: { left: 5, right: 5 }, // Reduced margins to use more space
         tableLineColor: [128, 0, 0],
         tableLineWidth: 0.3,
         pageBreak: 'auto',
