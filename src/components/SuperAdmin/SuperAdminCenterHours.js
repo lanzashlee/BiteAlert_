@@ -25,60 +25,65 @@ const SuperAdminCenterHours = () => {
 
   const fetchData = async () => {
     try {
-      console.log('Fetching centers and hours data...');
+      console.log('Fetching centers from main collection...');
       
-      // Fetch both centers and center hours in parallel
-      const [centersRes, hoursRes] = await Promise.all([
-        apiFetch('/api/centers'),
-        apiFetch('/api/center_hours?existingOnly=true')
-      ]);
-      
-      // Process centers data
+      // Fetch centers from main centers collection
+      const centersRes = await apiFetch('/api/centers');
       const centersData = await centersRes.json();
       const centersList = Array.isArray(centersData) ? centersData : (centersData.data || centersData.centers || []);
-      console.log('🔍 Centers loaded:', centersList.length);
+      console.log('🔍 Centers loaded from main collection:', centersList.length);
       
-      // Process hours data
+      // Find Salapan center to use as template
+      const salapanCenter = centersList.find(c => 
+        (c.name || c.centerName || '').toLowerCase().includes('salapan')
+      );
+      
+      console.log('🔍 Salapan center found:', salapanCenter);
+      
+      // Create hours map using Salapan's structure as template for all centers
       let hoursMap = {};
-      if (hoursRes.ok) {
-        const hoursData = await hoursRes.json();
-        const hoursList = Array.isArray(hoursData) ? hoursData : (hoursData.data || hoursData.centerHours || []);
-        console.log('🔍 Center hours loaded:', hoursList.length);
-        console.log('🔍 Hours data sample:', hoursList[0]);
+      
+      if (salapanCenter && salapanCenter.hours) {
+        console.log('🔍 Using Salapan hours as template:', salapanCenter.hours);
         
-        // Create a map of hours by center ID and name
-        hoursList.forEach((hours, index) => {
-          console.log(`🔍 Processing hours ${index}:`, hours);
-          
-          if (hours.centerId) {
-            hoursMap[String(hours.centerId)] = {
-              hours: hours.hours || {},
-              contactNumber: hours.contactNumber || ''
+        // Apply Salapan's hours structure to all centers
+        centersList.forEach(center => {
+          if (center.hours && Object.keys(center.hours).length > 0) {
+            // Center already has hours, use them
+            hoursMap[String(center._id)] = {
+              hours: center.hours,
+              contactNumber: center.contactNumber || ''
             };
-            console.log(`🔍 Mapped hours for centerId ${hours.centerId}`);
-          }
-          if (hours.centerName) {
-            // Also map by center name for fallback
-            const center = centersList.find(c => 
-              (c.centerName || c.name) === hours.centerName
-            );
-            if (center) {
-              hoursMap[String(center._id)] = {
-                hours: hours.hours || {},
-                contactNumber: hours.contactNumber || ''
-              };
-              console.log(`🔍 Mapped hours for centerName ${hours.centerName} to center ${center._id}`);
-            } else {
-              console.log(`🔍 No matching center found for ${hours.centerName}`);
-            }
+            console.log(`🔍 Center ${center.name} already has hours`);
+          } else {
+            // Center doesn't have hours, use Salapan's structure as default
+            hoursMap[String(center._id)] = {
+              hours: {
+                weekday: { start: '08:00', end: '17:00' },
+                weekend: { start: '09:00', end: '15:00' }
+              },
+              contactNumber: center.contactNumber || ''
+            };
+            console.log(`🔍 Applied Salapan template to ${center.name}`);
           }
         });
-        
-        console.log('🔍 Final hours map created:', hoursMap);
-        console.log('🔍 Hours map keys:', Object.keys(hoursMap));
       } else {
-        console.log('🔍 Center hours API not available or failed');
+        console.log('🔍 Salapan not found or has no hours, using default structure');
+        
+        // Fallback: use default structure for all centers
+        centersList.forEach(center => {
+          hoursMap[String(center._id)] = {
+            hours: center.hours || {
+              weekday: { start: '08:00', end: '17:00' },
+              weekend: { start: '09:00', end: '15:00' }
+            },
+            contactNumber: center.contactNumber || ''
+          };
+        });
       }
+      
+      console.log('🔍 Final hours map created:', hoursMap);
+      console.log('🔍 Hours map keys:', Object.keys(hoursMap));
       
       setCenters(centersList);
       setHoursByCenterId(hoursMap);
@@ -110,12 +115,10 @@ const SuperAdminCenterHours = () => {
             hours: defaultHours,
           };
 
-          const res = await apiFetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
+          const res = await apiFetch(`/api/centers/${encodeURIComponent(center._id)}/hours`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              centerId: center._id,
-              centerName: center.centerName || center.name,
               hours: defaultHours
             }),
           });
@@ -336,13 +339,11 @@ const SuperAdminCenterHours = () => {
 
       console.log('🔍 Final update document:', updateDoc);
 
-      // Update the center hours using the center_hours endpoint
-      const res = await apiFetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
+      // Update the center directly in the centers collection
+      const res = await apiFetch(`/api/centers/${encodeURIComponent(center._id)}/hours`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          centerId: center._id,
-          centerName: center.centerName || center.name,
           hours: cleanedHours,
           contactNumber: updateDoc.contactNumber
         }),
