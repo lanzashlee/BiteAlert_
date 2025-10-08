@@ -2151,6 +2151,23 @@ const SuperAdminVaccinationSchedule = () => {
     fetchCenters();
   }, [isSuperAdmin]);
 
+  // Real-time stock refresh - refresh vaccine stocks every 30 seconds
+  useEffect(() => {
+    const stockRefreshInterval = setInterval(async () => {
+      try {
+        await loadVaccineStocks();
+        console.log('🔄 Auto-refreshed vaccine stocks');
+      } catch (error) {
+        console.warn('Auto-refresh stock failed:', error);
+      }
+    }, 30000); // 30 seconds
+
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(stockRefreshInterval);
+    };
+  }, []);
+
   // Filtered vaccination data
   const filteredVaccinations = useMemo(() => {
     let filtered = vaccinations;
@@ -2323,6 +2340,66 @@ const SuperAdminVaccinationSchedule = () => {
       }
 
       if (updateSuccessful || response.ok) {
+        // Extract vaccine information for stock deduction
+        let vaccineType = '';
+        let route = '';
+        let patientWeight = null;
+        
+        // Get vaccine info from bite case data
+        try {
+          const biteCaseResponse = await apiFetch(`/api/bitecases/${vaccination.originalId}`);
+          if (biteCaseResponse.ok) {
+            const biteCaseData = await biteCaseResponse.json();
+            
+            // Extract vaccine type from currentImmunization.vaccine array
+            if (biteCaseData?.currentImmunization?.vaccine && Array.isArray(biteCaseData.currentImmunization.vaccine)) {
+              const vaccineTypeCode = biteCaseData.currentImmunization.vaccine[0];
+              if (vaccineTypeCode === 'PCEC') {
+                vaccineType = 'VAXIRAB';
+              } else if (vaccineTypeCode === 'PVRV') {
+                vaccineType = 'SPEEDA';
+              }
+            }
+            
+            // Extract route from currentImmunization.route array
+            if (biteCaseData?.currentImmunization?.route && Array.isArray(biteCaseData.currentImmunization.route)) {
+              route = biteCaseData.currentImmunization.route[0]; // 'ID' or 'IM'
+            }
+            
+            // Get patient weight for ERIG calculation
+            patientWeight = biteCaseData?.weight || vaccination.patient?.weight || null;
+            
+            console.log('🔍 Extracted vaccine info for stock deduction:', { vaccineType, route, patientWeight });
+          }
+        } catch (err) {
+          console.warn('Could not fetch bite case data for stock deduction:', err);
+        }
+        
+        // Deduct stock if vaccine information is available
+        if (vaccineType && route) {
+          try {
+            const centerName = vaccination.patient?.center || vaccination.patient?.centerName || vaccination.centerName;
+            console.log('🔍 Deducting stock for:', { vaccineType, route, centerName, patientWeight });
+            
+            const stockResult = await deductVaccineStock(vaccineType, route, centerName, patientWeight);
+            
+            if (stockResult.success) {
+              console.log('✅ Stock deduction successful:', stockResult.message);
+              // Refresh vaccine stocks to reflect the deduction
+              await loadVaccineStocks();
+            } else {
+              console.warn('⚠️ Stock deduction failed:', stockResult.message);
+              showNotification(`Vaccination completed but stock deduction failed: ${stockResult.message}`, 'warning');
+            }
+          } catch (stockErr) {
+            console.error('❌ Error during stock deduction:', stockErr);
+            showNotification(`Vaccination completed but stock deduction failed: ${stockErr.message}`, 'warning');
+          }
+        } else {
+          console.warn('⚠️ No vaccine information available for stock deduction');
+          showNotification('Vaccination completed but no vaccine info found for stock deduction', 'warning');
+        }
+        
         showNotification('Vaccination marked as completed', 'success');
         
         // Update local state immediately for better UX
@@ -3011,6 +3088,8 @@ const SuperAdminVaccinationSchedule = () => {
         setShowEmptyState(true);
       }
       
+      // Also refresh vaccine stocks to ensure real-time inventory data
+      await loadVaccineStocks();
       
     } catch (error) {
       console.error('Error refreshing vaccination data:', error);
