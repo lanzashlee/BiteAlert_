@@ -282,58 +282,84 @@ const SuperAdminVaccinationSchedule = () => {
     }
     
     const brands = [];
-    
-    // Process the vaccine stock structure
-    vaccineStocks.forEach(center => {
-      console.log('🔍 Processing center:', center.centerName);
-      if (center.vaccines && Array.isArray(center.vaccines)) {
+
+    // Helper to normalize numeric quantity
+    const toNumber = (val) => {
+      if (typeof val === 'object') {
+        if (val.$numberInt !== undefined) return parseInt(val.$numberInt);
+        if (val.$numberDouble !== undefined) return parseFloat(val.$numberDouble);
+      }
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
+
+    // Predicate for label → stock item match
+    const matchesLabel = (label, item) => {
+      const name = String(item.name || item.vaccineName || '').toLowerCase();
+      const brand = String(item.brand || '').toLowerCase();
+      const type = String(item.type || item.category || '').toLowerCase();
+      if (label === 'VAXIRAB (PCEC)') {
+        return name.includes('vaxirab') || brand.includes('pcec') || (type.includes('anti-rabies') && brand.includes('pcec'));
+      }
+      if (label === 'SPEEDA (PVRV)') {
+        return name.includes('speeda') || brand.includes('pvrv') || (type.includes('anti-rabies') && brand.includes('pvrv'));
+      }
+      if (label === 'TCV') {
+        return brand.includes('tcv') || type.includes('tetanus') || name.includes('tetanus');
+      }
+      if (label === 'ERIG') {
+        return name.includes('erig') || type.includes('erig');
+      }
+      if (label === 'VAXIRAB (BOOSTER)') {
+        return name.includes('vaxirab') || brand.includes('pcec');
+      }
+      if (label === 'SPEEDA (BOOSTER)') {
+        return name.includes('speeda') || brand.includes('pvrv');
+      }
+      return false;
+    };
+
+    // Case 1: nested centers with vaccines[]
+    if (vaccineStocks.some(s => Array.isArray(s.vaccines))) {
+      vaccineStocks.forEach(center => {
+        if (!Array.isArray(center.vaccines)) return;
         center.vaccines.forEach(vaccine => {
-          console.log('🔍 Processing vaccine:', vaccine.name, vaccine.type);
-          
-          // Match by vaccine name - be more flexible with matching
-          let nameMatch = false;
-          let typeMatch = false;
-          
-          if (vaccineName === 'VAXIRAB (PCEC)') {
-            nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('vaxirab');
-            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('anti-rabies') && vaccine.brand && vaccine.brand.toLowerCase().includes('pcec');
-          } else if (vaccineName === 'SPEEDA (PVRV)') {
-            nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('speeda');
-            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('anti-rabies') && vaccine.brand && vaccine.brand.toLowerCase().includes('pvrv');
-          } else if (vaccineName === 'TCV') {
-            nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('tetanus');
-            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('tetanus');
-          } else if (vaccineName === 'ERIG') {
-            nameMatch = vaccine.name && vaccine.name.toLowerCase().includes('erig');
-            typeMatch = vaccine.type && vaccine.type.toLowerCase().includes('erig');
-          }
-          
-          console.log('🔍 Match results:', { nameMatch, typeMatch, vaccineName });
-          
-          if (nameMatch || typeMatch) {
-            console.log('🔍 Found matching vaccine:', vaccine.name);
-            // Process stock entries
-            if (vaccine.stockEntries && Array.isArray(vaccine.stockEntries)) {
-              vaccine.stockEntries.forEach(entry => {
-                console.log('🔍 Processing stock entry:', entry);
-                if (entry.stock > 0) {
-                  brands.push({
-                    name: vaccine.name,
-                    brand: vaccine.brand,
-                    branchNo: entry.branchNo,
-                    quantity: entry.stock,
-                    expirationDate: entry.expirationDate,
-                    centerName: center.centerName,
-                    type: vaccine.type
-                  });
-                }
+          if (!matchesLabel(vaccineName, vaccine)) return;
+          (vaccine.stockEntries || []).forEach(entry => {
+            const qty = toNumber(entry.stock);
+            if (qty > 0) {
+              brands.push({
+                name: vaccine.name,
+                brand: vaccine.brand,
+                branchNo: entry.branchNo,
+                quantity: qty,
+                expirationDate: entry.expirationDate,
+                centerName: center.centerName || center.center,
+                type: vaccine.type
               });
             }
-          }
+          });
         });
-      }
-    });
-    
+      });
+    } else {
+      // Case 2: flattened list of stock rows
+      vaccineStocks.forEach(row => {
+        if (!matchesLabel(vaccineName, row)) return;
+        const qty = toNumber(row.quantity || row.stock);
+        if (qty > 0) {
+          brands.push({
+            name: row.name || row.vaccineName,
+            brand: row.brand,
+            branchNo: row.branchNo || row.batchNumber,
+            quantity: qty,
+            expirationDate: row.expirationDate || row.expiryDate,
+            centerName: row.centerName || row.center,
+            type: row.type || row.category
+          });
+        }
+      });
+    }
+
     console.log('🔍 Final brands array:', brands);
     return brands;
   };
