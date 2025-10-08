@@ -74,7 +74,13 @@ const SuperAdminCreateAccount = () => {
       }
 
       if (!currentUser) {
-        throw new Error('No active session found');
+        console.log('No active session found, proceeding with logout anyway');
+        // Proceed with logout even if no session found
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('token');
+        window.location.replace('/login');
+        return;
       }
 
       const logoutData = {
@@ -108,7 +114,16 @@ const SuperAdminCreateAccount = () => {
       window.location.replace('/login');
     } catch (error) {
       console.error('Error during sign out:', error);
-      alert(error.message || 'Error signing out. Please try again.');
+      // Only show alert for unexpected errors, not for missing session
+      if (!error.message?.includes('No active session found')) {
+        alert(error.message || 'Error signing out. Please try again.');
+      }
+      
+      // Ensure logout happens even if there's an error
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('token');
+      window.location.replace('/login');
     } finally {
       setShowSignoutModal(false);
     }
