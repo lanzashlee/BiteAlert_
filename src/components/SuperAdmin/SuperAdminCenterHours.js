@@ -44,14 +44,18 @@ const SuperAdminCenterHours = () => {
         const hoursData = await hoursRes.json();
         const hoursList = Array.isArray(hoursData) ? hoursData : (hoursData.data || hoursData.centerHours || []);
         console.log('🔍 Center hours loaded:', hoursList.length);
+        console.log('🔍 Hours data sample:', hoursList[0]);
         
         // Create a map of hours by center ID and name
-        hoursList.forEach(hours => {
+        hoursList.forEach((hours, index) => {
+          console.log(`🔍 Processing hours ${index}:`, hours);
+          
           if (hours.centerId) {
             hoursMap[String(hours.centerId)] = {
               hours: hours.hours || {},
               contactNumber: hours.contactNumber || ''
             };
+            console.log(`🔍 Mapped hours for centerId ${hours.centerId}`);
           }
           if (hours.centerName) {
             // Also map by center name for fallback
@@ -63,11 +67,17 @@ const SuperAdminCenterHours = () => {
                 hours: hours.hours || {},
                 contactNumber: hours.contactNumber || ''
               };
+              console.log(`🔍 Mapped hours for centerName ${hours.centerName} to center ${center._id}`);
+            } else {
+              console.log(`🔍 No matching center found for ${hours.centerName}`);
             }
           }
         });
         
-        console.log('🔍 Hours map created:', hoursMap);
+        console.log('🔍 Final hours map created:', hoursMap);
+        console.log('🔍 Hours map keys:', Object.keys(hoursMap));
+      } else {
+        console.log('🔍 Center hours API not available or failed');
       }
       
       setCenters(centersList);
@@ -227,6 +237,13 @@ const SuperAdminCenterHours = () => {
 
   const beginEdit = (center) => {
     console.log('🔍 beginEdit called for center:', center);
+    console.log('🔍 Center ID:', center._id);
+    console.log('🔍 Center name:', center.name || center.centerName);
+    console.log('🔍 Available hoursByCenterId keys:', Object.keys(hoursByCenterId));
+    console.log('🔍 Hours for this center:', hoursByCenterId[String(center._id)]);
+    
+    // Simple test alert to verify button click is working
+    alert(`Edit button clicked for: ${center.name || center.centerName}`);
     
     const persisted = hoursByCenterId[String(center._id)] || {};
     const baseHours = persisted.hours || center.hours || {};
