@@ -465,18 +465,8 @@ const SuperAdminCenterHours = () => {
                   return (
                     <tr key={c._id}>
                       <td>{c.centerName || c.name}</td>
-                      <td>
-                        {getWeekdaysHours(c)}
-                        <br/><small style={{color: '#666', fontSize: '0.7em'}}>
-                          Debug: {JSON.stringify(c.hours || {})}
-                        </small>
-                      </td>
-                      <td>
-                        {getWeekendHours(c)}
-                        <br/><small style={{color: '#666', fontSize: '0.7em'}}>
-                          Debug: {JSON.stringify(c.hours?.weekend || c.hours?.saturday || c.hours?.sunday || {})}
-                        </small>
-                      </td>
+                      <td>{getWeekdaysHours(c)}</td>
+                      <td>{getWeekendHours(c)}</td>
                       <td>{c.contactNumber || '—'}</td>
                       <td style={{ textAlign:'right' }}>
                         <button className="btn btn-primary" onClick={() => beginEdit(c)} aria-label={`Edit service hours for ${c.name}`} title="Edit">Edit</button>
