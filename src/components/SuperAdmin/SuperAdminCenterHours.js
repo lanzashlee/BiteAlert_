@@ -57,6 +57,61 @@ const SuperAdminCenterHours = () => {
     }
   };
 
+  const setDefaultHoursForAll = async () => {
+    if (!window.confirm('This will set default hours (8:00 AM - 5:00 PM weekdays, 9:00 AM - 3:00 PM weekends) for all centers that don\'t have hours set. Continue?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const defaultHours = {
+        weekday: { start: '08:00', end: '17:00' },
+        weekend: { start: '09:00', end: '15:00' }
+      };
+
+      const promises = centers.map(async (center) => {
+        const hasHours = hoursByCenterId[String(center._id)];
+        if (!hasHours || !hasHours.hours || Object.keys(hasHours.hours).length === 0) {
+          const doc = {
+            centerId: center._id,
+            centerName: center.centerName || center.name,
+            hours: defaultHours,
+            contactNumber: center.contactNumber || '',
+            updatedAt: new Date().toISOString(),
+          };
+
+          const res = await apiFetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(doc),
+          });
+
+          if (res.ok) {
+            return { centerId: center._id, success: true };
+          } else {
+            console.error(`Failed to set default hours for ${center.centerName || center.name}`);
+            return { centerId: center._id, success: false };
+          }
+        }
+        return { centerId: center._id, success: true, skipped: true };
+      });
+
+      const results = await Promise.all(promises);
+      const successCount = results.filter(r => r.success && !r.skipped).length;
+      const skippedCount = results.filter(r => r.skipped).length;
+
+      alert(`Default hours set for ${successCount} centers. ${skippedCount} centers already had hours set.`);
+      
+      // Refresh data to show updated hours
+      await fetchData();
+    } catch (error) {
+      console.error('Error setting default hours:', error);
+      alert('Error setting default hours. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -105,7 +160,8 @@ const SuperAdminCenterHours = () => {
       }
     }
     
-    return 'N/A';
+    // Return default hours if none are set
+    return 'Not Set';
   };
 
   const getWeekendHours = (center) => {
@@ -135,7 +191,8 @@ const SuperAdminCenterHours = () => {
       return `Sun: ${sunday.start} - ${sunday.end}`;
     }
     
-    return 'N/A';
+    // Return default message if no weekend hours are set
+    return 'Not Set';
   };
 
   const beginEdit = (center) => {
@@ -167,10 +224,22 @@ const SuperAdminCenterHours = () => {
       }
     }
     
+    // Provide default hours if none are set
+    const defaultWeekdayStart = weekdayHours.start || '08:00';
+    const defaultWeekdayEnd = weekdayHours.end || '17:00';
+    const defaultWeekendStart = weekendHours.start || '09:00';
+    const defaultWeekendEnd = weekendHours.end || '15:00';
+    
     const values = {
       contact: (persisted.contactNumber || center.contactNumber || ''),
-      weekday: { start: weekdayHours.start || '', end: weekdayHours.end || '' },
-      weekend: { start: weekendHours.start || '', end: weekendHours.end || '' }
+      weekday: { 
+        start: weekdayHours.start || defaultWeekdayStart, 
+        end: weekdayHours.end || defaultWeekdayEnd 
+      },
+      weekend: { 
+        start: weekendHours.start || defaultWeekendStart, 
+        end: weekendHours.end || defaultWeekendEnd 
+      }
     };
     
     setEditingId(center._id);
@@ -220,6 +289,12 @@ const SuperAdminCenterHours = () => {
         cleanedHours.weekend = { start: weekendStart, end: weekendEnd };
       }
 
+      // Validate that at least one set of hours is provided
+      if (Object.keys(cleanedHours).length === 0) {
+        alert('Please provide at least weekday or weekend hours.');
+        return;
+      }
+
       // Build center_hours document for persistence
       const doc = {
         centerId: center._id,
@@ -229,24 +304,36 @@ const SuperAdminCenterHours = () => {
         updatedAt: new Date().toISOString(),
       };
 
+      console.log('🔍 Saving center hours:', doc);
+
       // Upsert into center_hours collection (server supports this route)
       const res = await apiFetch(`/api/center_hours/${encodeURIComponent(center._id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(doc),
       });
+      
+      console.log('🔍 Save response status:', res.status);
+      
       if (!res.ok) {
         const t = await res.text();
+        console.error('🔍 Save error:', t);
         throw new Error(t || `HTTP ${res.status}`);
       }
+
+      const result = await res.json();
+      console.log('🔍 Save result:', result);
 
       // Update local persisted-hours map so UI reflects saved data and persists on refresh (since we refetch center_hours)
       setHoursByCenterId((prev) => ({
         ...prev,
         [String(center._id)]: { hours: doc.hours, contactNumber: doc.contactNumber },
       }));
+      
+      alert('Center hours saved successfully!');
       cancelEdit();
     } catch (err) {
+      console.error('🔍 Save error:', err);
       alert(err.message || 'Failed to save center hours');
     }
   };
@@ -322,16 +409,26 @@ const SuperAdminCenterHours = () => {
       <main className="main-content">
         <div className="content-header">
           <h2>Center Service Hours</h2>
-          <button 
-            className="btn btn-secondary" 
-            onClick={() => {
-              setLoading(true);
-              fetchData();
-            }}
-            disabled={loading}
-          >
-            <i className="fa-solid fa-refresh"></i> Refresh Data
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              className="btn btn-success" 
+              onClick={setDefaultHoursForAll}
+              disabled={loading}
+              title="Set default hours for all centers without hours"
+            >
+              <i className="fa-solid fa-clock"></i> Set Default Hours
+            </button>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => {
+                setLoading(true);
+                fetchData();
+              }}
+              disabled={loading}
+            >
+              <i className="fa-solid fa-refresh"></i> Refresh Data
+            </button>
+          </div>
         </div>
         {loading ? (
           <UnifiedSpinner text="Loading center hours..." />
