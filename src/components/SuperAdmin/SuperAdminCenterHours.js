@@ -13,6 +13,15 @@ const SuperAdminCenterHours = () => {
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
+  
+  // Debug state changes
+  useEffect(() => {
+    console.log('🔍 showEditModal changed to:', showEditModal);
+  }, [showEditModal]);
+  
+  useEffect(() => {
+    console.log('🔍 editingId changed to:', editingId);
+  }, [editingId]);
 
   const fetchData = async () => {
     try {
@@ -168,50 +177,18 @@ const SuperAdminCenterHours = () => {
 
   const beginEdit = (center) => {
     console.log('🔍 beginEdit called for center:', center);
+    alert(`Edit button clicked for center: ${center.name || center.centerName}`);
     
-    const baseHours = center.hours || {};
-    console.log('🔍 Base hours:', baseHours);
-    
-    // Get weekday hours (check for general weekday setting or use first available weekday)
-    let weekdayHours = baseHours.weekday || {};
-    if (!weekdayHours.start || !weekdayHours.end) {
-      // Find first weekday with hours
-      for (const day of days) {
-        const dayHours = baseHours[day.toLowerCase()];
-        if (dayHours && dayHours.start && dayHours.end) {
-          weekdayHours = dayHours;
-          break;
-        }
-      }
-    }
-    
-    // Get weekend hours (check for general weekend setting or use Saturday/Sunday)
-    let weekendHours = baseHours.weekend || {};
-    if (!weekendHours.start || !weekendHours.end) {
-      const saturday = baseHours.saturday || {};
-      const sunday = baseHours.sunday || {};
-      if (saturday.start && saturday.end) {
-        weekendHours = saturday;
-      } else if (sunday.start && sunday.end) {
-        weekendHours = sunday;
-      }
-    }
-    
-    // Provide default hours if none are set
-    const defaultWeekdayStart = weekdayHours.start || '08:00';
-    const defaultWeekdayEnd = weekdayHours.end || '17:00';
-    const defaultWeekendStart = weekendHours.start || '09:00';
-    const defaultWeekendEnd = weekendHours.end || '15:00';
-    
+    // Simple default values for testing
     const values = {
       contact: center.contactNumber || '',
       weekday: { 
-        start: weekdayHours.start || defaultWeekdayStart, 
-        end: weekdayHours.end || defaultWeekdayEnd 
+        start: '08:00', 
+        end: '17:00' 
       },
       weekend: { 
-        start: weekendHours.start || defaultWeekendStart, 
-        end: weekendHours.end || defaultWeekendEnd 
+        start: '09:00', 
+        end: '15:00' 
       }
     };
     
@@ -445,8 +422,8 @@ const SuperAdminCenterHours = () => {
 
       {/* Edit Hours Modal */}
       {showEditModal && (
-        <div className="react-modal-backdrop" onClick={(e) => { if (e.target.classList.contains('react-modal-backdrop')) cancelEdit(); }}>
-          <div className="react-modal" style={{ maxWidth: '760px' }}>
+        <div className="react-modal-backdrop" onClick={(e) => { if (e.target.classList.contains('react-modal-backdrop')) cancelEdit(); }} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="react-modal" style={{ maxWidth: '760px', backgroundColor: 'white', borderRadius: '8px', padding: '20px' }}>
             <div className="react-modal-header">
               <h4 className="react-modal-title">Edit Service Hours</h4>
               <button className="modal-close-btn" onClick={cancelEdit} aria-label="Close">✕</button>
