@@ -1168,7 +1168,8 @@ const SuperAdminVaccinationSchedule = () => {
         throw new Error('Unknown vaccine type for stock deduction');
       }
 
-      console.log('Deducting stock:', { inventoryName, deductionAmount, centerName });
+      console.log('🔍 Deducting stock:', { inventoryName, deductionAmount, centerName });
+      console.log('🔍 Center name being sent to API:', centerName);
 
       // Call stock update API with timeout
       const controller = new AbortController();
@@ -2380,6 +2381,12 @@ const SuperAdminVaccinationSchedule = () => {
           try {
             const centerName = vaccination.patient?.center || vaccination.patient?.centerName || vaccination.centerName;
             console.log('🔍 Deducting stock for:', { vaccineType, route, centerName, patientWeight });
+            console.log('🔍 Center name sources:', {
+              'vaccination.patient?.center': vaccination.patient?.center,
+              'vaccination.patient?.centerName': vaccination.patient?.centerName,
+              'vaccination.centerName': vaccination.centerName,
+              'final centerName': centerName
+            });
             
             const stockResult = await deductVaccineStock(vaccineType, route, centerName, patientWeight);
             

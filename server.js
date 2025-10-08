@@ -4460,6 +4460,84 @@ app.post('/api/vaccinestocks', async (req, res) => {
   }
 });
 
+// API: Deduct vaccine stock (for vaccination completion)
+app.post('/api/stock/update', async (req, res) => {
+  try {
+    const { centerName, itemName, quantity, operation } = req.body;
+    
+    console.log('🔍 Stock deduction request:', { centerName, itemName, quantity, operation });
+    
+    if (!centerName || !itemName || quantity === undefined || operation !== 'deduct') {
+      return res.status(400).json({ success: false, message: 'Missing required fields for stock deduction' });
+    }
+
+    // Use flexible schema that matches your nested vaccinestocks structure
+    const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
+
+    // First, let's see what centers are available in the database
+    const allCenters = await VaccineStockDoc.find({}, { centerName: 1, _id: 0 });
+    console.log('🔍 Available centers in vaccinestocks:', allCenters.map(c => c.centerName));
+    
+    // Find the center document with flexible matching
+    const centerVariations = [
+      centerName,
+      centerName + ' Center',
+      centerName + ' Health Center',
+      centerName + ' Barangay Center'
+    ];
+    
+    let doc = await VaccineStockDoc.findOne({ 
+      $or: centerVariations.map(name => ({ centerName: { $regex: new RegExp(name, 'i') } }))
+    });
+
+    if (!doc) {
+      console.log('🔍 Center not found, trying exact match for:', centerName);
+      console.log('🔍 Available centers:', allCenters.map(c => c.centerName));
+      return res.status(404).json({ 
+        success: false, 
+        message: `Center not found: ${centerName}. Available centers: ${allCenters.map(c => c.centerName).join(', ')}` 
+      });
+    }
+
+    // Find the vaccine in the center's vaccines array
+    const vaccine = doc.vaccines?.find(v => 
+      v.name?.toLowerCase().includes(itemName.toLowerCase()) ||
+      v.brand?.toLowerCase().includes(itemName.toLowerCase())
+    );
+
+    if (!vaccine) {
+      return res.status(404).json({ success: false, message: `Vaccine ${itemName} not found in ${centerName}` });
+    }
+
+    // Find the stock entry to deduct from (use the first available entry)
+    const stockEntry = vaccine.stockEntries?.find(entry => (entry.stock || 0) > 0);
+    
+    if (!stockEntry) {
+      return res.status(400).json({ success: false, message: `No stock available for ${itemName} in ${centerName}` });
+    }
+
+    // Deduct the quantity
+    const currentStock = Number(stockEntry.stock) || 0;
+    const newStock = Math.max(0, currentStock - quantity);
+    
+    stockEntry.stock = newStock;
+    
+    await doc.save();
+    
+    console.log(`✅ Stock deducted: ${quantity} ${itemName} from ${centerName}. Remaining: ${newStock}`);
+    
+    res.json({ 
+      success: true, 
+      message: `Successfully deducted ${quantity} ${itemName} from ${centerName}`,
+      remainingStock: newStock
+    });
+
+  } catch (err) {
+    console.error('❌ Error deducting vaccine stock:', err);
+    res.status(500).json({ success: false, message: 'Failed to deduct vaccine stock', error: err.message });
+  }
+});
+
 // API: Update vaccine stock
 app.put('/api/vaccinestocks/:id', async (req, res) => {
   try {
