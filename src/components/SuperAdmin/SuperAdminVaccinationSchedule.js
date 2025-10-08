@@ -2241,7 +2241,18 @@ const SuperAdminVaccinationSchedule = () => {
       filtered = filtered.filter(v => toLocalDateOnlyString(v.scheduledDate) === want);
     }
 
-    return filtered.sort((a, b) => toLocalDateOnlyString(a.scheduledDate).localeCompare(toLocalDateOnlyString(b.scheduledDate)));
+    return filtered.sort((a, b) => {
+      const todayStr = todayLocalStr();
+      const aDateStr = toLocalDateOnlyString(a.scheduledDate);
+      const bDateStr = toLocalDateOnlyString(b.scheduledDate);
+      
+      // Today's appointments first
+      if (aDateStr === todayStr && bDateStr !== todayStr) return -1;
+      if (bDateStr === todayStr && aDateStr !== todayStr) return 1;
+      
+      // Then sort by date (earliest first)
+      return aDateStr.localeCompare(bDateStr);
+    });
   }, [searchTerm, statusFilter, vaccinationDayFilter, dateFilter, centerFilter, vaccinations]);
 
   // Vaccination actions
