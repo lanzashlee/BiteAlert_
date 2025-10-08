@@ -4463,10 +4463,10 @@ app.post('/api/vaccinestocks', async (req, res) => {
 // API: Deduct vaccine stock (for vaccination completion)
 app.post('/api/stock/update', async (req, res) => {
   try {
-    const { centerName, itemName, quantity, operation } = req.body;
-    
-    console.log('🔍 Stock deduction request:', { centerName, itemName, quantity, operation });
-    
+    const { centerName, itemName, quantity, operation, branchNo, brand, type } = req.body || {};
+
+    console.log('🔍 Stock deduction request:', { centerName, itemName, quantity, operation, branchNo, brand, type });
+
     if (!centerName || !itemName || quantity === undefined || operation !== 'deduct') {
       return res.status(400).json({ success: false, message: 'Missing required fields for stock deduction' });
     }
@@ -4474,10 +4474,10 @@ app.post('/api/stock/update', async (req, res) => {
     // Use flexible schema that matches your nested vaccinestocks structure
     const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
 
-    // First, let's see what centers are available in the database
+    // First, list available centers for debugging
     const allCenters = await VaccineStockDoc.find({}, { centerName: 1, _id: 0 });
     console.log('🔍 Available centers in vaccinestocks:', allCenters.map(c => c.centerName));
-    
+
     // Find the center document with flexible matching
     const centerVariations = [
       centerName,
@@ -4485,51 +4485,75 @@ app.post('/api/stock/update', async (req, res) => {
       centerName + ' Health Center',
       centerName + ' Barangay Center'
     ];
-    
-    let doc = await VaccineStockDoc.findOne({ 
+
+    let doc = await VaccineStockDoc.findOne({
       $or: centerVariations.map(name => ({ centerName: { $regex: new RegExp(name, 'i') } }))
     });
 
     if (!doc) {
       console.log('🔍 Center not found, trying exact match for:', centerName);
       console.log('🔍 Available centers:', allCenters.map(c => c.centerName));
-      return res.status(404).json({ 
-        success: false, 
-        message: `Center not found: ${centerName}. Available centers: ${allCenters.map(c => c.centerName).join(', ')}` 
+      return res.status(404).json({
+        success: false,
+        message: `Center not found: ${centerName}. Available centers: ${allCenters.map(c => c.centerName).join(', ')}`
       });
     }
 
-    // Find the vaccine in the center's vaccines array
-    const vaccine = doc.vaccines?.find(v => 
-      v.name?.toLowerCase().includes(itemName.toLowerCase()) ||
-      v.brand?.toLowerCase().includes(itemName.toLowerCase())
-    );
+    // Find the vaccine in the center's vaccines array (match by name and optionally brand/type)
+    const lowerItem = String(itemName).toLowerCase();
+    const lowerBrand = brand ? String(brand).toLowerCase() : null;
+    const lowerType = type ? String(type).toLowerCase() : null;
+
+    const vaccine = (doc.vaccines || []).find(v => {
+      const nameOk = String(v.name || v.vaccineName || '').toLowerCase().includes(lowerItem) ||
+                     String(v.brand || '').toLowerCase().includes(lowerItem) ||
+                     String(v.type || '').toLowerCase().includes(lowerItem);
+      const brandOk = lowerBrand ? String(v.brand || '').toLowerCase().includes(lowerBrand) : true;
+      const typeOk = lowerType ? String(v.type || '').toLowerCase().includes(lowerType) : true;
+      return nameOk && brandOk && typeOk;
+    });
 
     if (!vaccine) {
       return res.status(404).json({ success: false, message: `Vaccine ${itemName} not found in ${centerName}` });
     }
 
-    // Find the stock entry to deduct from (use the first available entry)
-    const stockEntry = vaccine.stockEntries?.find(entry => (entry.stock || 0) > 0);
-    
-    if (!stockEntry) {
+    if (!Array.isArray(vaccine.stockEntries) || vaccine.stockEntries.length === 0) {
+      return res.status(400).json({ success: false, message: `No stock entries for ${itemName} in ${centerName}` });
+    }
+
+    // Choose the stock entry: prefer the requested branchNo, else FIFO by soonest expiration, else first with stock
+    let entryToUse = null;
+    if (branchNo) {
+      const wanted = String(branchNo).trim().toLowerCase();
+      entryToUse = vaccine.stockEntries.find(e => String(e.branchNo || '').trim().toLowerCase() === wanted);
+    }
+    if (!entryToUse) {
+      // FIFO by expiration date
+      const sorted = [...vaccine.stockEntries].sort((a, b) => (new Date(a.expirationDate).getTime() || 0) - (new Date(b.expirationDate).getTime() || 0));
+      entryToUse = sorted.find(e => (Number(e.stock) || 0) > 0) || vaccine.stockEntries.find(e => (Number(e.stock) || 0) > 0);
+    }
+
+    if (!entryToUse) {
       return res.status(400).json({ success: false, message: `No stock available for ${itemName} in ${centerName}` });
     }
 
-    // Deduct the quantity
-    const currentStock = Number(stockEntry.stock) || 0;
-    const newStock = Math.max(0, currentStock - quantity);
-    
-    stockEntry.stock = newStock;
-    
+    // Deduct the quantity (support decimals)
+    const qty = Number.parseFloat(quantity);
+    const currentStock = Number(entryToUse.stock) || 0;
+    const newStock = Number(Math.max(0, currentStock - qty).toFixed(2));
+    entryToUse.stock = newStock;
+
+    // Persist
+    doc.markModified('vaccines');
     await doc.save();
-    
-    console.log(`✅ Stock deducted: ${quantity} ${itemName} from ${centerName}. Remaining: ${newStock}`);
-    
-    res.json({ 
-      success: true, 
-      message: `Successfully deducted ${quantity} ${itemName} from ${centerName}`,
-      remainingStock: newStock
+
+    console.log(`✅ Stock deducted: ${qty} ${itemName} from ${centerName} (branch ${entryToUse.branchNo}). Remaining: ${newStock}`);
+
+    return res.json({
+      success: true,
+      message: `Successfully deducted ${qty} ${itemName} from ${centerName}`,
+      remainingStock: newStock,
+      branchNo: entryToUse.branchNo
     });
 
   } catch (err) {

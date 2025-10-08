@@ -993,7 +993,10 @@ const SuperAdminVaccinationSchedule = () => {
           vaccine.route,
           centerName,
           stockInfo?.branchNo,
-          vaccine.type === 'Equine Rabies Immunoglobulin' ? patientWeight : null
+          vaccine.type === 'Equine Rabies Immunoglobulin' ? patientWeight : null,
+          // pass brand/type for stricter matching on server
+          stockInfo?.brand || (vaccine.type.includes('VAXIRAB') ? 'PCEC' : vaccine.type.includes('SPEEDA') ? 'PVRV' : ''),
+          stockInfo?.type
         );
         
         if (!stockResult.success) {
@@ -1238,7 +1241,7 @@ const SuperAdminVaccinationSchedule = () => {
   };
 
   // Deduct vaccine stock from specific branch
-  const deductVaccineStockWithBranch = async (vaccineType, route, centerName, branchNo, weight = null) => {
+  const deductVaccineStockWithBranch = async (vaccineType, route, centerName, branchNo, weight = null, brand = '', type = '') => {
     try {
       const deductionAmount = getVaccineDeductionAmount(vaccineType, route, weight);
       
@@ -1281,7 +1284,9 @@ const SuperAdminVaccinationSchedule = () => {
             itemName: inventoryName,
             quantity: deductionAmount,
             operation: 'deduct',
-            branchNo: branchNo // Include specific branch number
+            branchNo: branchNo, // Include specific branch number
+            brand,
+            type
           }),
           signal: controller.signal
         });
@@ -3997,6 +4002,7 @@ const SuperAdminVaccinationSchedule = () => {
                     <p><strong>Vaccine:</strong> {scheduleModalData?.brand || scheduleModalData?.generic || 'Anti-Rabies'}</p>
                     <p><strong>Patient Weight:</strong> {patientWeight ? `${patientWeight} kg` : 'N/A'}</p>
                     <p><strong>Center:</strong> {scheduleModalData?.centerName || 'N/A'}</p>
+                    <p><strong>Selected Branch:</strong> {selectedVaccines?.selectedStockInfo?.branchNo || '—'}</p>
                   </div>
                 </div>
 
@@ -4040,9 +4046,11 @@ const SuperAdminVaccinationSchedule = () => {
                     <h4>ARV (Anti-Rabies Vaccine)</h4>
                     <div className="vaccine-options">
                       {(() => {
-                        const vaxirabStock = getAvailableBrands('VAXIRAB (PCEC)').filter(b => 
-                          b.centerName === scheduleModalData?.centerName
-                        );
+                        const vaxirabStock = getAvailableBrands('VAXIRAB (PCEC)').filter(b => {
+                          const a = String(b.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          const m = String(scheduleModalData?.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          return a===m || a.includes(m) || m.includes(a);
+                        });
                         return vaxirabStock.length > 0 ? vaxirabStock.map((stock, index) => (
                           <div key={`vaxirab-${index}`} className="vaccine-option-with-stock">
                             <input 
@@ -4069,9 +4077,11 @@ const SuperAdminVaccinationSchedule = () => {
                       })()}
                       
                       {(() => {
-                        const speedaStock = getAvailableBrands('SPEEDA (PVRV)').filter(b => 
-                          b.centerName === scheduleModalData?.centerName
-                        );
+                        const speedaStock = getAvailableBrands('SPEEDA (PVRV)').filter(b => {
+                          const a = String(b.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          const m = String(scheduleModalData?.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          return a===m || a.includes(m) || m.includes(a);
+                        });
                         return speedaStock.length > 0 ? speedaStock.map((stock, index) => (
                           <div key={`speeda-${index}`} className="vaccine-option-with-stock">
                             <input 
@@ -4104,9 +4114,11 @@ const SuperAdminVaccinationSchedule = () => {
                     <h4>TCV (Tetanus Toxoid-Containing Vaccine)</h4>
                     <div className="vaccine-options">
                       {(() => {
-                        const tcvStock = getAvailableBrands('TCV').filter(b => 
-                          b.centerName === scheduleModalData?.centerName
-                        );
+                        const tcvStock = getAvailableBrands('TCV').filter(b => {
+                          const a = String(b.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          const m = String(scheduleModalData?.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          return a===m || a.includes(m) || m.includes(a);
+                        });
                         return tcvStock.length > 0 ? tcvStock.map((stock, index) => (
                           <div key={`tcv-${index}`} className="vaccine-option-with-stock">
                             <input 
@@ -4139,9 +4151,11 @@ const SuperAdminVaccinationSchedule = () => {
                     <h4>ERIG (Equine Rabies Immunoglobulin)</h4>
                     <div className="vaccine-options">
                       {(() => {
-                        const erigStock = getAvailableBrands('ERIG').filter(b => 
-                          b.centerName === scheduleModalData?.centerName
-                        );
+                        const erigStock = getAvailableBrands('ERIG').filter(b => {
+                          const a = String(b.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          const m = String(scheduleModalData?.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          return a===m || a.includes(m) || m.includes(a);
+                        });
                         return erigStock.length > 0 ? erigStock.map((stock, index) => (
                           <div key={`erig-${index}`} className="vaccine-option-with-stock">
                             <input 
@@ -4174,9 +4188,11 @@ const SuperAdminVaccinationSchedule = () => {
                     <h4>Booster Vaccine</h4>
                     <div className="vaccine-options">
                       {(() => {
-                        const vaxirabBoosterStock = getAvailableBrands('VAXIRAB (BOOSTER)').filter(b => 
-                          b.centerName === scheduleModalData?.centerName
-                        );
+                        const vaxirabBoosterStock = getAvailableBrands('VAXIRAB (BOOSTER)').filter(b => {
+                          const a = String(b.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          const m = String(scheduleModalData?.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          return a===m || a.includes(m) || m.includes(a);
+                        });
                         return vaxirabBoosterStock.length > 0 ? vaxirabBoosterStock.map((stock, index) => (
                           <div key={`vaxirab-booster-${index}`} className="vaccine-option-with-stock">
                             <input 
@@ -4203,9 +4219,11 @@ const SuperAdminVaccinationSchedule = () => {
                       })()}
                       
                       {(() => {
-                        const speedaBoosterStock = getAvailableBrands('SPEEDA (BOOSTER)').filter(b => 
-                          b.centerName === scheduleModalData?.centerName
-                        );
+                        const speedaBoosterStock = getAvailableBrands('SPEEDA (BOOSTER)').filter(b => {
+                          const a = String(b.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          const m = String(scheduleModalData?.centerName||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                          return a===m || a.includes(m) || m.includes(a);
+                        });
                         return speedaBoosterStock.length > 0 ? speedaBoosterStock.map((stock, index) => (
                           <div key={`speeda-booster-${index}`} className="vaccine-option-with-stock">
                             <input 
