@@ -852,7 +852,7 @@ const SuperAdminVaccinationSchedule = () => {
   };
 
   // Handle vaccine selection changes
-  const handleVaccineSelection = (category, vaccine = null) => {
+  const handleVaccineSelection = (category, vaccine = null, stockInfo = null) => {
     setSelectedVaccines(prev => {
       const newState = { ...prev };
       
@@ -860,6 +860,13 @@ const SuperAdminVaccinationSchedule = () => {
         // For ARV, only one can be selected at a time
         newState.arv = { vaxirab: false, speeda: false };
         newState.arv[vaccine] = !prev.arv[vaccine];
+        
+        // Store stock info for the selected vaccine
+        if (newState.arv[vaccine] && stockInfo) {
+          newState.selectedStockInfo = stockInfo;
+        } else if (!newState.arv[vaccine]) {
+          newState.selectedStockInfo = null;
+        }
         
         // If selecting ARV, deselect all others
         if (newState.arv[vaccine]) {
@@ -872,6 +879,13 @@ const SuperAdminVaccinationSchedule = () => {
         newState.booster = { vaxirab: false, speeda: false };
         newState.booster[vaccine] = !prev.booster[vaccine];
         
+        // Store stock info for the selected vaccine
+        if (newState.booster[vaccine] && stockInfo) {
+          newState.selectedStockInfo = stockInfo;
+        } else if (!newState.booster[vaccine]) {
+          newState.selectedStockInfo = null;
+        }
+        
         // If selecting Booster, deselect all others
         if (newState.booster[vaccine]) {
           newState.arv = { vaxirab: false, speeda: false };
@@ -881,6 +895,13 @@ const SuperAdminVaccinationSchedule = () => {
       } else {
         // For TCV and ERIG, simple toggle
         newState[category] = !prev[category];
+        
+        // Store stock info for the selected vaccine
+        if (newState[category] && stockInfo) {
+          newState.selectedStockInfo = stockInfo;
+        } else if (!newState[category]) {
+          newState.selectedStockInfo = null;
+        }
         
         // If selecting TCV or ERIG, deselect all others
         if (newState[category]) {
@@ -963,12 +984,15 @@ const SuperAdminVaccinationSchedule = () => {
         return;
       }
 
-      // Deduct stock for each selected vaccine
+      // Deduct stock for each selected vaccine using specific branch information
       for (const vaccine of selectedVaccineList) {
-        const stockResult = await deductVaccineStock(
+        // Use the stored stock information if available
+        const stockInfo = selectedVaccines.selectedStockInfo;
+        const stockResult = await deductVaccineStockWithBranch(
           vaccine.type,
           vaccine.route,
           centerName,
+          stockInfo?.branchNo,
           vaccine.type === 'Equine Rabies Immunoglobulin' ? patientWeight : null
         );
         
@@ -1209,6 +1233,81 @@ const SuperAdminVaccinationSchedule = () => {
       }
     } catch (error) {
       console.error('Error deducting vaccine stock:', error);
+      return { success: false, message: error.message || 'Failed to deduct stock' };
+    }
+  };
+
+  // Deduct vaccine stock from specific branch
+  const deductVaccineStockWithBranch = async (vaccineType, route, centerName, branchNo, weight = null) => {
+    try {
+      const deductionAmount = getVaccineDeductionAmount(vaccineType, route, weight);
+      
+      if (deductionAmount <= 0) {
+        console.warn('No deduction amount calculated for:', { vaccineType, route, weight });
+        return { success: true, message: 'No stock deduction needed' };
+      }
+
+      // Map vaccine type to inventory name (must match database exactly)
+      let inventoryName = '';
+      if (vaccineType?.toLowerCase().includes('speeda')) {
+        inventoryName = 'SPEEDA';
+      } else if (vaccineType?.toLowerCase().includes('vaxirab')) {
+        inventoryName = 'VAXIRAB';
+      } else if (vaccineType?.toLowerCase().includes('erig')) {
+        inventoryName = 'Equine Rabies Immunoglobulin';
+      } else if (vaccineType?.toLowerCase().includes('tcv')) {
+        inventoryName = 'Tetanus Toxoid-Containing Vaccine';
+      }
+
+      if (!inventoryName) {
+        throw new Error('Unknown vaccine type for stock deduction');
+      }
+
+      console.log('🔍 Deducting stock with branch:', { inventoryName, deductionAmount, centerName, branchNo });
+      console.log('🔍 Branch number being sent to API:', branchNo);
+
+      // Call stock update API with branch number
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const response = await apiFetch('/api/stock/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            centerName: centerName,
+            itemName: inventoryName,
+            quantity: deductionAmount,
+            operation: 'deduct',
+            branchNo: branchNo // Include specific branch number
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Stock deduction successful with branch:', result);
+          return { 
+            success: true, 
+            message: `Successfully deducted ${deductionAmount} vials of ${inventoryName} from branch ${branchNo}` 
+          };
+        } else {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to deduct stock');
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout - please try again');
+        }
+        throw fetchError;
+      }
+    } catch (error) {
+      console.error('Error deducting vaccine stock with branch:', error);
       return { success: false, message: error.message || 'Failed to deduct stock' };
     }
   };
@@ -1857,11 +1956,12 @@ const SuperAdminVaccinationSchedule = () => {
   // Confirm sign out
   const confirmSignOut = async () => {
     try {
+      setShowSignoutModal(false); // Close modal immediately
       await fullLogout(apiFetch);
-    } catch (_) {
-      await fullLogout();
-    } finally {
-      setShowSignoutModal(false);
+    } catch (error) {
+      console.error('Signout error:', error);
+      setShowSignoutModal(false); // Close modal even on error
+      await fullLogout(); // Fallback to basic logout
     }
   };
 
@@ -3939,24 +4039,63 @@ const SuperAdminVaccinationSchedule = () => {
                   <div className="vaccine-category">
                     <h4>ARV (Anti-Rabies Vaccine)</h4>
                     <div className="vaccine-options">
-                      <div className="vaccine-option">
-                        <input 
-                          type="checkbox" 
-                          id="vaxirab-arv"
-                          checked={selectedVaccines.arv.vaxirab}
-                          onChange={() => handleVaccineSelection('arv', 'vaxirab')}
-                        />
-                        <label htmlFor="vaxirab-arv">VAXIRAB (PCEC)</label>
-                      </div>
-                      <div className="vaccine-option">
-                        <input 
-                          type="checkbox" 
-                          id="speeda-arv"
-                          checked={selectedVaccines.arv.speeda}
-                          onChange={() => handleVaccineSelection('arv', 'speeda')}
-                        />
-                        <label htmlFor="speeda-arv">SPEEDA (PVRV)</label>
-                      </div>
+                      {(() => {
+                        const vaxirabStock = getAvailableBrands('VAXIRAB (PCEC)').filter(b => 
+                          b.centerName === scheduleModalData?.centerName
+                        );
+                        return vaxirabStock.length > 0 ? vaxirabStock.map((stock, index) => (
+                          <div key={`vaxirab-${index}`} className="vaccine-option-with-stock">
+                            <input 
+                              type="checkbox" 
+                              id={`vaxirab-arv-${index}`}
+                              checked={selectedVaccines.arv.vaxirab}
+                              onChange={() => handleVaccineSelection('arv', 'vaxirab', stock)}
+                            />
+                            <div className="vaccine-option-content">
+                              <label htmlFor={`vaxirab-arv-${index}`}>VAXIRAB (PCEC)</label>
+                              <div className="stock-info">
+                                <span className="stock-quantity">Stock: {stock.quantity}</span>
+                                <span className="branch-number">Branch: {stock.branchNo}</span>
+                                <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="vaccine-option-disabled">
+                            <input type="checkbox" disabled />
+                            <label>VAXIRAB (PCEC) - No stock available</label>
+                          </div>
+                        );
+                      })()}
+                      
+                      {(() => {
+                        const speedaStock = getAvailableBrands('SPEEDA (PVRV)').filter(b => 
+                          b.centerName === scheduleModalData?.centerName
+                        );
+                        return speedaStock.length > 0 ? speedaStock.map((stock, index) => (
+                          <div key={`speeda-${index}`} className="vaccine-option-with-stock">
+                            <input 
+                              type="checkbox" 
+                              id={`speeda-arv-${index}`}
+                              checked={selectedVaccines.arv.speeda}
+                              onChange={() => handleVaccineSelection('arv', 'speeda', stock)}
+                            />
+                            <div className="vaccine-option-content">
+                              <label htmlFor={`speeda-arv-${index}`}>SPEEDA (PVRV)</label>
+                              <div className="stock-info">
+                                <span className="stock-quantity">Stock: {stock.quantity}</span>
+                                <span className="branch-number">Branch: {stock.branchNo}</span>
+                                <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="vaccine-option-disabled">
+                            <input type="checkbox" disabled />
+                            <label>SPEEDA (PVRV) - No stock available</label>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -3964,15 +4103,34 @@ const SuperAdminVaccinationSchedule = () => {
                   <div className="vaccine-category">
                     <h4>TCV (Tetanus Toxoid-Containing Vaccine)</h4>
                     <div className="vaccine-options">
-                      <div className="vaccine-option">
-                        <input 
-                          type="checkbox" 
-                          id="tcv"
-                          checked={selectedVaccines.tcv}
-                          onChange={() => handleVaccineSelection('tcv')}
-                        />
-                        <label htmlFor="tcv">TCV</label>
-                      </div>
+                      {(() => {
+                        const tcvStock = getAvailableBrands('TCV').filter(b => 
+                          b.centerName === scheduleModalData?.centerName
+                        );
+                        return tcvStock.length > 0 ? tcvStock.map((stock, index) => (
+                          <div key={`tcv-${index}`} className="vaccine-option-with-stock">
+                            <input 
+                              type="checkbox" 
+                              id={`tcv-${index}`}
+                              checked={selectedVaccines.tcv}
+                              onChange={() => handleVaccineSelection('tcv', null, stock)}
+                            />
+                            <div className="vaccine-option-content">
+                              <label htmlFor={`tcv-${index}`}>TCV</label>
+                              <div className="stock-info">
+                                <span className="stock-quantity">Stock: {stock.quantity}</span>
+                                <span className="branch-number">Branch: {stock.branchNo}</span>
+                                <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="vaccine-option-disabled">
+                            <input type="checkbox" disabled />
+                            <label>TCV - No stock available</label>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -3980,15 +4138,34 @@ const SuperAdminVaccinationSchedule = () => {
                   <div className="vaccine-category">
                     <h4>ERIG (Equine Rabies Immunoglobulin)</h4>
                     <div className="vaccine-options">
-                      <div className="vaccine-option">
-                        <input 
-                          type="checkbox" 
-                          id="erig"
-                          checked={selectedVaccines.erig}
-                          onChange={() => handleVaccineSelection('erig')}
-                        />
-                        <label htmlFor="erig">ERIG</label>
-                      </div>
+                      {(() => {
+                        const erigStock = getAvailableBrands('ERIG').filter(b => 
+                          b.centerName === scheduleModalData?.centerName
+                        );
+                        return erigStock.length > 0 ? erigStock.map((stock, index) => (
+                          <div key={`erig-${index}`} className="vaccine-option-with-stock">
+                            <input 
+                              type="checkbox" 
+                              id={`erig-${index}`}
+                              checked={selectedVaccines.erig}
+                              onChange={() => handleVaccineSelection('erig', null, stock)}
+                            />
+                            <div className="vaccine-option-content">
+                              <label htmlFor={`erig-${index}`}>ERIG</label>
+                              <div className="stock-info">
+                                <span className="stock-quantity">Stock: {stock.quantity}</span>
+                                <span className="branch-number">Branch: {stock.branchNo}</span>
+                                <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="vaccine-option-disabled">
+                            <input type="checkbox" disabled />
+                            <label>ERIG - No stock available</label>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -3996,24 +4173,63 @@ const SuperAdminVaccinationSchedule = () => {
                   <div className="vaccine-category">
                     <h4>Booster Vaccine</h4>
                     <div className="vaccine-options">
-                      <div className="vaccine-option">
-                        <input 
-                          type="checkbox" 
-                          id="vaxirab-booster"
-                          checked={selectedVaccines.booster.vaxirab}
-                          onChange={() => handleVaccineSelection('booster', 'vaxirab')}
-                        />
-                        <label htmlFor="vaxirab-booster">VAXIRAB (BOOSTER)</label>
-                      </div>
-                      <div className="vaccine-option">
-                        <input 
-                          type="checkbox" 
-                          id="speeda-booster"
-                          checked={selectedVaccines.booster.speeda}
-                          onChange={() => handleVaccineSelection('booster', 'speeda')}
-                        />
-                        <label htmlFor="speeda-booster">SPEEDA (BOOSTER)</label>
-                      </div>
+                      {(() => {
+                        const vaxirabBoosterStock = getAvailableBrands('VAXIRAB (BOOSTER)').filter(b => 
+                          b.centerName === scheduleModalData?.centerName
+                        );
+                        return vaxirabBoosterStock.length > 0 ? vaxirabBoosterStock.map((stock, index) => (
+                          <div key={`vaxirab-booster-${index}`} className="vaccine-option-with-stock">
+                            <input 
+                              type="checkbox" 
+                              id={`vaxirab-booster-${index}`}
+                              checked={selectedVaccines.booster.vaxirab}
+                              onChange={() => handleVaccineSelection('booster', 'vaxirab', stock)}
+                            />
+                            <div className="vaccine-option-content">
+                              <label htmlFor={`vaxirab-booster-${index}`}>VAXIRAB (BOOSTER)</label>
+                              <div className="stock-info">
+                                <span className="stock-quantity">Stock: {stock.quantity}</span>
+                                <span className="branch-number">Branch: {stock.branchNo}</span>
+                                <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="vaccine-option-disabled">
+                            <input type="checkbox" disabled />
+                            <label>VAXIRAB (BOOSTER) - No stock available</label>
+                          </div>
+                        );
+                      })()}
+                      
+                      {(() => {
+                        const speedaBoosterStock = getAvailableBrands('SPEEDA (BOOSTER)').filter(b => 
+                          b.centerName === scheduleModalData?.centerName
+                        );
+                        return speedaBoosterStock.length > 0 ? speedaBoosterStock.map((stock, index) => (
+                          <div key={`speeda-booster-${index}`} className="vaccine-option-with-stock">
+                            <input 
+                              type="checkbox" 
+                              id={`speeda-booster-${index}`}
+                              checked={selectedVaccines.booster.speeda}
+                              onChange={() => handleVaccineSelection('booster', 'speeda', stock)}
+                            />
+                            <div className="vaccine-option-content">
+                              <label htmlFor={`speeda-booster-${index}`}>SPEEDA (BOOSTER)</label>
+                              <div className="stock-info">
+                                <span className="stock-quantity">Stock: {stock.quantity}</span>
+                                <span className="branch-number">Branch: {stock.branchNo}</span>
+                                <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="vaccine-option-disabled">
+                            <input type="checkbox" disabled />
+                            <label>SPEEDA (BOOSTER) - No stock available</label>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

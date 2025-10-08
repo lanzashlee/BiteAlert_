@@ -44,7 +44,21 @@ export async function fullLogout(axioslessApiFetch) {
       await Promise.all(regs.map(r => r.unregister()));
     }
   } catch {}
-  window.location.replace('/login');
+  
+  // Ensure redirect to login happens
+  try {
+    window.location.replace('/login');
+  } catch (redirectError) {
+    console.error('Redirect error:', redirectError);
+    // Fallback redirect methods
+    try {
+      window.location.href = '/login';
+    } catch (fallbackError) {
+      console.error('Fallback redirect error:', fallbackError);
+      // Last resort - reload the page to root
+      window.location.reload();
+    }
+  }
 }
 
 
