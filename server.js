@@ -4668,6 +4668,47 @@ app.put('/api/centers/:id/service-hours', async (req, res) => {
   }
 });
 
+// Update center hours (for the hours object structure)
+app.put('/api/centers/:id/hours', async (req, res) => {
+  try {
+    console.log('Updating center hours:', req.params.id, req.body);
+    const { hours, contactNumber } = req.body;
+    
+    // Validate that hours object is provided
+    if (!hours || typeof hours !== 'object') {
+      return res.status(400).json({ success: false, message: 'Hours object is required.' });
+    }
+
+    // Build update object
+    const updateData = { 
+      hours,
+      lastUpdated: new Date()
+    };
+    
+    // Include contactNumber if provided
+    if (contactNumber !== undefined) {
+      updateData.contactNumber = contactNumber;
+    }
+
+    const center = await Center.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!center) {
+      console.log('Center not found:', req.params.id);
+      return res.status(404).json({ success: false, message: 'Center not found.' });
+    }
+
+    console.log('Center hours updated successfully:', center);
+    res.json({ success: true, data: center });
+  } catch (err) {
+    console.error('Error updating center hours:', err);
+    res.status(500).json({ success: false, message: 'Failed to update center hours', error: err.message });
+  }
+});
+
 // API: Custom Demographic Report
 app.get('/api/reports/demographic', async (req, res) => {
   try {

@@ -31,6 +31,13 @@ const SuperAdminCenterHours = () => {
       console.log('Centers API response:', data);
       
       const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+      console.log('🔍 Centers list:', list);
+      
+      // Log each center's hours structure
+      list.forEach(center => {
+        console.log(`🔍 Center: ${center.name || center.centerName}, Hours:`, center.hours);
+      });
+      
       setCenters(list);
       console.log('Centers loaded:', list.length);
       
@@ -62,7 +69,7 @@ const SuperAdminCenterHours = () => {
             hours: defaultHours,
           };
 
-          const res = await apiFetch(`/api/centers/${encodeURIComponent(center._id)}`, {
+          const res = await apiFetch(`/api/centers/${encodeURIComponent(center._id)}/hours`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updateDoc),
@@ -115,9 +122,11 @@ const SuperAdminCenterHours = () => {
 
   const getWeekdaysHours = (center) => {
     const hours = center.hours || {};
+    console.log('🔍 Getting weekday hours for center:', center.name, 'hours:', hours);
     
     // Check if there's a general weekday hours setting
     if (hours.weekday && hours.weekday.start && hours.weekday.end) {
+      console.log('🔍 Found weekday hours:', hours.weekday);
       return `${hours.weekday.start} - ${hours.weekday.end}`;
     }
     
@@ -141,15 +150,18 @@ const SuperAdminCenterHours = () => {
       }
     }
     
-    // Return default hours if none are set
+    // Return default message if no hours are set
+    console.log('🔍 No weekday hours found for:', center.name);
     return 'Not Set';
   };
 
   const getWeekendHours = (center) => {
     const hours = center.hours || {};
+    console.log('🔍 Getting weekend hours for center:', center.name, 'hours:', hours);
     
     // Check if there's a general weekend hours setting
     if (hours.weekend && hours.weekend.start && hours.weekend.end) {
+      console.log('🔍 Found weekend hours:', hours.weekend);
       return `${hours.weekend.start} - ${hours.weekend.end}`;
     }
     
@@ -172,35 +184,64 @@ const SuperAdminCenterHours = () => {
     }
     
     // Return default message if no weekend hours are set
+    console.log('🔍 No weekend hours found for:', center.name);
     return 'Not Set';
   };
 
   const beginEdit = (center) => {
     console.log('🔍 beginEdit called for center:', center);
-    alert(`Edit button clicked for center: ${center.name || center.centerName}`);
     
-    // Simple default values for testing
+    const baseHours = center.hours || {};
+    console.log('🔍 Base hours from center:', baseHours);
+    
+    // Get weekday hours (check for general weekday setting or use first available weekday)
+    let weekdayHours = baseHours.weekday || {};
+    if (!weekdayHours.start || !weekdayHours.end) {
+      // Find first weekday with hours
+      for (const day of days) {
+        const dayHours = baseHours[day.toLowerCase()];
+        if (dayHours && dayHours.start && dayHours.end) {
+          weekdayHours = dayHours;
+          break;
+        }
+      }
+    }
+    
+    // Get weekend hours (check for general weekend setting or use Saturday/Sunday)
+    let weekendHours = baseHours.weekend || {};
+    if (!weekendHours.start || !weekendHours.end) {
+      const saturday = baseHours.saturday || {};
+      const sunday = baseHours.sunday || {};
+      if (saturday.start && saturday.end) {
+        weekendHours = saturday;
+      } else if (sunday.start && sunday.end) {
+        weekendHours = sunday;
+      }
+    }
+    
+    // Provide default hours if none are set
+    const defaultWeekdayStart = weekdayHours.start || '08:00';
+    const defaultWeekdayEnd = weekdayHours.end || '17:00';
+    const defaultWeekendStart = weekendHours.start || '09:00';
+    const defaultWeekendEnd = weekendHours.end || '15:00';
+    
     const values = {
       contact: center.contactNumber || '',
       weekday: { 
-        start: '08:00', 
-        end: '17:00' 
+        start: weekdayHours.start || defaultWeekdayStart, 
+        end: weekdayHours.end || defaultWeekdayEnd 
       },
       weekend: { 
-        start: '09:00', 
-        end: '15:00' 
+        start: weekendHours.start || defaultWeekendStart, 
+        end: weekendHours.end || defaultWeekendEnd 
       }
     };
     
     console.log('🔍 Edit values:', values);
-    console.log('🔍 Setting editingId:', center._id);
-    console.log('🔍 Setting showEditModal: true');
     
     setEditingId(center._id);
     setEditValues(values);
     setShowEditModal(true);
-    
-    console.log('🔍 Modal should be visible now');
   };
 
   const cancelEdit = () => {
@@ -218,6 +259,9 @@ const SuperAdminCenterHours = () => {
 
   const saveEdit = async (center) => {
     try {
+      console.log('🔍 Saving edit for center:', center);
+      console.log('🔍 Edit values:', editValues);
+      
       // Validate and clean hours — check weekday and weekend
       const cleanedHours = {};
       
@@ -225,24 +269,30 @@ const SuperAdminCenterHours = () => {
       const weekdaySlot = editValues.weekday || {};
       const weekdayStart = (weekdaySlot.start || '').trim();
       const weekdayEnd = (weekdaySlot.end || '').trim();
-      if ((weekdayStart && !weekdayEnd) || (!weekdayStart && weekdayEnd)) {
-        alert('Please provide both start and end times for Weekdays.');
-        return;
-      }
+      
+      console.log('🔍 Weekday validation:', { weekdayStart, weekdayEnd });
+      
       if (weekdayStart && weekdayEnd) {
         cleanedHours.weekday = { start: weekdayStart, end: weekdayEnd };
+        console.log('🔍 Added weekday hours:', cleanedHours.weekday);
+      } else if (weekdayStart || weekdayEnd) {
+        alert('Please provide both start and end times for Weekdays.');
+        return;
       }
       
       // Validate weekend hours
       const weekendSlot = editValues.weekend || {};
       const weekendStart = (weekendSlot.start || '').trim();
       const weekendEnd = (weekendSlot.end || '').trim();
-      if ((weekendStart && !weekendEnd) || (!weekendStart && weekendEnd)) {
-        alert('Please provide both start and end times for Weekend.');
-        return;
-      }
+      
+      console.log('🔍 Weekend validation:', { weekendStart, weekendEnd });
+      
       if (weekendStart && weekendEnd) {
         cleanedHours.weekend = { start: weekendStart, end: weekendEnd };
+        console.log('🔍 Added weekend hours:', cleanedHours.weekend);
+      } else if (weekendStart || weekendEnd) {
+        alert('Please provide both start and end times for Weekend.');
+        return;
       }
 
       // Validate that at least one set of hours is provided
@@ -257,10 +307,10 @@ const SuperAdminCenterHours = () => {
         contactNumber: (editValues.contact || '').trim(),
       };
 
-      console.log('🔍 Saving center hours:', updateDoc);
+      console.log('🔍 Final update document:', updateDoc);
 
-      // Update the center directly in the centers collection
-      const res = await apiFetch(`/api/centers/${encodeURIComponent(center._id)}`, {
+      // Update the center hours using the new endpoint
+      const res = await apiFetch(`/api/centers/${encodeURIComponent(center._id)}/hours`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateDoc),
@@ -269,9 +319,19 @@ const SuperAdminCenterHours = () => {
       console.log('🔍 Save response status:', res.status);
       
       if (!res.ok) {
-        const t = await res.text();
-        console.error('🔍 Save error:', t);
-        throw new Error(t || `HTTP ${res.status}`);
+        const errorText = await res.text();
+        console.error('🔍 Save error response:', errorText);
+        let errorMessage = 'Failed to save center hours';
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        
+        alert(errorMessage);
+        return;
       }
 
       const result = await res.json();
