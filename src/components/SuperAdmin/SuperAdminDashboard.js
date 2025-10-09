@@ -821,6 +821,7 @@ const SuperAdminDashboard = () => {
       console.log('🔍 SEVERITY DISTRIBUTION DEBUG: Response status:', response.status);
       const result = await response.json();
       console.log('🔍 SEVERITY DISTRIBUTION DEBUG: API response:', result);
+      
       if (result.success) {
         const { Mild = 0, Moderate = 0, Severe = 0 } = result.data || {};
         const total = Mild + Moderate + Severe;
@@ -874,10 +875,6 @@ const SuperAdminDashboard = () => {
         console.error('🔍 SEVERITY DISTRIBUTION DEBUG: Error in fallback severity calculation:', e);
         setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
       }
-    } else {
-      console.log('🔍 SEVERITY DISTRIBUTION DEBUG: API call failed, using fallback data');
-      setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
-    }
     } catch (e) { 
       console.error('🔍 SEVERITY DISTRIBUTION DEBUG: Error in updateSeverityChart:', e);
       setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
