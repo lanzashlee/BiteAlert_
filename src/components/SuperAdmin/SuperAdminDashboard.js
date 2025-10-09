@@ -200,10 +200,10 @@ const SuperAdminDashboard = () => {
   
   // Chart data states (React-ChartJS-2) - Memoized to prevent unnecessary re-renders
   const [patientsChartData, setPatientsChartData] = useState({
-    labels: [],
+    labels: ['No Data'],
     datasets: [{
       label: 'Patients',
-      data: [],
+      data: [0],
       backgroundColor: 'rgba(128, 0, 0, 0.1)',
       borderColor: '#800000',
       borderWidth: 2,
@@ -219,10 +219,10 @@ const SuperAdminDashboard = () => {
   });
 
   const [casesChartData, setCasesChartData] = useState({
-    labels: [],
+    labels: ['No Data'],
     datasets: [{
       label: 'Cases',
-      data: [],
+      data: [0],
       backgroundColor: 'rgba(128, 0, 0, 0.7)',
       borderColor: 'rgba(128, 0, 0, 1)',
       borderWidth: 2,
@@ -232,10 +232,10 @@ const SuperAdminDashboard = () => {
   });
 
   const [vaccinesChartData, setVaccinesChartData] = useState({
-    labels: [],
+    labels: ['No Data'],
     datasets: [{
       label: 'Available Stocks',
-      data: [],
+      data: [0],
       borderColor: '#800000',
       backgroundColor: 'rgba(128, 0, 0, 0.1)',
       borderWidth: 2,
@@ -884,6 +884,31 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     // Load summary immediately for LCP optimization
     updateDashboardSummary();
+    
+    // Add test data to verify charts are working
+    console.log('🔍 CHART DEBUG: Setting test data to verify charts are working');
+    setTimeout(() => {
+      setPatientsChartData(prev => ({
+        ...prev,
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{ ...prev.datasets[0], data: [5, 8, 12, 15, 18, 22] }]
+      }));
+      setCasesChartData(prev => ({
+        ...prev,
+        labels: ['Center A', 'Center B', 'Center C'],
+        datasets: [{ ...prev.datasets[0], data: [10, 15, 8] }]
+      }));
+      setVaccinesChartData(prev => ({
+        ...prev,
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{ ...prev.datasets[0], data: [100, 95, 90, 85, 80, 75] }]
+      }));
+      setSeverityChartData(prev => ({
+        ...prev,
+        labels: ['Mild', 'Moderate', 'Severe'],
+        datasets: [{ ...prev.datasets[0], data: [5, 3, 2] }]
+      }));
+    }, 1000);
     
     // Defer chart loading to reduce initial TBT - use longer delays
     const loadCharts = () => {
