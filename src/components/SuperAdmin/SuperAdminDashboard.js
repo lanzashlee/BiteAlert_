@@ -13,7 +13,7 @@ import { useStandardizedCSS } from '../../utils/standardizedImports';
 // Lazy load Chart.js components to reduce initial bundle size
 const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
 
-// Utility function to format time ago
+// Utility function to format time ago professionally
 const getTimeAgo = (timestamp) => {
   if (!timestamp) return 'Unknown time';
   
@@ -21,11 +21,21 @@ const getTimeAgo = (timestamp) => {
   const time = new Date(timestamp);
   const diffInSeconds = Math.floor((now - time) / 1000);
   
-  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-  return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+  if (diffInSeconds < 60) return `${diffInSeconds} second${diffInSeconds !== 1 ? 's' : ''} ago`;
+  if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+  }
+  if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  }
+  if (diffInSeconds < 2592000) {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  }
+  const months = Math.floor(diffInSeconds / 2592000);
+  return `${months} month${months !== 1 ? 's' : ''} ago`;
 };
 
 const SuperAdminDashboard = () => {
@@ -559,39 +569,41 @@ const SuperAdminDashboard = () => {
       }
     }, [timeRange]);
 
-  // Fetch today's appointments
+  // Fetch today's vaccination schedules
   const fetchTodayAppointments = useCallback(async () => {
     setAppointmentsLoading(true);
     try {
       const today = new Date();
       const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
       
-      console.log('🔍 Fetching today\'s appointments for date:', todayString);
+      console.log('🔍 Fetching today\'s vaccination schedules for date:', todayString);
       
       const response = await apiFetch('/api/vaccinationdates');
-      if (!response.ok) throw new Error('Failed to fetch appointments');
+      if (!response.ok) throw new Error('Failed to fetch vaccination schedules');
       
-      const allAppointments = await response.json();
-      console.log('🔍 All appointments from API:', allAppointments.length);
-      console.log('🔍 Sample appointment data:', allAppointments[0]);
+      const allVaccinations = await response.json();
+      console.log('🔍 All vaccination schedules from API:', allVaccinations.length);
+      console.log('🔍 Sample vaccination data:', allVaccinations[0]);
       
-      // Filter appointments for today - check multiple possible date fields
-      const todayAppts = allAppointments.filter(appointment => {
-        // Check multiple possible date fields
-        const dateFields = ['scheduledDate', 'date', 'appointmentDate', 'vaccinationDate', 'createdAt', 'updatedAt'];
+      // Filter vaccination schedules for today - prioritize scheduledDate and vaccinationDate
+      const todaySchedules = allVaccinations.filter(vaccination => {
+        // Check vaccination-specific date fields first
+        const dateFields = ['scheduledDate', 'vaccinationDate', 'appointmentDate', 'date'];
         
         for (const field of dateFields) {
-          if (appointment[field]) {
-            const appointmentDate = new Date(appointment[field]);
-            if (!isNaN(appointmentDate.getTime())) {
-              const appointmentDateString = appointmentDate.toISOString().split('T')[0];
-              if (appointmentDateString === todayString) {
-                console.log(`🔍 Found appointment for today using field ${field}:`, {
-                  appointmentId: appointment._id,
-                  patientName: appointment.patientName || appointment.patient || appointment.name || appointment.registrationNumber,
-                  date: appointmentDateString,
-                  time: appointmentDate.toLocaleTimeString(),
-                  appointment: appointment
+          if (vaccination[field]) {
+            const vaccinationDate = new Date(vaccination[field]);
+            if (!isNaN(vaccinationDate.getTime())) {
+              const vaccinationDateString = vaccinationDate.toISOString().split('T')[0];
+              if (vaccinationDateString === todayString) {
+                console.log(`🔍 Found vaccination schedule for today using field ${field}:`, {
+                  vaccinationId: vaccination._id,
+                  patientName: vaccination.patientName || vaccination.patient || vaccination.name || vaccination.registrationNumber,
+                  vaccinationDay: vaccination.vaccinationDay,
+                  vaccineType: vaccination.vaccineType,
+                  date: vaccinationDateString,
+                  time: vaccinationDate.toLocaleTimeString(),
+                  vaccination: vaccination
                 });
                 return true;
               }
@@ -600,25 +612,25 @@ const SuperAdminDashboard = () => {
         }
         return false;
       }).sort((a, b) => {
-        // Sort by any available date field
-        const getDate = (appointment) => {
-          const dateFields = ['scheduledDate', 'date', 'appointmentDate', 'vaccinationDate', 'createdAt', 'updatedAt'];
+        // Sort by scheduled time for today
+        const getDate = (vaccination) => {
+          const dateFields = ['scheduledDate', 'vaccinationDate', 'appointmentDate', 'date'];
           for (const field of dateFields) {
-            if (appointment[field]) {
-              const date = new Date(appointment[field]);
+            if (vaccination[field]) {
+              const date = new Date(vaccination[field]);
               if (!isNaN(date.getTime())) return date.getTime();
             }
           }
           return 0;
         };
         return getDate(a) - getDate(b);
-      }).slice(0, 4); // Limit to 4 appointments
+      }).slice(0, 4); // Limit to 4 vaccination schedules
       
-      console.log('🔍 Today\'s appointments found:', todayAppts.length);
-      console.log('🔍 Today\'s appointments data:', todayAppts);
-      setTodayAppointments(todayAppts);
+      console.log('🔍 Today\'s vaccination schedules found:', todaySchedules.length);
+      console.log('🔍 Today\'s vaccination schedules data:', todaySchedules);
+      setTodayAppointments(todaySchedules);
     } catch (error) {
-      console.error('Error fetching today\'s appointments:', error);
+      console.error('Error fetching today\'s vaccination schedules:', error);
       setTodayAppointments([]);
     } finally {
       setAppointmentsLoading(false);
@@ -1253,39 +1265,39 @@ const SuperAdminDashboard = () => {
                 </div>
               ) : todayAppointments.length > 0 ? (
                 <div className="appointments-list">
-                  {todayAppointments.map((appointment, index) => {
+                  {todayAppointments.map((vaccination, index) => {
                     // Get the most relevant date field for display
-                    const getDisplayDate = (appointment) => {
-                      const dateFields = ['scheduledDate', 'date', 'appointmentDate', 'vaccinationDate', 'createdAt', 'updatedAt'];
+                    const getDisplayDate = (vaccination) => {
+                      const dateFields = ['scheduledDate', 'vaccinationDate', 'appointmentDate', 'date'];
                       for (const field of dateFields) {
-                        if (appointment[field]) {
-                          const date = new Date(appointment[field]);
+                        if (vaccination[field]) {
+                          const date = new Date(vaccination[field]);
                           if (!isNaN(date.getTime())) return date;
                         }
                       }
                       return new Date();
                     };
                     
-                    const appointmentDate = getDisplayDate(appointment);
-                    const timeString = appointmentDate.toLocaleTimeString('en-US', { 
+                    const vaccinationDate = getDisplayDate(vaccination);
+                    const timeString = vaccinationDate.toLocaleTimeString('en-US', { 
                       hour: 'numeric', 
                       minute: '2-digit', 
                       hour12: true 
                     });
                     
-                    // Get patient name from various possible fields
-                    const getPatientName = (appointment) => {
+                    // Get patient name from vaccination schedule data
+                    const getPatientName = (vaccination) => {
                       // First try to get full name if available
-                      const fullNameFields = ['fullName', 'patientFullName', 'completeName'];
+                      const fullNameFields = ['fullName', 'patientFullName', 'completeName', 'patientFullName'];
                       for (const field of fullNameFields) {
-                        if (appointment[field] && appointment[field].trim()) {
-                          return appointment[field];
+                        if (vaccination[field] && vaccination[field].trim()) {
+                          return vaccination[field];
                         }
                       }
                       
                       // Try to construct name from first and last name
-                      const firstName = appointment.firstName || appointment.first || appointment.patientFirstName || '';
-                      const lastName = appointment.lastName || appointment.last || appointment.patientLastName || '';
+                      const firstName = vaccination.firstName || vaccination.first || vaccination.patientFirstName || '';
+                      const lastName = vaccination.lastName || vaccination.last || vaccination.patientLastName || '';
                       if (firstName && lastName) {
                         return `${firstName} ${lastName}`;
                       }
@@ -1293,54 +1305,66 @@ const SuperAdminDashboard = () => {
                         return firstName || lastName;
                       }
                       
-                      // Try other name fields
-                      const nameFields = ['patientName', 'patient', 'name', 'patientName', 'displayName'];
+                      // Try other name fields specific to vaccination schedules
+                      const nameFields = ['patientName', 'patient', 'name', 'displayName', 'patientDisplayName'];
                       for (const field of nameFields) {
-                        if (appointment[field] && appointment[field].trim()) {
-                          return appointment[field];
+                        if (vaccination[field] && vaccination[field].trim()) {
+                          return vaccination[field];
                         }
                       }
                       
-                      // Fallback to registration number or ID
-                      const idFields = ['registrationNumber', 'patientId', 'id', 'patientNumber'];
+                      // Fallback to registration number or ID with better formatting
+                      const idFields = ['registrationNumber', 'patientId', 'id', 'patientNumber', 'registrationNo'];
                       for (const field of idFields) {
-                        if (appointment[field] && appointment[field].trim()) {
-                          return `Patient ${appointment[field]}`;
+                        if (vaccination[field] && vaccination[field].trim()) {
+                          return `Patient ${vaccination[field]}`;
                         }
                       }
                       
                       return 'Unknown Patient';
                     };
                     
-                    // Get appointment type from various possible fields
-                    const getAppointmentType = (appointment) => {
-                      const typeFields = ['vaccineType', 'vaccinationDay', 'type', 'appointmentType', 'service'];
+                    // Get vaccination type/day from vaccination schedule data
+                    const getVaccinationType = (vaccination) => {
+                      // Prioritize vaccination day (Day 0, Day 3, etc.)
+                      if (vaccination.vaccinationDay && vaccination.vaccinationDay.trim()) {
+                        return vaccination.vaccinationDay;
+                      }
+                      
+                      // Then try vaccine type
+                      if (vaccination.vaccineType && vaccination.vaccineType.trim()) {
+                        return vaccination.vaccineType;
+                      }
+                      
+                      // Try other type fields
+                      const typeFields = ['type', 'appointmentType', 'service', 'vaccinationType'];
                       for (const field of typeFields) {
-                        if (appointment[field] && appointment[field].trim()) {
-                          return appointment[field];
+                        if (vaccination[field] && vaccination[field].trim()) {
+                          return vaccination[field];
                         }
                       }
+                      
                       return 'Vaccination';
                     };
                     
                     return (
-                      <div key={appointment._id || index} className="appointment-item">
+                      <div key={vaccination._id || index} className="appointment-item">
                         <div className="appointment-icon">
                           <i className="fa-solid fa-syringe"></i>
                         </div>
                         <div className="appointment-info">
                           <div className="patient-name">
-                            {getPatientName(appointment)}
+                            {getPatientName(vaccination)}
                           </div>
                           <div className="appointment-type">
-                            {getAppointmentType(appointment)}
+                            {getVaccinationType(vaccination)}
                           </div>
                         </div>
                         <div className="appointment-time">
                           <div className="time">{timeString}</div>
-                          <div className={`status ${appointment.status === 'completed' ? 'confirmed' : 'pending'}`}>
-                            <i className={`fa-solid ${appointment.status === 'completed' ? 'fa-check' : 'fa-clock'}`}></i>
-                            {appointment.status === 'completed' ? 'completed' : 'scheduled'}
+                          <div className={`status ${vaccination.status === 'completed' ? 'confirmed' : 'pending'}`}>
+                            <i className={`fa-solid ${vaccination.status === 'completed' ? 'fa-check' : 'fa-clock'}`}></i>
+                            {vaccination.status === 'completed' ? 'completed' : 'scheduled'}
                           </div>
                         </div>
                       </div>
