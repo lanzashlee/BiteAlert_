@@ -6,6 +6,7 @@ const path = require('path');
 const http = require('http');
 const WebSocket = require('ws');
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -2445,14 +2446,8 @@ app.get('/api/inventoryitems/:id/history', async (req, res) => {
     }
 });
 
-// Configure your email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+// Configure SendGrid
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Send OTP endpoint
 app.post('/api/send-otp', async (req, res) => {
@@ -2467,10 +2462,10 @@ app.post('/api/send-otp', async (req, res) => {
     user.resetOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min expiry
     await user.save();
 
-    // Send OTP email
-    await transporter.sendMail({
-      from: `Bite Alert <${process.env.EMAIL_USER}>`,
+    // Send OTP email using SendGrid
+    const msg = {
       to: email,
+      from: process.env.SENDGRID_FROM_EMAIL,
       subject: 'Your Bite Alert Password Reset OTP',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -2483,7 +2478,9 @@ app.post('/api/send-otp', async (req, res) => {
           <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply.</p>
         </div>
       `
-    });
+    };
+    
+    await sgMail.send(msg);
 
     res.json({ success: true, message: 'OTP sent to your email.' });
   } catch (err) {

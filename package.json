@@ -10,6 +10,7 @@
     "@google/generative-ai": "^0.21.0",
     "@googlemaps/js-api-loader": "^1.16.10",
     "@react-three/fiber": "^8.15.19",
+    "@sendgrid/mail": "^8.1.6",
     "axios": "^1.6.0",
     "bcrypt": "^5.0.1",
     "bootstrap": "^5.3.8",
