@@ -593,6 +593,17 @@ const SuperAdminDashboard = () => {
           }
         }
         
+        // Ensure chart always has something to render
+        if (!labels || labels.length === 0) {
+          const now = new Date();
+          labels = [];
+          data = [];
+          for (let i = 5; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            labels.push(date.toLocaleDateString('en-US', { month: 'short' }));
+            data.push(0);
+          }
+        }
         setPatientsChartData(prev => ({
           ...prev,
           labels: labels,
@@ -613,8 +624,12 @@ const SuperAdminDashboard = () => {
       const response = await apiFetch(apiUrl);
       const result = await response.json();
       if (result.success) {
-        const barangayNames = result.data.map(item => item.barangay);
-        const casesData = result.data.map(item => item.count);
+        let barangayNames = result.data.map(item => item.barangay);
+        let casesData = result.data.map(item => item.count);
+        if (barangayNames.length === 0) {
+          barangayNames = ['No Data'];
+          casesData = [0];
+        }
         setCasesChartData(prev => ({ ...prev, labels: barangayNames, datasets: [{ ...prev.datasets[0], data: casesData }] }));
       }
     } catch (e) { console.error(e); }
@@ -727,6 +742,8 @@ const SuperAdminDashboard = () => {
           }
         }
         
+        if (!labels || labels.length === 0) { labels = ['No Data']; }
+        if (!data || data.length === 0) { data = [0]; }
         setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: data }] }));
       }
     } catch (e) { console.error(e); }
