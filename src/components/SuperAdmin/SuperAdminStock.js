@@ -60,6 +60,7 @@ const SuperAdminStock = () => {
     console.log('Quantity:', qty);
     console.log('Batch Number:', qa.batchNumber);
     console.log('Expiry Date:', qa.expiryDate);
+    console.log('Override data:', override);
     
     if (!centerName || !vaccine?.name || isNaN(qty) || qty <= 0) {
       showToast('Center, vaccine name, and valid quantity are required', 'error');
@@ -120,7 +121,10 @@ const SuperAdminStock = () => {
         
         // Refresh data to get the latest from server
         await loadData();
+        
+        console.log('✅ Stock added successfully, modal closed');
       } else {
+        console.error('❌ API returned success: false:', result);
         showToast(result.message || 'Failed to add vaccine stock', 'error');
       }
     } catch (error) {
@@ -1393,18 +1397,42 @@ const SuperAdminStock = () => {
       {/* Enhanced Quick Add Stock Modal */}
       {quickModal.open && (
         <div className="add-modal active">
-          <div className="add-modal-overlay" onClick={()=>setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' })}></div>
+          <div className="add-modal-overlay" onClick={()=>{
+            console.log('🔍 Modal overlay clicked, closing modal');
+            setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' });
+          }}></div>
           <div className="add-modal-content" style={{ maxWidth: 600 }}>
             <div className="add-modal-header">
               <div className="add-icon-wrapper" style={{background: '#eafaf1', color: '#10b981'}}>
                 <i className="fa-solid fa-plus"></i>
               </div>
-              <div>
+              <div style={{flex: 1}}>
                 <h3>Add Stock to Existing Vaccine</h3>
                 <p style={{color: '#6b7280', fontSize: '14px', margin: '4px 0 0 0'}}>
                   Add new stock to: <strong>{quickModal.vaccine?.name}</strong>
                 </p>
               </div>
+              <button 
+                onClick={()=>{
+                  console.log('🔍 Modal close button clicked');
+                  setQuickModal({ open:false, centerName:'', vaccine:null, quantity:'', batchNumber:'', expiryDate:'' });
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  color: '#6b7280',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
+                onMouseLeave={(e) => e.target.style.background = 'none'}
+                title="Close modal"
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
             </div>
             <div className="add-modal-body">
               {/* Current Stock Info */}
@@ -1549,7 +1577,20 @@ const SuperAdminStock = () => {
               </button>
               <button 
                 className="confirm-btn" 
-                onClick={()=>submitQuickAdd(quickModal.centerName, quickModal.vaccine, { quantity:quickModal.quantity, batchNumber:quickModal.batchNumber, expiryDate:quickModal.expiryDate })} 
+                onClick={()=>{
+                  console.log('🔍 Modal submit clicked:', {
+                    centerName: quickModal.centerName,
+                    vaccine: quickModal.vaccine,
+                    quantity: quickModal.quantity,
+                    batchNumber: quickModal.batchNumber,
+                    expiryDate: quickModal.expiryDate
+                  });
+                  submitQuickAdd(quickModal.centerName, quickModal.vaccine, { 
+                    quantity: quickModal.quantity, 
+                    batchNumber: quickModal.batchNumber, 
+                    expiryDate: quickModal.expiryDate 
+                  });
+                }} 
                 disabled={formLoading || !quickModal.quantity || !quickModal.batchNumber || !quickModal.expiryDate}
                 style={{
                   background: '#10b981',
