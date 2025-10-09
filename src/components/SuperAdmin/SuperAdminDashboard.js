@@ -569,7 +569,7 @@ const SuperAdminDashboard = () => {
       }
     }, [timeRange]);
 
-  // Fetch today's vaccination schedules
+  // Fetch today's vaccination schedules with patient names
   const fetchTodayAppointments = useCallback(async () => {
     setAppointmentsLoading(true);
     try {
@@ -578,12 +578,39 @@ const SuperAdminDashboard = () => {
       
       console.log('🔍 Fetching today\'s vaccination schedules for date:', todayString);
       
-      const response = await apiFetch('/api/vaccinationdates');
-      if (!response.ok) throw new Error('Failed to fetch vaccination schedules');
+      // Fetch vaccination schedules
+      const vaccinationResponse = await apiFetch('/api/vaccinationdates');
+      if (!vaccinationResponse.ok) throw new Error('Failed to fetch vaccination schedules');
       
-      const allVaccinations = await response.json();
+      const allVaccinations = await vaccinationResponse.json();
       console.log('🔍 All vaccination schedules from API:', allVaccinations.length);
       console.log('🔍 Sample vaccination data:', allVaccinations[0]);
+      
+      // Collect unique patient IDs
+      const patientIds = [...new Set(allVaccinations.map(v => v.patientId).filter(Boolean))];
+      console.log('🔍 Unique patient IDs found:', patientIds);
+      
+      // Fetch patient data for all unique patient IDs
+      let patientsData = {};
+      if (patientIds.length > 0) {
+        try {
+          const patientsResponse = await apiFetch('/api/patients');
+          if (patientsResponse.ok) {
+            const allPatients = await patientsResponse.json();
+            console.log('🔍 All patients from API:', allPatients.length);
+            
+            // Create a lookup map for patient data
+            allPatients.forEach(patient => {
+              if (patient._id || patient.patientId) {
+                patientsData[patient._id || patient.patientId] = patient;
+              }
+            });
+            console.log('🔍 Patients lookup map created:', Object.keys(patientsData).length, 'patients');
+          }
+        } catch (patientError) {
+          console.warn('⚠️ Could not fetch patient data:', patientError);
+        }
+      }
       
       // Filter vaccination schedules for today - check d0Date, d3Date, d7Date, d14Date, d28Date
       const todaySchedules = [];
@@ -604,30 +631,55 @@ const SuperAdminDashboard = () => {
             if (!isNaN(vaccinationDate.getTime())) {
               const vaccinationDateString = vaccinationDate.toISOString().split('T')[0];
               if (vaccinationDateString === todayString) {
+                // Get patient name from patients collection
+                const patient = patientsData[vaccination.patientId];
+                let patientName = 'Unknown Patient';
+                
+                if (patient) {
+                  // Try to construct full name
+                  const firstName = patient.firstName || patient.first || '';
+                  const lastName = patient.lastName || patient.last || '';
+                  if (firstName && lastName) {
+                    patientName = `${firstName} ${lastName}`;
+                  } else if (firstName || lastName) {
+                    patientName = firstName || lastName;
+                  } else if (patient.fullName) {
+                    patientName = patient.fullName;
+                  } else if (patient.name) {
+                    patientName = patient.name;
+                  }
+                } else {
+                  // Fallback to registration number if patient not found
+                  patientName = vaccination.registrationNumber ? `Patient ${vaccination.registrationNumber}` : 'Unknown Patient';
+                }
+                
                 console.log(`🔍 Found vaccination schedule for today using ${dayInfo.day}:`, {
                   vaccinationId: vaccination._id,
+                  patientId: vaccination.patientId,
+                  patientName: patientName,
                   day: dayInfo.day,
-                  patientName: vaccination.patientName || vaccination.patient || vaccination.name || vaccination.registrationNumber,
                   vaccineType: vaccination.vaccineType,
                   date: vaccinationDateString,
                   time: vaccinationDate.toLocaleTimeString(),
                   status: vaccination[dayInfo.statusField],
-                  vaccination: vaccination
+                  patient: patient
                 });
                 
                 // Create a schedule entry for today's panel
                 todaySchedules.push({
                   _id: `${vaccination._id}_${dayInfo.day}`,
                   vaccinationId: vaccination._id,
+                  patientId: vaccination.patientId,
                   day: dayInfo.day,
                   date: vaccinationDate,
                   status: vaccination[dayInfo.statusField] || 'scheduled',
-                  patientName: vaccination.patientName || vaccination.patient || vaccination.name || vaccination.registrationNumber || `Patient ${vaccination.registrationNumber}`,
+                  patientName: patientName,
                   vaccineType: vaccination.vaccineType || 'Anti-Rabies',
                   center: vaccination.center || vaccination.centerName || 'Unknown Center',
                   biteCaseId: vaccination.biteCaseId,
                   registrationNumber: vaccination.registrationNumber,
-                  originalVaccination: vaccination
+                  originalVaccination: vaccination,
+                  patient: patient
                 });
               }
             }
