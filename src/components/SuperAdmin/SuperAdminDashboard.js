@@ -585,50 +585,64 @@ const SuperAdminDashboard = () => {
       console.log('🔍 All vaccination schedules from API:', allVaccinations.length);
       console.log('🔍 Sample vaccination data:', allVaccinations[0]);
       
-      // Filter vaccination schedules for today - prioritize scheduledDate and vaccinationDate
-      const todaySchedules = allVaccinations.filter(vaccination => {
-        // Check vaccination-specific date fields first
-        const dateFields = ['scheduledDate', 'vaccinationDate', 'appointmentDate', 'date'];
+      // Filter vaccination schedules for today - check d0Date, d3Date, d7Date, d14Date, d28Date
+      const todaySchedules = [];
+      
+      allVaccinations.forEach(vaccination => {
+        // Check each vaccination day date field
+        const vaccinationDays = [
+          { day: 'Day 0', dateField: 'd0Date', statusField: 'd0Status' },
+          { day: 'Day 3', dateField: 'd3Date', statusField: 'd3Status' },
+          { day: 'Day 7', dateField: 'd7Date', statusField: 'd7Status' },
+          { day: 'Day 14', dateField: 'd14Date', statusField: 'd14Status' },
+          { day: 'Day 28', dateField: 'd28Date', statusField: 'd28Status' }
+        ];
         
-        for (const field of dateFields) {
-          if (vaccination[field]) {
-            const vaccinationDate = new Date(vaccination[field]);
+        vaccinationDays.forEach(dayInfo => {
+          if (vaccination[dayInfo.dateField]) {
+            const vaccinationDate = new Date(vaccination[dayInfo.dateField]);
             if (!isNaN(vaccinationDate.getTime())) {
               const vaccinationDateString = vaccinationDate.toISOString().split('T')[0];
               if (vaccinationDateString === todayString) {
-                console.log(`🔍 Found vaccination schedule for today using field ${field}:`, {
+                console.log(`🔍 Found vaccination schedule for today using ${dayInfo.day}:`, {
                   vaccinationId: vaccination._id,
+                  day: dayInfo.day,
                   patientName: vaccination.patientName || vaccination.patient || vaccination.name || vaccination.registrationNumber,
-                  vaccinationDay: vaccination.vaccinationDay,
                   vaccineType: vaccination.vaccineType,
                   date: vaccinationDateString,
                   time: vaccinationDate.toLocaleTimeString(),
+                  status: vaccination[dayInfo.statusField],
                   vaccination: vaccination
                 });
-                return true;
+                
+                // Create a schedule entry for today's panel
+                todaySchedules.push({
+                  _id: `${vaccination._id}_${dayInfo.day}`,
+                  vaccinationId: vaccination._id,
+                  day: dayInfo.day,
+                  date: vaccinationDate,
+                  status: vaccination[dayInfo.statusField] || 'scheduled',
+                  patientName: vaccination.patientName || vaccination.patient || vaccination.name || vaccination.registrationNumber || `Patient ${vaccination.registrationNumber}`,
+                  vaccineType: vaccination.vaccineType || 'Anti-Rabies',
+                  center: vaccination.center || vaccination.centerName || 'Unknown Center',
+                  biteCaseId: vaccination.biteCaseId,
+                  registrationNumber: vaccination.registrationNumber,
+                  originalVaccination: vaccination
+                });
               }
             }
           }
-        }
-        return false;
-      }).sort((a, b) => {
-        // Sort by scheduled time for today
-        const getDate = (vaccination) => {
-          const dateFields = ['scheduledDate', 'vaccinationDate', 'appointmentDate', 'date'];
-          for (const field of dateFields) {
-            if (vaccination[field]) {
-              const date = new Date(vaccination[field]);
-              if (!isNaN(date.getTime())) return date.getTime();
-            }
-          }
-          return 0;
-        };
-        return getDate(a) - getDate(b);
-      }).slice(0, 4); // Limit to 4 vaccination schedules
+        });
+      });
       
-      console.log('🔍 Today\'s vaccination schedules found:', todaySchedules.length);
-      console.log('🔍 Today\'s vaccination schedules data:', todaySchedules);
-      setTodayAppointments(todaySchedules);
+      // Sort by time and limit to 4
+      const sortedSchedules = todaySchedules.sort((a, b) => {
+        return a.date.getTime() - b.date.getTime();
+      }).slice(0, 4);
+      
+      console.log('🔍 Today\'s vaccination schedules found:', sortedSchedules.length);
+      console.log('🔍 Today\'s vaccination schedules data:', sortedSchedules);
+      setTodayAppointments(sortedSchedules);
     } catch (error) {
       console.error('Error fetching today\'s vaccination schedules:', error);
       setTodayAppointments([]);
@@ -1265,106 +1279,61 @@ const SuperAdminDashboard = () => {
                 </div>
               ) : todayAppointments.length > 0 ? (
                 <div className="appointments-list">
-                  {todayAppointments.map((vaccination, index) => {
-                    // Get the most relevant date field for display
-                    const getDisplayDate = (vaccination) => {
-                      const dateFields = ['scheduledDate', 'vaccinationDate', 'appointmentDate', 'date'];
-                      for (const field of dateFields) {
-                        if (vaccination[field]) {
-                          const date = new Date(vaccination[field]);
-                          if (!isNaN(date.getTime())) return date;
-                        }
-                      }
-                      return new Date();
-                    };
-                    
-                    const vaccinationDate = getDisplayDate(vaccination);
-                    const timeString = vaccinationDate.toLocaleTimeString('en-US', { 
+                  {todayAppointments.map((schedule, index) => {
+                    const timeString = schedule.date.toLocaleTimeString('en-US', { 
                       hour: 'numeric', 
                       minute: '2-digit', 
                       hour12: true 
                     });
                     
-                    // Get patient name from vaccination schedule data
-                    const getPatientName = (vaccination) => {
-                      // First try to get full name if available
-                      const fullNameFields = ['fullName', 'patientFullName', 'completeName', 'patientFullName'];
-                      for (const field of fullNameFields) {
-                        if (vaccination[field] && vaccination[field].trim()) {
-                          return vaccination[field];
-                        }
+                    // Get patient name from schedule data
+                    const getPatientName = (schedule) => {
+                      // Use the patient name we already extracted
+                      if (schedule.patientName && schedule.patientName.trim()) {
+                        return schedule.patientName;
                       }
                       
-                      // Try to construct name from first and last name
-                      const firstName = vaccination.firstName || vaccination.first || vaccination.patientFirstName || '';
-                      const lastName = vaccination.lastName || vaccination.last || vaccination.patientLastName || '';
-                      if (firstName && lastName) {
-                        return `${firstName} ${lastName}`;
-                      }
-                      if (firstName || lastName) {
-                        return firstName || lastName;
-                      }
-                      
-                      // Try other name fields specific to vaccination schedules
-                      const nameFields = ['patientName', 'patient', 'name', 'displayName', 'patientDisplayName'];
-                      for (const field of nameFields) {
-                        if (vaccination[field] && vaccination[field].trim()) {
-                          return vaccination[field];
-                        }
-                      }
-                      
-                      // Fallback to registration number or ID with better formatting
-                      const idFields = ['registrationNumber', 'patientId', 'id', 'patientNumber', 'registrationNo'];
-                      for (const field of idFields) {
-                        if (vaccination[field] && vaccination[field].trim()) {
-                          return `Patient ${vaccination[field]}`;
-                        }
+                      // Fallback to registration number
+                      if (schedule.registrationNumber && schedule.registrationNumber.trim()) {
+                        return `Patient ${schedule.registrationNumber}`;
                       }
                       
                       return 'Unknown Patient';
                     };
                     
-                    // Get vaccination type/day from vaccination schedule data
-                    const getVaccinationType = (vaccination) => {
-                      // Prioritize vaccination day (Day 0, Day 3, etc.)
-                      if (vaccination.vaccinationDay && vaccination.vaccinationDay.trim()) {
-                        return vaccination.vaccinationDay;
+                    // Get vaccination type/day from schedule data
+                    const getVaccinationType = (schedule) => {
+                      // Use the day we already extracted (Day 0, Day 3, etc.)
+                      if (schedule.day && schedule.day.trim()) {
+                        return schedule.day;
                       }
                       
-                      // Then try vaccine type
-                      if (vaccination.vaccineType && vaccination.vaccineType.trim()) {
-                        return vaccination.vaccineType;
-                      }
-                      
-                      // Try other type fields
-                      const typeFields = ['type', 'appointmentType', 'service', 'vaccinationType'];
-                      for (const field of typeFields) {
-                        if (vaccination[field] && vaccination[field].trim()) {
-                          return vaccination[field];
-                        }
+                      // Fallback to vaccine type
+                      if (schedule.vaccineType && schedule.vaccineType.trim()) {
+                        return schedule.vaccineType;
                       }
                       
                       return 'Vaccination';
                     };
                     
                     return (
-                      <div key={vaccination._id || index} className="appointment-item">
+                      <div key={schedule._id || index} className="appointment-item">
                         <div className="appointment-icon">
                           <i className="fa-solid fa-syringe"></i>
                         </div>
                         <div className="appointment-info">
                           <div className="patient-name">
-                            {getPatientName(vaccination)}
+                            {getPatientName(schedule)}
                           </div>
                           <div className="appointment-type">
-                            {getVaccinationType(vaccination)}
+                            {getVaccinationType(schedule)}
                           </div>
                         </div>
                         <div className="appointment-time">
                           <div className="time">{timeString}</div>
-                          <div className={`status ${vaccination.status === 'completed' ? 'confirmed' : 'pending'}`}>
-                            <i className={`fa-solid ${vaccination.status === 'completed' ? 'fa-check' : 'fa-clock'}`}></i>
-                            {vaccination.status === 'completed' ? 'completed' : 'scheduled'}
+                          <div className={`status ${schedule.status === 'completed' ? 'confirmed' : 'pending'}`}>
+                            <i className={`fa-solid ${schedule.status === 'completed' ? 'fa-check' : 'fa-clock'}`}></i>
+                            {schedule.status === 'completed' ? 'completed' : 'scheduled'}
                           </div>
                         </div>
                       </div>
