@@ -33,7 +33,8 @@
     <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
     
     <!-- Preload critical resources -->
-    <link rel="preload" href="/img/SANJUAN.jpg" as="image" type="image/jpeg" fetchpriority="high">
+    <!-- Removed CSS preloads for hashed filenames to avoid 404s -->
+    <link href="/img/SANJUAN.jpg" rel="preload" as="image" type="image/jpeg" fetchpriority="high">
 
     <!-- Critical CSS - Inline for immediate rendering -->
     <style>

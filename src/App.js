@@ -1,7 +1,8 @@
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import cssLoader from './utils/cssLoader';
+// Disable runtime CSS preloading to avoid 404s for hashed chunk names
+// import cssLoader from './utils/cssLoader';
 import './components/GlobalResponsive.css';
 
 
@@ -36,23 +37,7 @@ const LoadingSpinner = () => null;
 
 const App = () => {
   useEffect(() => {
-    // Initialize CSS loading system
-    cssLoader.initialize();
-    
-    // Force layout recalculation on route changes
-    const handleRouteChange = () => {
-      setTimeout(() => {
-        cssLoader.forceLayoutRecalculation();
-      }, 50);
-    };
-
-    // Listen for route changes
-    window.addEventListener('popstate', handleRouteChange);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('popstate', handleRouteChange);
-    };
+    // No-op: CSS is loaded statically; avoid runtime preloading
   }, []);
 
   return (

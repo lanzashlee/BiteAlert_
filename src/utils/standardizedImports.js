@@ -2,21 +2,14 @@
 // This ensures all components load CSS in the correct order
 
 // Standard CSS import order for all SuperAdmin components
-export const standardCSSImports = [
-  '../components/GlobalResponsive.css',
-  '../components/SuperAdmin/ResponsiveSidebar.css'
-];
+// In production, dynamic CSS imports can break due to bundler pathing.
+// We now rely on static imports from App.js, so keep this list empty.
+export const standardCSSImports = [];
 
 // Function to dynamically import CSS files in the correct order
 export const loadStandardCSS = async () => {
-  try {
-    // Load CSS files in the correct order
-    for (const cssPath of standardCSSImports) {
-      await import(cssPath);
-    }
-  } catch (error) {
-    console.warn('Error loading standard CSS:', error);
-  }
+  // No dynamic CSS imports. App.js statically imports shared CSS.
+  return Promise.resolve();
 };
 
 // CSS class utilities for consistent styling
