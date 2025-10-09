@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import ReactDOM from 'react-dom';
 import './NewBiteCaseForm.css';
 import { apiFetch } from '../../config/api';
 // notifications removed per request
@@ -1010,7 +1009,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     </div>
   );
 
-  return ReactDOM.createPortal(content, document.body);
+  return content;
 };
 
 export default NewBiteCaseForm;
