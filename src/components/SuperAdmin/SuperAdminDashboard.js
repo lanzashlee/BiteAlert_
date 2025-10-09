@@ -586,6 +586,21 @@ const SuperAdminDashboard = () => {
       console.log('🔍 All vaccination schedules from API:', allVaccinations.length);
       console.log('🔍 Sample vaccination data:', allVaccinations[0]);
       
+      // Debug: Log all date fields for first few records
+      allVaccinations.slice(0, 3).forEach((v, i) => {
+        console.log(`🔍 Vaccination ${i} date fields:`, {
+          d0Date: v.d0Date,
+          d3Date: v.d3Date,
+          d7Date: v.d7Date,
+          d14Date: v.d14Date,
+          d28Date: v.d28Date,
+          scheduledDate: v.scheduledDate,
+          vaccinationDate: v.vaccinationDate,
+          date: v.date,
+          createdAt: v.createdAt
+        });
+      });
+      
       // Collect unique patient IDs
       const patientIds = [...new Set(allVaccinations.map(v => v.patientId).filter(Boolean))];
       console.log('🔍 Unique patient IDs found:', patientIds);
@@ -625,11 +640,43 @@ const SuperAdminDashboard = () => {
           { day: 'Day 28', dateField: 'd28Date', statusField: 'd28Status' }
         ];
         
-        vaccinationDays.forEach(dayInfo => {
+        // Also check alternative date field names that might be used
+        const alternativeFields = [
+          { day: 'Day 0', dateField: 'day0Date', statusField: 'day0Status' },
+          { day: 'Day 3', dateField: 'day3Date', statusField: 'day3Status' },
+          { day: 'Day 7', dateField: 'day7Date', statusField: 'day7Status' },
+          { day: 'Day 14', dateField: 'day14Date', statusField: 'day14Status' },
+          { day: 'Day 28', dateField: 'day28Date', statusField: 'day28Status' }
+        ];
+        
+        // Combine both field sets
+        const allDateFields = [...vaccinationDays, ...alternativeFields];
+        
+        allDateFields.forEach(dayInfo => {
           if (vaccination[dayInfo.dateField]) {
-            const vaccinationDate = new Date(vaccination[dayInfo.dateField]);
+            let dateValue = vaccination[dayInfo.dateField];
+            
+            // Handle different date formats (MongoDB Extended JSON, etc.)
+            if (dateValue && typeof dateValue === 'object' && dateValue.$date) {
+              dateValue = dateValue.$date;
+            }
+            if (dateValue && typeof dateValue === 'object' && dateValue.$numberLong) {
+              dateValue = parseInt(dateValue.$numberLong);
+            }
+            
+            const vaccinationDate = new Date(dateValue);
             if (!isNaN(vaccinationDate.getTime())) {
               const vaccinationDateString = vaccinationDate.toISOString().split('T')[0];
+              
+              console.log(`🔍 Checking ${dayInfo.day} date:`, {
+                originalValue: vaccination[dayInfo.dateField],
+                processedValue: dateValue,
+                vaccinationDate: vaccinationDate,
+                vaccinationDateString: vaccinationDateString,
+                todayString: todayString,
+                matches: vaccinationDateString === todayString
+              });
+              
               if (vaccinationDateString === todayString) {
                 // Get patient name from patients collection
                 const patient = patientsData[vaccination.patientId];
@@ -673,6 +720,87 @@ const SuperAdminDashboard = () => {
                   day: dayInfo.day,
                   date: vaccinationDate,
                   status: vaccination[dayInfo.statusField] || 'scheduled',
+                  patientName: patientName,
+                  vaccineType: vaccination.vaccineType || 'Anti-Rabies',
+                  center: vaccination.center || vaccination.centerName || 'Unknown Center',
+                  biteCaseId: vaccination.biteCaseId,
+                  registrationNumber: vaccination.registrationNumber,
+                  originalVaccination: vaccination,
+                  patient: patient
+                });
+              }
+            }
+          }
+        });
+      });
+      
+      // Also check for generic date fields that might contain today's appointments
+      allVaccinations.forEach(vaccination => {
+        const genericDateFields = ['scheduledDate', 'vaccinationDate', 'appointmentDate', 'date', 'createdAt'];
+        
+        genericDateFields.forEach(field => {
+          if (vaccination[field]) {
+            let dateValue = vaccination[field];
+            
+            // Handle different date formats
+            if (dateValue && typeof dateValue === 'object' && dateValue.$date) {
+              dateValue = dateValue.$date;
+            }
+            if (dateValue && typeof dateValue === 'object' && dateValue.$numberLong) {
+              dateValue = parseInt(dateValue.$numberLong);
+            }
+            
+            const vaccinationDate = new Date(dateValue);
+            if (!isNaN(vaccinationDate.getTime())) {
+              const vaccinationDateString = vaccinationDate.toISOString().split('T')[0];
+              
+              console.log(`🔍 Checking generic ${field} date:`, {
+                originalValue: vaccination[field],
+                processedValue: dateValue,
+                vaccinationDate: vaccinationDate,
+                vaccinationDateString: vaccinationDateString,
+                todayString: todayString,
+                matches: vaccinationDateString === todayString
+              });
+              
+              if (vaccinationDateString === todayString) {
+                // Get patient name from patients collection
+                const patient = patientsData[vaccination.patientId];
+                let patientName = 'Unknown Patient';
+                
+                if (patient) {
+                  const firstName = patient.firstName || patient.first || '';
+                  const lastName = patient.lastName || patient.last || '';
+                  if (firstName && lastName) {
+                    patientName = `${firstName} ${lastName}`;
+                  } else if (firstName || lastName) {
+                    patientName = firstName || lastName;
+                  } else if (patient.fullName) {
+                    patientName = patient.fullName;
+                  } else if (patient.name) {
+                    patientName = patient.name;
+                  }
+                } else {
+                  patientName = vaccination.registrationNumber ? `Patient ${vaccination.registrationNumber}` : 'Unknown Patient';
+                }
+                
+                console.log(`🔍 Found generic appointment for today using ${field}:`, {
+                  vaccinationId: vaccination._id,
+                  patientId: vaccination.patientId,
+                  patientName: patientName,
+                  field: field,
+                  date: vaccinationDateString,
+                  time: vaccinationDate.toLocaleTimeString(),
+                  vaccination: vaccination
+                });
+                
+                todaySchedules.push({
+                  _id: `${vaccination._id}_${field}`,
+                  vaccinationId: vaccination._id,
+                  patientId: vaccination.patientId,
+                  day: 'Vaccination',
+                  date: vaccinationDate,
+                  status: vaccination.status || 'scheduled',
                   patientName: patientName,
                   vaccineType: vaccination.vaccineType || 'Anti-Rabies',
                   center: vaccination.center || vaccination.centerName || 'Unknown Center',
