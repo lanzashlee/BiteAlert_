@@ -420,10 +420,13 @@ const SuperAdminDashboard = () => {
       }
       
       console.log('🔍 DASHBOARD SUMMARY DEBUG: Fetching from:', summaryUrl);
+      console.log('🔍 DASHBOARD SUMMARY DEBUG: User center:', userCenter);
       const response = await apiFetch(summaryUrl);
       console.log('🔍 DASHBOARD SUMMARY DEBUG: Response status:', response.status);
       const result = await response.json();
       console.log('🔍 DASHBOARD SUMMARY DEBUG: API response:', result);
+      console.log('🔍 DASHBOARD SUMMARY DEBUG: Response success:', result.success);
+      console.log('🔍 DASHBOARD SUMMARY DEBUG: Response data:', result.data);
       if (result.success && result.data) {
         let { totalPatients, adminCount } = result.data;
         
@@ -885,45 +888,32 @@ const SuperAdminDashboard = () => {
     // Load summary immediately for LCP optimization
     updateDashboardSummary();
     
-    // Add test data to verify charts are working
-    console.log('🔍 CHART DEBUG: Setting test data to verify charts are working');
-    setTimeout(() => {
-      setPatientsChartData(prev => ({
-        ...prev,
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{ ...prev.datasets[0], data: [5, 8, 12, 15, 18, 22] }]
-      }));
-      setCasesChartData(prev => ({
-        ...prev,
-        labels: ['Center A', 'Center B', 'Center C'],
-        datasets: [{ ...prev.datasets[0], data: [10, 15, 8] }]
-      }));
-      setVaccinesChartData(prev => ({
-        ...prev,
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{ ...prev.datasets[0], data: [100, 95, 90, 85, 80, 75] }]
-      }));
-      setSeverityChartData(prev => ({
-        ...prev,
-        labels: ['Mild', 'Moderate', 'Severe'],
-        datasets: [{ ...prev.datasets[0], data: [5, 3, 2] }]
-      }));
-    }, 1000);
+    // Load charts immediately to fetch real data from database
+    console.log('🔍 CHART DEBUG: Loading real data from database');
     
-    // Defer chart loading to reduce initial TBT - use longer delays
-    const loadCharts = () => {
-      const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1000));
-      idle(() => {
-        // Load charts with longer intervals to reduce main thread blocking
-        setTimeout(() => updatePatientGrowth(), 0);
-        setTimeout(() => updateCasesPerBarangay(), 500);
-        setTimeout(() => updateVaccineStockTrends(), 1000);
-        setTimeout(() => updateSeverityChart(), 1500);
-      });
+    // Test API connectivity first
+    const testApiConnectivity = async () => {
+      try {
+        console.log('🔍 API TEST: Testing API connectivity...');
+        const response = await apiFetch('/api/health');
+        const result = await response.json();
+        console.log('🔍 API TEST: Health check response:', result);
+      } catch (error) {
+        console.error('🔍 API TEST: Health check failed:', error);
+      }
     };
     
-    // Delay chart loading significantly to improve initial render
-    setTimeout(loadCharts, 2000);
+    const loadCharts = () => {
+      // Test API first, then load all charts
+      testApiConnectivity();
+      updatePatientGrowth();
+      updateCasesPerBarangay();
+      updateVaccineStockTrends();
+      updateSeverityChart();
+    };
+    
+    // Load charts immediately instead of delaying
+    loadCharts();
 
     const vis = () => document.visibilityState === 'visible';
     const every = 300000; // 5 minutes
