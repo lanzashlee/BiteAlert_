@@ -2,6 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import cssLoader from './utils/cssLoader';
+import cssSynchronizer from './utils/cssSynchronizer';
 
 
 
@@ -38,19 +39,25 @@ const App = () => {
     // Initialize CSS loading system
     cssLoader.initialize();
     
+    // Initialize CSS synchronization
+    cssSynchronizer.initialize();
+    
     // Force layout recalculation on route changes
     const handleRouteChange = () => {
       setTimeout(() => {
         cssLoader.forceLayoutRecalculation();
+        cssSynchronizer.onRouteChange();
       }, 50);
     };
 
     // Listen for route changes
     window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('hashchange', handleRouteChange);
     
     // Cleanup
     return () => {
       window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('hashchange', handleRouteChange);
     };
   }, []);
 

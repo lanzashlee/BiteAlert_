@@ -21,7 +21,7 @@ body {
   position: relative;
 }
 
-/* Standardized main content layout */
+/* Standardized main content layout - Consolidated to prevent conflicts */
 .main-content {
   padding: 1rem 1.5rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -41,10 +41,6 @@ body {
   transition: left 0.3s ease, width 0.3s ease;
   margin: 0;
   border: none;
-}
-
-/* Force layout recalculation */
-.main-content {
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;

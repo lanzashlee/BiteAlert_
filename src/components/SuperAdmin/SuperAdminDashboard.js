@@ -9,6 +9,7 @@ import NotificationSystem from '../Common/NotificationSystem';
 import './SuperAdminDashboard.css';
 import { fullLogout } from '../../utils/auth';
 import { useStandardizedCSS } from '../../utils/standardizedImports';
+import { useCSSSynchronization } from '../../hooks/useCSSSynchronization';
 
 // Lazy load Chart.js components to reduce initial bundle size
 const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
@@ -25,6 +26,7 @@ const SuperAdminDashboard = () => {
   const [worker, setWorker] = useState(null);
   const navigate = useNavigate();
   const { initializeCSS } = useStandardizedCSS();
+  const { onFilterChange, onDataChange } = useCSSSynchronization();
 
   // Initialize Web Worker for heavy computations
   useEffect(() => {
@@ -523,6 +525,9 @@ const SuperAdminDashboard = () => {
           activeCases: activeCasesCount,
           adminCount: typeof adminCount === 'number' ? adminCount : 0
         });
+        
+        // Synchronize CSS after data update
+        onDataChange();
       }
     } catch (error) {
       console.error('Error updating dashboard summary:', error);

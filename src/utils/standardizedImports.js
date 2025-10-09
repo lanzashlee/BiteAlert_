@@ -1,6 +1,8 @@
 // Standardized CSS Import Utility
 // This ensures all components load CSS in the correct order
 
+import cssSynchronizer from './cssSynchronizer';
+
 // Standard CSS import order for all SuperAdmin components
 export const standardCSSImports = [
   '../GlobalResponsive.css',
@@ -14,6 +16,9 @@ export const loadStandardCSS = async () => {
     for (const cssPath of standardCSSImports) {
       await import(cssPath);
     }
+    
+    // Synchronize CSS after loading
+    await cssSynchronizer.synchronizeCSS();
   } catch (error) {
     console.warn('Error loading standard CSS:', error);
   }
