@@ -564,31 +564,52 @@ const SuperAdminDashboard = () => {
     setAppointmentsLoading(true);
     try {
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+      const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
       
-      console.log('🔍 Fetching today\'s appointments:', { startOfDay, endOfDay });
+      console.log('🔍 Fetching today\'s appointments for date:', todayString);
       
       const response = await apiFetch('/api/vaccinationdates');
       if (!response.ok) throw new Error('Failed to fetch appointments');
       
       const allAppointments = await response.json();
-      console.log('🔍 All appointments:', allAppointments.length);
+      console.log('🔍 All appointments from API:', allAppointments.length);
+      console.log('🔍 Sample appointment data:', allAppointments[0]);
       
-      // Filter appointments for today
+      // Filter appointments for today - check multiple possible date fields
       const todayAppts = allAppointments.filter(appointment => {
-        if (!appointment.scheduledDate) return false;
+        // Check multiple possible date fields
+        const dateFields = ['scheduledDate', 'date', 'appointmentDate', 'vaccinationDate', 'createdAt', 'updatedAt'];
         
-        const appointmentDate = new Date(appointment.scheduledDate);
-        return appointmentDate >= startOfDay && appointmentDate <= endOfDay;
+        for (const field of dateFields) {
+          if (appointment[field]) {
+            const appointmentDate = new Date(appointment[field]);
+            if (!isNaN(appointmentDate.getTime())) {
+              const appointmentDateString = appointmentDate.toISOString().split('T')[0];
+              if (appointmentDateString === todayString) {
+                console.log(`🔍 Found appointment for today using field ${field}:`, appointment);
+                return true;
+              }
+            }
+          }
+        }
+        return false;
       }).sort((a, b) => {
-        // Sort by scheduled time
-        const timeA = new Date(a.scheduledDate).getTime();
-        const timeB = new Date(b.scheduledDate).getTime();
-        return timeA - timeB;
+        // Sort by any available date field
+        const getDate = (appointment) => {
+          const dateFields = ['scheduledDate', 'date', 'appointmentDate', 'vaccinationDate', 'createdAt', 'updatedAt'];
+          for (const field of dateFields) {
+            if (appointment[field]) {
+              const date = new Date(appointment[field]);
+              if (!isNaN(date.getTime())) return date.getTime();
+            }
+          }
+          return 0;
+        };
+        return getDate(a) - getDate(b);
       }).slice(0, 4); // Limit to 4 appointments
       
-      console.log('🔍 Today\'s appointments:', todayAppts.length);
+      console.log('🔍 Today\'s appointments found:', todayAppts.length);
+      console.log('🔍 Today\'s appointments data:', todayAppts);
       setTodayAppointments(todayAppts);
     } catch (error) {
       console.error('Error fetching today\'s appointments:', error);
@@ -1227,24 +1248,58 @@ const SuperAdminDashboard = () => {
               ) : todayAppointments.length > 0 ? (
                 <div className="appointments-list">
                   {todayAppointments.map((appointment, index) => {
-                    const appointmentTime = new Date(appointment.scheduledDate);
-                    const timeString = appointmentTime.toLocaleTimeString('en-US', { 
+                    // Get the most relevant date field for display
+                    const getDisplayDate = (appointment) => {
+                      const dateFields = ['scheduledDate', 'date', 'appointmentDate', 'vaccinationDate', 'createdAt', 'updatedAt'];
+                      for (const field of dateFields) {
+                        if (appointment[field]) {
+                          const date = new Date(appointment[field]);
+                          if (!isNaN(date.getTime())) return date;
+                        }
+                      }
+                      return new Date();
+                    };
+                    
+                    const appointmentDate = getDisplayDate(appointment);
+                    const timeString = appointmentDate.toLocaleTimeString('en-US', { 
                       hour: 'numeric', 
                       minute: '2-digit', 
                       hour12: true 
                     });
                     
+                    // Get patient name from various possible fields
+                    const getPatientName = (appointment) => {
+                      const nameFields = ['patientName', 'patient', 'name', 'registrationNumber', 'patientId'];
+                      for (const field of nameFields) {
+                        if (appointment[field] && appointment[field].trim()) {
+                          return appointment[field];
+                        }
+                      }
+                      return 'Unknown Patient';
+                    };
+                    
+                    // Get appointment type from various possible fields
+                    const getAppointmentType = (appointment) => {
+                      const typeFields = ['vaccineType', 'vaccinationDay', 'type', 'appointmentType', 'service'];
+                      for (const field of typeFields) {
+                        if (appointment[field] && appointment[field].trim()) {
+                          return appointment[field];
+                        }
+                      }
+                      return 'Vaccination';
+                    };
+                    
                     return (
                       <div key={appointment._id || index} className="appointment-item">
                         <div className="appointment-icon">
-                          <i className="fa-solid fa-clock"></i>
+                          <i className="fa-solid fa-syringe"></i>
                         </div>
                         <div className="appointment-info">
                           <div className="patient-name">
-                            {appointment.patientName || appointment.registrationNumber || 'Unknown Patient'}
+                            {getPatientName(appointment)}
                           </div>
                           <div className="appointment-type">
-                            {appointment.vaccineType || appointment.vaccinationDay || 'Vaccination'}
+                            {getAppointmentType(appointment)}
                           </div>
                         </div>
                         <div className="appointment-time">
