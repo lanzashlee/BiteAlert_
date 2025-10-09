@@ -359,6 +359,8 @@
 .table th:nth-child(2), .table td:nth-child(2) { /* Full Name */
   width: clamp(18%, 20%, 24%);
   min-width: clamp(150px, 18vw, 220px);
+  font-size: clamp(1rem, 1.2vw, 1.25rem);
+  font-weight: 700;
 }
 
 .table th:nth-child(3), .table td:nth-child(3) { /* Gender */
@@ -396,6 +398,7 @@
   .table th:nth-child(2), .table td:nth-child(2) { /* Full Name */
     width: 20%;
     min-width: 200px;
+    font-size: 1.1rem;
   }
   
   .table th:nth-child(3), .table td:nth-child(3) { /* Gender */
