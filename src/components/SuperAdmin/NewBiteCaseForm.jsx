@@ -728,7 +728,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               return;
             }
             await handleSubmit(e);
-          }} className="space-y-6" style={{maxWidth: '100%', margin: '0', padding: '0 20px'}}>
+          }} className="space-y-6" style={{maxWidth: '100%', margin: '0', padding: '0 20px', minHeight: '400px'}}>
             {/* Removed blocking banner to allow free typing */}
             {/* Registration */}
             <section className="section">
@@ -738,7 +738,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Input name="philhealthNo" label="Philhealth No." />
                 <Input name="dateRegistered" type="date" label="Date Registered *" />
                 <Input name="centerName" label="Center Name *" />
-        </div>
+              </div>
             </section>
 
             {/* Personal Information */}
