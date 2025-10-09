@@ -13,6 +13,21 @@ import { useStandardizedCSS } from '../../utils/standardizedImports';
 // Lazy load Chart.js components to reduce initial bundle size
 const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
 
+// Utility function to format time ago
+const getTimeAgo = (timestamp) => {
+  if (!timestamp) return 'Unknown time';
+  
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diffInSeconds = Math.floor((now - time) / 1000);
+  
+  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+};
+
 const SuperAdminDashboard = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +38,12 @@ const SuperAdminDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [lastEventTime, setLastEventTime] = useState(null);
   const [worker, setWorker] = useState(null);
+  
+  // Real data state for dashboard panels
+  const [todayAppointments, setTodayAppointments] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [activityLoading, setActivityLoading] = useState(false);
   const navigate = useNavigate();
   const { initializeCSS } = useStandardizedCSS();
 
@@ -538,6 +559,76 @@ const SuperAdminDashboard = () => {
       }
     }, [timeRange]);
 
+  // Fetch today's appointments
+  const fetchTodayAppointments = useCallback(async () => {
+    setAppointmentsLoading(true);
+    try {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+      
+      console.log('🔍 Fetching today\'s appointments:', { startOfDay, endOfDay });
+      
+      const response = await apiFetch('/api/vaccinationdates');
+      if (!response.ok) throw new Error('Failed to fetch appointments');
+      
+      const allAppointments = await response.json();
+      console.log('🔍 All appointments:', allAppointments.length);
+      
+      // Filter appointments for today
+      const todayAppts = allAppointments.filter(appointment => {
+        if (!appointment.scheduledDate) return false;
+        
+        const appointmentDate = new Date(appointment.scheduledDate);
+        return appointmentDate >= startOfDay && appointmentDate <= endOfDay;
+      }).sort((a, b) => {
+        // Sort by scheduled time
+        const timeA = new Date(a.scheduledDate).getTime();
+        const timeB = new Date(b.scheduledDate).getTime();
+        return timeA - timeB;
+      }).slice(0, 4); // Limit to 4 appointments
+      
+      console.log('🔍 Today\'s appointments:', todayAppts.length);
+      setTodayAppointments(todayAppts);
+    } catch (error) {
+      console.error('Error fetching today\'s appointments:', error);
+      setTodayAppointments([]);
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  }, []);
+
+  // Fetch recent activity from audit trail
+  const fetchRecentActivity = useCallback(async () => {
+    setActivityLoading(true);
+    try {
+      console.log('🔍 Fetching recent activity...');
+      
+      const response = await apiFetch('/api/audit-trail?limit=4');
+      if (!response.ok) throw new Error('Failed to fetch recent activity');
+      
+      const activityData = await response.json();
+      console.log('🔍 Recent activity:', activityData.length);
+      
+      // Process activity data for display
+      const processedActivity = activityData.map(activity => ({
+        id: activity._id,
+        action: activity.action,
+        user: `${activity.firstName || ''} ${activity.lastName || ''}`.trim() || 'System',
+        timestamp: activity.timestamp,
+        role: activity.role,
+        centerName: activity.centerName || activity.center || ''
+      }));
+      
+      setRecentActivity(processedActivity);
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+      setRecentActivity([]);
+    } finally {
+      setActivityLoading(false);
+    }
+  }, []);
+
   const updatePatientGrowth = useCallback(async () => {
     try {
       const userCenter = getUserCenter();
@@ -888,6 +979,10 @@ const SuperAdminDashboard = () => {
     // Load summary immediately for LCP optimization
     updateDashboardSummary();
     
+    // Load real data for dashboard panels
+    fetchTodayAppointments();
+    fetchRecentActivity();
+    
     // Load charts immediately to fetch real data from database
     console.log('🔍 CHART DEBUG: Loading real data from database');
     
@@ -1125,75 +1220,50 @@ const SuperAdminDashboard = () => {
               <button className="view-all-btn">View All</button>
             </div>
             <div className="panel-body">
-              <div className="appointments-list">
-                <div className="appointment-item">
-                  <div className="appointment-icon">
-                    <i className="fa-solid fa-clock"></i>
-                  </div>
-                  <div className="appointment-info">
-                    <div className="patient-name">Maria Santos</div>
-                    <div className="appointment-type">Rabies Vaccination</div>
-                  </div>
-                  <div className="appointment-time">
-                    <div className="time">09:00 AM</div>
-                    <div className="status confirmed">
-                      <i className="fa-solid fa-check"></i>
-                      confirmed
-                    </div>
-                  </div>
+              {appointmentsLoading ? (
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                  <UnifiedSpinner size="small" text="Loading appointments..." />
                 </div>
-                
-                <div className="appointment-item">
-                  <div className="appointment-icon">
-                    <i className="fa-solid fa-clock"></i>
-                  </div>
-                  <div className="appointment-info">
-                    <div className="patient-name">Juan Dela Cruz</div>
-                    <div className="appointment-type">Post-Exposure Treatment</div>
-                  </div>
-                  <div className="appointment-time">
-                    <div className="time">10:30 AM</div>
-                    <div className="status pending">
-                      <i className="fa-solid fa-clock"></i>
-                      pending
-                    </div>
-                  </div>
+              ) : todayAppointments.length > 0 ? (
+                <div className="appointments-list">
+                  {todayAppointments.map((appointment, index) => {
+                    const appointmentTime = new Date(appointment.scheduledDate);
+                    const timeString = appointmentTime.toLocaleTimeString('en-US', { 
+                      hour: 'numeric', 
+                      minute: '2-digit', 
+                      hour12: true 
+                    });
+                    
+                    return (
+                      <div key={appointment._id || index} className="appointment-item">
+                        <div className="appointment-icon">
+                          <i className="fa-solid fa-clock"></i>
+                        </div>
+                        <div className="appointment-info">
+                          <div className="patient-name">
+                            {appointment.patientName || appointment.registrationNumber || 'Unknown Patient'}
+                          </div>
+                          <div className="appointment-type">
+                            {appointment.vaccineType || appointment.vaccinationDay || 'Vaccination'}
+                          </div>
+                        </div>
+                        <div className="appointment-time">
+                          <div className="time">{timeString}</div>
+                          <div className={`status ${appointment.status === 'completed' ? 'confirmed' : 'pending'}`}>
+                            <i className={`fa-solid ${appointment.status === 'completed' ? 'fa-check' : 'fa-clock'}`}></i>
+                            {appointment.status === 'completed' ? 'completed' : 'scheduled'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                
-                <div className="appointment-item">
-                  <div className="appointment-icon">
-                    <i className="fa-solid fa-clock"></i>
-                  </div>
-                  <div className="appointment-info">
-                    <div className="patient-name">Ana Rodriguez</div>
-                    <div className="appointment-type">Follow-up Check</div>
-                  </div>
-                  <div className="appointment-time">
-                    <div className="time">02:00 PM</div>
-                    <div className="status confirmed">
-                      <i className="fa-solid fa-check"></i>
-                      confirmed
-                    </div>
-                  </div>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+                  <i className="fa-solid fa-calendar-xmark" style={{ fontSize: '2rem', marginBottom: '10px' }}></i>
+                  <div>No appointments scheduled for today</div>
                 </div>
-                
-                <div className="appointment-item">
-                  <div className="appointment-icon">
-                    <i className="fa-solid fa-clock"></i>
-                  </div>
-                  <div className="appointment-info">
-                    <div className="patient-name">Carlos Mendoza</div>
-                    <div className="appointment-type">Initial Consultation</div>
-                  </div>
-                  <div className="appointment-time">
-                    <div className="time">03:30 PM</div>
-                    <div className="status confirmed">
-                      <i className="fa-solid fa-check"></i>
-                      confirmed
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -1205,51 +1275,59 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
             <div className="panel-body">
-              <div className="activity-list">
-                <div className="activity-item">
-                  <div className="activity-icon new-patient">
-                    <i className="fa-solid fa-user-plus"></i>
-                  </div>
-                  <div className="activity-info">
-                    <div className="activity-description">New patient registered</div>
-                    <div className="activity-user">Alex Thompson</div>
-                    <div className="activity-time">5 minutes ago</div>
-                  </div>
+              {activityLoading ? (
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                  <UnifiedSpinner size="small" text="Loading activity..." />
                 </div>
-                
-                <div className="activity-item">
-                  <div className="activity-icon cancelled">
-                    <i className="fa-solid fa-calendar-xmark"></i>
-                  </div>
-                  <div className="activity-info">
-                    <div className="activity-description">Appointment cancelled</div>
-                    <div className="activity-user">Maria Garcia</div>
-                    <div className="activity-time">15 minutes ago</div>
-                  </div>
+              ) : recentActivity.length > 0 ? (
+                <div className="activity-list">
+                  {recentActivity.map((activity, index) => {
+                    const timeAgo = getTimeAgo(activity.timestamp);
+                    
+                    // Determine icon and color based on action type
+                    let iconClass = 'fa-solid fa-info-circle';
+                    let iconColor = 'new-patient';
+                    
+                    if (activity.action.toLowerCase().includes('login')) {
+                      iconClass = 'fa-solid fa-sign-in-alt';
+                      iconColor = 'completed';
+                    } else if (activity.action.toLowerCase().includes('logout')) {
+                      iconClass = 'fa-solid fa-sign-out-alt';
+                      iconColor = 'cancelled';
+                    } else if (activity.action.toLowerCase().includes('create') || activity.action.toLowerCase().includes('add')) {
+                      iconClass = 'fa-solid fa-plus';
+                      iconColor = 'new-patient';
+                    } else if (activity.action.toLowerCase().includes('update') || activity.action.toLowerCase().includes('edit')) {
+                      iconClass = 'fa-solid fa-edit';
+                      iconColor = 'payment';
+                    } else if (activity.action.toLowerCase().includes('delete') || activity.action.toLowerCase().includes('remove')) {
+                      iconClass = 'fa-solid fa-trash';
+                      iconColor = 'cancelled';
+                    } else if (activity.action.toLowerCase().includes('vaccination') || activity.action.toLowerCase().includes('treatment')) {
+                      iconClass = 'fa-solid fa-syringe';
+                      iconColor = 'completed';
+                    }
+                    
+                    return (
+                      <div key={activity.id || index} className="activity-item">
+                        <div className={`activity-icon ${iconColor}`}>
+                          <i className={iconClass}></i>
+                        </div>
+                        <div className="activity-info">
+                          <div className="activity-description">{activity.action}</div>
+                          <div className="activity-user">{activity.user}</div>
+                          <div className="activity-time">{timeAgo}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                
-                <div className="activity-item">
-                  <div className="activity-icon payment">
-                    <i className="fa-solid fa-money-bill"></i>
-                  </div>
-                  <div className="activity-info">
-                    <div className="activity-description">Payment received</div>
-                    <div className="activity-user">John Smith</div>
-                    <div className="activity-time">30 minutes ago</div>
-                  </div>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+                  <i className="fa-solid fa-history" style={{ fontSize: '2rem', marginBottom: '10px' }}></i>
+                  <div>No recent activity</div>
                 </div>
-                
-                <div className="activity-item">
-                  <div className="activity-icon completed">
-                    <i className="fa-solid fa-check-circle"></i>
-                  </div>
-                  <div className="activity-info">
-                    <div className="activity-description">Treatment completed</div>
-                    <div className="activity-user">Lisa Davis</div>
-                    <div className="activity-time">1 hour ago</div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
