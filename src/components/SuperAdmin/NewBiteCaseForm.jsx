@@ -100,7 +100,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     fetchCenters();
   }, []);
 
-  const handleChange = (name, value) => {
+  const handleChange = useCallback((name, value) => {
     // Auto-calc age if birthdate changes
     if (name === 'birthdate') {
       try {
@@ -134,7 +134,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     }
     setForm((p) => ({ ...p, [name]: value }));
     if (errors[name]) clearError(name);
-  };
+  }, [errors]);
 
   // Memoized Input component to prevent focus loss on re-renders
   const Input = useCallback((props) => (
@@ -149,7 +149,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         handleChange(props.name, next);
       }}
     />
-  ), [form, errors]);
+  ), []); // Remove form and errors dependencies to prevent recreation
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
@@ -695,7 +695,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       />
       {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
     </div>
-  ), [form, errors]);
+  ), []); // Remove form and errors dependencies to prevent recreation
 
   // Memoized Check component to prevent focus loss on re-renders
   const Check = useCallback(({ name, label, onChange }) => (
@@ -707,7 +707,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       />
       {label}
     </label>
-  ), [form]);
+  ), []); // Remove form dependency to prevent recreation
 
   const handleClose = () => {
     if (onClose) return onClose();
