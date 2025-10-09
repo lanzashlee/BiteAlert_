@@ -100,7 +100,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     fetchCenters();
   }, []);
 
-  const handleChange = useCallback((name, value) => {
+  const handleChange = (name, value) => {
     // Auto-calc age if birthdate changes
     if (name === 'birthdate') {
       try {
@@ -134,7 +134,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     }
     setForm((p) => ({ ...p, [name]: value }));
     if (errors[name]) clearError(name);
-  }, [errors]);
+  };
 
   // Memoized Input component to prevent focus loss on re-renders
   const Input = useCallback((props) => (
@@ -149,7 +149,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         handleChange(props.name, next);
       }}
     />
-  ), []); // Remove form and errors dependencies to prevent recreation
+  ), [form, errors]); // Keep dependencies for proper state access
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
@@ -685,17 +685,13 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         rows={rows}
         value={form[name] ?? ''}
         disabled={disabled}
-        onChange={(e) => { 
-          if (errors[name]) clearError(name); 
-          const next = e.target.value; 
-          setForm(prev => (prev[name] === next ? prev : { ...prev, [name]: next })); 
-        }}
+        onChange={(e) => handleChange(name, e.target.value)}
         className="form-textarea"
         aria-invalid={!!errors[name]}
       />
       {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
     </div>
-  ), []); // Remove form and errors dependencies to prevent recreation
+  ), [form, errors]); // Keep dependencies for proper state access
 
   // Memoized Check component to prevent focus loss on re-renders
   const Check = useCallback(({ name, label, onChange }) => (
@@ -707,7 +703,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       />
       {label}
     </label>
-  ), []); // Remove form dependency to prevent recreation
+  ), [form, errors]); // Keep dependencies for proper state access
 
   const handleClose = () => {
     if (onClose) return onClose();
