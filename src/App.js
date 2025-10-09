@@ -2,6 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import cssLoader from './utils/cssLoader';
+import './components/GlobalResponsive.css';
 
 
 

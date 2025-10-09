@@ -3,8 +3,8 @@
 
 // Standard CSS import order for all SuperAdmin components
 export const standardCSSImports = [
-  '../GlobalResponsive.css',
-  './ResponsiveSidebar.css'
+  '../components/GlobalResponsive.css',
+  '../components/SuperAdmin/ResponsiveSidebar.css'
 ];
 
 // Function to dynamically import CSS files in the correct order
