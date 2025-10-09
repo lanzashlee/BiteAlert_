@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, memo, lazy, Suspense } from 'react';
+import React, { useEffect, useMemo, useState, memo } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { fullLogout } from '../../utils/auth';
 import UnifiedModal from '../UnifiedModal';
@@ -6,8 +6,8 @@ import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import './SuperAdminPatients.css';
 import { apiFetch, apiConfig } from '../../config/api';
 
-// Lazy load heavy components to reduce initial bundle size
-const NewBiteCaseForm = lazy(() => import('./NewBiteCaseForm.jsx'));
+// Import directly to ensure immediate availability inside the modal
+import NewBiteCaseForm from './NewBiteCaseForm';
 
 const PAGE_SIZE = 50;
 
@@ -2361,15 +2361,13 @@ const SuperAdminPatients = () => {
             <div className="patient-modal-body">
               {showCaseForm ? (
                 <div>
-                  <Suspense fallback={<div style={{padding: '2rem', textAlign: 'center'}}>Loading case form...</div>}>
-                    <NewBiteCaseForm 
-                      selectedPatient={selectedPatient}
-                      onSaved={() => {
-                        try { setShowPatientModal(false); } catch(e) {}
-                      }}
-                      onCancel={() => setShowPatientModal(false)}
-                    />
-                  </Suspense>
+                  <NewBiteCaseForm 
+                    selectedPatient={selectedPatient}
+                    onSaved={() => {
+                      try { setShowPatientModal(false); } catch(e) {}
+                    }}
+                    onCancel={() => setShowPatientModal(false)}
+                  />
                 </div>
               ) : showHistory ? (
                 <div>
