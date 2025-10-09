@@ -117,7 +117,7 @@ body {
 .email-input-container, .password-container { 
   position: relative; 
   width: 100%; 
-  z-index: 2;
+  /* remove z-index to avoid trapping child popups under following fields */
 }
 .toggle-password { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; }
 
@@ -336,9 +336,9 @@ body {
 
 /* Validation popups */
 .validation-popup, .password-validation-popup {
-  position: fixed !important;
+  position: absolute; /* anchor to input container */
   left: 0;
-  top: 110%;
+  top: calc(100% + 8px);
   width: 100%;
   background: #fff;
   border-radius: 10px;
@@ -449,8 +449,8 @@ body {
     left: 5%; 
     font-size: 0.9rem; 
     padding: 0.8rem; 
-    z-index: 10001;
-    top: 105%;
+    z-index: 2147483647 !important;
+    top: calc(100% + 6px);
   }
   .forgot-modal { 
     width: 95%; 
