@@ -2348,7 +2348,7 @@ const SuperAdminPatients = () => {
       {/* Patient Details Modal */}
       {showPatientModal && selectedPatient && (
         <div className="patient-modal-backdrop" onClick={(e) => { if (e.target.classList.contains('patient-modal-backdrop')) setShowPatientModal(false); }}>
-          <div className="patient-modal">
+          <div className={`patient-modal ${showCaseForm ? 'fullscreen-bitecase' : ''}`}>
             <div className="patient-modal-header">
               <h4 className="patient-modal-title">{showCaseForm ? 'Create New Bite Case' : 'Patient Information'}</h4>
               <button 
