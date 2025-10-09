@@ -330,16 +330,15 @@ body {
 
 /* Validation popups */
 .validation-popup, .password-validation-popup {
-  position: absolute;
-  left: 0;
-  top: 110%;
+  position: static; /* flow with the document to avoid overlapping under inputs */
   width: 100%;
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(128,0,0,0.08);
   border: 1.5px solid #eee;
   padding: 12px 16px;
-  z-index: 1000;
+  margin-top: 8px; /* spacing below the input */
+  z-index: 1;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s, visibility 0.2s;
@@ -347,6 +346,15 @@ body {
   color: #800000;
 }
 .validation-popup.show, .password-validation-popup.show { opacity: 1; visibility: visible; }
+
+/* Ensure containers allow the popup to display without clipping */
+.email-input-container, .password-container { overflow: visible; }
+
+/* Create extra space dynamically when popup is visible (modern browsers) */
+.email-input-container:has(.validation-popup.show),
+.password-container:has(.password-validation-popup.show) {
+  padding-bottom: 4px;
+}
 .validation-popup .popup-header, .password-validation-popup .popup-header {
   margin-bottom: 8px;
   padding-bottom: 6px;
