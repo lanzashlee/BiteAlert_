@@ -117,7 +117,12 @@ body {
 .email-input-container, .password-container { 
   position: relative; 
   width: 100%; 
-  /* remove z-index to avoid trapping child popups under following fields */
+}
+
+/* Elevate stacking context only when popup is open */
+.email-input-container.popup-open,
+.password-container.popup-open {
+  z-index: 10; /* sits above sibling rows but below popup which has max z-index */
 }
 .toggle-password { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; }
 

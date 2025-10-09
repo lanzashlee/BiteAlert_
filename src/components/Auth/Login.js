@@ -244,7 +244,7 @@ const Login = () => {
           <form className="login-form-modern" onSubmit={onSubmit}>
             {error && <div id="errorMessage" className="error-message">{error}</div>}
             <label htmlFor="email">Email</label>
-            <div className="email-input-container">
+            <div className={`email-input-container ${showEmailPopup && email ? 'popup-open' : ''}`}>
               <input
                 type="email"
                 id="email"
@@ -280,7 +280,7 @@ const Login = () => {
               </div>
             </div>
             <label htmlFor="password">Password</label>
-            <div className="password-container">
+            <div className={`password-container ${showPasswordPopup && password ? 'popup-open' : ''}`}>
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="password"
