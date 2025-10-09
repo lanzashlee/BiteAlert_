@@ -3,6 +3,7 @@ import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { apiFetch } from '../../config/api';
 import './SuperAdminProfile.css';
+import { fullLogout } from '../../utils/auth';
 
 const SuperAdminProfile = () => {
   const [userData, setUserData] = useState(null);

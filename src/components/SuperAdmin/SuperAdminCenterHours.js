@@ -3,6 +3,7 @@ import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { apiFetch } from '../../config/api';
 import './SuperAdminCenterHours.css';
+import { fullLogout } from '../../utils/auth';
 
 const SuperAdminCenterHours = () => {
   const [centers, setCenters] = useState([]);

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { apiFetch } from '../../config/api';
 import './SuperAdminCreateAccount.css';
+import { fullLogout } from '../../utils/auth';
 
 const SuperAdminCreateAccount = () => {
   const [formData, setFormData] = useState({

@@ -8,6 +8,7 @@ import NotificationSystem from '../Common/NotificationSystem';
 import UnifiedModal from '../UnifiedModal';
 
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
+import { fullLogout } from '../../utils/auth';
 
 import './SuperAdminPatientManagement.css';
 

@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import NotificationSystem from '../Common/NotificationSystem';
 import './SuperAdminDashboard.css';
+import { fullLogout } from '../../utils/auth';
 
 // Lazy load Chart.js components to reduce initial bundle size
 const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));

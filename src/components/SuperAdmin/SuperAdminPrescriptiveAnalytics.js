@@ -6,6 +6,7 @@ import { apiFetch, apiConfig } from '../../config/api';
 import './SuperAdminPrescriptiveAnalytics.css';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
+import { fullLogout } from '../../utils/auth';
 
 const SuperAdminPrescriptiveAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);

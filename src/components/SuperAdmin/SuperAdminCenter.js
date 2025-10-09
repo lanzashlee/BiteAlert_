@@ -4,6 +4,7 @@ import UnifiedSpinner from '../Common/UnifiedSpinner';
 import UnifiedModal from '../UnifiedModal';
 import './SuperAdminCenter.css';
 import { apiFetch } from '../../config/api';
+import { fullLogout } from '../../utils/auth';
 
 const SuperAdminCenter = () => {
   const [centers, setCenters] = useState([]);

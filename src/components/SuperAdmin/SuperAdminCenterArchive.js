@@ -3,6 +3,7 @@ import { apiFetch } from '../../config/api';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import './SuperAdminCenterArchive.css';
+import { fullLogout } from '../../utils/auth';
 
 const SuperAdminCenterArchive = () => {
   const [centers, setCenters] = useState([]);
