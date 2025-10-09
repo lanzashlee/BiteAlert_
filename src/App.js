@@ -42,13 +42,33 @@ const App = () => {
     // Initialize CSS synchronization
     cssSynchronizer.initialize();
     
-    // Force layout recalculation on route changes
+    // Handle loading states
+    const handleLoading = () => {
+      // Add loaded class to body when CSS is ready
+      document.body.classList.add('loaded');
+      
+      // Add loaded class to main content areas
+      const mainContents = document.querySelectorAll('.main-content');
+      mainContents.forEach(el => {
+        el.classList.add('loaded');
+      });
+    };
+
+    // Force layout recalculation on route changes with debouncing
     const handleRouteChange = () => {
-      setTimeout(() => {
+      // Debounce route changes to prevent excessive synchronization
+      if (window.routeChangeTimeout) {
+        clearTimeout(window.routeChangeTimeout);
+      }
+      window.routeChangeTimeout = setTimeout(() => {
         cssLoader.forceLayoutRecalculation();
         cssSynchronizer.onRouteChange();
-      }, 50);
+        handleLoading();
+      }, 100);
     };
+
+    // Initial loading setup
+    handleLoading();
 
     // Listen for route changes
     window.addEventListener('popstate', handleRouteChange);
@@ -58,6 +78,9 @@ const App = () => {
     return () => {
       window.removeEventListener('popstate', handleRouteChange);
       window.removeEventListener('hashchange', handleRouteChange);
+      if (window.routeChangeTimeout) {
+        clearTimeout(window.routeChangeTimeout);
+      }
     };
   }, []);
 

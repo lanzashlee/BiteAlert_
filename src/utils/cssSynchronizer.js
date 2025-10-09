@@ -7,6 +7,9 @@ class CSSSynchronizer {
     this.loadingPromises = new Map();
     this.syncQueue = [];
     this.isProcessing = false;
+    this.routeChangeTimeout = null;
+    this.mountTimeout = null;
+    this.filterTimeout = null;
   }
 
   // Synchronize CSS loading to prevent conflicts
@@ -62,33 +65,43 @@ class CSSSynchronizer {
 
   // Force layout recalculation to prevent UI breaking
   forceLayoutRecalculation() {
-    // Force browser to recalculate layout
-    void document.body.offsetHeight;
-    
-    // Trigger reflow for all main content areas
-    const mainContents = document.querySelectorAll('.main-content');
-    mainContents.forEach(el => {
-      el.style.transform = 'translateZ(0)';
-      requestAnimationFrame(() => {
-        el.style.transform = '';
+    // Use requestAnimationFrame for smoother performance
+    requestAnimationFrame(() => {
+      // Force browser to recalculate layout
+      void document.body.offsetHeight;
+      
+      // Trigger reflow for all main content areas with minimal disruption
+      const mainContents = document.querySelectorAll('.main-content');
+      mainContents.forEach(el => {
+        // Only trigger reflow if element is visible
+        if (el.offsetParent !== null) {
+          el.style.transform = 'translateZ(0)';
+          requestAnimationFrame(() => {
+            el.style.transform = '';
+          });
+        }
       });
-    });
 
-    // Force reflow for all tables and containers
-    const tables = document.querySelectorAll('table, .table-container, .table-responsive');
-    tables.forEach(el => {
-      el.style.transform = 'translateZ(0)';
-      requestAnimationFrame(() => {
-        el.style.transform = '';
+      // Force reflow for all tables and containers
+      const tables = document.querySelectorAll('table, .table-container, .table-responsive');
+      tables.forEach(el => {
+        if (el.offsetParent !== null) {
+          el.style.transform = 'translateZ(0)';
+          requestAnimationFrame(() => {
+            el.style.transform = '';
+          });
+        }
       });
-    });
 
-    // Force reflow for all filters and forms
-    const filters = document.querySelectorAll('.filters-container, .filter-controls, .search-box');
-    filters.forEach(el => {
-      el.style.transform = 'translateZ(0)';
-      requestAnimationFrame(() => {
-        el.style.transform = '';
+      // Force reflow for all filters and forms
+      const filters = document.querySelectorAll('.filters-container, .filter-controls, .search-box');
+      filters.forEach(el => {
+        if (el.offsetParent !== null) {
+          el.style.transform = 'translateZ(0)';
+          requestAnimationFrame(() => {
+            el.style.transform = '';
+          });
+        }
       });
     });
   }
@@ -119,23 +132,35 @@ class CSSSynchronizer {
 
   // Synchronize on route changes
   onRouteChange() {
-    setTimeout(() => {
+    // Debounce route changes to prevent excessive synchronization
+    if (this.routeChangeTimeout) {
+      clearTimeout(this.routeChangeTimeout);
+    }
+    this.routeChangeTimeout = setTimeout(() => {
       this.synchronizeCSS();
-    }, 100);
+    }, 150);
   }
 
   // Synchronize on component mount
   onComponentMount() {
-    setTimeout(() => {
+    // Debounce component mounts
+    if (this.mountTimeout) {
+      clearTimeout(this.mountTimeout);
+    }
+    this.mountTimeout = setTimeout(() => {
       this.synchronizeCSS();
-    }, 50);
+    }, 100);
   }
 
   // Synchronize on filter changes
   onFilterChange() {
-    setTimeout(() => {
+    // Debounce filter changes to prevent excessive layout recalculations
+    if (this.filterTimeout) {
+      clearTimeout(this.filterTimeout);
+    }
+    this.filterTimeout = setTimeout(() => {
       this.forceLayoutRecalculation();
-    }, 10);
+    }, 50);
   }
 
   // Initialize synchronization

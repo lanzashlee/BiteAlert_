@@ -71,6 +71,29 @@ body {
   to { opacity: 1; }
 }
 
+/* Loading state management */
+.loading {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.loaded {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Prevent FOUC for main content */
+.main-content {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.main-content.loaded {
+  opacity: 1;
+}
+
 /* Ensure consistent layout structure */
 .dashboard-container {
   display: flex;
@@ -96,9 +119,10 @@ body {
   -webkit-overflow-scrolling: touch;
   z-index: 1;
   box-sizing: border-box;
-  transition: left 0.3s ease, width 0.3s ease;
+  transition: left 0.3s ease, width 0.3s ease, opacity 0.3s ease;
   margin: 0;
   border: none;
+  opacity: 0;
 }
 
 /* Responsive adjustments */
