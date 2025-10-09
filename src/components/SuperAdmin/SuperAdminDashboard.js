@@ -1114,6 +1114,146 @@ const SuperAdminDashboard = () => {
           )}
         </div>
 
+        {/* Today's Appointments and Recent Activity */}
+        <div className="dashboard-panels">
+          <div className="panel panel-default appointments-panel">
+            <div className="panel-heading">
+              <div className="panel-title">
+                <i className="fa-solid fa-calendar-days"></i>
+                Today's Appointments
+              </div>
+              <button className="view-all-btn">View All</button>
+            </div>
+            <div className="panel-body">
+              <div className="appointments-list">
+                <div className="appointment-item">
+                  <div className="appointment-icon">
+                    <i className="fa-solid fa-clock"></i>
+                  </div>
+                  <div className="appointment-info">
+                    <div className="patient-name">Maria Santos</div>
+                    <div className="appointment-type">Rabies Vaccination</div>
+                  </div>
+                  <div className="appointment-time">
+                    <div className="time">09:00 AM</div>
+                    <div className="status confirmed">
+                      <i className="fa-solid fa-check"></i>
+                      confirmed
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="appointment-item">
+                  <div className="appointment-icon">
+                    <i className="fa-solid fa-clock"></i>
+                  </div>
+                  <div className="appointment-info">
+                    <div className="patient-name">Juan Dela Cruz</div>
+                    <div className="appointment-type">Post-Exposure Treatment</div>
+                  </div>
+                  <div className="appointment-time">
+                    <div className="time">10:30 AM</div>
+                    <div className="status pending">
+                      <i className="fa-solid fa-clock"></i>
+                      pending
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="appointment-item">
+                  <div className="appointment-icon">
+                    <i className="fa-solid fa-clock"></i>
+                  </div>
+                  <div className="appointment-info">
+                    <div className="patient-name">Ana Rodriguez</div>
+                    <div className="appointment-type">Follow-up Check</div>
+                  </div>
+                  <div className="appointment-time">
+                    <div className="time">02:00 PM</div>
+                    <div className="status confirmed">
+                      <i className="fa-solid fa-check"></i>
+                      confirmed
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="appointment-item">
+                  <div className="appointment-icon">
+                    <i className="fa-solid fa-clock"></i>
+                  </div>
+                  <div className="appointment-info">
+                    <div className="patient-name">Carlos Mendoza</div>
+                    <div className="appointment-type">Initial Consultation</div>
+                  </div>
+                  <div className="appointment-time">
+                    <div className="time">03:30 PM</div>
+                    <div className="status confirmed">
+                      <i className="fa-solid fa-check"></i>
+                      confirmed
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="panel panel-default activity-panel">
+            <div className="panel-heading">
+              <div className="panel-title">
+                <i className="fa-solid fa-bolt"></i>
+                Recent Activity
+              </div>
+            </div>
+            <div className="panel-body">
+              <div className="activity-list">
+                <div className="activity-item">
+                  <div className="activity-icon new-patient">
+                    <i className="fa-solid fa-user-plus"></i>
+                  </div>
+                  <div className="activity-info">
+                    <div className="activity-description">New patient registered</div>
+                    <div className="activity-user">Alex Thompson</div>
+                    <div className="activity-time">5 minutes ago</div>
+                  </div>
+                </div>
+                
+                <div className="activity-item">
+                  <div className="activity-icon cancelled">
+                    <i className="fa-solid fa-calendar-xmark"></i>
+                  </div>
+                  <div className="activity-info">
+                    <div className="activity-description">Appointment cancelled</div>
+                    <div className="activity-user">Maria Garcia</div>
+                    <div className="activity-time">15 minutes ago</div>
+                  </div>
+                </div>
+                
+                <div className="activity-item">
+                  <div className="activity-icon payment">
+                    <i className="fa-solid fa-money-bill"></i>
+                  </div>
+                  <div className="activity-info">
+                    <div className="activity-description">Payment received</div>
+                    <div className="activity-user">John Smith</div>
+                    <div className="activity-time">30 minutes ago</div>
+                  </div>
+                </div>
+                
+                <div className="activity-item">
+                  <div className="activity-icon completed">
+                    <i className="fa-solid fa-check-circle"></i>
+                  </div>
+                  <div className="activity-info">
+                    <div className="activity-description">Treatment completed</div>
+                    <div className="activity-user">Lisa Davis</div>
+                    <div className="activity-time">1 hour ago</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Charts lazy-loaded */}
         <Suspense fallback={<div className="row"><div className="col-md-6"><div className="panel" style={{height:300,display:'flex',alignItems:'center',justifyContent:'center'}}>Loading charts…</div></div></div>}>
           <DashboardCharts
