@@ -419,8 +419,11 @@ const SuperAdminDashboard = () => {
         console.log('No user center detected, fetching all dashboard data for client-side filtering');
       }
       
+      console.log('🔍 DASHBOARD SUMMARY DEBUG: Fetching from:', summaryUrl);
       const response = await apiFetch(summaryUrl);
+      console.log('🔍 DASHBOARD SUMMARY DEBUG: Response status:', response.status);
       const result = await response.json();
+      console.log('🔍 DASHBOARD SUMMARY DEBUG: API response:', result);
       if (result.success && result.data) {
         let { totalPatients, adminCount } = result.data;
         
@@ -542,8 +545,11 @@ const SuperAdminDashboard = () => {
         console.log('No user center detected, fetching all patient growth data for client-side filtering');
       }
       
+      console.log('🔍 PATIENT GROWTH DEBUG: Fetching from:', apiUrl);
       const response = await apiFetch(apiUrl);
+      console.log('🔍 PATIENT GROWTH DEBUG: Response status:', response.status);
       const result = await response.json();
+      console.log('🔍 PATIENT GROWTH DEBUG: API response:', result);
       if (result.success) {
         let labels = result.labels;
         let data = result.data;
@@ -604,13 +610,46 @@ const SuperAdminDashboard = () => {
             data.push(0);
           }
         }
+        console.log('🔍 PATIENT GROWTH DEBUG: Final chart data:', { labels, data });
+        setPatientsChartData(prev => ({
+          ...prev,
+          labels: labels,
+          datasets: [{ ...prev.datasets[0], data: data }]
+        }));
+      } else {
+        console.log('🔍 PATIENT GROWTH DEBUG: API call failed, using fallback data');
+        // Fallback data when API fails
+        const now = new Date();
+        const labels = [];
+        const data = [];
+        for (let i = 5; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          labels.push(date.toLocaleDateString('en-US', { month: 'short' }));
+          data.push(0);
+        }
         setPatientsChartData(prev => ({
           ...prev,
           labels: labels,
           datasets: [{ ...prev.datasets[0], data: data }]
         }));
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error('🔍 PATIENT GROWTH DEBUG: Error in updatePatientGrowth:', e);
+      // Fallback data on error
+      const now = new Date();
+      const labels = [];
+      const data = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        labels.push(date.toLocaleDateString('en-US', { month: 'short' }));
+        data.push(0);
+      }
+      setPatientsChartData(prev => ({
+        ...prev,
+        labels: labels,
+        datasets: [{ ...prev.datasets[0], data: data }]
+      }));
+    }
   }, [timeRange]);
 
   const updateCasesPerBarangay = useCallback(async () => {
@@ -621,8 +660,11 @@ const SuperAdminDashboard = () => {
         apiUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
+      console.log('🔍 CASES PER BARANGAY DEBUG: Fetching from:', apiUrl);
       const response = await apiFetch(apiUrl);
+      console.log('🔍 CASES PER BARANGAY DEBUG: Response status:', response.status);
       const result = await response.json();
+      console.log('🔍 CASES PER BARANGAY DEBUG: API response:', result);
       if (result.success) {
         let barangayNames = result.data.map(item => item.barangay);
         let casesData = result.data.map(item => item.count);
@@ -630,9 +672,16 @@ const SuperAdminDashboard = () => {
           barangayNames = ['No Data'];
           casesData = [0];
         }
+        console.log('🔍 CASES PER BARANGAY DEBUG: Final chart data:', { barangayNames, casesData });
         setCasesChartData(prev => ({ ...prev, labels: barangayNames, datasets: [{ ...prev.datasets[0], data: casesData }] }));
+      } else {
+        console.log('🔍 CASES PER BARANGAY DEBUG: API call failed, using fallback data');
+        setCasesChartData(prev => ({ ...prev, labels: ['No Data'], datasets: [{ ...prev.datasets[0], data: [0] }] }));
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error('🔍 CASES PER BARANGAY DEBUG: Error in updateCasesPerBarangay:', e);
+      setCasesChartData(prev => ({ ...prev, labels: ['No Data'], datasets: [{ ...prev.datasets[0], data: [0] }] }));
+    }
   }, [timeRange]);
 
   const updateVaccineStockTrends = useCallback(async () => {
@@ -645,8 +694,11 @@ const SuperAdminDashboard = () => {
         console.log('No user center detected, fetching all vaccine stock trends for client-side filtering');
       }
       
+      console.log('🔍 VACCINE STOCK TRENDS DEBUG: Fetching from:', apiUrl);
       const response = await apiFetch(apiUrl);
+      console.log('🔍 VACCINE STOCK TRENDS DEBUG: Response status:', response.status);
       const result = await response.json();
+      console.log('🔍 VACCINE STOCK TRENDS DEBUG: API response:', result);
       if (result.success) {
         let labels = result.labels;
         let data = result.data;
@@ -744,9 +796,16 @@ const SuperAdminDashboard = () => {
         
         if (!labels || labels.length === 0) { labels = ['No Data']; }
         if (!data || data.length === 0) { data = [0]; }
+        console.log('🔍 VACCINE STOCK TRENDS DEBUG: Final chart data:', { labels, data });
         setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: data }] }));
+      } else {
+        console.log('🔍 VACCINE STOCK TRENDS DEBUG: API call failed, using fallback data');
+        setVaccinesChartData(prev => ({ ...prev, labels: ['No Data'], datasets: [{ ...prev.datasets[0], data: [0] }] }));
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error('🔍 VACCINE STOCK TRENDS DEBUG: Error in updateVaccineStockTrends:', e);
+      setVaccinesChartData(prev => ({ ...prev, labels: ['No Data'], datasets: [{ ...prev.datasets[0], data: [0] }] }));
+    }
   }, [timeRange]);
 
   const updateSeverityChart = useCallback(async () => {
@@ -757,8 +816,11 @@ const SuperAdminDashboard = () => {
         apiUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
       
+      console.log('🔍 SEVERITY DISTRIBUTION DEBUG: Fetching from:', apiUrl);
       const response = await apiFetch(apiUrl);
+      console.log('🔍 SEVERITY DISTRIBUTION DEBUG: Response status:', response.status);
       const result = await response.json();
+      console.log('🔍 SEVERITY DISTRIBUTION DEBUG: API response:', result);
       if (result.success) {
         const { Mild = 0, Moderate = 0, Severe = 0 } = result.data || {};
         const total = Mild + Moderate + Severe;
@@ -805,12 +867,17 @@ const SuperAdminDashboard = () => {
         if (total > 0) {
           setSeverityChartData(prev => ({ labels: ['Mild', 'Moderate', 'Severe'], datasets: [{ ...prev.datasets[0], data: [mild, moderate, severe] }] }));
         } else {
+          console.log('🔍 SEVERITY DISTRIBUTION DEBUG: No severity data found, using fallback');
           setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
         }
-      } catch (e) {
+      } else {
+        console.log('🔍 SEVERITY DISTRIBUTION DEBUG: API call failed, using fallback data');
         setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error('🔍 SEVERITY DISTRIBUTION DEBUG: Error in updateSeverityChart:', e);
+      setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
+    }
   }, [timeRange]);
 
   useEffect(() => {
