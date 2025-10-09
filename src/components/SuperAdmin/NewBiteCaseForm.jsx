@@ -732,7 +732,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               return;
             }
             await handleSubmit(e);
-          }} className="space-y-6" style={{maxWidth: '1200px', margin: '0 auto'}}>
+          }} className="space-y-6" style={{maxWidth: '100%', margin: '0', padding: '0 20px'}}>
             {/* Removed blocking banner to allow free typing */}
             {/* Registration */}
             <section className="section">
