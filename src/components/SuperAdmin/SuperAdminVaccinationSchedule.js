@@ -282,7 +282,7 @@ const SuperAdminVaccinationSchedule = () => {
     }
     
     const brands = [];
-
+    
     // Helper to normalize numeric quantity
     const toNumber = (val) => {
       if (typeof val === 'object') {
@@ -328,17 +328,17 @@ const SuperAdminVaccinationSchedule = () => {
           (vaccine.stockEntries || []).forEach(entry => {
             const qty = toNumber(entry.stock);
             if (qty > 0) {
-              brands.push({
-                name: vaccine.name,
-                brand: vaccine.brand,
-                branchNo: entry.branchNo,
+                  brands.push({
+                    name: vaccine.name,
+                    brand: vaccine.brand,
+                    branchNo: entry.branchNo,
                 quantity: qty,
-                expirationDate: entry.expirationDate,
+                    expirationDate: entry.expirationDate,
                 centerName: center.centerName || center.center,
-                type: vaccine.type
+                    type: vaccine.type
+                  });
+                }
               });
-            }
-          });
         });
       });
     } else {
@@ -355,11 +355,11 @@ const SuperAdminVaccinationSchedule = () => {
             expirationDate: row.expirationDate || row.expiryDate,
             centerName: row.centerName || row.center,
             type: row.type || row.category
-          });
-        }
-      });
+        });
+      }
+    });
     }
-
+    
     console.log('🔍 Final brands array:', brands);
     return brands;
   };
@@ -4079,10 +4079,10 @@ const SuperAdminVaccinationSchedule = () => {
                         });
                         return vaxirabStock.length > 0 ? vaxirabStock.map((stock, index) => (
                           <div key={`vaxirab-${index}`} className="vaccine-option-with-stock">
-                            <input 
-                              type="checkbox" 
+                        <input 
+                          type="checkbox" 
                               id={`vaxirab-arv-${index}`}
-                              checked={selectedVaccines.arv.vaxirab}
+                          checked={selectedVaccines.arv.vaxirab}
                               onChange={() => handleVaccineSelection('arv', 'vaxirab', stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4091,7 +4091,7 @@ const SuperAdminVaccinationSchedule = () => {
                                 <span className="stock-quantity">Stock: {stock.quantity}</span>
                                 <span className="branch-number">Branch: {stock.branchNo}</span>
                                 <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
-                              </div>
+                      </div>
                             </div>
                           </div>
                         )) : (
@@ -4110,10 +4110,10 @@ const SuperAdminVaccinationSchedule = () => {
                         });
                         return speedaStock.length > 0 ? speedaStock.map((stock, index) => (
                           <div key={`speeda-${index}`} className="vaccine-option-with-stock">
-                            <input 
-                              type="checkbox" 
+                        <input 
+                          type="checkbox" 
                               id={`speeda-arv-${index}`}
-                              checked={selectedVaccines.arv.speeda}
+                          checked={selectedVaccines.arv.speeda}
                               onChange={() => handleVaccineSelection('arv', 'speeda', stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4122,7 +4122,7 @@ const SuperAdminVaccinationSchedule = () => {
                                 <span className="stock-quantity">Stock: {stock.quantity}</span>
                                 <span className="branch-number">Branch: {stock.branchNo}</span>
                                 <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
-                              </div>
+                      </div>
                             </div>
                           </div>
                         )) : (
@@ -4147,10 +4147,10 @@ const SuperAdminVaccinationSchedule = () => {
                         });
                         return tcvStock.length > 0 ? tcvStock.map((stock, index) => (
                           <div key={`tcv-${index}`} className="vaccine-option-with-stock">
-                            <input 
-                              type="checkbox" 
+                        <input 
+                          type="checkbox" 
                               id={`tcv-${index}`}
-                              checked={selectedVaccines.tcv}
+                          checked={selectedVaccines.tcv}
                               onChange={() => handleVaccineSelection('tcv', null, stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4159,7 +4159,7 @@ const SuperAdminVaccinationSchedule = () => {
                                 <span className="stock-quantity">Stock: {stock.quantity}</span>
                                 <span className="branch-number">Branch: {stock.branchNo}</span>
                                 <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
-                              </div>
+                      </div>
                             </div>
                           </div>
                         )) : (
@@ -4184,10 +4184,10 @@ const SuperAdminVaccinationSchedule = () => {
                         });
                         return erigStock.length > 0 ? erigStock.map((stock, index) => (
                           <div key={`erig-${index}`} className="vaccine-option-with-stock">
-                            <input 
-                              type="checkbox" 
+                        <input 
+                          type="checkbox" 
                               id={`erig-${index}`}
-                              checked={selectedVaccines.erig}
+                          checked={selectedVaccines.erig}
                               onChange={() => handleVaccineSelection('erig', null, stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4196,7 +4196,7 @@ const SuperAdminVaccinationSchedule = () => {
                                 <span className="stock-quantity">Stock: {stock.quantity}</span>
                                 <span className="branch-number">Branch: {stock.branchNo}</span>
                                 <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
-                              </div>
+                      </div>
                             </div>
                           </div>
                         )) : (
@@ -4221,10 +4221,10 @@ const SuperAdminVaccinationSchedule = () => {
                         });
                         return vaxirabBoosterStock.length > 0 ? vaxirabBoosterStock.map((stock, index) => (
                           <div key={`vaxirab-booster-${index}`} className="vaccine-option-with-stock">
-                            <input 
-                              type="checkbox" 
+                        <input 
+                          type="checkbox" 
                               id={`vaxirab-booster-${index}`}
-                              checked={selectedVaccines.booster.vaxirab}
+                          checked={selectedVaccines.booster.vaxirab}
                               onChange={() => handleVaccineSelection('booster', 'vaxirab', stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4233,7 +4233,7 @@ const SuperAdminVaccinationSchedule = () => {
                                 <span className="stock-quantity">Stock: {stock.quantity}</span>
                                 <span className="branch-number">Branch: {stock.branchNo}</span>
                                 <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
-                              </div>
+                      </div>
                             </div>
                           </div>
                         )) : (
@@ -4252,10 +4252,10 @@ const SuperAdminVaccinationSchedule = () => {
                         });
                         return speedaBoosterStock.length > 0 ? speedaBoosterStock.map((stock, index) => (
                           <div key={`speeda-booster-${index}`} className="vaccine-option-with-stock">
-                            <input 
-                              type="checkbox" 
+                        <input 
+                          type="checkbox" 
                               id={`speeda-booster-${index}`}
-                              checked={selectedVaccines.booster.speeda}
+                          checked={selectedVaccines.booster.speeda}
                               onChange={() => handleVaccineSelection('booster', 'speeda', stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4264,9 +4264,9 @@ const SuperAdminVaccinationSchedule = () => {
                                 <span className="stock-quantity">Stock: {stock.quantity}</span>
                                 <span className="branch-number">Branch: {stock.branchNo}</span>
                                 <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
-                              </div>
-                            </div>
-                          </div>
+                      </div>
+                    </div>
+                  </div>
                         )) : (
                           <div className="vaccine-option-disabled">
                             <input type="checkbox" disabled />

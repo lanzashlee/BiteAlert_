@@ -4,13 +4,11 @@ import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import { apiFetch, apiConfig, getApiUrl } from '../../config/api';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { Suspense } from 'react';
-import Skeleton from '../Common/Skeleton';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import NotificationSystem from '../Common/NotificationSystem';
 import './SuperAdminDashboard.css';
 import { fullLogout } from '../../utils/auth';
 import { useStandardizedCSS } from '../../utils/standardizedImports';
-import { useCSSSynchronization } from '../../hooks/useCSSSynchronization';
 
 // Lazy load Chart.js components to reduce initial bundle size
 const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
@@ -27,7 +25,6 @@ const SuperAdminDashboard = () => {
   const [worker, setWorker] = useState(null);
   const navigate = useNavigate();
   const { initializeCSS } = useStandardizedCSS();
-  const { onFilterChange, onDataChange } = useCSSSynchronization();
 
   // Initialize Web Worker for heavy computations
   useEffect(() => {
@@ -526,9 +523,6 @@ const SuperAdminDashboard = () => {
           activeCases: activeCasesCount,
           adminCount: typeof adminCount === 'number' ? adminCount : 0
         });
-        
-        // Synchronize CSS after data update
-        onDataChange();
       }
     } catch (error) {
       console.error('Error updating dashboard summary:', error);
@@ -906,11 +900,6 @@ const SuperAdminDashboard = () => {
 
         {/* Summary Cards */}
         <div className="dashboard-cards">
-          {loading && (
-            <div style={{ width: '100%' }}>
-              <Skeleton cards={4} />
-            </div>
-          )}
           <div className="card" data-tooltip="Total number of registered patients in the system">
             <div className="card-icon" style={{ background: 'rgba(128, 0, 0, 0.1)' }}>
               <i className="fa-solid fa-users" style={{ color: '#800000' }} />

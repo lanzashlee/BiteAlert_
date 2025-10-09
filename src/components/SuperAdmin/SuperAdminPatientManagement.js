@@ -30,7 +30,7 @@ const SuperAdminPatientManagement = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 50;
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -1008,7 +1008,7 @@ const SuperAdminPatientManagement = () => {
 
                         <td>{p.patientId || '-'}</td>
 
-                        <td className="name-cell">{p.fullName || `${p.firstName || ''} ${p.middleName || ''} ${p.lastName || ''}`.trim()}</td>
+                        <td>{p.fullName || `${p.firstName || ''} ${p.middleName || ''} ${p.lastName || ''}`.trim()}</td>
 
                         <td>{p.email || '-'}</td>
 

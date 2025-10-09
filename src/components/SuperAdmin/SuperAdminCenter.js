@@ -140,36 +140,6 @@ const SuperAdminCenter = () => {
     }
   };
 
-  const normalize = (v = '') =>
-    String(v)
-      .toLowerCase()
-      .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-      .replace(/\s*health\s*center$/i, '')
-      .replace(/\s*center$/i, '')
-      .replace(/-/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-  const filteredSortedCenters = useMemo(() => {
-    const s = normalize(query);
-    const cf = normalize(centerFilter);
-    const list = (centers || []).filter((c) => {
-      const name = normalize(c.centerName);
-      const addr = normalize(c.address);
-      const contact = normalize(c.contactPerson);
-      const number = String(c.contactNumber || '').replace(/\D/g, '');
-      const matchesSearch = !s || [name, addr, contact, number].some(v => v.includes(s));
-      const matchesCenter = !cf || name.includes(cf) || name === cf;
-      return matchesSearch && matchesCenter;
-    });
-    const getKey = (item) => {
-      if (sortBy === 'address') return normalize(item.address);
-      if (sortBy === 'contact') return normalize(item.contactPerson);
-      return normalize(item.centerName);
-    };
-    return list.sort((a,b) => getKey(a).localeCompare(getKey(b)));
-  }, [centers, query, centerFilter, sortBy]);
-
   return (
     <div className="dashboard-container">
       <ResponsiveSidebar onSignOut={handleSignOut} />
@@ -247,7 +217,27 @@ const SuperAdminCenter = () => {
                      </td>
                    </tr>
                 ) : (
-                  filteredSortedCenters.map((c) => (
+                  centers
+                    .filter((c) => {
+                      const s = query.trim().toLowerCase();
+                      const cf = centerFilter.trim().toLowerCase();
+                      const matchesSearch = !s || [c.centerName, c.address, c.contactPerson, c.contactNumber]
+                        .filter(Boolean)
+                        .some(v => String(v).toLowerCase().includes(s));
+                      const matchesCenter = !cf || String(c.centerName || '')
+                        .toLowerCase()
+                        .replace(/\s*health\s*center$/, '')
+                        .replace(/\s*center$/, '')
+                        .replace(/-/g,' ')
+                        .includes(cf.replace(/-/g,' '));
+                      return matchesSearch && matchesCenter;
+                    })
+                    .sort((a, b) => {
+                      const ax = (sortBy === 'address' ? a.address : sortBy === 'contact' ? a.contactPerson : a.centerName) || '';
+                      const bx = (sortBy === 'address' ? b.address : sortBy === 'contact' ? b.contactPerson : b.centerName) || '';
+                      return String(ax).localeCompare(String(bx));
+                    })
+                    .map((c) => (
                                          <tr key={c._id}>
                        <td>
                          <strong style={{ color: '#1e293b', fontSize: '1.1rem' }}>{c.centerName || '—'}</strong>

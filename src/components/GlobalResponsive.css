@@ -21,7 +21,7 @@ body {
   position: relative;
 }
 
-/* Standardized main content layout - Consolidated to prevent conflicts */
+/* Standardized main content layout */
 .main-content {
   padding: 1rem 1.5rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -29,16 +29,22 @@ body {
   max-width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  position: relative;
-  margin-left: 320px;
-  width: auto;
-  height: auto;
+  position: fixed;
+  top: 0;
+  left: 320px;
+  width: calc(100% - 320px);
+  height: 100vh;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   z-index: 1;
   box-sizing: border-box;
-  transition: margin-left 0.3s ease;
+  transition: left 0.3s ease, width 0.3s ease;
+  margin: 0;
   border: none;
+}
+
+/* Force layout recalculation */
+.main-content {
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;

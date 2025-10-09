@@ -184,16 +184,6 @@
   vertical-align: middle;
 }
 
-/* Keep name readable but constrained */
-.accounts-table td.name-cell {
-  max-width: 260px;
-  font-weight: 700;
-  color: #b91c1c;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .accounts-table tbody tr:hover {
   background: #f9fafb;
 }

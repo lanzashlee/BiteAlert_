@@ -2,7 +2,6 @@ import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import cssLoader from './utils/cssLoader';
-import cssSynchronizer from './utils/cssSynchronizer';
 
 
 
@@ -39,48 +38,19 @@ const App = () => {
     // Initialize CSS loading system
     cssLoader.initialize();
     
-    // Initialize CSS synchronization
-    cssSynchronizer.initialize();
-    
-    // Handle loading states
-    const handleLoading = () => {
-      // Add loaded class to body when CSS is ready
-      document.body.classList.add('loaded');
-      
-      // Add loaded class to main content areas
-      const mainContents = document.querySelectorAll('.main-content');
-      mainContents.forEach(el => {
-        el.classList.add('loaded');
-      });
-    };
-
-    // Force layout recalculation on route changes with debouncing
+    // Force layout recalculation on route changes
     const handleRouteChange = () => {
-      // Debounce route changes to prevent excessive synchronization
-      if (window.routeChangeTimeout) {
-        clearTimeout(window.routeChangeTimeout);
-      }
-      window.routeChangeTimeout = setTimeout(() => {
+      setTimeout(() => {
         cssLoader.forceLayoutRecalculation();
-        cssSynchronizer.onRouteChange();
-        handleLoading();
-      }, 100);
+      }, 50);
     };
-
-    // Initial loading setup
-    handleLoading();
 
     // Listen for route changes
     window.addEventListener('popstate', handleRouteChange);
-    window.addEventListener('hashchange', handleRouteChange);
     
     // Cleanup
     return () => {
       window.removeEventListener('popstate', handleRouteChange);
-      window.removeEventListener('hashchange', handleRouteChange);
-      if (window.routeChangeTimeout) {
-        clearTimeout(window.routeChangeTimeout);
-      }
     };
   }, []);
 
