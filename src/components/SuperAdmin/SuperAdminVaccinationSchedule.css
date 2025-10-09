@@ -112,7 +112,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
   padding: 14px 18px;
   margin: 0 0 12px 0;
   background: #ffffff;
@@ -125,8 +125,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 240px;
+  flex: 2 1 420px;
+  min-width: 280px;
   padding: 10px 14px;
   border: 1px solid #e5e7eb;
   border-radius: 12px;

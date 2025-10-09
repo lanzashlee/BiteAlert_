@@ -1,4 +1,4 @@
-import React, { memo, lazy, Suspense, useEffect } from 'react';
+import React, { memo } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +13,7 @@ import {
   Filler
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { Line as LineChart, Bar as BarChart, Pie as PieChart } from 'react-chartjs-2';
 
 // Register Chart.js components immediately
 ChartJS.register(
@@ -29,36 +30,7 @@ ChartJS.register(
   ChartDataLabels
 );
 
-// Lazy load individual chart components to reduce initial bundle size
-const LineChart = lazy(() => import('react-chartjs-2').then(module => ({ default: module.Line })));
-const BarChart = lazy(() => import('react-chartjs-2').then(module => ({ default: module.Bar })));
-const PieChart = lazy(() => import('react-chartjs-2').then(module => ({ default: module.Pie })));
-
-// Chart loading fallback
-const ChartFallback = ({ height = 300 }) => (
-  <div style={{ 
-    height, 
-    display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'center',
-    background: '#f8f9fa',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef'
-  }}>
-    <div style={{ textAlign: 'center', color: '#6c757d' }}>
-      <div style={{ 
-        width: '40px', 
-        height: '40px', 
-        border: '3px solid #f3f3f3',
-        borderTop: '3px solid #007bff',
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite',
-        margin: '0 auto 10px'
-      }}></div>
-      <div>Loading chart...</div>
-    </div>
-  </div>
-);
+// Direct imports render immediately without Suspense fallback
 
 const DashboardChartsLazy = memo(({
   patientsChartData,
@@ -78,9 +50,7 @@ const DashboardChartsLazy = memo(({
             <h3 className="panel-title">Patient Growth</h3>
           </div>
           <div className="panel-body">
-            <Suspense fallback={<ChartFallback height={300} />}>
-              <LineChart data={patientsChartData} options={lineChartOptions} />
-            </Suspense>
+            <LineChart data={patientsChartData} options={lineChartOptions} />
           </div>
         </div>
       </div>
@@ -90,9 +60,7 @@ const DashboardChartsLazy = memo(({
             <h3 className="panel-title">Case Distribution</h3>
           </div>
           <div className="panel-body">
-            <Suspense fallback={<ChartFallback height={300} />}>
-              <BarChart data={casesChartData} options={barChartOptions} />
-            </Suspense>
+            <BarChart data={casesChartData} options={barChartOptions} />
           </div>
         </div>
       </div>
@@ -102,9 +70,7 @@ const DashboardChartsLazy = memo(({
             <h3 className="panel-title">Vaccine Stock Levels</h3>
           </div>
           <div className="panel-body">
-            <Suspense fallback={<ChartFallback height={300} />}>
-              <LineChart data={vaccinesChartData} options={vaccinesChartOptions} />
-            </Suspense>
+            <LineChart data={vaccinesChartData} options={vaccinesChartOptions} />
           </div>
         </div>
       </div>
@@ -114,9 +80,7 @@ const DashboardChartsLazy = memo(({
             <h3 className="panel-title">Case Severity</h3>
           </div>
           <div className="panel-body">
-            <Suspense fallback={<ChartFallback height={300} />}>
-              <PieChart data={severityChartData} options={severityChartOptions} />
-            </Suspense>
+            <PieChart data={severityChartData} options={severityChartOptions} />
           </div>
         </div>
       </div>
