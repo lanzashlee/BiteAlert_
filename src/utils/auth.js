@@ -11,6 +11,8 @@ export function clearAuthStorage() {
     try {
       localStorage.removeItem('apiCache');
     } catch {}
+    // Set logout flag to prevent automatic redirects
+    localStorage.setItem('logoutInProgress', 'true');
   } catch {}
 }
 
@@ -31,7 +33,16 @@ export async function fullLogout(axioslessApiFetch) {
       try { await axioslessApiFetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } catch {}
     }
   } catch {}
+  
+  // Clear all authentication data immediately and aggressively
   clearAuthStorage();
+  
+  // Clear any additional storage that might contain user data
+  try {
+    localStorage.clear();
+    sessionStorage.clear();
+  } catch {}
+  
   try {
     if ('caches' in window) {
       const keys = await caches.keys();
@@ -45,20 +56,29 @@ export async function fullLogout(axioslessApiFetch) {
     }
   } catch {}
   
-  // Ensure redirect to login happens
-  try {
-    window.location.replace('/login');
-  } catch (redirectError) {
-    console.error('Redirect error:', redirectError);
-    // Fallback redirect methods
+  // Force redirect to login with multiple methods and immediate execution
+  setTimeout(() => {
     try {
-      window.location.href = '/login';
-    } catch (fallbackError) {
-      console.error('Fallback redirect error:', fallbackError);
-      // Last resort - reload the page to root
-      window.location.reload();
+      // Method 1: Direct replace
+      window.location.replace('/login');
+    } catch (redirectError) {
+      console.error('Redirect error:', redirectError);
+      try {
+        // Method 2: Direct href
+        window.location.href = '/login';
+      } catch (fallbackError) {
+        console.error('Fallback redirect error:', fallbackError);
+        try {
+          // Method 3: Assign
+          window.location.assign('/login');
+        } catch (assignError) {
+          console.error('Assign redirect error:', assignError);
+          // Method 4: Last resort - reload to root
+          window.location.reload();
+        }
+      }
     }
-  }
+  }, 0);
 }
 
 

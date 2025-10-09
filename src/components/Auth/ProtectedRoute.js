@@ -13,6 +13,14 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
         console.log('🔍 PROTECTED ROUTE DEBUG: Starting authentication check');
         console.log('Required role:', requiredRole);
         
+        // Check if logout is in progress - if so, redirect to login immediately
+        if (localStorage.getItem('logoutInProgress') === 'true') {
+          console.log('🔍 PROTECTED ROUTE: Logout in progress, redirecting to login');
+          localStorage.removeItem('logoutInProgress');
+          navigate('/login');
+          return;
+        }
+        
         // Check if user data exists in storage (token optional)
         // Prefer sessionStorage (survives refresh), fall back to localStorage
         const userData =

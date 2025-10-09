@@ -4,6 +4,7 @@ import UnifiedModal from '../UnifiedModal';
 import './SuperAdminAccountManagement.css';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { apiFetch } from '../../config/api';
+import { fullLogout } from '../../utils/auth';
 
 const SuperAdminAccountManagement = () => {
   const [adminAccounts, setAdminAccounts] = useState([]);
@@ -33,21 +34,22 @@ const SuperAdminAccountManagement = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [showSignoutModal, setShowSignoutModal] = useState(false);
 
   // Handle sign out
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
+    setShowSignoutModal(true);
+  };
+
+  // Confirm sign out
+  const confirmSignOut = async () => {
     try {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      
-      if (currentUser) {
-        await logAuditTrail(currentUser.id, 'Signed out');
-        localStorage.removeItem('currentUser');
-      }
-      
-      window.location.href = '/login';
+      setShowSignoutModal(false); // Close modal immediately
+      await fullLogout(apiFetch);
     } catch (error) {
-      console.error('Error during sign out:', error);
-      showToast('Error signing out. Please try again.', 'error');
+      console.error('Signout error:', error);
+      setShowSignoutModal(false); // Close modal even on error
+      await fullLogout(); // Fallback to basic logout
     }
   };
 
@@ -653,6 +655,19 @@ const SuperAdminAccountManagement = () => {
             </div>
           </div>
         }
+      />
+
+      {/* Signout Modal */}
+      <UnifiedModal
+        isOpen={showSignoutModal}
+        onClose={() => setShowSignoutModal(false)}
+        title="Sign Out"
+        subtitle="You will need to log in again to access your account."
+        icon={<i className="fa-solid fa-right-from-bracket"></i>}
+        iconType="default"
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        onConfirm={confirmSignOut}
       />
 
       {/* Toast Notifications */}

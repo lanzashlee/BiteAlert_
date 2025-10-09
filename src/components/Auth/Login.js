@@ -162,6 +162,9 @@ const Login = () => {
         // Keep a mirror in currentUser for legacy reads
         try { localStorage.setItem('currentUser', JSON.stringify(data.user)); } catch {}
         
+        // Clear logout flag on successful login
+        localStorage.removeItem('logoutInProgress');
+        
         // Set role-specific loading message
         const role = data.user?.role;
         if (role === 'superadmin') {

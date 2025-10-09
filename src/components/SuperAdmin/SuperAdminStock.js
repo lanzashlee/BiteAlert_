@@ -148,8 +148,14 @@ const SuperAdminStock = () => {
 
   // Confirm sign out
   const confirmSignOut = async () => {
-    try { await fullLogout(apiFetch); } catch {}
-      setShowSignoutModal(false);
+    try {
+      setShowSignoutModal(false); // Close modal immediately
+      await fullLogout(apiFetch);
+    } catch (error) {
+      console.error('Signout error:', error);
+      setShowSignoutModal(false); // Close modal even on error
+      await fullLogout(); // Fallback to basic logout
+    }
   };
 
   useEffect(() => {

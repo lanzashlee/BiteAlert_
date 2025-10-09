@@ -34,75 +34,12 @@ const SuperAdminCenter = () => {
   // Confirm sign out
   const confirmSignOut = async () => {
     try {
-      let currentUser = JSON.parse(localStorage.getItem('currentUser')) || JSON.parse(localStorage.getItem('userData'));
-      
-      if (currentUser && currentUser.email) {
-        try {
-          const res = await apiFetch(`/api/account-status/${encodeURIComponent(currentUser.email)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.account) {
-              currentUser = { ...currentUser, ...data.account };
-            }
-          }
-        } catch (err) {
-          console.warn('Failed to fetch account status for logout:', err);
-        }
-      }
-
-      if (!currentUser) {
-        console.log('No active session found, proceeding with logout anyway');
-        // Proceed with logout even if no session found
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('token');
-        window.location.replace('/login');
-        return;
-      }
-
-      const logoutData = {
-        role: currentUser.role,
-        firstName: currentUser.firstName,
-        middleName: currentUser.middleName || '',
-        lastName: currentUser.lastName,
-        action: 'Signed out'
-      };
-
-      if (currentUser.role === 'admin' && currentUser.adminID) {
-        logoutData.adminID = currentUser.adminID;
-      } else if (currentUser.role === 'superadmin' && currentUser.superAdminID) {
-        logoutData.superAdminID = currentUser.superAdminID;
-      }
-
-      try {
-        await apiFetch('/api/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(logoutData)
-        });
-      } catch (err) {
-        console.warn('Logout API call failed:', err);
-      }
-
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('token');
-      
-      window.location.replace('/login');
+      setShowSignoutModal(false); // Close modal immediately
+      await fullLogout(apiFetch);
     } catch (error) {
-      console.error('Error during sign out:', error);
-      // Only show alert for unexpected errors, not for missing session
-      if (!error.message?.includes('No active session found')) {
-        alert(error.message || 'Error signing out. Please try again.');
-      }
-      
-      // Ensure logout happens even if there's an error
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('token');
-      window.location.replace('/login');
-    } finally {
-      setShowSignoutModal(false);
+      console.error('Signout error:', error);
+      setShowSignoutModal(false); // Close modal even on error
+      await fullLogout(); // Fallback to basic logout
     }
   };
 

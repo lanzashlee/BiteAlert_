@@ -50,11 +50,12 @@ const SuperAdminAuditTrail = () => {
   // Confirm sign out
   const confirmSignOut = async () => {
     try {
+      setShowSignoutModal(false); // Close modal immediately
       await fullLogout(apiFetch);
-    } catch (_) {
-      await fullLogout();
-    } finally {
-      setShowSignoutModal(false);
+    } catch (error) {
+      console.error('Signout error:', error);
+      setShowSignoutModal(false); // Close modal even on error
+      await fullLogout(); // Fallback to basic logout
     }
   };
 
