@@ -70,7 +70,7 @@ class CSSLoader {
   // Force layout recalculation to prevent alignment issues
   forceLayoutRecalculation() {
     // Force browser to recalculate layout
-    document.body.offsetHeight;
+    void document.body.offsetHeight;
     
     // Trigger reflow for all main content areas
     const mainContents = document.querySelectorAll('.main-content');

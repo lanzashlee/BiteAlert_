@@ -35,7 +35,7 @@ export const layoutUtils = {
   // Force layout recalculation
   forceLayoutRecalculation: () => {
     // Force browser to recalculate layout
-    document.body.offsetHeight;
+    void document.body.offsetHeight;
     
     // Trigger reflow for all main content areas
     const mainContents = document.querySelectorAll('.main-content');
