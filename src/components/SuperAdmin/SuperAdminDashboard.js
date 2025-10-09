@@ -870,10 +870,14 @@ const SuperAdminDashboard = () => {
           console.log('🔍 SEVERITY DISTRIBUTION DEBUG: No severity data found, using fallback');
           setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
         }
-      } else {
-        console.log('🔍 SEVERITY DISTRIBUTION DEBUG: API call failed, using fallback data');
+      } catch (e) {
+        console.error('🔍 SEVERITY DISTRIBUTION DEBUG: Error in fallback severity calculation:', e);
         setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
       }
+    } else {
+      console.log('🔍 SEVERITY DISTRIBUTION DEBUG: API call failed, using fallback data');
+      setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
+    }
     } catch (e) { 
       console.error('🔍 SEVERITY DISTRIBUTION DEBUG: Error in updateSeverityChart:', e);
       setSeverityChartData(prev => ({ labels: ['No Data', '', ''], datasets: [{ ...prev.datasets[0], data: [1, 0, 0] }] }));
