@@ -586,7 +586,13 @@ const SuperAdminDashboard = () => {
             if (!isNaN(appointmentDate.getTime())) {
               const appointmentDateString = appointmentDate.toISOString().split('T')[0];
               if (appointmentDateString === todayString) {
-                console.log(`🔍 Found appointment for today using field ${field}:`, appointment);
+                console.log(`🔍 Found appointment for today using field ${field}:`, {
+                  appointmentId: appointment._id,
+                  patientName: appointment.patientName || appointment.patient || appointment.name || appointment.registrationNumber,
+                  date: appointmentDateString,
+                  time: appointmentDate.toLocaleTimeString(),
+                  appointment: appointment
+                });
                 return true;
               }
             }
@@ -1269,12 +1275,40 @@ const SuperAdminDashboard = () => {
                     
                     // Get patient name from various possible fields
                     const getPatientName = (appointment) => {
-                      const nameFields = ['patientName', 'patient', 'name', 'registrationNumber', 'patientId'];
+                      // First try to get full name if available
+                      const fullNameFields = ['fullName', 'patientFullName', 'completeName'];
+                      for (const field of fullNameFields) {
+                        if (appointment[field] && appointment[field].trim()) {
+                          return appointment[field];
+                        }
+                      }
+                      
+                      // Try to construct name from first and last name
+                      const firstName = appointment.firstName || appointment.first || appointment.patientFirstName || '';
+                      const lastName = appointment.lastName || appointment.last || appointment.patientLastName || '';
+                      if (firstName && lastName) {
+                        return `${firstName} ${lastName}`;
+                      }
+                      if (firstName || lastName) {
+                        return firstName || lastName;
+                      }
+                      
+                      // Try other name fields
+                      const nameFields = ['patientName', 'patient', 'name', 'patientName', 'displayName'];
                       for (const field of nameFields) {
                         if (appointment[field] && appointment[field].trim()) {
                           return appointment[field];
                         }
                       }
+                      
+                      // Fallback to registration number or ID
+                      const idFields = ['registrationNumber', 'patientId', 'id', 'patientNumber'];
+                      for (const field of idFields) {
+                        if (appointment[field] && appointment[field].trim()) {
+                          return `Patient ${appointment[field]}`;
+                        }
+                      }
+                      
                       return 'Unknown Patient';
                     };
                     
