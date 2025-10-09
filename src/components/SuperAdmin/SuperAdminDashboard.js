@@ -8,6 +8,7 @@ import UnifiedSpinner from '../Common/UnifiedSpinner';
 import NotificationSystem from '../Common/NotificationSystem';
 import './SuperAdminDashboard.css';
 import { fullLogout } from '../../utils/auth';
+import { useStandardizedCSS } from '../../utils/standardizedImports';
 
 // Lazy load Chart.js components to reduce initial bundle size
 const DashboardCharts = React.lazy(() => import('./DashboardChartsLazy'));
@@ -23,6 +24,7 @@ const SuperAdminDashboard = () => {
   const [lastEventTime, setLastEventTime] = useState(null);
   const [worker, setWorker] = useState(null);
   const navigate = useNavigate();
+  const { initializeCSS } = useStandardizedCSS();
 
   // Initialize Web Worker for heavy computations
   useEffect(() => {
@@ -44,13 +46,16 @@ const SuperAdminDashboard = () => {
     }
   }, []);
 
-  // Get current user data
+  // Initialize CSS and get current user data
   useEffect(() => {
+    // Initialize standardized CSS loading
+    initializeCSS();
+    
     const userData = JSON.parse(localStorage.getItem('currentUser')) || JSON.parse(localStorage.getItem('userData'));
     if (userData) {
       setCurrentUser(userData);
     }
-  }, []);
+  }, [initializeCSS]);
 
   // Close notifications when clicking outside
   useEffect(() => {

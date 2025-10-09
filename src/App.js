@@ -1,6 +1,7 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
+import cssLoader from './utils/cssLoader';
 
 
 
@@ -33,6 +34,26 @@ const CreateAccount = React.lazy(() => import('./components/Auth/CreateAccount')
 const LoadingSpinner = () => null;
 
 const App = () => {
+  useEffect(() => {
+    // Initialize CSS loading system
+    cssLoader.initialize();
+    
+    // Force layout recalculation on route changes
+    const handleRouteChange = () => {
+      setTimeout(() => {
+        cssLoader.forceLayoutRecalculation();
+      }, 50);
+    };
+
+    // Listen for route changes
+    window.addEventListener('popstate', handleRouteChange);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingSpinner />}>

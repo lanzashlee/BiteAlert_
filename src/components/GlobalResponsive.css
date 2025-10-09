@@ -1,3 +1,94 @@
+/* Global Responsive Design System - Standardized Layout */
+
+/* Ensure consistent box-sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Prevent layout shifts */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Standardized dashboard layout */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+/* Standardized main content layout */
+.main-content {
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
+  max-width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: fixed;
+  top: 0;
+  left: 320px;
+  width: calc(100% - 320px);
+  height: 100vh;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  z-index: 1;
+  box-sizing: border-box;
+  transition: left 0.3s ease, width 0.3s ease;
+  margin: 0;
+  border: none;
+}
+
+/* Force layout recalculation */
+.main-content {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Ensure consistent content header */
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 1.5rem 0;
+  padding: 1rem 1.5rem;
+  gap: 1rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.content-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #1f2937;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Standardized table containers */
+.table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin: 0;
+}
+
+/* Standardized modal containers */
+.modal-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin: 0;
+}
+
 /* Global Responsive Design System */
 
 /* CSS Custom Properties for Responsive Design */
