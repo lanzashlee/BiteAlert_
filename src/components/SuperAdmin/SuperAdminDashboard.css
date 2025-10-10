@@ -1303,6 +1303,11 @@ body {
   color: #166534;
 }
 
+.status.today {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 .status i {
   font-size: 0.7rem;
 }

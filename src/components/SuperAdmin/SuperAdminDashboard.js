@@ -737,7 +737,7 @@ const SuperAdminDashboard = () => {
                   patientId: biteCase.patientId,
                   day: schedule.day,
                   date: vaccinationDate,
-                  status: schedule.status || 'scheduled',
+                  status: 'today', // Always show as "today" for appointments due today
                   patientName: patientName,
                   vaccineType: biteCase.vaccineType || 'Anti-Rabies',
                   center: biteCase.center || biteCase.centerName || 'Unknown Center',
@@ -1447,9 +1447,9 @@ const SuperAdminDashboard = () => {
                         </div>
                         <div className="appointment-time">
                           <div className="time">{timeString}</div>
-                          <div className={`status ${schedule.status === 'completed' ? 'confirmed' : 'pending'}`}>
-                            <i className={`fa-solid ${schedule.status === 'completed' ? 'fa-check' : 'fa-clock'}`}></i>
-                            {schedule.status === 'completed' ? 'completed' : 'scheduled'}
+                          <div className="status today">
+                            <i className="fa-solid fa-calendar-day"></i>
+                            Today
                           </div>
                         </div>
                       </div>
