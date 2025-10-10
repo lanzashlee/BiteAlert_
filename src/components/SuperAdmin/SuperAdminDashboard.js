@@ -558,7 +558,8 @@ const SuperAdminDashboard = () => {
           healthCenters: centersCount,
           staffCount: staffCount,
           activeCases: activeCasesCount,
-          adminCount: typeof adminCount === 'number' ? adminCount : 0
+          adminCount: typeof adminCount === 'number' ? adminCount : 0,
+          todayAppointmentsCount: todayAppointments.length
         });
       }
     } catch (error) {
@@ -1279,6 +1280,40 @@ const SuperAdminDashboard = () => {
                   </span>
                 )}
               </div>
+              <div className="card-actions">
+                <button 
+                  className="add-button"
+                  onClick={() => {
+                    console.log('Add new patient clicked');
+                  }}
+                  title="Add New Patient"
+                  style={{
+                    background: '#800000',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    marginTop: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#660000';
+                    e.target.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#800000';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                >
+                  <i className="fa-solid fa-plus"></i>
+                </button>
+              </div>
             </div>
           </div>
           
@@ -1296,6 +1331,40 @@ const SuperAdminDashboard = () => {
                     {summary?.vaccineStocks?.toLocaleString() || '0'}
                   </span>
                 )}
+              </div>
+              <div className="card-actions">
+                <button 
+                  className="add-button"
+                  onClick={() => {
+                    console.log('Add new vaccine stock clicked');
+                  }}
+                  title="Add New Vaccine Stock"
+                  style={{
+                    background: '#2ed573',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    marginTop: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#25a05a';
+                    e.target.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#2ed573';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                >
+                  <i className="fa-solid fa-plus"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -1376,6 +1445,60 @@ const SuperAdminDashboard = () => {
               </div>
             </>
           )}
+
+          {/* Today's Appointments Card */}
+          <div className="card" data-tooltip="Number of appointments scheduled for today">
+            <div className="card-icon" style={{ background: 'rgba(52, 152, 219, 0.1)' }}>
+              <i className="fa-solid fa-calendar-day" style={{ color: '#3498db' }} />
+            </div>
+            <div className="card-info">
+              <div className="card-title">Today's Appointments</div>
+              <div className="card-value" id="todayAppointments">
+                {appointmentsLoading ? (
+                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
+                ) : (
+                  <span className="value-text">
+                    {todayAppointments.length}
+                  </span>
+                )}
+              </div>
+              <div className="card-actions">
+                <button 
+                  className="add-button"
+                  onClick={() => {
+                    // Navigate to vaccination schedule or open add appointment modal
+                    console.log('Add new appointment clicked');
+                  }}
+                  title="Add New Appointment"
+                  style={{
+                    background: '#3498db',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    marginTop: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#2980b9';
+                    e.target.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#3498db';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                >
+                  <i className="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Today's Appointments and Recent Activity */}
