@@ -120,7 +120,7 @@ export const filterByAdminBarangay = (data, centerField = 'center') => {
 
   const target = norm(userCenter);
 
-  return (data || []).filter(item => {
+  const strictFiltered = (data || []).filter(item => {
     const itemCenter = item[centerField] || item.centerName || item.center || item.healthCenter || item.facility || item.treatmentCenter || '';
     const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || item.centerBarangay || '';
 
@@ -133,6 +133,26 @@ export const filterByAdminBarangay = (data, centerField = 'center') => {
     return nBarangay && (nBarangay.includes(target) || target.includes(nBarangay))
         || nCenter && (nCenter.includes(target) || target.includes(nCenter));
   });
+
+  if (strictFiltered.length > 0) return strictFiltered;
+
+  // Loose fallback: scan all string fields for the barangay/center substring
+  const itemContainsTarget = (obj) => {
+    try {
+      for (const key in obj) {
+        const val = obj[key];
+        if (val == null) continue;
+        if (typeof val === 'string') {
+          if (norm(val).includes(target)) return true;
+        } else if (typeof val === 'object') {
+          if (itemContainsTarget(val)) return true;
+        }
+      }
+    } catch {}
+    return false;
+  };
+
+  return (data || []).filter(item => itemContainsTarget(item));
 };
 
 // Helper function to add center filter to API requests
