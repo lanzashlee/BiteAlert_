@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import UnifiedModal from '../UnifiedModal';
-import { getUserCenter, filterByCenter } from '../../utils/userContext';
+import { getUserCenter, filterByCenter, filterByAdminBarangay } from '../../utils/userContext';
 import './SuperAdminVaccinationSchedule.css';
 import { apiFetch, apiConfig } from '../../config/api';
 import { fullLogout } from '../../utils/auth';
@@ -208,7 +208,7 @@ const SuperAdminVaccinationSchedule = () => {
       
       let stockUrl = '/api/vaccinestocks';
       if (userCenter && userCenter !== 'all') {
-        stockUrl += `?center=${encodeURIComponent(userCenter)}`;
+        stockUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
       }
       
       console.log('Loading vaccine stocks from:', stockUrl);
@@ -219,10 +219,12 @@ const SuperAdminVaccinationSchedule = () => {
       
       if (Array.isArray(result)) {
         console.log('🔍 Setting vaccine stocks (array):', result);
-        setVaccineStocks(result);
+        const scoped = filterByAdminBarangay(result, 'center');
+        setVaccineStocks(scoped);
       } else if (result.success && Array.isArray(result.data)) {
         console.log('🔍 Setting vaccine stocks (success.data):', result.data);
-        setVaccineStocks(result.data);
+        const scoped = filterByAdminBarangay(result.data, 'center');
+        setVaccineStocks(scoped);
       } else {
         console.log('🔍 No vaccine stock data found, result:', result);
         setVaccineStocks([]);
@@ -2019,8 +2021,8 @@ const SuperAdminVaccinationSchedule = () => {
         let vaccinationUrl = apiConfig.endpoints.bitecases;
         
         if (userCenter && userCenter !== 'all') {
-          patientsUrl += `&center=${encodeURIComponent(userCenter)}`;
-          vaccinationUrl += `?center=${encodeURIComponent(userCenter)}`;
+          patientsUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
+          vaccinationUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
         }
         
         // Fetch patients (use apiFetch with base URL and handle non-JSON responses)
@@ -2050,6 +2052,9 @@ const SuperAdminVaccinationSchedule = () => {
         } else if (Array.isArray(patientsData)) {
           patients = patientsData;
         }
+
+        // Scope patients to admin barangay on client side as well
+        patients = filterByAdminBarangay(patients, 'center');
         
         if (Array.isArray(vaccinationData)) {
           biteCases = vaccinationData;

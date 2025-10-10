@@ -21,8 +21,20 @@ export const getUserCenter = () => {
       return 'all';
     }
     
-    // Regular admins are restricted to their assigned center (use as-is)
-    const center = currentUser.centerName || null;
+    // Regular admins are restricted to their assigned center
+    // Fallback across multiple possible fields to avoid missing scoping
+    const fallbackFields = [
+      currentUser.centerName,
+      currentUser.center,
+      currentUser.barangay,
+      currentUser.barangayName,
+      currentUser.healthCenter,
+      currentUser.facility,
+      currentUser.treatmentCenter,
+      currentUser.center_name,
+      currentUser.assignedCenter
+    ];
+    const center = fallbackFields.find(v => typeof v === 'string' && v.trim().length > 0) || null;
     console.log('Returning center for admin:', center);
     return center;
   } catch (error) {
@@ -72,8 +84,8 @@ export const filterByCenter = (data, centerField = 'center') => {
   // Regular admins only see their center's data
   if (userCenter) {
     return data.filter(item => {
-      const itemCenter = item[centerField] || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || '';
-      const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || '';
+      const itemCenter = item[centerField] || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || item.center || '';
+      const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || item.centerBarangay || '';
       
       // Handle center name variations (e.g., "Balong-Bato" vs "Balong-Bato Center")
       const norm = (v) => String(v||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
@@ -95,7 +107,7 @@ export const filterByAdminBarangay = (data, centerField = 'center') => {
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || 
                       JSON.parse(localStorage.getItem('userData'));
   const role = currentUser?.role;
-  const userCenter = currentUser?.centerName || '';
+  const userCenter = currentUser?.centerName || currentUser?.center || currentUser?.barangay || currentUser?.barangayName || currentUser?.healthCenter || '';
 
   // Superadmin or missing user -> return as-is
   if (!currentUser || role === 'superadmin') return data;
@@ -109,8 +121,8 @@ export const filterByAdminBarangay = (data, centerField = 'center') => {
   const target = norm(userCenter);
 
   return (data || []).filter(item => {
-    const itemCenter = item[centerField] || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || '';
-    const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || '';
+    const itemCenter = item[centerField] || item.centerName || item.center || item.healthCenter || item.facility || item.treatmentCenter || '';
+    const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || item.centerBarangay || '';
 
     // Only barangay-based match; if barangay missing, attempt a center text match that contains barangay name
     const barangayMatch = norm(itemBarangay) === target || norm(itemBarangay).includes(target) || target.includes(norm(itemBarangay));
