@@ -1106,7 +1106,7 @@ body {
 /* Dashboard Panels - Today's Appointments and Recent Activity */
 .dashboard-panels {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr; /* Wider appointments panel, narrower activity panel */
   gap: 24px;
   margin: 24px 0;
 }
