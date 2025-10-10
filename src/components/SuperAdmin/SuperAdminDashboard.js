@@ -1336,40 +1336,7 @@ const SuperAdminDashboard = () => {
                   </>
                 )}
               </div>
-              <div className="card-actions">
-                <button 
-                  className="add-button"
-                  onClick={() => {
-                    console.log('Add new patient clicked');
-                  }}
-                  title="Add New Patient"
-                  style={{
-                    background: '#800000',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    marginTop: '8px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = '#660000';
-                    e.target.style.transform = 'scale(1.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = '#800000';
-                    e.target.style.transform = 'scale(1)';
-                  }}
-                >
-                  <i className="fa-solid fa-plus"></i>
-                </button>
-              </div>
+              
             </div>
           </div>
           
@@ -1398,40 +1365,7 @@ const SuperAdminDashboard = () => {
                   </>
                 )}
               </div>
-              <div className="card-actions">
-                <button 
-                  className="add-button"
-                  onClick={() => {
-                    console.log('Add new vaccine stock clicked');
-                  }}
-                  title="Add New Vaccine Stock"
-                  style={{
-                    background: '#2ed573',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    marginTop: '8px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = '#25a05a';
-                    e.target.style.transform = 'scale(1.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = '#2ed573';
-                    e.target.style.transform = 'scale(1)';
-                  }}
-                >
-                  <i className="fa-solid fa-plus"></i>
-                </button>
-              </div>
+              
             </div>
           </div>
           
@@ -1578,41 +1512,7 @@ const SuperAdminDashboard = () => {
                   </>
                 )}
               </div>
-              <div className="card-actions">
-                <button 
-                  className="add-button"
-                  onClick={() => {
-                    // Navigate to vaccination schedule or open add appointment modal
-                    console.log('Add new appointment clicked');
-                  }}
-                  title="Add New Appointment"
-                  style={{
-                    background: '#3498db',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    marginTop: '8px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = '#2980b9';
-                    e.target.style.transform = 'scale(1.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = '#3498db';
-                    e.target.style.transform = 'scale(1)';
-                  }}
-                >
-                  <i className="fa-solid fa-plus"></i>
-                </button>
-              </div>
+              
             </div>
           </div>
         </div>
