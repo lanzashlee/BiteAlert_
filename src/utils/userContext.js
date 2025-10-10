@@ -124,11 +124,14 @@ export const filterByAdminBarangay = (data, centerField = 'center') => {
     const itemCenter = item[centerField] || item.centerName || item.center || item.healthCenter || item.facility || item.treatmentCenter || '';
     const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || item.centerBarangay || '';
 
-    // Only barangay-based match; if barangay missing, attempt a center text match that contains barangay name
-    const barangayMatch = norm(itemBarangay) === target || norm(itemBarangay).includes(target) || target.includes(norm(itemBarangay));
-    const fallbackCenterContainsBarangay = norm(itemCenter).includes(target) || target.includes(norm(itemCenter));
+    const nCenter = norm(itemCenter);
+    const nBarangay = norm(itemBarangay);
 
-    return barangayMatch || fallbackCenterContainsBarangay;
+    // Prefer strict match; fall back to includes only if needed
+    const strictMatch = nBarangay === target || nCenter === target;
+    if (strictMatch) return true;
+    return nBarangay && (nBarangay.includes(target) || target.includes(nBarangay))
+        || nCenter && (nCenter.includes(target) || target.includes(nCenter));
   });
 };
 

@@ -444,7 +444,7 @@ const SuperAdminDashboard = () => {
       } catch {}
       let vaccineUrl = `${apiConfig.endpoints.vaccinestocks}`;
       if (userCenter && userCenter !== 'all') {
-        console.log('Admin center detected, using client-side filtering for vaccines:', userCenter);
+        vaccineUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
       } else if (!userCenter) {
         console.log('No user center detected, fetching all vaccines for client-side filtering');
       }
@@ -503,7 +503,7 @@ const SuperAdminDashboard = () => {
         if (userCenter && userCenter !== 'all') {
           try {
             console.log('🔍 DASHBOARD DEBUG: Fetching patients for center filtering:', userCenter);
-            const patientsRes = await apiFetch(`${apiConfig.endpoints.patients}?page=1&limit=1000`);
+            const patientsRes = await apiFetch(`${apiConfig.endpoints.patients}?page=1&limit=1000&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`);
             const patientsData = await patientsRes.json();
             console.log('🔍 DASHBOARD DEBUG: Patients API response:', patientsData);
             
