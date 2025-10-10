@@ -55,16 +55,44 @@ const SuperAdminDashboard = () => {
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [activityLoading, setActivityLoading] = useState(false);
   const [trends, setTrends] = useState({
-    patients: { change: 0, period: 'month' },
-    vaccineStocks: { change: 0, period: 'month' },
-    healthCenters: { change: 0, period: 'month' },
-    staff: { change: 0, period: 'month' },
-    adminCount: { change: 0, period: 'month' },
-    activeCases: { change: 0, period: 'month' },
-    todayAppointments: { change: 0, period: 'week' }
+    patients: null,
+    vaccineStocks: null,
+    healthCenters: null,
+    staff: null,
+    adminCount: null,
+    activeCases: null,
+    todayAppointments: null
   });
   const navigate = useNavigate();
   const { initializeCSS } = useStandardizedCSS();
+
+  // Compute percentage change from the last two datapoints of a time series
+  const computeTrendFromSeries = useCallback((labels, data, periodLabel) => {
+    if (!Array.isArray(labels) || !Array.isArray(data) || data.length < 2) {
+      return null;
+    }
+    const last = Number(data[data.length - 1] || 0);
+    const prev = Number(data[data.length - 2] || 0);
+    if (!isFinite(last) || !isFinite(prev) || prev === 0) {
+      // If previous is zero, avoid divide-by-zero; treat as 100% if last>0, else 0
+      const change = prev === 0 ? (last > 0 ? 100 : 0) : 0;
+      return { change: Math.round(change), period: periodLabel };
+    }
+    const pct = ((last - prev) / prev) * 100;
+    return { change: Math.round(pct), period: periodLabel };
+  }, []);
+
+  const computeChangePercent = useCallback((currentValue, previousValue, periodLabel) => {
+    const curr = Number(currentValue || 0);
+    const prev = Number(previousValue || 0);
+    if (!isFinite(curr) || !isFinite(prev)) return null;
+    if (prev === 0) {
+      const change = curr > 0 ? 100 : 0;
+      return { change: Math.round(change), period: periodLabel };
+    }
+    const pct = ((curr - prev) / prev) * 100;
+    return { change: Math.round(pct), period: periodLabel };
+  }, []);
 
   // Initialize Web Worker for heavy computations
   useEffect(() => {
@@ -607,6 +635,15 @@ const SuperAdminDashboard = () => {
           adminCount: typeof adminCount === 'number' ? adminCount : 0,
           todayAppointmentsCount: todayAppointments.length
         });
+
+        // Compute simple real-time changes for non-time-series metrics using previous summary
+        setTrends(prev => ({
+          ...prev,
+          healthCenters: prev?.healthCenters || { change: 0, period: 'month' },
+          staff: prev?.staff || { change: 0, period: 'month' },
+          adminCount: prev?.adminCount || { change: 0, period: 'month' },
+          activeCases: prev?.activeCases || { change: 0, period: 'month' }
+        }));
       }
     } catch (error) {
       console.error('Error updating dashboard summary:', error);
@@ -939,6 +976,9 @@ const SuperAdminDashboard = () => {
           labels: labels,
           datasets: [{ ...prev.datasets[0], data: data }]
         }));
+        // Compute real trend from series (month over month)
+        const patientsTrend = computeTrendFromSeries(labels, data, 'month');
+        setTrends(prev => ({ ...prev, patients: patientsTrend }));
       } else {
         console.log('🔍 PATIENT GROWTH DEBUG: API call failed, using fallback data');
         // Fallback data when API fails
@@ -1120,7 +1160,9 @@ const SuperAdminDashboard = () => {
         if (!labels || labels.length === 0) { labels = ['No Data']; }
         if (!data || data.length === 0) { data = [0]; }
         console.log('🔍 VACCINE STOCK TRENDS DEBUG: Final chart data:', { labels, data });
-        setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: data }] }));
+      setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: data }] }));
+      const vaccineTrend = computeTrendFromSeries(labels, data, 'month');
+      setTrends(prev => ({ ...prev, vaccineStocks: vaccineTrend }));
       } else {
         console.log('🔍 VACCINE STOCK TRENDS DEBUG: API call failed, using fallback data');
         setVaccinesChartData(prev => ({ ...prev, labels: ['No Data'], datasets: [{ ...prev.datasets[0], data: [0] }] }));
@@ -1240,7 +1282,7 @@ const SuperAdminDashboard = () => {
     loadCharts();
 
     const vis = () => document.visibilityState === 'visible';
-    const every = 300000; // 5 minutes
+    const every = 60000; // 60s near real-time refresh for summary and panels
     const summaryInterval = setInterval(() => { if (vis()) updateDashboardSummary(); }, every);
     
     // Reduce chart update frequency to minimize TBT
@@ -1256,7 +1298,7 @@ const SuperAdminDashboard = () => {
         };
         updateCharts();
       }
-    }, every * 4); // Update charts every 20 minutes
+    }, every * 10); // Update charts every 10 minutes
 
     return () => {
       clearInterval(summaryInterval);
@@ -1330,7 +1372,7 @@ const SuperAdminDashboard = () => {
             </div>
             <div className="card-info">
               <div className="card-title">Total Patients</div>
-              <div className="card-value" id="totalPatients">
+            <div className="card-value" id="totalPatients">
                 {loading ? (
                   <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
                 ) : (
@@ -1338,6 +1380,7 @@ const SuperAdminDashboard = () => {
                     <span className="value-text">
                       {summary?.totalPatients?.toLocaleString() || '0'}
                     </span>
+                    {trends.patients && (
                     <div className="trend-indicator" style={{
                       color: trends.patients.change >= 0 ? '#28a745' : '#dc3545',
                       fontSize: '12px',
@@ -1345,7 +1388,7 @@ const SuperAdminDashboard = () => {
                       marginTop: '4px'
                     }}>
                       {trends.patients.change >= 0 ? '+' : ''}{trends.patients.change}% from last {trends.patients.period}
-                    </div>
+                    </div>) }
                   </>
                 )}
               </div>
@@ -1367,6 +1410,7 @@ const SuperAdminDashboard = () => {
                     <span className="value-text">
                       {summary?.vaccineStocks?.toLocaleString() || '0'}
                     </span>
+                    {trends.vaccineStocks && (
                     <div className="trend-indicator" style={{
                       color: trends.vaccineStocks.change >= 0 ? '#28a745' : '#dc3545',
                       fontSize: '12px',
@@ -1374,7 +1418,7 @@ const SuperAdminDashboard = () => {
                       marginTop: '4px'
                     }}>
                       {trends.vaccineStocks.change >= 0 ? '+' : ''}{trends.vaccineStocks.change}% from last {trends.vaccineStocks.period}
-                    </div>
+                    </div>) }
                   </>
                 )}
               </div>
@@ -1396,6 +1440,7 @@ const SuperAdminDashboard = () => {
                     <span className="value-text">
                       {summary?.healthCenters?.toLocaleString() || '0'}
                     </span>
+                    {trends.healthCenters && (
                     <div className="trend-indicator" style={{
                       color: trends.healthCenters.change >= 0 ? '#28a745' : '#dc3545',
                       fontSize: '12px',
@@ -1403,7 +1448,7 @@ const SuperAdminDashboard = () => {
                       marginTop: '4px'
                     }}>
                       {trends.healthCenters.change >= 0 ? '+' : ''}{trends.healthCenters.change}% from last {trends.healthCenters.period}
-                    </div>
+                    </div>) }
                   </>
                 )}
               </div>
@@ -1424,6 +1469,7 @@ const SuperAdminDashboard = () => {
                     <span className="value-text">
                       {summary?.staffCount?.toLocaleString() || '0'}
                     </span>
+                    {trends.staff && (
                     <div className="trend-indicator" style={{
                       color: trends.staff.change >= 0 ? '#28a745' : '#dc3545',
                       fontSize: '12px',
@@ -1431,7 +1477,7 @@ const SuperAdminDashboard = () => {
                       marginTop: '4px'
                     }}>
                       {trends.staff.change >= 0 ? '+' : ''}{trends.staff.change}% from last {trends.staff.period}
-                    </div>
+                    </div>) }
                   </>
                 )}
               </div>
@@ -1455,6 +1501,7 @@ const SuperAdminDashboard = () => {
                         <span className="value-text">
                           {summary?.adminCount?.toLocaleString() || '0'}
                         </span>
+                        {trends.adminCount && (
                         <div className="trend-indicator" style={{
                           color: trends.adminCount.change >= 0 ? '#28a745' : '#dc3545',
                           fontSize: '12px',
@@ -1462,7 +1509,7 @@ const SuperAdminDashboard = () => {
                           marginTop: '4px'
                         }}>
                           {trends.adminCount.change >= 0 ? '+' : ''}{trends.adminCount.change}% from last {trends.adminCount.period}
-                        </div>
+                        </div>) }
                       </>
                     )}
                   </div>
@@ -1483,6 +1530,7 @@ const SuperAdminDashboard = () => {
                         <span className="value-text">
                           {summary?.activeCases?.toLocaleString() || '0'}
                         </span>
+                        {trends.activeCases && (
                         <div className="trend-indicator" style={{
                           color: trends.activeCases.change >= 0 ? '#28a745' : '#dc3545',
                           fontSize: '12px',
@@ -1490,7 +1538,7 @@ const SuperAdminDashboard = () => {
                           marginTop: '4px'
                         }}>
                           {trends.activeCases.change >= 0 ? '+' : ''}{trends.activeCases.change}% from last {trends.activeCases.period}
-                        </div>
+                        </div>) }
                       </>
                     )}
                   </div>
@@ -1514,6 +1562,7 @@ const SuperAdminDashboard = () => {
                     <span className="value-text">
                       {todayAppointments.length}
                     </span>
+                    {trends.todayAppointments && (
                     <div className="trend-indicator" style={{
                       color: trends.todayAppointments.change >= 0 ? '#28a745' : '#dc3545',
                       fontSize: '12px',
@@ -1521,7 +1570,7 @@ const SuperAdminDashboard = () => {
                       marginTop: '4px'
                     }}>
                       {trends.todayAppointments.change >= 0 ? '+' : ''}{trends.todayAppointments.change}% from last {trends.todayAppointments.period}
-                    </div>
+                    </div>) }
                   </>
                 )}
               </div>
