@@ -90,6 +90,36 @@ export const filterByCenter = (data, centerField = 'center') => {
   return [];
 };
 
+// Strict barangay-based filter for Admin role
+export const filterByAdminBarangay = (data, centerField = 'center') => {
+  const currentUser = JSON.parse(localStorage.getItem('currentUser')) || 
+                      JSON.parse(localStorage.getItem('userData'));
+  const role = currentUser?.role;
+  const userCenter = currentUser?.centerName || '';
+
+  // Superadmin or missing user -> return as-is
+  if (!currentUser || role === 'superadmin') return data;
+
+  const norm = (v) => String(v || '')
+    .toLowerCase()
+    .replace(/\s*health\s*center$/,'')
+    .replace(/\s*center$/,'')
+    .trim();
+
+  const target = norm(userCenter);
+
+  return (data || []).filter(item => {
+    const itemCenter = item[centerField] || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || '';
+    const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || '';
+
+    // Only barangay-based match; if barangay missing, attempt a center text match that contains barangay name
+    const barangayMatch = norm(itemBarangay) === target || norm(itemBarangay).includes(target) || target.includes(norm(itemBarangay));
+    const fallbackCenterContainsBarangay = norm(itemCenter).includes(target) || target.includes(norm(itemCenter));
+
+    return barangayMatch || fallbackCenterContainsBarangay;
+  });
+};
+
 // Helper function to add center filter to API requests
 export const addCenterFilterToRequest = (url, params = {}) => {
   const userCenter = getUserCenter();

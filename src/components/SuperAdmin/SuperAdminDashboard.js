@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUserCenter, filterByCenter } from '../../utils/userContext';
+import { getUserCenter, filterByCenter, filterByAdminBarangay } from '../../utils/userContext';
 import { apiFetch, apiConfig, getApiUrl } from '../../config/api';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import { Suspense } from 'react';
@@ -437,7 +437,8 @@ const SuperAdminDashboard = () => {
         const result = await response.json();
         if (result.success && Array.isArray(result.staffs)) {
           // Apply client-side filtering by center
-          const filteredStaff = filterByCenter(result.staffs, 'center');
+        // Strictly limit Admin to their barangay
+        const filteredStaff = filterByAdminBarangay(result.staffs, 'center');
           staffCount = filteredStaff.length;
         }
       } catch {}
@@ -459,7 +460,7 @@ const SuperAdminDashboard = () => {
         console.log('🔍 DASHBOARD DEBUG: Sample vaccine stock:', vaccineResult.data[0]);
         
         // Apply client-side filtering by center
-        const filteredVaccines = filterByCenter(vaccineResult.data, 'center');
+        const filteredVaccines = filterByAdminBarangay(vaccineResult.data, 'center');
         console.log('🔍 DASHBOARD DEBUG: Vaccine stocks after center filtering:', filteredVaccines.length);
         
         // API now returns flat structure, so we can directly sum the quantities
@@ -514,16 +515,7 @@ const SuperAdminDashboard = () => {
             console.log('🔍 DASHBOARD DEBUG: Sample patient data:', allPatients[0]);
             
             // Filter patients by center/barangay
-            const filteredPatients = allPatients.filter(p => {
-              const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
-              const normalizedBarangay = patientBarangay.toLowerCase().trim();
-              const normalizedCenter = userCenter.toLowerCase().trim();
-              const matches = normalizedBarangay === normalizedCenter || 
-                     normalizedBarangay.includes(normalizedCenter) || 
-                     normalizedCenter.includes(normalizedBarangay);
-              console.log('🔍 DASHBOARD DEBUG: Patient filtering:', p.firstName, p.lastName, 'barangay:', patientBarangay, 'matches:', matches);
-              return matches;
-            });
+            const filteredPatients = filterByAdminBarangay(allPatients);
             
             totalPatients = filteredPatients.length;
             console.log('🔍 DASHBOARD DEBUG: Filtered total patients for center:', totalPatients);
@@ -573,7 +565,7 @@ const SuperAdminDashboard = () => {
           console.log('🔍 DASHBOARD DEBUG: Sample bite case:', biteCases[0]);
           
           // Apply client-side filtering by center
-          biteCases = filterByCenter(biteCases, 'center');
+          biteCases = filterByAdminBarangay(biteCases, 'center');
           console.log('🔍 DASHBOARD DEBUG: Bite cases after center filtering:', biteCases.length);
 
           // Count all bite cases as active cases (not just those with schedules)
@@ -668,8 +660,8 @@ const SuperAdminDashboard = () => {
       let patientsUrl = '/api/patients?page=1&limit=1000';
       
       if (userCenter && userCenter !== 'all') {
-        biteCasesUrl += `?center=${encodeURIComponent(userCenter)}`;
-        patientsUrl += `&center=${encodeURIComponent(userCenter)}`;
+        biteCasesUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
+        patientsUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
       }
       
       // Fetch bite cases and patients in parallel
@@ -688,8 +680,12 @@ const SuperAdminDashboard = () => {
       console.log('🔍 Patients from API:', patientsData.length);
       
       // Handle different response formats
-      const biteCases = Array.isArray(biteCasesData) ? biteCasesData : (biteCasesData.data || []);
-      const patients = Array.isArray(patientsData) ? patientsData : (patientsData.data || []);
+      let biteCases = Array.isArray(biteCasesData) ? biteCasesData : (biteCasesData.data || []);
+      let patients = Array.isArray(patientsData) ? patientsData : (patientsData.data || []);
+
+      // Strictly filter by admin barangay on client as well
+      biteCases = filterByAdminBarangay(biteCases, 'center');
+      patients = filterByAdminBarangay(patients, 'center');
       
       // Create patient lookup map with multiple ID variations
       const patientLookup = {};
