@@ -2,13 +2,25 @@
 @import '../GlobalResponsive.css';
 
 /* SuperAdmin Center Styles */
-.content-header { margin: 0 5rem 1.25rem 3rem; padding: 1.5rem 2.5rem; background:#fff; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+.content-header { 
+  margin: 0 5rem 1.25rem 3rem; 
+  padding: 1.5rem 2.5rem; 
+  background:#fff; 
+  border-radius:14px; 
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+  position: relative;
+  z-index: 1;
+}
 .barangay-section {
   background: white;
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
   padding: var(--spacing-lg);
   margin: var(--spacing-lg);
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Toolbar (search, filters, actions) */
@@ -97,6 +109,10 @@
   padding-left: var(--spacing-lg);
   padding-right: var(--spacing-lg);
   padding-bottom: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+  position: relative;
+  z-index: 1;
 }
 
 .primary-btn,
@@ -152,6 +168,10 @@
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(17, 24, 39, 0.06);
   table-layout: fixed;
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+  visibility: visible;
 }
 
 .accounts-table th {
