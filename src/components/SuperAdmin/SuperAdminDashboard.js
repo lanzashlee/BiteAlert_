@@ -819,24 +819,37 @@ const SuperAdminDashboard = () => {
     setActivityLoading(true);
     try {
       console.log('🔍 Fetching recent activity...');
-      
-      const response = await apiFetch('/api/audit-trail?limit=4');
+
+      // Fetch a larger set, then filter on the client for "today" and most recent first
+      const response = await apiFetch('/api/audit-trail?limit=50');
       if (!response.ok) throw new Error('Failed to fetch recent activity');
-      
+
       const activityData = await response.json();
-      console.log('🔍 Recent activity:', activityData.length);
-      
-      // Process activity data for display
-      const processedActivity = activityData.map(activity => ({
-        id: activity._id,
-        action: activity.action,
-        user: `${activity.firstName || ''} ${activity.lastName || ''}`.trim() || 'System',
-        timestamp: activity.timestamp,
-        role: activity.role,
-        centerName: activity.centerName || activity.center || ''
-      }));
-      
-      setRecentActivity(processedActivity);
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+
+      // Normalize, filter to today's items, and sort by timestamp desc
+      const normalized = (Array.isArray(activityData) ? activityData : (activityData.data || [])).map(a => {
+        const ts = a.timestamp || a.createdAt || a.time || a.date;
+        const when = ts ? new Date(ts) : null;
+        return {
+          id: a._id,
+          action: a.action || a.event || 'Activity',
+          user: `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.user || 'System',
+          timestamp: when ? when.toISOString() : null,
+          role: a.role,
+          centerName: a.centerName || a.center || ''
+        };
+      }).filter(a => {
+        if (!a.timestamp) return false;
+        return a.timestamp.split('T')[0] === todayStr;
+      }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Take the latest few (e.g., 6)
+      const latest = normalized.slice(0, 6);
+      console.log('🔍 Recent activity (today):', latest.length);
+
+      setRecentActivity(latest);
     } catch (error) {
       console.error('Error fetching recent activity:', error);
       setRecentActivity([]);
