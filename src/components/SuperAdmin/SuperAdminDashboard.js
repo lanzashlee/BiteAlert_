@@ -607,15 +607,29 @@ const SuperAdminDashboard = () => {
       const biteCases = Array.isArray(biteCasesData) ? biteCasesData : (biteCasesData.data || []);
       const patients = Array.isArray(patientsData) ? patientsData : (patientsData.data || []);
       
-      // Create patient lookup map
+      // Create patient lookup map with multiple ID variations
       const patientLookup = {};
       patients.forEach(patient => {
-        if (patient._id || patient.patientId) {
-          patientLookup[patient._id || patient.patientId] = patient;
+        // Add patient with multiple possible ID keys
+        const patientIds = [
+          patient._id,
+          patient.patientId,
+          patient.patient_id,
+          patient.id
+        ].filter(Boolean);
+        
+        patientIds.forEach(id => {
+          patientLookup[id] = patient;
+        });
+        
+        // Also add by registration number if available
+        if (patient.registrationNumber || patient.registration_number) {
+          patientLookup[patient.registrationNumber || patient.registration_number] = patient;
         }
       });
       
-      console.log('🔍 Patient lookup created:', Object.keys(patientLookup).length, 'patients');
+      console.log('🔍 Patient lookup created:', Object.keys(patientLookup).length, 'entries');
+      console.log('🔍 Sample patient lookup keys:', Object.keys(patientLookup).slice(0, 5));
       
       // Build vaccination schedules from bite cases (same logic as scheduler)
       const todaySchedules = [];
@@ -657,23 +671,52 @@ const SuperAdminDashboard = () => {
               });
               
               if (vaccinationDateString === todayString) {
-                // Get patient information
-                const patient = patientLookup[biteCase.patientId] || patientLookup[biteCase._id];
+                // Get patient information - try multiple ways to find the patient
+                let patient = null;
                 let patientName = 'Unknown Patient';
                 
+                // Try different patient ID fields
+                const possiblePatientIds = [
+                  biteCase.patientId,
+                  biteCase.patient_id,
+                  biteCase.patient,
+                  biteCase._id,
+                  biteCase.id,
+                  biteCase.registrationNumber,
+                  biteCase.registration_number
+                ].filter(Boolean);
+                
+                // Look up patient by any of the possible IDs
+                for (const patientId of possiblePatientIds) {
+                  if (patientLookup[patientId]) {
+                    patient = patientLookup[patientId];
+                    break;
+                  }
+                }
+                
                 if (patient) {
-                  const firstName = patient.firstName || patient.first || '';
-                  const lastName = patient.lastName || patient.last || '';
+                  console.log('🔍 Found patient data:', patient);
+                  const firstName = patient.firstName || patient.first || patient.firstname || '';
+                  const lastName = patient.lastName || patient.last || patient.lastname || '';
+                  const middleName = patient.middleName || patient.middle || patient.middlename || '';
+                  
                   if (firstName && lastName) {
-                    patientName = `${firstName} ${lastName}`;
+                    patientName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
                   } else if (firstName || lastName) {
                     patientName = firstName || lastName;
-                  } else if (patient.fullName) {
-                    patientName = patient.fullName;
+                  } else if (patient.fullName || patient.fullname) {
+                    patientName = patient.fullName || patient.fullname;
                   } else if (patient.name) {
                     patientName = patient.name;
+                  } else {
+                    patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
                   }
                 } else {
+                  console.log('🔍 Patient not found for bite case:', {
+                    biteCaseId: biteCase._id,
+                    possiblePatientIds: possiblePatientIds,
+                    availablePatients: Object.keys(patientLookup).length
+                  });
                   patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
                 }
                 
