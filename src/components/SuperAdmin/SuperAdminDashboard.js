@@ -797,7 +797,20 @@ const SuperAdminDashboard = () => {
                     possiblePatientIds: possiblePatientIds,
                     availablePatients: Object.keys(patientLookup).length
                   });
-                  patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
+                  // Try to extract name directly from biteCase document
+                  const bcFirst = biteCase.firstName || biteCase.first || biteCase.firstname || '';
+                  const bcLast = biteCase.lastName || biteCase.last || biteCase.lastname || '';
+                  const bcMiddle = biteCase.middleName || biteCase.middle || biteCase.middlename || '';
+                  const bcFull = biteCase.fullName || biteCase.fullname || biteCase.patientName || biteCase.name;
+                  if (bcFirst && bcLast) {
+                    patientName = bcMiddle ? `${bcFirst} ${bcMiddle} ${bcLast}` : `${bcFirst} ${bcLast}`;
+                  } else if (bcFull) {
+                    patientName = bcFull;
+                  } else if (bcFirst || bcLast) {
+                    patientName = bcFirst || bcLast;
+                  } else {
+                    patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
+                  }
                 }
                 
                 // Enforce admin center/barangay guard one more time at insert time
@@ -1611,18 +1624,19 @@ const SuperAdminDashboard = () => {
                       day: 'numeric'
                     });
                     
-                    // Get patient name from schedule data
+                    // Get patient name from schedule data (many fallbacks)
                     const getPatientName = (schedule) => {
-                      // Use the patient name we already extracted
-                      if (schedule.patientName && schedule.patientName.trim()) {
-                        return schedule.patientName;
-                      }
-                      
-                      // Fallback to registration number
-                      if (schedule.registrationNumber && schedule.registrationNumber.trim()) {
-                        return `Patient ${schedule.registrationNumber}`;
-                      }
-                      
+                      const fromSchedule = (schedule.patientName || '').trim();
+                      if (fromSchedule) return fromSchedule;
+                      const bc = schedule.originalBiteCase || {};
+                      const first = bc.firstName || bc.first || bc.firstname || '';
+                      const last = bc.lastName || bc.last || bc.lastname || '';
+                      const middle = bc.middleName || bc.middle || bc.middlename || '';
+                      const full = bc.fullName || bc.fullname || bc.patientName || bc.name || '';
+                      if (first && last) return middle ? `${first} ${middle} ${last}` : `${first} ${last}`;
+                      if (full) return full;
+                      if (first || last) return first || last;
+                      if (schedule.registrationNumber && String(schedule.registrationNumber).trim()) return `Patient ${schedule.registrationNumber}`;
                       return 'Unknown Patient';
                     };
                     
