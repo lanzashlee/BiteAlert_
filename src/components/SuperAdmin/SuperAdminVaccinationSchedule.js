@@ -4080,9 +4080,10 @@ const SuperAdminVaccinationSchedule = () => {
                         return vaxirabStock.length > 0 ? vaxirabStock.map((stock, index) => (
                           <div key={`vaxirab-${index}`} className="vaccine-option-with-stock">
                         <input 
-                          type="checkbox" 
+                          type="radio" 
+                              name="vaxirab-arv"
                               id={`vaxirab-arv-${index}`}
-                          checked={selectedVaccines.arv.vaxirab}
+                          checked={selectedVaccines.arv.vaxirab && selectedVaccines.selectedStockInfo?.branchNo === stock.branchNo}
                               onChange={() => handleVaccineSelection('arv', 'vaxirab', stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4111,9 +4112,10 @@ const SuperAdminVaccinationSchedule = () => {
                         return speedaStock.length > 0 ? speedaStock.map((stock, index) => (
                           <div key={`speeda-${index}`} className="vaccine-option-with-stock">
                         <input 
-                          type="checkbox" 
+                          type="radio" 
+                              name="speeda-arv"
                               id={`speeda-arv-${index}`}
-                          checked={selectedVaccines.arv.speeda}
+                          checked={selectedVaccines.arv.speeda && selectedVaccines.selectedStockInfo?.branchNo === stock.branchNo}
                               onChange={() => handleVaccineSelection('arv', 'speeda', stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4148,9 +4150,10 @@ const SuperAdminVaccinationSchedule = () => {
                         return tcvStock.length > 0 ? tcvStock.map((stock, index) => (
                           <div key={`tcv-${index}`} className="vaccine-option-with-stock">
                         <input 
-                          type="checkbox" 
+                          type="radio" 
+                              name="tcv"
                               id={`tcv-${index}`}
-                          checked={selectedVaccines.tcv}
+                          checked={selectedVaccines.tcv && selectedVaccines.selectedStockInfo?.branchNo === stock.branchNo}
                               onChange={() => handleVaccineSelection('tcv', null, stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4185,9 +4188,10 @@ const SuperAdminVaccinationSchedule = () => {
                         return erigStock.length > 0 ? erigStock.map((stock, index) => (
                           <div key={`erig-${index}`} className="vaccine-option-with-stock">
                         <input 
-                          type="checkbox" 
+                          type="radio" 
+                              name="erig"
                               id={`erig-${index}`}
-                          checked={selectedVaccines.erig}
+                          checked={selectedVaccines.erig && selectedVaccines.selectedStockInfo?.branchNo === stock.branchNo}
                               onChange={() => handleVaccineSelection('erig', null, stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4222,9 +4226,10 @@ const SuperAdminVaccinationSchedule = () => {
                         return vaxirabBoosterStock.length > 0 ? vaxirabBoosterStock.map((stock, index) => (
                           <div key={`vaxirab-booster-${index}`} className="vaccine-option-with-stock">
                         <input 
-                          type="checkbox" 
+                          type="radio" 
+                              name="vaxirab-booster"
                               id={`vaxirab-booster-${index}`}
-                          checked={selectedVaccines.booster.vaxirab}
+                          checked={selectedVaccines.booster.vaxirab && selectedVaccines.selectedStockInfo?.branchNo === stock.branchNo}
                               onChange={() => handleVaccineSelection('booster', 'vaxirab', stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4253,9 +4258,10 @@ const SuperAdminVaccinationSchedule = () => {
                         return speedaBoosterStock.length > 0 ? speedaBoosterStock.map((stock, index) => (
                           <div key={`speeda-booster-${index}`} className="vaccine-option-with-stock">
                         <input 
-                          type="checkbox" 
+                          type="radio" 
+                              name="speeda-booster"
                               id={`speeda-booster-${index}`}
-                          checked={selectedVaccines.booster.speeda}
+                          checked={selectedVaccines.booster.speeda && selectedVaccines.selectedStockInfo?.branchNo === stock.branchNo}
                               onChange={() => handleVaccineSelection('booster', 'speeda', stock)}
                             />
                             <div className="vaccine-option-content">
@@ -4265,8 +4271,8 @@ const SuperAdminVaccinationSchedule = () => {
                                 <span className="branch-number">Branch: {stock.branchNo}</span>
                                 <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
                       </div>
-                    </div>
-                  </div>
+                            </div>
+                          </div>
                         )) : (
                           <div className="vaccine-option-disabled">
                             <input type="checkbox" disabled />
