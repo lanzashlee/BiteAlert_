@@ -22,6 +22,10 @@
   background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .toolbar-left {
@@ -113,27 +117,29 @@
 }
 
 .primary-btn {
-  background: var(--primary-color);
-  color: #e97474;
-  border-color: var(--primary-dark);
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #b91c1c;
 }
 
 .primary-btn:hover {
-  background: var(--primary-dark);
-  color: #a35353;
-  border-color: var(--primary-dark);
+  background: #b91c1c;
+  color: #ffffff;
+  border-color: #991b1b;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
 .secondary-btn {
-  background: #985454;
-  color: var(--text-primary);
-  border-color: var(--border-color);
+  background: #b91c1c;
+  color: #ffffff;
+  border-color: #991b1b;
 }
 
 .secondary-btn:hover {
-  background: var(--gray-200);
+  background: #991b1b;
+  color: #ffffff;
+  border-color: #7f1d1d;
   transform: translateY(-1px);
 }
 
