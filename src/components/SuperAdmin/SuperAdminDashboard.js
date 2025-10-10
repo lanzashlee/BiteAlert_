@@ -435,12 +435,20 @@ const SuperAdminDashboard = () => {
         }
         const response = await apiFetch(staffUrl);
         const result = await response.json();
-        if (result.success && Array.isArray(result.staffs)) {
-          // Apply client-side filtering by center
-        // Strictly limit Admin to their barangay
-        const filteredStaff = filterByAdminBarangay(result.staffs, 'center');
-          staffCount = filteredStaff.length;
+        console.log('🔍 STAFF DEBUG: API response:', result);
+        let staffList = [];
+        if (Array.isArray(result)) {
+          staffList = result;
+        } else if (Array.isArray(result.staffs)) {
+          staffList = result.staffs;
+        } else if (Array.isArray(result.data)) {
+          staffList = result.data;
+        } else if (Array.isArray(result.users)) {
+          staffList = result.users;
         }
+        const filteredStaff = filterByAdminBarangay(staffList, 'center');
+        staffCount = filteredStaff.length;
+        console.log('🔍 STAFF DEBUG: total staff', staffList.length, 'filtered', staffCount);
       } catch {}
       let vaccineUrl = `${apiConfig.endpoints.vaccinestocks}`;
       if (userCenter && userCenter !== 'all') {
@@ -507,9 +515,11 @@ const SuperAdminDashboard = () => {
             const patientsData = await patientsRes.json();
             console.log('🔍 DASHBOARD DEBUG: Patients API response:', patientsData);
             
-            const allPatients = Array.isArray(patientsData) 
-              ? patientsData 
-              : (patientsData.data || patientsData.patients || []);
+            let allPatients = [];
+            if (Array.isArray(patientsData)) allPatients = patientsData;
+            else if (Array.isArray(patientsData.data)) allPatients = patientsData.data;
+            else if (Array.isArray(patientsData.patients)) allPatients = patientsData.patients;
+            else if (Array.isArray(patientsData.users)) allPatients = patientsData.users;
             
             console.log('🔍 DASHBOARD DEBUG: Total patients before filtering:', allPatients.length);
             console.log('🔍 DASHBOARD DEBUG: Sample patient data:', allPatients[0]);
