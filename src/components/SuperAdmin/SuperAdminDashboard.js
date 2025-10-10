@@ -800,6 +800,18 @@ const SuperAdminDashboard = () => {
                   patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
                 }
                 
+                // Enforce admin center/barangay guard one more time at insert time
+                const userCenterLocal = getUserCenter();
+                const norm = (v) => String(v||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
+                const itemCenter = biteCase.center || biteCase.centerName || biteCase.healthCenter || biteCase.facility || biteCase.treatmentCenter || '';
+                const itemBarangay = (patient && (patient.barangay || patient.addressBarangay || patient.patientBarangay || patient.locationBarangay || patient.barangayName)) || '';
+                const allowByCenter = userCenterLocal === 'all' || (!userCenterLocal ? true : (norm(itemCenter) === norm(userCenterLocal) || norm(itemCenter).includes(norm(userCenterLocal)) || norm(userCenterLocal).includes(norm(itemCenter))));
+                const allowByBarangay = userCenterLocal === 'all' || (!userCenterLocal ? true : (norm(itemBarangay) === norm(userCenterLocal) || norm(itemBarangay).includes(norm(userCenterLocal)) || norm(userCenterLocal).includes(norm(itemBarangay))));
+
+                if (!(allowByCenter || allowByBarangay)) {
+                  return; // skip; not for this admin's center/barangay
+                }
+
                 console.log(`🔍 Found vaccination for today:`, {
                   biteCaseId: biteCase._id,
                   patientId: biteCase.patientId,
