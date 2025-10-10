@@ -1505,7 +1505,7 @@ const SuperAdminDashboard = () => {
             </div>
           </div>
 
-          {/* The following cards are visible only to superadmins */}
+          {/* Superadmin-only: Administrator Accounts; Active Cases is now visible to Admins too */}
           {((currentUser?.role || '').toLowerCase() === 'superadmin') && (
             <>
               <div className="card" data-tooltip="Total number of administrator accounts in the system">
@@ -1536,37 +1536,38 @@ const SuperAdminDashboard = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="card" data-tooltip="Total number of active bite cases (pending or in progress)">
-                <div className="card-icon" style={{ background: 'rgba(255, 71, 87, 0.1)' }}>
-                  <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ff4757' }} />
-                </div>
-                <div className="card-info">
-                  <div className="card-title">Active Cases</div>
-                  <div className="card-value" id="activeCases">
-                    {loading ? (
-                      <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
-                    ) : (
-                      <>
-                        <span className="value-text">
-                          {summary?.activeCases?.toLocaleString() || '0'}
-                        </span>
-                        {trends.activeCases && (
-                        <div className="trend-indicator" style={{
-                          color: trends.activeCases.change >= 0 ? '#28a745' : '#dc3545',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          marginTop: '4px'
-                        }}>
-                          {trends.activeCases.change >= 0 ? '+' : ''}{trends.activeCases.change}% from last {trends.activeCases.period}
-                        </div>) }
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
             </>
           )}
+
+          {/* Active Cases (visible to Admins and SuperAdmins) */}
+          <div className="card" data-tooltip="Total number of active bite cases (pending or in progress)">
+            <div className="card-icon" style={{ background: 'rgba(255, 71, 87, 0.1)' }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ff4757' }} />
+            </div>
+            <div className="card-info">
+              <div className="card-title">Active Cases</div>
+              <div className="card-value" id="activeCases">
+                {loading ? (
+                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
+                ) : (
+                  <>
+                    <span className="value-text">
+                      {summary?.activeCases?.toLocaleString() || '0'}
+                    </span>
+                    {trends.activeCases && (
+                    <div className="trend-indicator" style={{
+                      color: trends.activeCases.change >= 0 ? '#28a745' : '#dc3545',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      marginTop: '4px'
+                    }}>
+                      {trends.activeCases.change >= 0 ? '+' : ''}{trends.activeCases.change}% from last {trends.activeCases.period}
+                    </div>) }
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Today's Appointments Card */}
           <div className="card" data-tooltip="Number of appointments scheduled for today">
