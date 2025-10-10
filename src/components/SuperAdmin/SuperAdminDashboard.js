@@ -1540,24 +1540,18 @@ const SuperAdminDashboard = () => {
             <div className="card-info">
               <div className="card-title">Total Patients</div>
             <div className="card-value" id="totalPatients">
-                {loading ? (
-                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
-                ) : (
-                  <>
-                    <span className="value-text">
-                      {summary?.totalPatients?.toLocaleString() || '0'}
-                    </span>
-                    {trends.patients && (
-                    <div className="trend-indicator" style={{
-                      color: trends.patients.change >= 0 ? '#28a745' : '#dc3545',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      marginTop: '4px'
-                    }}>
-                      {trends.patients.change >= 0 ? '+' : ''}{trends.patients.change}% from last {trends.patients.period}
-                    </div>) }
-                  </>
-                )}
+                <span className="value-text">
+                  {summary?.totalPatients?.toLocaleString() || '0'}
+                </span>
+                {trends.patients && (
+                <div className="trend-indicator" style={{
+                  color: trends.patients.change >= 0 ? '#28a745' : '#dc3545',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '4px'
+                }}>
+                  {trends.patients.change >= 0 ? '+' : ''}{trends.patients.change}% from last {trends.patients.period}
+                </div>) }
               </div>
               
             </div>
@@ -1570,24 +1564,18 @@ const SuperAdminDashboard = () => {
             <div className="card-info">
               <div className="card-title">Vaccine Stocks</div>
               <div className="card-value" id="vaccineStocks">
-                {loading ? (
-                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
-                ) : (
-                  <>
-                    <span className="value-text">
-                      {summary?.vaccineStocks?.toLocaleString() || '0'}
-                    </span>
-                    {trends.vaccineStocks && (
-                    <div className="trend-indicator" style={{
-                      color: trends.vaccineStocks.change >= 0 ? '#28a745' : '#dc3545',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      marginTop: '4px'
-                    }}>
-                      {trends.vaccineStocks.change >= 0 ? '+' : ''}{trends.vaccineStocks.change}% from last {trends.vaccineStocks.period}
-                    </div>) }
-                  </>
-                )}
+                <span className="value-text">
+                  {summary?.vaccineStocks?.toLocaleString() || '0'}
+                </span>
+                {trends.vaccineStocks && (
+                <div className="trend-indicator" style={{
+                  color: trends.vaccineStocks.change >= 0 ? '#28a745' : '#dc3545',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '4px'
+                }}>
+                  {trends.vaccineStocks.change >= 0 ? '+' : ''}{trends.vaccineStocks.change}% from last {trends.vaccineStocks.period}
+                </div>) }
               </div>
               
             </div>
@@ -1600,24 +1588,18 @@ const SuperAdminDashboard = () => {
             <div className="card-info">
               <div className="card-title">Health Centers</div>
               <div className="card-value" id="healthCenters">
-                {loading ? (
-                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
-                ) : (
-                  <>
-                    <span className="value-text">
-                      {summary?.healthCenters?.toLocaleString() || '0'}
-                    </span>
-                    {trends.healthCenters && (
-                    <div className="trend-indicator" style={{
-                      color: trends.healthCenters.change >= 0 ? '#28a745' : '#dc3545',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      marginTop: '4px'
-                    }}>
-                      {trends.healthCenters.change >= 0 ? '+' : ''}{trends.healthCenters.change}% from last {trends.healthCenters.period}
-                    </div>) }
-                  </>
-                )}
+                <span className="value-text">
+                  {summary?.healthCenters?.toLocaleString() || '0'}
+                </span>
+                {trends.healthCenters && (
+                <div className="trend-indicator" style={{
+                  color: trends.healthCenters.change >= 0 ? '#28a745' : '#dc3545',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '4px'
+                }}>
+                  {trends.healthCenters.change >= 0 ? '+' : ''}{trends.healthCenters.change}% from last {trends.healthCenters.period}
+                </div>) }
               </div>
             </div>
           </div>
@@ -1629,24 +1611,18 @@ const SuperAdminDashboard = () => {
             <div className="card-info">
               <div className="card-title">Staff</div>
               <div className="card-value" id="staffCount">
-                {loading ? (
-                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
-                ) : (
-                  <>
-                    <span className="value-text">
-                      {summary?.staffCount?.toLocaleString() || '0'}
-                    </span>
-                    {trends.staff && (
-                    <div className="trend-indicator" style={{
-                      color: trends.staff.change >= 0 ? '#28a745' : '#dc3545',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      marginTop: '4px'
-                    }}>
-                      {trends.staff.change >= 0 ? '+' : ''}{trends.staff.change}% from last {trends.staff.period}
-                    </div>) }
-                  </>
-                )}
+                <span className="value-text">
+                  {summary?.staffCount?.toLocaleString() || '0'}
+                </span>
+                {trends.staff && (
+                <div className="trend-indicator" style={{
+                  color: trends.staff.change >= 0 ? '#28a745' : '#dc3545',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '4px'
+                }}>
+                  {trends.staff.change >= 0 ? '+' : ''}{trends.staff.change}% from last {trends.staff.period}
+                </div>) }
               </div>
             </div>
           </div>
@@ -1660,26 +1636,20 @@ const SuperAdminDashboard = () => {
                 </div>
                 <div className="card-info">
                   <div className="card-title">Administrator Accounts</div>
-                  <div className="card-value" id="adminCount">
-                    {loading ? (
-                      <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
-                    ) : (
-                      <>
-                        <span className="value-text">
-                          {summary?.adminCount?.toLocaleString() || '0'}
-                        </span>
-                        {trends.adminCount && (
-                        <div className="trend-indicator" style={{
-                          color: trends.adminCount.change >= 0 ? '#28a745' : '#dc3545',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          marginTop: '4px'
-                        }}>
-                          {trends.adminCount.change >= 0 ? '+' : ''}{trends.adminCount.change}% from last {trends.adminCount.period}
-                        </div>) }
-                      </>
-                    )}
-                  </div>
+              <div className="card-value" id="adminCount">
+                <span className="value-text">
+                  {summary?.adminCount?.toLocaleString() || '0'}
+                </span>
+                {trends.adminCount && (
+                <div className="trend-indicator" style={{
+                  color: trends.adminCount.change >= 0 ? '#28a745' : '#dc3545',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '4px'
+                }}>
+                  {trends.adminCount.change >= 0 ? '+' : ''}{trends.adminCount.change}% from last {trends.adminCount.period}
+                </div>) }
+              </div>
                 </div>
               </div>
             </>
@@ -1693,24 +1663,18 @@ const SuperAdminDashboard = () => {
             <div className="card-info">
               <div className="card-title">Active Cases</div>
               <div className="card-value" id="activeCases">
-                {loading ? (
-                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
-                ) : (
-                  <>
-                    <span className="value-text">
-                      {summary?.activeCases?.toLocaleString() || '0'}
-                    </span>
-                    {trends.activeCases && (
-                    <div className="trend-indicator" style={{
-                      color: trends.activeCases.change >= 0 ? '#28a745' : '#dc3545',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      marginTop: '4px'
-                    }}>
-                      {trends.activeCases.change >= 0 ? '+' : ''}{trends.activeCases.change}% from last {trends.activeCases.period}
-                    </div>) }
-                  </>
-                )}
+                <span className="value-text">
+                  {summary?.activeCases?.toLocaleString() || '0'}
+                </span>
+                {trends.activeCases && (
+                <div className="trend-indicator" style={{
+                  color: trends.activeCases.change >= 0 ? '#28a745' : '#dc3545',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '4px'
+                }}>
+                  {trends.activeCases.change >= 0 ? '+' : ''}{trends.activeCases.change}% from last {trends.activeCases.period}
+                </div>) }
               </div>
             </div>
           </div>
@@ -1723,24 +1687,18 @@ const SuperAdminDashboard = () => {
             <div className="card-info">
               <div className="card-title">Today's Appointments</div>
               <div className="card-value" id="todayAppointments">
-                {appointmentsLoading ? (
-                  <UnifiedSpinner size="small" fullScreen={true} text="Loading..." />
-                ) : (
-                  <>
-                    <span className="value-text">
-                      {todayAppointments.length}
-                    </span>
-                    {trends.todayAppointments && (
-                    <div className="trend-indicator" style={{
-                      color: trends.todayAppointments.change >= 0 ? '#28a745' : '#dc3545',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      marginTop: '4px'
-                    }}>
-                      {trends.todayAppointments.change >= 0 ? '+' : ''}{trends.todayAppointments.change}% from last {trends.todayAppointments.period}
-                    </div>) }
-                  </>
-                )}
+                <span className="value-text">
+                  {todayAppointments.length}
+                </span>
+                {trends.todayAppointments && (
+                <div className="trend-indicator" style={{
+                  color: trends.todayAppointments.change >= 0 ? '#28a745' : '#dc3545',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '4px'
+                }}>
+                  {trends.todayAppointments.change >= 0 ? '+' : ''}{trends.todayAppointments.change}% from last {trends.todayAppointments.period}
+                </div>) }
               </div>
               
             </div>
@@ -1760,7 +1718,7 @@ const SuperAdminDashboard = () => {
             <div className="panel-body">
               {appointmentsLoading ? (
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  <UnifiedSpinner size="small" text="Loading appointments..." />
+                  <div>Loading appointments...</div>
                 </div>
               ) : todayAppointments.length > 0 ? (
                 <div className="appointments-list">
@@ -1843,11 +1801,11 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
             <div className="panel-body">
-              {activityLoading ? (
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                  <UnifiedSpinner size="small" text="Loading activity..." />
-                </div>
-              ) : recentActivity.length > 0 ? (
+            {activityLoading ? (
+              <div style={{ padding: '20px', textAlign: 'center' }}>
+                <div>Loading activity...</div>
+              </div>
+            ) : recentActivity.length > 0 ? (
                 <div className="activity-list">
                   {recentActivity.map((activity, index) => {
                     const timeAgo = getTimeAgo(activity.timestamp);
