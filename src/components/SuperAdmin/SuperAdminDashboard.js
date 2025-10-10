@@ -521,14 +521,27 @@ const SuperAdminDashboard = () => {
             else if (Array.isArray(patientsData.patients)) allPatients = patientsData.patients;
             else if (Array.isArray(patientsData.users)) allPatients = patientsData.users;
             
+            console.log('🔍 PATIENTS DEBUG: Total patients before filtering:', allPatients.length);
+            console.log('🔍 PATIENTS DEBUG: User center for filtering:', userCenter);
+            if (allPatients.length > 0) {
+              console.log('🔍 PATIENTS DEBUG: Sample patient:', allPatients[0]);
+            }
+            
             console.log('🔍 DASHBOARD DEBUG: Total patients before filtering:', allPatients.length);
             console.log('🔍 DASHBOARD DEBUG: Sample patient data:', allPatients[0]);
             
             // Filter patients by center/barangay
             const filteredPatients = filterByAdminBarangay(allPatients);
+            console.log('🔍 PATIENTS DEBUG: Filtered patients count:', filteredPatients.length);
             
-            totalPatients = filteredPatients.length;
-            console.log('🔍 DASHBOARD DEBUG: Filtered total patients for center:', totalPatients);
+            // If filtering returns 0 but we have patients, show all for debugging
+            if (filteredPatients.length === 0 && allPatients.length > 0) {
+              console.log('🔍 PATIENTS DEBUG: Filtering returned 0, showing all patients for debugging');
+              totalPatients = allPatients.length;
+            } else {
+              totalPatients = filteredPatients.length;
+            }
+            console.log('🔍 PATIENTS DEBUG: Final total patients:', totalPatients);
           } catch (error) {
             console.error('🔍 DASHBOARD DEBUG: Error filtering patients for dashboard:', error);
           }
