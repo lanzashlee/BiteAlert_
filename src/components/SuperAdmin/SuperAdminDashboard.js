@@ -1396,10 +1396,10 @@ const SuperAdminDashboard = () => {
               ) : todayAppointments.length > 0 ? (
                 <div className="appointments-list">
                   {todayAppointments.map((schedule, index) => {
-                    const timeString = schedule.date.toLocaleTimeString('en-US', { 
-                      hour: 'numeric', 
-                      minute: '2-digit', 
-                      hour12: true 
+                    const dateString = schedule.date.toLocaleDateString('en-US', { 
+                      weekday: 'short',
+                      month: 'short', 
+                      day: 'numeric'
                     });
                     
                     // Get patient name from schedule data
@@ -1446,7 +1446,7 @@ const SuperAdminDashboard = () => {
                           </div>
                         </div>
                         <div className="appointment-time">
-                          <div className="time">{timeString}</div>
+                          <div className="time">{dateString}</div>
                           <div className="status today">
                             <i className="fa-solid fa-calendar-day"></i>
                             Today
