@@ -520,22 +520,36 @@ const SuperAdminDashboard = () => {
             else if (Array.isArray(patientsData.data)) allPatients = patientsData.data;
             else if (Array.isArray(patientsData.patients)) allPatients = patientsData.patients;
             else if (Array.isArray(patientsData.users)) allPatients = patientsData.users;
+            else if (patientsData && typeof patientsData === 'object') {
+              // Try deeper nesting common patterns
+              const maybe = patientsData.result || patientsData.payload || patientsData.response || {};
+              if (Array.isArray(maybe)) allPatients = maybe;
+              else if (Array.isArray(maybe.data)) allPatients = maybe.data;
+            }
             
-            console.log('🔍 PATIENTS DEBUG: Total patients before filtering:', allPatients.length);
+            // If still empty, refetch without filters and filter on client
+            if (!Array.isArray(allPatients) || allPatients.length === 0) {
+              console.log('🔍 PATIENTS DEBUG: Empty/invalid patients array. Refetching without filters for client-side filtering…');
+              const refetch = await apiFetch(`${apiConfig.endpoints.patients}?page=1&limit=1000`);
+              const refetchData = await refetch.json();
+              if (Array.isArray(refetchData)) allPatients = refetchData;
+              else if (Array.isArray(refetchData.data)) allPatients = refetchData.data;
+              else if (Array.isArray(refetchData.patients)) allPatients = refetchData.patients;
+              else if (Array.isArray(refetchData.users)) allPatients = refetchData.users;
+            }
+            
+            console.log('🔍 PATIENTS DEBUG: Total patients before filtering:', allPatients?.length || 0);
             console.log('🔍 PATIENTS DEBUG: User center for filtering:', userCenter);
-            if (allPatients.length > 0) {
+            if (Array.isArray(allPatients) && allPatients.length > 0) {
               console.log('🔍 PATIENTS DEBUG: Sample patient:', allPatients[0]);
             }
             
-            console.log('🔍 DASHBOARD DEBUG: Total patients before filtering:', allPatients.length);
-            console.log('🔍 DASHBOARD DEBUG: Sample patient data:', allPatients[0]);
-            
             // Filter patients by center/barangay
-            const filteredPatients = filterByAdminBarangay(allPatients);
+            const filteredPatients = filterByAdminBarangay(allPatients || []);
             console.log('🔍 PATIENTS DEBUG: Filtered patients count:', filteredPatients.length);
             
             // If filtering returns 0 but we have patients, show all for debugging
-            if (filteredPatients.length === 0 && allPatients.length > 0) {
+            if (filteredPatients.length === 0 && (allPatients?.length || 0) > 0) {
               console.log('🔍 PATIENTS DEBUG: Filtering returned 0, showing all patients for debugging');
               totalPatients = allPatients.length;
             } else {

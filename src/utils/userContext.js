@@ -72,6 +72,31 @@ export const getCenterFilter = () => {
   return userCenter === 'all' ? null : userCenter;
 };
 
+// Helper to normalize string
+const norm = (v) => String(v || '')
+  .toLowerCase()
+  .replace(/\s*health\s*center$/, '')
+  .replace(/\s*center$/, '')
+  .trim();
+
+// Extract barangay from common patient record shapes (including nested address)
+const extractBarangayFromItem = (item) => {
+  if (!item || typeof item !== 'object') return '';
+  const maybeAddress = item.address || item.homeAddress || item.residence || {};
+  const values = [
+    item.barangay,
+    item.barangayName,
+    item.addressBarangay,
+    item.patientBarangay,
+    item.locationBarangay,
+    item.centerBarangay,
+    maybeAddress.barangay,
+    maybeAddress.barangayName,
+    maybeAddress.addressBarangay,
+  ];
+  return values.find(v => typeof v === 'string' && v.trim()) || '';
+};
+
 // Helper function to filter data by center
 export const filterByCenter = (data, centerField = 'center') => {
   const userCenter = getUserCenter();
@@ -85,10 +110,9 @@ export const filterByCenter = (data, centerField = 'center') => {
   if (userCenter) {
     return data.filter(item => {
       const itemCenter = item[centerField] || item.centerName || item.healthCenter || item.facility || item.treatmentCenter || item.center || '';
-      const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || item.centerBarangay || '';
+      const itemBarangay = extractBarangayFromItem(item);
       
       // Handle center name variations (e.g., "Balong-Bato" vs "Balong-Bato Center")
-      const norm = (v) => String(v||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
       const centerMatch = norm(itemCenter) === norm(userCenter) || norm(userCenter).includes(norm(itemCenter)) || norm(itemCenter).includes(norm(userCenter));
       
       // Handle barangay matching
@@ -112,17 +136,11 @@ export const filterByAdminBarangay = (data, centerField = 'center') => {
   // Superadmin or missing user -> return as-is
   if (!currentUser || role === 'superadmin') return data;
 
-  const norm = (v) => String(v || '')
-    .toLowerCase()
-    .replace(/\s*health\s*center$/,'')
-    .replace(/\s*center$/,'')
-    .trim();
-
   const target = norm(userCenter);
 
   const strictFiltered = (data || []).filter(item => {
     const itemCenter = item[centerField] || item.centerName || item.center || item.healthCenter || item.facility || item.treatmentCenter || '';
-    const itemBarangay = item.barangay || item.addressBarangay || item.patientBarangay || item.locationBarangay || item.barangayName || item.centerBarangay || '';
+    const itemBarangay = extractBarangayFromItem(item);
 
     const nCenter = norm(itemCenter);
     const nBarangay = norm(itemBarangay);
@@ -130,8 +148,8 @@ export const filterByAdminBarangay = (data, centerField = 'center') => {
     // Prefer strict match; fall back to includes only if needed
     const strictMatch = nBarangay === target || nCenter === target;
     if (strictMatch) return true;
-    return nBarangay && (nBarangay.includes(target) || target.includes(nBarangay))
-        || nCenter && (nCenter.includes(target) || target.includes(nCenter));
+    return (nBarangay && (nBarangay.includes(target) || target.includes(nBarangay)))
+        || (nCenter && (nCenter.includes(target) || target.includes(nCenter)));
   });
 
   if (strictFiltered.length > 0) return strictFiltered;
