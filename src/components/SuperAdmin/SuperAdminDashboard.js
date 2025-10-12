@@ -1713,7 +1713,12 @@ const SuperAdminDashboard = () => {
                 <i className="fa-solid fa-calendar-days"></i>
                 Today's Appointments
               </div>
-              <button className="view-all-btn">View All</button>
+              <button 
+                className="view-all-btn" 
+                onClick={() => navigate('/superadmin/vaccination-schedule')}
+              >
+                View All
+              </button>
             </div>
             <div className="panel-body">
               {appointmentsLoading ? (
