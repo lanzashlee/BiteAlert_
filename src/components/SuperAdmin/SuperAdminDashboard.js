@@ -125,6 +125,44 @@ const SuperAdminDashboard = () => {
     }
   }, [initializeCSS]);
 
+  // Realtime updates: connect to backend WebSocket and refetch panels on events
+  useEffect(() => {
+    // Build wss URL from API base
+    try {
+      const base = (apiConfig?.baseURL || '').trim();
+      if (!base) return;
+      const wsUrl = base.replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        // Connected; no-op
+      };
+
+      ws.onmessage = () => {
+        // Any event from server -> refresh today appointments and recent activity
+        fetchTodaysVaccinations();
+        fetchRecentActivity();
+      };
+
+      ws.onerror = () => {
+        // Ignore; polling fallback below
+      };
+
+      return () => {
+        try { ws.close(); } catch (_) {}
+      };
+    } catch (_) {}
+  }, [fetchTodaysVaccinations, fetchRecentActivity]);
+
+  // Polling fallback (Render can sleep websockets on cold start)
+  useEffect(() => {
+    const id = setInterval(() => {
+      fetchTodaysVaccinations();
+      fetchRecentActivity();
+    }, 30000); // 30s
+    return () => clearInterval(id);
+  }, [fetchTodaysVaccinations, fetchRecentActivity]);
+
   // Close notifications when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
