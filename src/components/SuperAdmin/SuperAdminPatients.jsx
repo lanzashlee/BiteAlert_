@@ -1077,6 +1077,13 @@ const SuperAdminPatients = () => {
         const creg = String(c.registrationNumber || '').trim();
         const cfname = String(c.firstName || '').trim().toLowerCase();
         const clname = String(c.lastName || '').trim().toLowerCase();
+        const cstatus = String(c.status || '').trim().toLowerCase();
+        
+        // Only show completed and missed cases, exclude in_progress
+        if (cstatus && cstatus !== 'completed' && cstatus !== 'missed') {
+          console.log('Case filtered out due to status:', cstatus);
+          return false;
+        }
         
         console.log('Comparing case:', {
           caseId: cid,
@@ -1084,6 +1091,7 @@ const SuperAdminPatients = () => {
           caseReg: creg,
           caseFirstName: cfname,
           caseLastName: clname,
+          caseStatus: cstatus,
           patientId: pid,
           patientName: pname,
           patientReg: reg,
@@ -1295,6 +1303,13 @@ const SuperAdminPatients = () => {
         const creg = String(c.registrationNumber || '').trim();
         const cfname = String(c.firstName || '').trim().toLowerCase();
         const clname = String(c.lastName || '').trim().toLowerCase();
+        const cstatus = String(c.status || '').trim().toLowerCase();
+        
+        // Only show completed and missed cases, exclude in_progress
+        if (cstatus && cstatus !== 'completed' && cstatus !== 'missed') {
+          return false;
+        }
+        
         if (pid && cid) return cid === String(pid);
         if (reg && creg) return creg === reg;
         if (pfname && plname && cfname && clname) return pfname === cfname && plname === clname;
