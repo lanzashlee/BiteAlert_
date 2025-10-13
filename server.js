@@ -204,7 +204,8 @@ const auditLogSchema = new mongoose.Schema({
     adminID: String,
     superAdminID: String,
     patientID: String,
-    staffID: String
+    staffID: String,
+    center: { type: String, default: null } // barangay/center name for scoping
 });
 
 const animalBiteSchema = new mongoose.Schema({
@@ -372,7 +373,7 @@ async function patchAdminAndSuperAdminIDs() {
 }
 
 // Function to log audit trail
-async function logAuditTrail(role, firstName, middleName, lastName, action, ids = {}) {
+async function logAuditTrail(role, firstName, middleName, lastName, action, ids = {}, center = null) {
     try {
         const auditLog = new AuditTrail({
             role,
@@ -383,7 +384,8 @@ async function logAuditTrail(role, firstName, middleName, lastName, action, ids 
             adminID: ids.adminID || null,
             superAdminID: ids.superAdminID || null,
             patientID: ids.patientID || null,
-            staffID: ids.staffID || null
+            staffID: ids.staffID || null,
+            center: center || ids.center || null
         });
         await auditLog.save();
     } catch (error) {
@@ -554,7 +556,8 @@ app.post('/api/create-account', async (req, res) => {
             {
                 adminID: newAccount.adminID,
                 superAdminID: newAccount.superAdminID
-            }
+            },
+            newAccount.centerName || null
         );
 
         // Broadcast the update to all connected clients
@@ -653,7 +656,8 @@ app.post('/login', async (req, res) => {
             user.middleName,
             user.lastName,
             'Signed in',
-            ids
+            ids,
+            user.centerName || null
         );
         
         console.log(`Login successful for ${email} (${userType})`);
@@ -726,7 +730,8 @@ app.post('/api/login', async (req, res) => {
             user.middleName,
             user.lastName,
             'Signed in',
-            ids
+            ids,
+            user.centerName || null
         );
 
         // Generate a simple token (in production, use JWT)
@@ -756,7 +761,7 @@ app.post('/api/login', async (req, res) => {
 // Get Audit Trail API Endpoint
 app.get('/api/audit-trail', async (req, res) => {
     try {
-        const { dateFrom, dateTo, role } = req.query;
+        const { dateFrom, dateTo, role, center } = req.query;
         let query = {};
         if (dateFrom || dateTo) {
             query.timestamp = {};
@@ -764,6 +769,7 @@ app.get('/api/audit-trail', async (req, res) => {
             if (dateTo) query.timestamp.$lte = new Date(dateTo);
         }
         if (role) query.role = new RegExp(role, 'i');
+        if (center) query.center = new RegExp(center, 'i');
         const auditLogs = await AuditTrail.find(query)
             .sort({ timestamp: -1 })
             .limit(100);
@@ -771,6 +777,26 @@ app.get('/api/audit-trail', async (req, res) => {
     } catch (error) {
         console.error('Error fetching audit trail:', error);
         res.status(500).json({ message: 'Error fetching audit trail' });
+    }
+});
+
+// Create/append Audit Trail API Endpoint (for clients to log custom actions)
+app.post('/api/audit-trail', async (req, res) => {
+    try {
+        const { role, firstName, middleName, lastName, action, adminID, superAdminID, patientID, staffID, center, timestamp } = req.body || {};
+        if (!role || !firstName || !lastName || !action) {
+            return res.status(400).json({ success: false, message: 'role, firstName, lastName, and action are required' });
+        }
+        const ids = { adminID, superAdminID, patientID, staffID, center };
+        await logAuditTrail(role, firstName, middleName, lastName, action, ids, center);
+        if (timestamp) {
+            // Manually set timestamp if provided
+            await AuditTrail.updateOne({ _id: (await AuditTrail.findOne().sort({ _id: -1 }))._id }, { $set: { timestamp: new Date(timestamp) } });
+        }
+        return res.json({ success: true });
+    } catch (error) {
+        console.error('Error creating audit trail:', error);
+        return res.status(500).json({ success: false, message: 'Error creating audit trail' });
     }
 });
 
@@ -794,7 +820,8 @@ app.post('/api/logout', async (req, res) => {
             middleName,
             lastName,
             action || 'Signed out',
-            ids
+            ids,
+            req.body.center || null
         );
 
         res.json({ message: 'Logged out successfully' });
@@ -4000,7 +4027,9 @@ app.post('/api/patients', async (req, res) => {
             newPatient.firstName,
             newPatient.middleName,
             newPatient.lastName,
-            'Registered'
+            'Registered',
+            {},
+            newPatient.center || newPatient.centerName || newPatient.barangay || null
         );
         } catch (auditError) {
             console.warn('Audit logging failed:', auditError.message);
