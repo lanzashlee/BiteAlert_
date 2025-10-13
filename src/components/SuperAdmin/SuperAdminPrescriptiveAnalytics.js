@@ -31,6 +31,13 @@ const SuperAdminPrescriptiveAnalytics = () => {
     const userData = JSON.parse(localStorage.getItem('currentUser')) || JSON.parse(localStorage.getItem('userData'));
     if (userData) {
       setCurrentUser(userData);
+      // For admin users, lock the barangay selector to their assigned center/barangay
+      try {
+        const userCenter = getUserCenter();
+        if (userCenter && userCenter !== 'all') {
+          setSelectedBarangay(userCenter);
+        }
+      } catch (_) {}
     }
     fetchAnalyticsData();
   }, [timeRange, selectedBarangay]);
@@ -375,9 +382,17 @@ const SuperAdminPrescriptiveAnalytics = () => {
       return (now - caseDate) <= (daysBack * 24 * 60 * 60 * 1000);
     });
 
-    const finalCases = selectedBarangay === 'all' 
-      ? filteredCases 
-      : filteredCases.filter(case_ => case_.barangay === selectedBarangay);
+    const finalCases = (() => {
+      const userCenter = getUserCenter();
+      if (userCenter && userCenter !== 'all') {
+        // Admins: strictly restrict to their barangay/center
+        return filteredCases.filter(case_ => String(case_.barangay || '').toLowerCase() === String(userCenter).toLowerCase());
+      }
+      // Superadmin: honor UI selection
+      return selectedBarangay === 'all' 
+        ? filteredCases 
+        : filteredCases.filter(case_ => case_.barangay === selectedBarangay);
+    })();
 
     const riskAnalysis = calculateRiskScores(finalCases);
 
@@ -556,12 +571,18 @@ const SuperAdminPrescriptiveAnalytics = () => {
               </select>
             </div>
             <div className="filter-group">
-              <select value={selectedBarangay} onChange={(e) => setSelectedBarangay(e.target.value)} className="form-control">
-                <option value="all">All Barangays</option>
-                {sanJuanBarangays.map(barangay => (
-                  <option key={barangay} value={barangay}>{barangay}</option>
-                ))}
-              </select>
+              {getUserCenter() === 'all' ? (
+                <select value={selectedBarangay} onChange={(e) => setSelectedBarangay(e.target.value)} className="form-control">
+                  <option value="all">All Barangays</option>
+                  {sanJuanBarangays.map(barangay => (
+                    <option key={barangay} value={barangay}>{barangay}</option>
+                  ))}
+                </select>
+              ) : (
+                <select value={selectedBarangay} disabled className="form-control">
+                  <option value={selectedBarangay}>{selectedBarangay}</option>
+                </select>
+              )}
             </div>
             {aiLoading && (
               <div className="ai-status-indicator loading">
