@@ -149,7 +149,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         handleChange(props.name, next);
       }}
     />
-  ), [form, errors]); // Keep dependencies for proper state access
+  ), []); // Remove dependencies to prevent re-renders that cause focus loss
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
@@ -691,7 +691,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       />
       {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
     </div>
-  ), [form, errors]); // Keep dependencies for proper state access
+  ), []); // Remove dependencies to prevent re-renders that cause focus loss
 
   // Memoized Check component to prevent focus loss on re-renders
   const Check = useCallback(({ name, label, onChange }) => (
@@ -703,7 +703,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       />
       {label}
     </label>
-  ), [form, errors]); // Keep dependencies for proper state access
+  ), []); // Remove dependencies to prevent re-renders that cause focus loss
 
   const handleClose = () => {
     if (onClose) return onClose();
