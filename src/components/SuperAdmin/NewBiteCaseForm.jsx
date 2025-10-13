@@ -27,11 +27,76 @@ function FormInput({ name, label, type = 'text', placeholder = '', value = '', e
 }
 
 const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
-  const [form, setForm] = useState({});
+  // Initialize form with default values to ensure all fields are immediately functional
+  const [form, setForm] = useState({
+    registrationNumber: '',
+    philhealthNo: '',
+    dateRegistered: '',
+    centerName: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    weight: '',
+    civilStatus: '',
+    sex: '',
+    birthdate: '',
+    birthplace: '',
+    age: '',
+    nationality: '',
+    religion: '',
+    occupation: '',
+    contactNo: '',
+    houseNo: '',
+    street: '',
+    barangay: '',
+    municipality: '',
+    province: '',
+    zipCode: '',
+    // Initialize all other fields with empty strings
+    dateOfInquiry: '',
+    timeOfInjury: '',
+    placeOfOccurrence: '',
+    placeOthers: '',
+    treatedHome: false,
+    transferred: false,
+    transferredTo: '',
+    provoked: false,
+    unprovoked: false,
+    species: '',
+    spOthers: false,
+    spOthersSpecify: '',
+    healthy: false,
+    sick: false,
+    dead: false,
+    unknown: false,
+    animalImmunized: false,
+    animalImmunizedYear: '',
+    pet: false,
+    stray: false,
+    wild: false,
+    unknownOwnership: false,
+    washingWound: false,
+    category1: false,
+    category2: false,
+    category3: false,
+    diagnosis: '',
+    allergy: '',
+    maintenance: '',
+    management: '',
+    vacVaxirab: false,
+    routeIM: false,
+    localInfiltration: false
+  });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [centers, setCenters] = useState([]);
   const [toast, setToast] = useState(null);
+
+  // Ensure form is properly initialized on mount
+  useEffect(() => {
+    // Force a re-render to ensure all fields are visible and functional
+    setForm(prev => ({ ...prev }));
+  }, []);
 
   // Prefill from selected patient (only when patient identity changes)
   const prefilledRef = useRef(false);
@@ -140,6 +205,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   const Input = (props) => (
     <FormInput
       {...props}
+      key={props.name} // Force re-render when form state changes
       value={form[props.name] ?? ''}
       error={errors[props.name]}
       disabled={props.disabled}
