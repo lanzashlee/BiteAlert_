@@ -89,6 +89,8 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
+  /* Reserve space for the sidebar before JS mounts to avoid overlap */
+  margin-left: 320px;
   box-sizing: border-box;
   margin: 0;
   border: none;
@@ -113,6 +115,7 @@ body {
     left: 0;
     width: 100%;
   }
+  .main-content { margin-left: 0; }
 }
 
 /* Performance optimizations */
