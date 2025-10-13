@@ -259,10 +259,14 @@ const SuperAdminAuditTrail = () => {
                   </tr>
                 ) : filtered.map((entry, idx) => {
                   let displayId = '';
+                  // Prefer explicit IDs
                   if (entry.role === 'admin' && entry.adminID) displayId = entry.adminID;
                   else if (entry.role === 'superadmin' && entry.superAdminID) displayId = entry.superAdminID;
                   else if (entry.patientID) displayId = entry.patientID;
                   else if (entry.staffID) displayId = entry.staffID;
+                  // Fall back to generic userId or derived ids
+                  else if (entry.userId) displayId = entry.userId;
+                  else if (entry.id) displayId = entry.id;
                   
                   return (
                     <tr key={idx}>

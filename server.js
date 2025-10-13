@@ -783,12 +783,45 @@ app.get('/api/audit-trail', async (req, res) => {
 // Create/append Audit Trail API Endpoint (for clients to log custom actions)
 app.post('/api/audit-trail', async (req, res) => {
     try {
-        const { role, firstName, middleName, lastName, action, adminID, superAdminID, patientID, staffID, center, timestamp } = req.body || {};
-        if (!role || !firstName || !lastName || !action) {
-            return res.status(400).json({ success: false, message: 'role, firstName, lastName, and action are required' });
+        const { role, firstName, middleName, lastName, fullName, action, adminID, superAdminID, patientID, staffID, userId, center, timestamp } = req.body || {};
+        if (!role || !action) {
+            return res.status(400).json({ success: false, message: 'role and action are required' });
         }
-        const ids = { adminID, superAdminID, patientID, staffID, center };
-        await logAuditTrail(role, firstName, middleName, lastName, action, ids, center);
+        // Derive names from fullName if first/last not provided
+        let fName = firstName, mName = middleName, lName = lastName;
+        if ((!fName || !lName) && fullName) {
+            try {
+                const parts = String(fullName).trim().split(/\s+/);
+                if (parts.length === 1) {
+                    fName = parts[0];
+                    lName = '';
+                } else if (parts.length === 2) {
+                    [fName, lName] = parts;
+                } else {
+                    fName = parts[0];
+                    lName = parts[parts.length - 1];
+                    mName = parts.slice(1, -1).join(' ');
+                }
+            } catch {}
+        }
+        fName = fName || 'Unknown';
+        lName = lName || '';
+
+        // Map generic userId to specific id field based on role
+        let mappedAdminID = adminID;
+        let mappedSuperAdminID = superAdminID;
+        let mappedPatientID = patientID;
+        let mappedStaffID = staffID;
+        if (userId && !mappedAdminID && !mappedSuperAdminID && !mappedPatientID && !mappedStaffID) {
+            const r = String(role || '').toLowerCase();
+            if (r === 'admin') mappedAdminID = userId;
+            else if (r === 'superadmin') mappedSuperAdminID = userId;
+            else if (r === 'patient') mappedPatientID = userId;
+            else if (r === 'staff') mappedStaffID = userId;
+        }
+
+        const ids = { adminID: mappedAdminID, superAdminID: mappedSuperAdminID, patientID: mappedPatientID, staffID: mappedStaffID, center };
+        await logAuditTrail(role, fName, mName, lName, action, ids, center);
         if (timestamp) {
             // Manually set timestamp if provided
             await AuditTrail.updateOne({ _id: (await AuditTrail.findOne().sort({ _id: -1 }))._id }, { $set: { timestamp: new Date(timestamp) } });
