@@ -1694,8 +1694,21 @@ function getDistance(center, barangay) {
 }
 
 // Enhanced AI Prescriptions endpoint with comprehensive data analysis
+// Explicit preflight for prescriptions
+app.options('/api/prescriptions', cors(corsOptions));
+
+// Ensure CORS headers are present even on errors/timeouts for this route
 app.post('/api/prescriptions', async (req, res) => {
     try {
+        // Echo back origin for credentialed requests
+        if (req.headers.origin) {
+            res.header('Access-Control-Allow-Origin', req.headers.origin);
+            res.header('Vary', 'Origin');
+            res.header('Access-Control-Allow-Credentials', 'true');
+            res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+        }
+
         const { riskAnalysis, timeRange, selectedBarangay } = req.body || {};
         if (!riskAnalysis || typeof riskAnalysis !== 'object') {
             return res.status(400).json({ error: 'riskAnalysis object required' });
