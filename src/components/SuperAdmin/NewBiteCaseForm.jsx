@@ -136,22 +136,12 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     if (errors[name]) clearError(name);
   };
 
-  // Use refs to access current state without causing re-renders
-  const formRef = useRef(form);
-  const errorsRef = useRef(errors);
-  
-  // Update refs when state changes
-  useEffect(() => {
-    formRef.current = form;
-    errorsRef.current = errors;
-  }, [form, errors]);
-
-  // Memoized Input component to prevent focus loss on re-renders
-  const Input = useCallback((props) => (
+  // Input component - regular function to prevent focus loss
+  const Input = (props) => (
     <FormInput
       {...props}
-      value={formRef.current[props.name] ?? ''}
-      error={errorsRef.current[props.name]}
+      value={form[props.name] ?? ''}
+      error={errors[props.name]}
       disabled={props.disabled}
       onChange={(e) => {
         const next = e.target.value;
@@ -159,7 +149,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         handleChange(props.name, next);
       }}
     />
-  ), []); // No dependencies to prevent re-renders
+  );
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
@@ -686,34 +676,34 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   };
 
 
-  // Memoized TextArea component to prevent focus loss on re-renders
-  const TextArea = useCallback(({ name, label, rows = 3, disabled = false }) => (
+  // TextArea component - regular function to prevent focus loss
+  const TextArea = ({ name, label, rows = 3, disabled = false }) => (
     <div className="w-full">
       <label className="form-label">{label}</label>
       <textarea
         id={name}
         rows={rows}
-        value={formRef.current[name] ?? ''}
+        value={form[name] ?? ''}
         disabled={disabled}
         onChange={(e) => handleChange(name, e.target.value)}
         className="form-textarea"
-        aria-invalid={!!errorsRef.current[name]}
+        aria-invalid={!!errors[name]}
       />
-      {errorsRef.current[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errorsRef.current[name]}</div>}
+      {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
     </div>
-  ), []); // No dependencies to prevent re-renders
+  );
 
-  // Memoized Check component to prevent focus loss on re-renders
-  const Check = useCallback(({ name, label, onChange }) => (
+  // Check component - regular function to prevent focus loss
+  const Check = ({ name, label, onChange }) => (
     <label className="checkbox-item">
       <input 
         type="checkbox" 
-        checked={!!formRef.current[name]} 
+        checked={!!form[name]} 
         onChange={onChange ? onChange : ((e) => handleChange(name, e.target.checked))} 
       />
       {label}
     </label>
-  ), []); // No dependencies to prevent re-renders
+  );
 
   const handleClose = () => {
     if (onClose) return onClose();
