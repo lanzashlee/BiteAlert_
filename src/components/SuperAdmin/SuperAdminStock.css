@@ -562,7 +562,11 @@
 }
 
 .superadmin-stock-container .vaccine-info {
-  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+  width: 100%;
 }
 
 .superadmin-stock-container .vaccine-info .vaccine-name {
@@ -632,26 +636,73 @@
   margin: 0 !important;
 }
 
+/* New layout structure */
+.superadmin-stock-container .vaccine-left-section {
+  display: flex;
+  align-items: flex-start;
+}
+
+.superadmin-stock-container .vaccine-details {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  flex: 1;
+}
+
+.superadmin-stock-container .vaccine-right-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 300px;
+}
+
+.superadmin-stock-container .vaccine-right-section .vaccine-actions-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.superadmin-stock-container .vaccine-right-section .stock-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  width: 100%;
+}
+
+.superadmin-stock-container .vaccine-right-section .stock-details .batch-number,
+.superadmin-stock-container .vaccine-right-section .stock-details .expiry-date {
+  font-size: 0.8rem;
+  color: #6c757d;
+  text-align: right;
+}
+
 /* Responsive adjustments for expandable rows */
 @media (max-width: 768px) {
-  .superadmin-stock-container .vaccine-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+  .superadmin-stock-container .vaccine-info {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
   
-  .superadmin-stock-container .vaccine-stock-info {
-    align-items: flex-start;
-    width: 100%;
-  }
-  
-  .superadmin-stock-container .stock-details {
+  .superadmin-stock-container .vaccine-right-section {
+    min-width: unset;
     align-items: flex-start;
   }
   
-  .superadmin-stock-container .stock-quantity {
-    justify-content: space-between;
-    width: 100%;
+  .superadmin-stock-container .vaccine-right-section .vaccine-actions-container {
+    justify-content: flex-start;
+  }
+  
+  .superadmin-stock-container .vaccine-right-section .stock-details {
+    align-items: flex-start;
+  }
+  
+  .superadmin-stock-container .vaccine-right-section .stock-details .batch-number,
+  .superadmin-stock-container .vaccine-right-section .stock-details .expiry-date {
+    text-align: left;
   }
   
   .superadmin-stock-container .stock-entries {

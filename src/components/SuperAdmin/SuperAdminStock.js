@@ -1099,85 +1099,87 @@ const SuperAdminStock = () => {
                                   const vExpanded = expandedVaccines.has(vKey);
                                   return (
                                     <div key={vaccineIndex} className="vaccine-item">
-                                      <div className="vaccine-info" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                                        <div onClick={() => toggleVaccineExpansion(center.centerName, vaccine.name)} style={{display:'flex', cursor:'pointer'}}>
-                                        <i className={`fa-solid fa-chevron-${vExpanded ? 'down' : 'right'}`} style={{ marginRight: '8px' }} />
-                                        <div>
-                                        <div className="vaccine-name">{vaccine.name}</div>
-                                        <div className="vaccine-type">{vaccine.type}</div>
-                                        <div className="vaccine-brand">{vaccine.brand}</div>
+                                      <div className="vaccine-info">
+                                        <div className="vaccine-left-section">
+                                          <div onClick={() => toggleVaccineExpansion(center.centerName, vaccine.name)} className="vaccine-details">
+                                            <i className={`fa-solid fa-chevron-${vExpanded ? 'down' : 'right'}`} style={{ marginRight: '8px' }} />
+                                            <div>
+                                              <div className="vaccine-name">{vaccine.name}</div>
+                                              <div className="vaccine-type">{vaccine.type}</div>
+                                              <div className="vaccine-brand">{vaccine.brand}</div>
+                                            </div>
+                                          </div>
                                         </div>
-                                        </div>
-                                        <div className="vaccine-actions-container" style={{display:'flex', gap:'8px', alignItems:'center'}}>
-                                          <span 
-                                            className={`status-badge status-${stockStatus.status}`}
-                                            style={{ 
-                                              backgroundColor: stockStatus.color,
-                                              color: 'white',
-                                              padding: '4px 8px',
-                                              borderRadius: '12px',
-                                              fontSize: '12px',
-                                              fontWeight: '500'
-                                            }}
-                                          >
-                                            {stockStatus.label}
-                                          </span>
-                                        <button
-                                            title="Add stock to this vaccine"
-                                          onClick={(e)=>{ 
-                                            e.stopPropagation(); 
-                                            setQuickModal({ 
-                                              open:true, 
-                                              centerName:center.centerName, 
-                                              vaccine, 
-                                              quantity:'', 
-                                              batchNumber:'', 
-                                              expiryDate:''
-                                            }); 
-                                          }}
-                                          style={{
-                                              border:'none', 
-                                              background:'#eafaf1', 
-                                              color:'#10b981', 
-                                              width:32, 
-                                              height:32, 
-                                              borderRadius:16,
-                                              display:'flex', 
-                                              alignItems:'center', 
-                                              justifyContent:'center', 
-                                              cursor:'pointer',
-                                              transition: 'all 0.2s ease',
-                                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                              e.target.style.background = '#d1fae5';
-                                              e.target.style.transform = 'scale(1.05)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                              e.target.style.background = '#eafaf1';
-                                              e.target.style.transform = 'scale(1)';
-                                            }}
-                                          >
-                                            <i className="fa-solid fa-plus" style={{fontSize:'12px'}}></i>
-                                        </button>
-                                        <span className="stock-level" style={{
-                                          fontSize: '16px',
-                                          fontWeight: '600',
-                                          color: vaccineStock === 0 ? '#e74c3c' : vaccineStock <= 10 ? '#f39c12' : '#27ae60',
-                                          border: 'none'
-                                        }}>
-                                          {Math.round(vaccineStock * 100) / 100} units
-                                        </span>
-                                        </div>
-                                      </div>
-                                      <div className="vaccine-stock-info">
-                                        <div className="stock-details">
-                                          <span className="batch-number">
-                                            Branch: {vaccine.stockEntries?.[0]?.branchNo || 'N/A'}
-                                          </span>
-                                          <span className="expiry-date">
-                                            Expires: {vaccine.stockEntries?.[0]?.expirationDate || 'N/A'}
-                                          </span>
+                                        <div className="vaccine-right-section">
+                                          <div className="vaccine-actions-container">
+                                            <span 
+                                              className={`status-badge status-${stockStatus.status}`}
+                                              style={{ 
+                                                backgroundColor: stockStatus.color,
+                                                color: 'white',
+                                                padding: '4px 8px',
+                                                borderRadius: '12px',
+                                                fontSize: '12px',
+                                                fontWeight: '500'
+                                              }}
+                                            >
+                                              {stockStatus.label}
+                                            </span>
+                                            <button
+                                              title="Add stock to this vaccine"
+                                              onClick={(e)=>{ 
+                                                e.stopPropagation(); 
+                                                setQuickModal({ 
+                                                  open:true, 
+                                                  centerName:center.centerName, 
+                                                  vaccine, 
+                                                  quantity:'', 
+                                                  batchNumber:'', 
+                                                  expiryDate:''
+                                                }); 
+                                              }}
+                                              style={{
+                                                  border:'none', 
+                                                  background:'#eafaf1', 
+                                                  color:'#10b981', 
+                                                  width:32, 
+                                                  height:32, 
+                                                  borderRadius:16,
+                                                  display:'flex', 
+                                                  alignItems:'center', 
+                                                  justifyContent:'center', 
+                                                  cursor:'pointer',
+                                                  transition: 'all 0.2s ease',
+                                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                  e.target.style.background = '#d1fae5';
+                                                  e.target.style.transform = 'scale(1.05)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                  e.target.style.background = '#eafaf1';
+                                                  e.target.style.transform = 'scale(1)';
+                                                }}
+                                              >
+                                                <i className="fa-solid fa-plus" style={{fontSize:'12px'}}></i>
+                                            </button>
+                                            <span className="stock-level" style={{
+                                              fontSize: '16px',
+                                              fontWeight: '600',
+                                              color: vaccineStock === 0 ? '#e74c3c' : vaccineStock <= 10 ? '#f39c12' : '#27ae60',
+                                              border: 'none'
+                                            }}>
+                                              {Math.round(vaccineStock * 100) / 100} units
+                                            </span>
+                                          </div>
+                                          <div className="stock-details">
+                                            <span className="batch-number">
+                                              Branch: {vaccine.stockEntries?.[0]?.branchNo || 'N/A'}
+                                            </span>
+                                            <span className="expiry-date">
+                                              Expires: {vaccine.stockEntries?.[0]?.expirationDate || 'N/A'}
+                                            </span>
+                                          </div>
                                         </div>
                                       </div>
 
