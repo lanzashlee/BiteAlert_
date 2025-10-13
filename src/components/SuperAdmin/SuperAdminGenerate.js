@@ -36,7 +36,7 @@ const SuperAdminGenerate = () => {
     species: 'all',       // Dog | Cat
     ownership: 'all',     // Pet | Stray
     category: 'all',      // 1 | 2 | 3
-    completion: 'all',    // Complete | Incomplete | Not Given
+    completion: 'all',    // Complete | missed | in_progress
     erig: 'all',          // Given | Not Given
     booster: 'all',       // Booster | No Booster
     status: 'all',
@@ -241,9 +241,9 @@ const SuperAdminGenerate = () => {
         // Determine completion status from status field
         let completion = '';
         if (it.status === 'completed') completion = 'Complete';
-        else if (it.status === 'incomplete') completion = 'Incomplete';
-        else if (it.status === 'active' || it.status === 'scheduled') completion = 'Incomplete';
-        else completion = 'Not Given';
+        else if (it.status === 'missed') completion = 'missed';
+        else if (it.status === 'in_progress' || it.status === 'active' || it.status === 'scheduled') completion = 'in_progress';
+        else completion = 'in_progress';
 
         // Check ERIG given from erig object
         const erigGiven = !!(it.erig && it.erig.medicineUsed && it.erig.medicineUsed.trim() !== '');
@@ -1406,13 +1406,13 @@ const SuperAdminGenerate = () => {
     const cat2 = count(r => r._category === '2');
     rows.push({ label: 'Category 2', count: cat2 });
     rows.push({ label: '–  Complete', count: count(r => r._category === '2' && r._completion === 'Complete') });
-    rows.push({ label: '–  Incomplete', count: count(r => r._category === '2' && r._completion === 'Incomplete') });
-    rows.push({ label: '–  Not Given', count: count(r => r._category === '2' && r._completion === 'Not Given') });
+    rows.push({ label: '–  Missed', count: count(r => r._category === '2' && r._completion === 'missed') });
+    rows.push({ label: '–  In-Progress', count: count(r => r._category === '2' && r._completion === 'in_progress') });
     const cat3 = count(r => r._category === '3');
     rows.push({ label: 'Category 3', count: cat3 });
     rows.push({ label: '–  Complete', count: count(r => r._category === '3' && r._completion === 'Complete') });
-    rows.push({ label: '–  Incomplete', count: count(r => r._category === '3' && r._completion === 'Incomplete') });
-    rows.push({ label: '–  Not Given', count: count(r => r._category === '3' && r._completion === 'Not Given') });
+    rows.push({ label: '–  Missed', count: count(r => r._category === '3' && r._completion === 'missed') });
+    rows.push({ label: '–  In-Progress', count: count(r => r._category === '3' && r._completion === 'in_progress') });
     rows.push({ label: '–  ERIG Given', count: count(r => r._category === '3' && r._erig === 'Given') });
     // 10 Booster
     rows.push({ label: 'Booster', count: count(r => r._booster === 'Booster') });
@@ -1790,8 +1790,8 @@ const SuperAdminGenerate = () => {
                       <select id="animalBiteCompletion" className="form-control" value={animalBiteFilters.completion} onChange={(e)=>setAnimalBiteFilters({...animalBiteFilters, completion:e.target.value})}>
                         <option value="all">All</option>
                         <option value="Complete">Complete</option>
-                        <option value="Incomplete">Incomplete</option>
-                        <option value="Not Given">Not Given</option>
+                        <option value="missed">Missed</option>
+                        <option value="in_progress">In-Progress</option>
                       </select>
                     </div>
                     <div className="filter-group">
@@ -2102,8 +2102,8 @@ const SuperAdminGenerate = () => {
                   >
                     <option value="all">All</option>
                     <option value="Complete">Complete</option>
-                    <option value="Incomplete">Incomplete</option>
-                    <option value="Not Given">Not Given</option>
+                    <option value="missed">Missed</option>
+                    <option value="in_progress">In-Progress</option>
                   </select>
                 </div>
                 <div className="filter-group">
