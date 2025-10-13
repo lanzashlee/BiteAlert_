@@ -80,6 +80,7 @@ body {
   position: relative;
 }
 
+/* Default: non-fixed to avoid initial layout jank before sidebar initializes */
 .main-content {
   padding: 1rem 1.5rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -87,6 +88,14 @@ body {
   max-width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
+  box-sizing: border-box;
+  margin: 0;
+  border: none;
+}
+
+/* Once the app is ready, switch to fixed layout aligned with sidebar */
+.app-ready .main-content {
   position: fixed;
   top: 0;
   left: 320px;
@@ -95,15 +104,12 @@ body {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   z-index: 1;
-  box-sizing: border-box;
   transition: left 0.3s ease, width 0.3s ease;
-  margin: 0;
-  border: none;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .main-content {
+  .app-ready .main-content {
     left: 0;
     width: 100%;
   }

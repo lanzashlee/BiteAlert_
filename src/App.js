@@ -35,9 +35,12 @@ const CreateAccount = React.lazy(() => import('./components/Auth/CreateAccount')
 // Minimal fallback without spinner
 const LoadingSpinner = () => null;
 
-const App = () => {
+const App = ({ onReady }) => {
   useEffect(() => {
-    // No-op: CSS is loaded statically; avoid runtime preloading
+    // Signal layout readiness to enable fixed positioning
+    if (typeof onReady === 'function') {
+      onReady();
+    }
   }, []);
 
   return (
