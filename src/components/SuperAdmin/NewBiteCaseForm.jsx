@@ -974,10 +974,22 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <TextArea name="management" label="Management:" rows={4} />
             </section>
 
-            <div className="actions" style={{justifyContent:'space-between'}}>
-              <button type="button" className="btn btn-secondary" onClick={handleClose}>Back</button>
-              <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-          </div>
+            <div className="actions">
+              <button type="button" className="btn btn-secondary" onClick={handleClose}>
+                <i className="fa fa-arrow-left"></i> Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? (
+                  <>
+                    <i className="fa fa-spinner fa-spin"></i> Saving...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa fa-save"></i> Save Case
+                  </>
+                )}
+              </button>
+            </div>
         </form>
           </div>
       </div>

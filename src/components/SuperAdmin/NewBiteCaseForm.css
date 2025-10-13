@@ -151,9 +151,58 @@
 .checkbox-item { display: inline-flex; align-items: center; gap: 12px; font-size: 1.1rem; color: #374151; }
 .checkbox-item input { width: 20px; height: 20px; }
 
-.actions { display: flex; justify-content: center; padding: 20px 0 12px; }
-.btn { display: inline-flex; align-items: center; gap: 12px; padding: 16px 32px; border-radius: 9999px; border: 0; cursor: pointer; font-weight: 700; font-size: 1.1rem; }
-.btn-primary { background: #b91c1c; color: #ffffff; box-shadow: 0 6px 14px rgba(185,28,28,0.25); }
-.btn-primary:hover { background: #991b1b; }
-.btn-secondary { background: #ffffff; color:#374151; border:1.5px solid #d1d5db; }
-.btn-secondary:hover { background:#f9fafb; }
+.actions { 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 16px; 
+  padding: 24px 20px; 
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 32px;
+}
+
+.btn { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 8px; 
+  padding: 12px 24px; 
+  border-radius: 8px; 
+  border: 0; 
+  cursor: pointer; 
+  font-weight: 600; 
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.btn-primary { 
+  background: #dc2626; 
+  color: #ffffff; 
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
+.btn-primary:hover { 
+  background: #b91c1c; 
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+}
+
+.btn-primary:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary { 
+  background: #ffffff; 
+  color: #374151; 
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover { 
+  background: #f9fafb; 
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+}
