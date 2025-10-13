@@ -136,12 +136,22 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     if (errors[name]) clearError(name);
   };
 
+  // Use refs to access current state without causing re-renders
+  const formRef = useRef(form);
+  const errorsRef = useRef(errors);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    formRef.current = form;
+    errorsRef.current = errors;
+  }, [form, errors]);
+
   // Memoized Input component to prevent focus loss on re-renders
   const Input = useCallback((props) => (
     <FormInput
       {...props}
-      value={form[props.name] ?? ''}
-      error={errors[props.name]}
+      value={formRef.current[props.name] ?? ''}
+      error={errorsRef.current[props.name]}
       disabled={props.disabled}
       onChange={(e) => {
         const next = e.target.value;
@@ -149,7 +159,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         handleChange(props.name, next);
       }}
     />
-  ), []); // Remove dependencies to prevent re-renders that cause focus loss
+  ), []); // No dependencies to prevent re-renders
 
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
@@ -683,27 +693,27 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       <textarea
         id={name}
         rows={rows}
-        value={form[name] ?? ''}
+        value={formRef.current[name] ?? ''}
         disabled={disabled}
         onChange={(e) => handleChange(name, e.target.value)}
         className="form-textarea"
-        aria-invalid={!!errors[name]}
+        aria-invalid={!!errorsRef.current[name]}
       />
-      {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
+      {errorsRef.current[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errorsRef.current[name]}</div>}
     </div>
-  ), []); // Remove dependencies to prevent re-renders that cause focus loss
+  ), []); // No dependencies to prevent re-renders
 
   // Memoized Check component to prevent focus loss on re-renders
   const Check = useCallback(({ name, label, onChange }) => (
     <label className="checkbox-item">
       <input 
         type="checkbox" 
-        checked={!!form[name]} 
+        checked={!!formRef.current[name]} 
         onChange={onChange ? onChange : ((e) => handleChange(name, e.target.checked))} 
       />
       {label}
     </label>
-  ), []); // Remove dependencies to prevent re-renders that cause focus loss
+  ), []); // No dependencies to prevent re-renders
 
   const handleClose = () => {
     if (onClose) return onClose();
