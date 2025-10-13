@@ -1108,7 +1108,7 @@ const SuperAdminStock = () => {
                                         <div className="vaccine-brand">{vaccine.brand}</div>
                                         </div>
                                         </div>
-                                        <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                                        <div className="vaccine-actions-container" style={{display:'flex', gap:'8px', alignItems:'center'}}>
                                           <span 
                                             className={`status-badge status-${stockStatus.status}`}
                                             style={{ 
@@ -1160,6 +1160,14 @@ const SuperAdminStock = () => {
                                           >
                                             <i className="fa-solid fa-plus" style={{fontSize:'12px'}}></i>
                                         </button>
+                                        <span className="stock-level" style={{
+                                          fontSize: '16px',
+                                          fontWeight: '600',
+                                          color: vaccineStock === 0 ? '#e74c3c' : vaccineStock <= 10 ? '#f39c12' : '#27ae60',
+                                          border: 'none'
+                                        }}>
+                                          {Math.round(vaccineStock * 100) / 100} units
+                                        </span>
                                         </div>
                                       </div>
                                       <div className="vaccine-stock-info">
@@ -1169,15 +1177,6 @@ const SuperAdminStock = () => {
                                           </span>
                                           <span className="expiry-date">
                                             Expires: {vaccine.stockEntries?.[0]?.expirationDate || 'N/A'}
-                                          </span>
-                                        </div>
-                                        <div className="stock-quantity">
-                                          <span className="stock-level" style={{
-                                            fontSize: '16px',
-                                            fontWeight: '600',
-                                            color: vaccineStock === 0 ? '#e74c3c' : vaccineStock <= 10 ? '#f39c12' : '#27ae60'
-                                          }}>
-                                            {Math.round(vaccineStock * 100) / 100} units
                                           </span>
                                         </div>
                                       </div>
