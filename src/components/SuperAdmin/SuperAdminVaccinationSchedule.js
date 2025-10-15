@@ -1043,6 +1043,11 @@ const SuperAdminVaccinationSchedule = () => {
         center: centerName
       };
 
+      // Persist ERIG branch number for history views (e.g., SuperAdminPatients)
+      if (selectedVaccines.erig && selectedVaccines.selectedStockInfo?.branchNo) {
+        updateData['currentImmunization.erig.branchNo'] = selectedVaccines.selectedStockInfo.branchNo;
+      }
+
       // Map day labels to status fields for bite case
       const dayStatusMap = {
         'Day 0': 'd0Status',
