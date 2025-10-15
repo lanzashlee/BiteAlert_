@@ -64,12 +64,20 @@ const SuperAdminAuditTrail = () => {
       setLoading(true);
       try {
         const userCenter = getUserCenter();
-        console.log('🔍 AUDIT TRAIL DEBUG: Loading audit trail for center:', userCenter);
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('userData') || 'null');
+        const roleFromUser = (currentUser?.role || '').toLowerCase();
+        const patientKey = currentUser?._id || currentUser?.patientId || currentUser?.patientID || currentUser?.id || '';
+        console.log('🔍 AUDIT TRAIL DEBUG:', { userCenter, roleFromUser, patientKey });
         
-        // Scope to admin's barangay/center at the API level when possible
-        const url = (userCenter && userCenter !== 'all')
-          ? `${apiConfig.endpoints.auditTrail}?center=${encodeURIComponent(userCenter)}`
-          : apiConfig.endpoints.auditTrail;
+        // Scope at API level when possible
+        let url = apiConfig.endpoints.auditTrail;
+        const params = new URLSearchParams();
+        if (roleFromUser === 'admin' || roleFromUser === 'staff') {
+          if (userCenter && userCenter !== 'all') params.set('center', userCenter);
+        } else if (roleFromUser === 'patient' && patientKey) {
+          params.set('patientId', patientKey);
+        }
+        if ([...params.keys()].length > 0) url = `${apiConfig.endpoints.auditTrail}?${params.toString()}`;
         const res = await apiFetch(url);
         if (!res.ok) throw new Error('Failed to load audit trail');
         const json = await res.json();
@@ -78,8 +86,8 @@ const SuperAdminAuditTrail = () => {
         // Apply client-side filtering for admin users
         let filteredData = allData;
         
-        // For admin users, filter by center/barangay
-        if (userCenter && userCenter !== 'all') {
+        // For admin/staff users, filter by center/barangay
+        if ((roleFromUser === 'admin' || roleFromUser === 'staff') && userCenter && userCenter !== 'all') {
           filteredData = allData.filter(entry => {
             const entryCenter = entry.centerName || entry.center || '';
             const entryBarangay = entry.barangay || entry.addressBarangay || '';
@@ -99,6 +107,15 @@ const SuperAdminAuditTrail = () => {
                                 normalizedCenter.includes(normalizedEntryBarangay);
             
             return centerMatch || barangayMatch;
+          });
+        } else if (roleFromUser === 'patient' && patientKey) {
+          // For patients, show only their own actions/records
+          filteredData = allData.filter(entry => {
+            const idMatches = [entry.patientID, entry.userId, entry.id]
+              .filter(Boolean)
+              .map(v => String(v))
+              .some(v => v === String(patientKey));
+            return idMatches;
           });
         }
         
