@@ -2942,10 +2942,13 @@ const SuperAdminVaccinationSchedule = () => {
         // Also update vaccinationdates (mobile app source) by biteCaseId to avoid duplicates
         try {
           const vdUpdate = { ...updateData };
-          // Ensure ISO string dates for vd
+          // Ensure date-only (YYYY-MM-DD) strings for vaccinationdates collection
           Object.keys(vdUpdate).forEach(k => {
             if (/Date$/.test(k) && vdUpdate[k]) {
-              vdUpdate[k] = new Date(vdUpdate[k]).toISOString();
+              const d = new Date(vdUpdate[k]);
+              if (!isNaN(d.getTime())) {
+                vdUpdate[k] = d.toISOString().slice(0, 10);
+              }
             }
           });
           await fetch(`/api/vaccinationdates?biteCaseId=${encodeURIComponent(selectedVaccination.originalId)}`, {
@@ -4294,8 +4297,8 @@ const SuperAdminVaccinationSchedule = () => {
                                 <span className="branch-number">Branch: {stock.branchNo}</span>
                                 <span className="expiration">Exp: {stock.expirationDate ? new Date(stock.expirationDate).toLocaleDateString() : 'N/A'}</span>
                       </div>
-                            </div>
-                          </div>
+                    </div>
+                  </div>
                         )) : (
                           <div className="vaccine-option-disabled">
                             <input type="checkbox" disabled />
