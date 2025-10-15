@@ -28,7 +28,8 @@ export async function fullLogout(axioslessApiFetch) {
         lastName: user.lastName,
         action: 'Signed out',
         adminID: user.adminID,
-        superAdminID: user.superAdminID
+        superAdminID: user.superAdminID,
+        center: user.centerName || user.center || null
       };
       try { await axioslessApiFetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } catch {}
     }
