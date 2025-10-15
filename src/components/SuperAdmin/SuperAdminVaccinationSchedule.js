@@ -2742,23 +2742,6 @@ const SuperAdminVaccinationSchedule = () => {
       console.log('API Response:', responseData);
 
       if (response.ok && (responseData.success || responseData.message === 'Bite case updated successfully')) {
-        // Also update vaccinationdates (mobile app source) by biteCaseId to avoid duplicates
-        try {
-          const vdUpdate = { ...updateData };
-          // Ensure ISO string dates for vd
-          Object.keys(vdUpdate).forEach(k => {
-            if (/Date$/.test(k) && vdUpdate[k]) {
-              vdUpdate[k] = new Date(vdUpdate[k]).toISOString();
-            }
-          });
-          await fetch(`/api/vaccinationdates?biteCaseId=${encodeURIComponent(selectedVaccination.originalId)}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(vdUpdate)
-          });
-        } catch (e) {
-          console.warn('Vaccinationdates sync failed (non-fatal):', e);
-        }
         showNotification('Vaccination rescheduled successfully', 'success');
         
         // Update local state immediately for better UX
@@ -2956,6 +2939,24 @@ const SuperAdminVaccinationSchedule = () => {
       console.log('API Response:', responseData);
 
       if (response.ok && (responseData.success || responseData.message === 'Bite case updated successfully')) {
+        // Also update vaccinationdates (mobile app source) by biteCaseId to avoid duplicates
+        try {
+          const vdUpdate = { ...updateData };
+          // Ensure ISO string dates for vd
+          Object.keys(vdUpdate).forEach(k => {
+            if (/Date$/.test(k) && vdUpdate[k]) {
+              vdUpdate[k] = new Date(vdUpdate[k]).toISOString();
+            }
+          });
+          await fetch(`/api/vaccinationdates?biteCaseId=${encodeURIComponent(selectedVaccination.originalId)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(vdUpdate)
+          });
+        } catch (e) {
+          console.warn('Vaccinationdates sync failed (non-fatal):', e);
+        }
+        
         // Update local state immediately for better UX
         setVaccinations(prev => prev.map(v => 
           v._id === selectedVaccination._id ? {

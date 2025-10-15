@@ -140,7 +140,7 @@ const SuperAdminDashboard = () => {
 
       ws.onmessage = () => {
         // Any event from server -> refresh today appointments and recent activity
-        fetchTodaysVaccinations();
+        fetchTodayAppointments();
         fetchRecentActivity();
       };
 
@@ -152,16 +152,16 @@ const SuperAdminDashboard = () => {
         try { ws.close(); } catch (_) {}
       };
     } catch (_) {}
-  }, [fetchTodaysVaccinations, fetchRecentActivity]);
+  }, [fetchTodayAppointments, fetchRecentActivity]);
 
   // Polling fallback (Render can sleep websockets on cold start)
   useEffect(() => {
     const id = setInterval(() => {
-      fetchTodaysVaccinations();
+      fetchTodayAppointments();
       fetchRecentActivity();
     }, 30000); // 30s
     return () => clearInterval(id);
-  }, [fetchTodaysVaccinations, fetchRecentActivity]);
+  }, [fetchTodayAppointments, fetchRecentActivity]);
 
   // Close notifications when clicking outside
   useEffect(() => {
