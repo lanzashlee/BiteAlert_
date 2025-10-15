@@ -66,7 +66,26 @@ const SuperAdminPrescriptiveAnalytics = () => {
         throw new Error('Invalid response from prescriptive analytics');
       }
       // Ensure we always have interventions; synthesize heuristics if missing/empty
-      const data = json.data || { cases: [], riskAnalysis: {}, interventionRecommendations: [] };
+      let data = json.data || { cases: [], riskAnalysis: {}, interventionRecommendations: [] };
+
+      // Enforce role-based scoping for admins: only their assigned barangay
+      try {
+        const userCenter = getUserCenter();
+        if (userCenter && userCenter !== 'all') {
+          const target = String(userCenter).toLowerCase();
+          const filteredRisk = Object.fromEntries(
+            Object.entries(data.riskAnalysis || {}).filter(([b]) => String(b).toLowerCase() === target)
+          );
+          const filteredInterventions = (Array.isArray(data.interventionRecommendations) ? data.interventionRecommendations : [])
+            .filter(it => String(it.barangay || '').toLowerCase() === target);
+          data = {
+            ...data,
+            cases: Array.isArray(data.cases) ? data.cases.filter(c => String(c.barangay || '').toLowerCase() === target) : [],
+            riskAnalysis: filteredRisk,
+            interventionRecommendations: filteredInterventions
+          };
+        }
+      } catch (_) {}
       let interventions = Array.isArray(data.interventionRecommendations) ? data.interventionRecommendations : [];
       if (interventions.length === 0) {
         const heuristics = buildHeuristicInterventions(data.riskAnalysis);
