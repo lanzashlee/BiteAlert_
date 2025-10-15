@@ -72,8 +72,10 @@ const SuperAdminAuditTrail = () => {
         // Scope at API level when possible
         let url = apiConfig.endpoints.auditTrail;
         const params = new URLSearchParams();
+        let usedCenterParam = false;
         if (roleFromUser === 'admin' || roleFromUser === 'staff') {
           if (userCenter && userCenter !== 'all') params.set('center', userCenter);
+          usedCenterParam = userCenter && userCenter !== 'all';
         } else if (roleFromUser === 'patient' && patientKey) {
           params.set('patientId', patientKey);
         }
@@ -87,7 +89,7 @@ const SuperAdminAuditTrail = () => {
         let filteredData = allData;
         
         // For admin/staff users, filter by center/barangay
-        if ((roleFromUser === 'admin' || roleFromUser === 'staff') && userCenter && userCenter !== 'all') {
+        if ((roleFromUser === 'admin' || roleFromUser === 'staff') && userCenter && userCenter !== 'all' && !usedCenterParam) {
           filteredData = allData.filter(entry => {
             const entryCenter = entry.centerName || entry.center || '';
             const entryBarangay = entry.barangay || entry.addressBarangay || '';
