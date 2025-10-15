@@ -30,7 +30,7 @@ const SuperAdminPatientManagement = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
