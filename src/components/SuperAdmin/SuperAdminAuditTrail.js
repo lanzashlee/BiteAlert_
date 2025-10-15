@@ -66,7 +66,11 @@ const SuperAdminAuditTrail = () => {
         const userCenter = getUserCenter();
         console.log('🔍 AUDIT TRAIL DEBUG: Loading audit trail for center:', userCenter);
         
-        const res = await apiFetch(apiConfig.endpoints.auditTrail);
+        // Scope to admin's barangay/center at the API level when possible
+        const url = (userCenter && userCenter !== 'all')
+          ? `${apiConfig.endpoints.auditTrail}?center=${encodeURIComponent(userCenter)}`
+          : apiConfig.endpoints.auditTrail;
+        const res = await apiFetch(url);
         if (!res.ok) throw new Error('Failed to load audit trail');
         const json = await res.json();
         const allData = Array.isArray(json) ? json : (json.data || []);
