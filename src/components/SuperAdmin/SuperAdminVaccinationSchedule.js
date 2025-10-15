@@ -3452,7 +3452,8 @@ const SuperAdminVaccinationSchedule = () => {
     const today = new Date();
     return filteredVaccinations.filter(v => {
       const vaccinationDate = new Date(v.scheduledDate);
-      return vaccinationDate.toDateString() === today.toDateString();
+      // Show only items scheduled for today that are not yet completed
+      return vaccinationDate.toDateString() === today.toDateString() && v.status !== 'completed';
     });
   };
 
