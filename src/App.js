@@ -41,6 +41,8 @@ const App = ({ onReady }) => {
     if (typeof onReady === 'function') {
       onReady();
     }
+    // Add readiness class to body to stabilize layout early
+    try { document.body.classList.add('app-ready'); } catch (_) {}
   }, []);
 
   return (

@@ -92,7 +92,6 @@ body {
   /* Reserve space for the sidebar before JS mounts to avoid overlap */
   margin-left: 320px;
   box-sizing: border-box;
-  margin: 0;
   border: none;
 }
 
