@@ -3189,7 +3189,17 @@ app.post('/api/insert-sample-centers', async (req, res) => {
 });
 
 // API Endpoints for Prescriptive Analytics
+// Explicit CORS handling for bitecases endpoints
+app.options('/api/bitecases', cors(corsOptions));
+app.options('/api/bitecases/find', cors(corsOptions));
+
 app.get('/api/bitecases', async (req, res) => {
+    // Set CORS headers explicitly
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     try {
         console.log('🔍 GET /api/bitecases called with query:', req.query);
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
@@ -3241,6 +3251,11 @@ app.get('/api/bitecases', async (req, res) => {
         res.json(cases);
     } catch (error) {
         console.error('Error fetching bite cases:', error);
+        // Ensure CORS headers are set even on error
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+        res.header('Access-Control-Allow-Credentials', 'true');
         res.status(500).json({ error: 'Failed to fetch bite cases' });
     }
 });
@@ -3584,6 +3599,12 @@ app.put('/api/bitecases/:id', async (req, res) => {
 
 // Fetch single bitecase by patientId or registrationNumber
 app.get('/api/bitecases/find', async (req, res) => {
+    // Set CORS headers explicitly
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     try {
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         const { patientId, registrationNumber } = req.query;
@@ -3594,6 +3615,11 @@ app.get('/api/bitecases/find', async (req, res) => {
         return res.json({ success: true, data: doc });
     } catch (error) {
         console.error('Error fetching bitecase by key:', error);
+        // Ensure CORS headers are set even on error
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+        res.header('Access-Control-Allow-Credentials', 'true');
         return res.status(500).json({ success: false, message: 'Failed to fetch bitecase' });
     }
 });
