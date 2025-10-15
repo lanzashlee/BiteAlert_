@@ -152,7 +152,7 @@ const SuperAdminDashboard = () => {
         try { ws.close(); } catch (_) {}
       };
     } catch (_) {}
-  }, [fetchTodayAppointments, fetchRecentActivity]);
+  }, []);
 
   // Polling fallback (Render can sleep websockets on cold start)
   useEffect(() => {
@@ -161,7 +161,7 @@ const SuperAdminDashboard = () => {
       fetchRecentActivity();
     }, 30000); // 30s
     return () => clearInterval(id);
-  }, [fetchTodayAppointments, fetchRecentActivity]);
+  }, []);
 
   // Close notifications when clicking outside
   useEffect(() => {
