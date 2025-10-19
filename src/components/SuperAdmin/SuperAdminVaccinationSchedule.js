@@ -499,11 +499,17 @@ const SuperAdminVaccinationSchedule = () => {
     // PREFER scheduleDates array from bitecases for all reads
     if (Array.isArray(biteCase.scheduleDates) && biteCase.scheduleDates.length > 0) {
       const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
-      const days = labels.map((label, idx) => ({
-        day: label,
-        date: biteCase.scheduleDates[idx],
-        status: biteCase.status === 'completed' ? 'completed' : (biteCase[`${label.replace(' ', '').toLowerCase()}`] || 'scheduled')
-      }));
+      const days = labels.map((label, idx) => {
+        // Get individual day status from bite case fields (d0Status, d3Status, etc.)
+        const dayField = label.replace('Day ', 'd') + 'Status';
+        const individualStatus = biteCase[dayField];
+        
+        return {
+          day: label,
+          date: biteCase.scheduleDates[idx],
+          status: individualStatus || 'scheduled'
+        };
+      });
       return days
         .map(d => ({ ...d, date: normalizeDate(d.date) }))
         .filter(d => d.date)
