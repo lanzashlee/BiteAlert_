@@ -216,7 +216,6 @@ const SuperAdminCreateAccount = () => {
 
       <main className="main-content">
         <div className="content-header">
-          <h2>Create New Account</h2>
           <div className="header-actions">
             <button className="btn btn-secondary" onClick={() => window.history.back()}>
               <i className="fa-solid fa-arrow-left" /> Back
@@ -249,7 +248,7 @@ const SuperAdminCreateAccount = () => {
             </div>
           ) : (
             <div className="form-container create-account-card">
-              <div className="create-account-header"><h3>Create New Account</h3></div>
+              <div className="create-account-header"></div>
               <div className="create-account-body">
               <form onSubmit={handleSubmit} className="create-account-form">
                 <div className="form-section">
