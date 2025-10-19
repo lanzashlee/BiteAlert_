@@ -1163,7 +1163,7 @@ const SuperAdminStaffManagement = () => {
                   const newPassword = e.target.value;
                   setNewStaffData(prev => ({ ...prev, password: newPassword }));
                   // Clear password error if password becomes valid
-                  if (newPassword && !validatePassword(newPassword)) {
+                  if (newPassword && validatePassword(newPassword) === '') {
                     setAddStaffError(null);
                   }
                 }}
@@ -1192,7 +1192,7 @@ const SuperAdminStaffManagement = () => {
                   const newConfirmPassword = e.target.value;
                   setNewStaffData(prev => ({ ...prev, confirmPassword: newConfirmPassword }));
                   // Clear error if passwords match and password is valid
-                  if (newConfirmPassword && newStaffData.password === newConfirmPassword && !validatePassword(newStaffData.password)) {
+                  if (newConfirmPassword && newStaffData.password === newConfirmPassword && validatePassword(newStaffData.password) === '') {
                     setAddStaffError(null);
                   }
                 }}
