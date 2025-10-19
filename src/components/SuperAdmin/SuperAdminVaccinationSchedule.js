@@ -1196,8 +1196,16 @@ const SuperAdminVaccinationSchedule = () => {
 
         // Refresh the main vaccination list to reflect the completion
         setTimeout(() => {
+          console.log('🔍 FORCE REFRESHING DATA AFTER COMPLETION');
           handleRefreshData();
         }, 500);
+        
+        // Also force a local state update to ensure immediate UI update
+        setTimeout(() => {
+          console.log('🔍 FORCE UPDATING LOCAL STATE AFTER COMPLETION');
+          // Force re-render by updating a dummy state
+          setRefreshKey(prev => prev + 1);
+        }, 1000);
 
         // Check if all schedules are completed
         const updatedSchedule = scheduleModalData.schedule.map(item => 
@@ -2216,7 +2224,7 @@ const SuperAdminVaccinationSchedule = () => {
               actualStatus = actualStatus || 'scheduled';
               
               // Debug: Log what status is being used for each vaccination
-              console.log('Creating vaccination entry:', {
+              console.log('🔍 CREATING VACCINATION ENTRY:', {
                 day: vaccinationDay.day,
                 date: vaccinationDay.date,
                 statusFromVaccinationDay: vaccinationDay.status,
@@ -2226,7 +2234,15 @@ const SuperAdminVaccinationSchedule = () => {
                                              vaccinationDay.day === 'Day 14' ? 'd14Status' :
                                              vaccinationDay.day === 'Day 28' ? 'd28Status' : 'unknown'],
                 actualStatusUsed: actualStatus,
-                biteCaseId: biteCase._id
+                biteCaseId: biteCase._id,
+                patientName: patient?.fullName || 'Unknown',
+                allBiteCaseStatusFields: {
+                  d0Status: biteCase.d0Status,
+                  d3Status: biteCase.d3Status,
+                  d7Status: biteCase.d7Status,
+                  d14Status: biteCase.d14Status,
+                  d28Status: biteCase.d28Status
+                }
               });
 
               // Special debugging for the problematic bite case
@@ -3130,7 +3146,7 @@ const SuperAdminVaccinationSchedule = () => {
   // Handle refresh data
   const handleRefreshData = async () => {
     try {
-      console.log('Refreshing vaccination data...');
+      console.log('🔍 REFRESHING VACCINATION DATA...');
       
       const userCenter = getUserCenter();
       
@@ -3139,6 +3155,9 @@ const SuperAdminVaccinationSchedule = () => {
       if (userCenter && userCenter !== 'all') {
         vaccinationUrl += `?center=${encodeURIComponent(userCenter)}`;
       }
+      
+      // Add cache-busting parameter to ensure fresh data
+      vaccinationUrl += (vaccinationUrl.includes('?') ? '&' : '?') + `_t=${Date.now()}`;
       
       // Fetch bite cases which contain vaccination data
       const vaccinationRes = await apiFetch(vaccinationUrl);
@@ -3192,13 +3211,16 @@ const SuperAdminVaccinationSchedule = () => {
         ];
 
         // Debug: Log the status values from database
-        console.log('Refreshing bite case statuses:', {
+        console.log('🔍 REFRESHING BITE CASE STATUSES:', {
           biteCaseId: biteCase._id,
+          patientName: biteCase.fullName || biteCase.firstName + ' ' + biteCase.lastName,
           d0Status: biteCase.d0Status,
           d3Status: biteCase.d3Status,
           d7Status: biteCase.d7Status,
           d14Status: biteCase.d14Status,
-          d28Status: biteCase.d28Status
+          d28Status: biteCase.d28Status,
+          overallStatus: biteCase.status,
+          lastUpdated: biteCase.updatedAt || biteCase.createdAt
         });
 
         if ((!vaccinationDays[0].date && !vaccinationDays[1].date && !vaccinationDays[2].date && !vaccinationDays[3].date && !vaccinationDays[4].date) && Array.isArray(biteCase.scheduleDates) && biteCase.scheduleDates.length > 0) {
