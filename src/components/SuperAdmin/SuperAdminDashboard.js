@@ -1081,7 +1081,7 @@ const SuperAdminDashboard = () => {
       }
     }, [timeRange]);
 
-  // Fetch today's vaccination schedules using the same logic as the scheduler
+  // Fetch today's vaccination schedules using the EXACT same logic as the scheduler
   const fetchTodayAppointments = useCallback(async () => {
     setAppointmentsLoading(true);
     try {
@@ -1090,39 +1090,39 @@ const SuperAdminDashboard = () => {
       
       console.log('🔍 DASHBOARD: Fetching today\'s vaccination schedules for date:', todayString);
       
-      // Use the same approach as the vaccination scheduler
+      // Use the EXACT same approach as the vaccination scheduler
       const userCenter = getUserCenter();
       console.log('🔍 DASHBOARD: User center:', userCenter);
       
-      // Build API URLs with center filter for non-superadmin users (same as scheduler)
+      // Build API URLs with center filter for non-superadmin users (EXACT same as scheduler)
       let patientsUrl = '/api/patients?page=1&limit=1000';
-      let vaccinationUrl = '/api/bitecases';
+      let biteCasesUrl = '/api/bitecases';
       
       if (userCenter && userCenter !== 'all') {
         patientsUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
-        vaccinationUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
+        biteCasesUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
       }
       
-      // Fetch patients and bite cases in parallel (same as scheduler)
-      const [patientsRes, vaccinationRes] = await Promise.all([
+      // Fetch patients and bite cases in parallel (EXACT same as scheduler)
+      const [patientsRes, biteCasesRes] = await Promise.all([
         apiFetch(patientsUrl),
-        apiFetch(vaccinationUrl)
+        apiFetch(biteCasesUrl)
       ]);
       
       if (!patientsRes.ok) throw new Error(`Failed to fetch patients: ${patientsRes.status}`);
-      if (!vaccinationRes.ok) throw new Error(`Failed to fetch bite cases: ${vaccinationRes.status}`);
+      if (!biteCasesRes.ok) throw new Error(`Failed to fetch bite cases: ${biteCasesRes.status}`);
       
       const patientsData = await patientsRes.json();
-      const vaccinationData = await vaccinationRes.json();
+      const biteCasesData = await biteCasesRes.json();
       
       console.log('🔍 DASHBOARD: Patients from API:', patientsData.length);
-      console.log('🔍 DASHBOARD: Bite cases from API:', vaccinationData.length);
+      console.log('🔍 DASHBOARD: Bite cases from API:', biteCasesData.length);
       
-      // Handle different response formats (same as scheduler)
+      // Handle different response formats (EXACT same as scheduler)
       let patients = Array.isArray(patientsData) ? patientsData : (patientsData.data || []);
-      let biteCases = Array.isArray(vaccinationData) ? vaccinationData : (vaccinationData.data || []);
+      let biteCases = Array.isArray(biteCasesData) ? biteCasesData : (biteCasesData.data || []);
 
-      // Create patient lookup map (same as scheduler)
+      // Create patient lookup map (EXACT same as scheduler)
       const patientLookup = {};
       patients.forEach(patient => {
         const patientIds = [
@@ -1143,101 +1143,119 @@ const SuperAdminDashboard = () => {
       
       console.log('🔍 DASHBOARD: Patient lookup created:', Object.keys(patientLookup).length, 'entries');
       
-      // Build vaccination schedules from bite cases (same logic as scheduler)
-      const allVaccinations = [];
+      // Build vaccination schedules from bite cases (EXACT same logic as scheduler)
+      const vaccinationSchedule = [];
       
       biteCases.forEach(biteCase => {
-        // Use the same buildVaccinationsForBiteCase logic as scheduler
-        const vaccinations = buildVaccinationsForBiteCase(biteCase);
+        // Find patient (EXACT same as scheduler)
+        let patient = null;
+        const possiblePatientIds = [
+          biteCase.patientId,
+          biteCase.patient_id,
+          biteCase.patient,
+          biteCase._id,
+          biteCase.id,
+          biteCase.registrationNumber,
+          biteCase.registration_number
+        ].filter(Boolean);
         
-        vaccinations.forEach(vaccination => {
-          // Find patient
-          let patient = null;
-          const possiblePatientIds = [
-            biteCase.patientId,
-            biteCase.patient_id,
-            biteCase.patient,
-            biteCase._id,
-            biteCase.id,
-            biteCase.registrationNumber,
-            biteCase.registration_number
-          ].filter(Boolean);
-          
-          for (const patientId of possiblePatientIds) {
-            if (patientLookup[patientId]) {
-              patient = patientLookup[patientId];
-              break;
-            }
+        for (const patientId of possiblePatientIds) {
+          if (patientLookup[patientId]) {
+            patient = patientLookup[patientId];
+            break;
           }
-          
-          // Get patient name
-          let patientName = 'Unknown Patient';
-          if (patient) {
-            const first = patient.firstName || patient.first || patient.firstname || '';
-            const last = patient.lastName || patient.last || patient.lastname || '';
-            const middle = patient.middleName || patient.middle || patient.middlename || '';
-            const full = patient.fullName || patient.fullname || patient.patientName || patient.name || '';
+        }
+        
+        // Build vaccination days (EXACT same as scheduler)
+        let vaccinationDays = [
+          { day: 'Day 0',  date: biteCase.d0Date,  status: biteCase.d0Status },
+          { day: 'Day 3',  date: biteCase.d3Date,  status: biteCase.d3Status },
+          { day: 'Day 7',  date: biteCase.d7Date,  status: biteCase.d7Status },
+          { day: 'Day 14', date: biteCase.d14Date, status: biteCase.d14Status },
+          { day: 'Day 28', date: biteCase.d28Date, status: biteCase.d28Status }
+        ];
+
+        // If per-day fields absent, map from scheduleDates array (EXACT same as scheduler)
+        if ((!vaccinationDays[0].date && !vaccinationDays[1].date && !vaccinationDays[2].date && !vaccinationDays[3].date && !vaccinationDays[4].date) && Array.isArray(biteCase.scheduleDates) && biteCase.scheduleDates.length > 0) {
+          const mapIndexToDay = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
+          vaccinationDays = mapIndexToDay.map((label, idx) => ({
+            day: label,
+            date: biteCase.scheduleDates[idx],
+            status: biteCase.status === 'completed' ? 'completed' : 'scheduled'
+          }));
+        }
+        
+        const tempEntries = [];
+        const statuses = [];
+        
+        vaccinationDays.forEach(vaccinationDay => {
+          const normalized = vaccinationDay.date;
+          if (normalized) {
+            // Get the correct status field from the bite case (EXACT same as scheduler)
+            let actualStatus = vaccinationDay.status;
             
-            if (first && last) {
-              patientName = middle ? `${first} ${middle} ${last}` : `${first} ${last}`;
-            } else if (full) {
-              patientName = full;
-            } else if (first || last) {
-              patientName = first || last;
-            } else {
-              patientName = patient.registrationNumber ? `Patient ${patient.registrationNumber}` : 'Unknown Patient';
+            if (!actualStatus) {
+              const statusField = vaccinationDay.day === 'Day 0' ? 'd0Status' :
+                                   vaccinationDay.day === 'Day 3' ? 'd3Status' :
+                                   vaccinationDay.day === 'Day 7' ? 'd7Status' :
+                                   vaccinationDay.day === 'Day 14' ? 'd14Status' :
+                                   vaccinationDay.day === 'Day 28' ? 'd28Status' : null;
+              
+              if (statusField) {
+                actualStatus = biteCase[statusField];
+              }
             }
-          } else {
-            // Fallback to bite case data
-            const bcFirst = biteCase.firstName || biteCase.first || biteCase.firstname || '';
-            const bcLast = biteCase.lastName || biteCase.last || biteCase.lastname || '';
-            const bcMiddle = biteCase.middleName || biteCase.middle || biteCase.middlename || '';
-            const bcFull = biteCase.fullName || biteCase.fullname || biteCase.patientName || biteCase.name;
             
-            if (bcFirst && bcLast) {
-              patientName = bcMiddle ? `${bcFirst} ${bcMiddle} ${bcLast}` : `${bcFirst} ${bcLast}`;
-            } else if (bcFull) {
-              patientName = bcFull;
-            } else if (bcFirst || bcLast) {
-              patientName = bcFirst || bcLast;
-            } else {
-              patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
-            }
+            actualStatus = actualStatus || 'scheduled';
+            
+            const entry = {
+              _id: `${biteCase._id}_${vaccinationDay.day}`,
+              originalId: biteCase._id,
+              patientId: biteCase.patientId,
+              patient: patient,
+              biteCaseId: biteCase._id,
+              registrationNumber: biteCase.registrationNumber,
+              vaccinationDay: vaccinationDay.day,
+              scheduledDate: vaccinationDay.date,
+              status: actualStatus,
+              notes: '',
+              isManual: false,
+              createdAt: biteCase.createdAt || new Date().toISOString(),
+              updatedAt: biteCase.updatedAt,
+              treatmentStatus: biteCase.treatmentStatus
+            };
+            tempEntries.push(entry);
+            statuses.push(actualStatus);
           }
-          
-          allVaccinations.push({
-            _id: `${biteCase._id}_${vaccination.day}`,
-            biteCaseId: biteCase._id,
-            patientId: biteCase.patientId,
-            patient: patient,
-            patientName: patientName,
-            vaccinationDay: vaccination.day,
-            scheduledDate: vaccination.date,
-            status: vaccination.status,
-            vaccineType: biteCase.vaccineType || 'Anti-Rabies',
-            center: biteCase.center || biteCase.centerName || 'Unknown Center',
-            registrationNumber: biteCase.registrationNumber,
-            originalBiteCase: biteCase
-          });
         });
+        
+        // Exclude bite cases where all doses are completed (EXACT same as scheduler)
+        const allCompleted = statuses.length > 0 && statuses.every(s => s === 'completed');
+        if (!allCompleted) {
+          vaccinationSchedule.push(...tempEntries);
+        }
       });
       
-      console.log('🔍 DASHBOARD: All vaccinations found:', allVaccinations.length);
+      console.log('🔍 DASHBOARD: All vaccinations built:', vaccinationSchedule.length);
       
-      // Filter for today's appointments (same logic as scheduler's getTodaysVaccinations)
-      const todaySchedules = allVaccinations.filter(v => {
+      // Filter for today's appointments (EXACT same logic as scheduler's getTodaysVaccinations)
+      const todaySchedules = vaccinationSchedule.filter(v => {
         if (!v.scheduledDate) return false;
         
         const vaccinationDate = new Date(v.scheduledDate);
         const vaccinationDateStr = vaccinationDate.toISOString().split('T')[0];
         
+        // Additional validation: ensure the date is not in the past (EXACT same as scheduler)
+        const isToday = vaccinationDateStr === todayString;
+        const isNotPast = vaccinationDate >= new Date(todayString + 'T00:00:00.000Z');
+        
         // Only show today's appointments that are not completed
-        return vaccinationDateStr === todayString && v.status !== 'completed';
+        return isToday && isNotPast && v.status !== 'completed';
       });
       
       console.log('🔍 DASHBOARD: Today\'s vaccination schedules found:', todaySchedules.length);
       console.log('🔍 DASHBOARD: Today\'s schedules details:', todaySchedules.map(s => ({
-        patientName: s.patientName,
+        patientName: s.patient?.fullName || 'Unknown',
         day: s.vaccinationDay,
         date: s.scheduledDate,
         status: s.status
