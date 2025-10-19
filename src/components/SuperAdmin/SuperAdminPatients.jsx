@@ -2661,15 +2661,16 @@ const SuperAdminPatients = () => {
                             }}>
                               {(() => {
                                 const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                if (currentCase?.currentImmunization?.vaccine) {
-                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
-                                  if (vaccineType === 'PCEC') {
-                                    return 'VAXIRAB (PCEC)';
-                                  } else if (vaccineType === 'PVRV') {
-                                    return 'SPEEDA (PVRV)';
-                                  }
+                                const v = currentCase?.completedSchedules?.[0]?.vaccinesUsed;
+                                if (Array.isArray(v) && v.length) {
+                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
                                 }
-                                return currentCase?.brandName || currentCase?.genericName || 'VAXIRAB (BOOSTER)';
+                                if (currentCase?.currentImmunization?.vaccine) {
+                                  const t = currentCase.currentImmunization.vaccine[0];
+                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
+                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
+                                }
+                                return currentCase?.brandName || currentCase?.genericName || '-';
                               })()}
                             </td>
                             <td style={{ 
@@ -2734,15 +2735,16 @@ const SuperAdminPatients = () => {
                             }}>
                               {(() => {
                                 const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                if (currentCase?.currentImmunization?.vaccine) {
-                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
-                                  if (vaccineType === 'PCEC') {
-                                    return 'VAXIRAB (PCEC)';
-                                  } else if (vaccineType === 'PVRV') {
-                                    return 'SPEEDA (PVRV)';
-                                  }
+                                const v = currentCase?.completedSchedules?.[1]?.vaccinesUsed;
+                                if (Array.isArray(v) && v.length) {
+                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
                                 }
-                                return currentCase?.brandName || currentCase?.genericName || 'VAXIRAB (BOOSTER)';
+                                if (currentCase?.currentImmunization?.vaccine) {
+                                  const t = currentCase.currentImmunization.vaccine[0];
+                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
+                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
+                                }
+                                return currentCase?.brandName || currentCase?.genericName || '-';
                               })()}
                             </td>
                             <td style={{ 
@@ -2807,13 +2809,14 @@ const SuperAdminPatients = () => {
                             }}>
                               {(() => {
                                 const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                const v = currentCase?.completedSchedules?.[2]?.vaccinesUsed;
+                                if (Array.isArray(v) && v.length) {
+                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
+                                }
                                 if (currentCase?.currentImmunization?.vaccine) {
-                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
-                                  if (vaccineType === 'PCEC') {
-                                    return 'VAXIRAB (PCEC)';
-                                  } else if (vaccineType === 'PVRV') {
-                                    return 'SPEEDA (PVRV)';
-                                  }
+                                  const t = currentCase.currentImmunization.vaccine[0];
+                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
+                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
                                 }
                                 return currentCase?.brandName || currentCase?.genericName || '-';
                               })()}
@@ -2880,13 +2883,14 @@ const SuperAdminPatients = () => {
                             }}>
                               {(() => {
                                 const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                const v = currentCase?.completedSchedules?.[3]?.vaccinesUsed;
+                                if (Array.isArray(v) && v.length) {
+                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
+                                }
                                 if (currentCase?.currentImmunization?.vaccine) {
-                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
-                                  if (vaccineType === 'PCEC') {
-                                    return 'VAXIRAB (PCEC)';
-                                  } else if (vaccineType === 'PVRV') {
-                                    return 'SPEEDA (PVRV)';
-                                  }
+                                  const t = currentCase.currentImmunization.vaccine[0];
+                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
+                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
                                 }
                                 return currentCase?.brandName || currentCase?.genericName || '-';
                               })()}
@@ -2953,13 +2957,14 @@ const SuperAdminPatients = () => {
                             }}>
                               {(() => {
                                 const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                                const v = currentCase?.completedSchedules?.[4]?.vaccinesUsed;
+                                if (Array.isArray(v) && v.length) {
+                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
+                                }
                                 if (currentCase?.currentImmunization?.vaccine) {
-                                  const vaccineType = currentCase.currentImmunization.vaccine[0];
-                                  if (vaccineType === 'PCEC') {
-                                    return 'VAXIRAB (PCEC)';
-                                  } else if (vaccineType === 'PVRV') {
-                                    return 'SPEEDA (PVRV)';
-                                  }
+                                  const t = currentCase.currentImmunization.vaccine[0];
+                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
+                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
                                 }
                                 return currentCase?.brandName || currentCase?.genericName || '-';
                               })()}
