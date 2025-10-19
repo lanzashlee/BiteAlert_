@@ -45,14 +45,18 @@ const SuperAdminStaffManagement = () => {
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [newStaffData, setNewStaffData] = useState({
     firstName: '',
+    middleName: '',
     lastName: '',
     email: '',
     phone: '',
     role: 'Staff',
+    birthdate: '',
+    position: '',
+    department: '',
     center: '',
     officeAddress: '',
-    isApproved: false,
-    isVerified: false,
+    isApproved: true,
+    isVerified: true,
   });
   const [addStaffError, setAddStaffError] = useState(null);
 
@@ -282,14 +286,18 @@ const SuperAdminStaffManagement = () => {
   const openAddModal = () => {
     setNewStaffData({
       firstName: '',
+      middleName: '',
       lastName: '',
       email: '',
       phone: '',
       role: 'Staff',
+      birthdate: '',
+      position: '',
+      department: '',
       center: '',
       officeAddress: '',
-      isApproved: false,
-      isVerified: false,
+      isApproved: true,
+      isVerified: true,
     });
     setAddStaffError(null);
     setShowAddStaffModal(true);
@@ -300,14 +308,18 @@ const SuperAdminStaffManagement = () => {
     setShowAddStaffModal(false);
     setNewStaffData({
       firstName: '',
+      middleName: '',
       lastName: '',
       email: '',
       phone: '',
       role: 'Staff',
+      birthdate: '',
+      position: '',
+      department: '',
       center: '',
       officeAddress: '',
-      isApproved: false,
-      isVerified: false,
+      isApproved: true,
+      isVerified: true,
     });
     setAddStaffError(null);
   };
@@ -357,10 +369,14 @@ const SuperAdminStaffManagement = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstName: newStaffData.firstName,
+          middleName: newStaffData.middleName,
           lastName: newStaffData.lastName,
           email: newStaffData.email,
           phone: newStaffData.phone,
           role: (newStaffData.role || 'staff').toString().toLowerCase(),
+          birthdate: newStaffData.birthdate ? new Date(newStaffData.birthdate).toISOString() : undefined,
+          position: newStaffData.position,
+          department: newStaffData.department,
           center: newStaffData.center,
           officeAddress: newStaffData.officeAddress,
           password: newStaffData.password,
@@ -1059,6 +1075,17 @@ const SuperAdminStaffManagement = () => {
               />
             </div>
             <div className="form-group">
+              <label htmlFor="addMiddleName">Middle Name</label>
+              <input
+                type="text"
+                id="addMiddleName"
+                value={newStaffData.middleName}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, middleName: e.target.value }))}
+                placeholder="Enter middle name (optional)"
+                className="form-control"
+              />
+            </div>
+            <div className="form-group">
               <label htmlFor="addLastName">Last Name</label>
               <input
                 type="text"
@@ -1102,6 +1129,38 @@ const SuperAdminStaffManagement = () => {
                 className="form-control"
                 value={newStaffData.role}
                 readOnly
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addBirthdate">Birthdate</label>
+              <input
+                id="addBirthdate"
+                type="date"
+                className="form-control"
+                value={newStaffData.birthdate}
+                onChange={(e)=> setNewStaffData(prev => ({ ...prev, birthdate: e.target.value }))}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addPosition">Position</label>
+              <input
+                id="addPosition"
+                type="text"
+                className="form-control"
+                placeholder="e.g., Staff"
+                value={newStaffData.position}
+                onChange={(e)=> setNewStaffData(prev => ({ ...prev, position: e.target.value }))}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addDepartment">Department</label>
+              <input
+                id="addDepartment"
+                type="text"
+                className="form-control"
+                placeholder="e.g., Health Services"
+                value={newStaffData.department}
+                onChange={(e)=> setNewStaffData(prev => ({ ...prev, department: e.target.value }))}
               />
             </div>
             <div className="form-group">
