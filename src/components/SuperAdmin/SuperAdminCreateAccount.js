@@ -216,6 +216,7 @@ const SuperAdminCreateAccount = () => {
 
       <main className="main-content">
         <div className="content-header">
+          <h2>Create New Account</h2>
           <div className="header-actions">
             <button className="btn btn-secondary" onClick={() => window.history.back()}>
               <i className="fa-solid fa-arrow-left" /> Back
