@@ -408,6 +408,7 @@ const SuperAdminStaffManagement = () => {
         const data = await res.json();
         if (data.success) {
           const allStaff = data.staffs || [];
+          console.log('🔍 STAFF DATA RECEIVED:', allStaff);
           const mappedStaff = allStaff.map(staff => ({
             ...staff,
             fullName: staff.fullName || `${staff.firstName || ''} ${staff.lastName || ''}`.trim(),
@@ -847,6 +848,14 @@ const SuperAdminStaffManagement = () => {
                     const statusText = isPending ? 'Pending' : (s.isApproved ? 'Active' : 'Inactive');
                     const statusClass = isPending ? 'pending' : (s.isApproved ? 'active' : 'inactive');
 
+                    console.log('🔍 RENDERING STAFF ROW:', {
+                      staffId: s.staffId,
+                      fullName: s.fullName,
+                      role: s.role,
+                      center: s.center,
+                      officeAddressString: s.officeAddressString,
+                      phone: s.phone
+                    });
                     return (
                       <tr key={s._id}>
                         <td>{s.staffId || '-'}</td>
