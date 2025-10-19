@@ -275,7 +275,7 @@ const SuperAdminCenter = () => {
                   <label htmlFor="centerName">Center Name</label>
                   <select id="centerName" value={form.centerName} onChange={(e) => setForm({ ...form, centerName: e.target.value })} required>
                     <option value="">Select Center</option>
-                    {['Addition Hills','Balong-Bato','Batis','Corazon De Jesus','Ermitaño','Halo-halo','Isabelita','Kabayanan','Little Baguio','Maytunas','Onse','Pasadeña','Pedro Cruz','Progreso','Rivera','Salapan','San Perfecto','Santa Lucia','Tibagan','West Crame','Greenhills'].map((b) => (
+                    {['Addition Hills','Balong-Bato','Batis','Corazon De Jesus','Ermitaño','Halo-halo','Isabelita','Little Baguio','Maytunas','Onse','Pasadeña','Pedro Cruz','Progreso','Rivera','Salapan','San Perfecto','Santa Lucia','Tibagan','West Crame','Greenhills'].map((b) => (
                       <option key={b} value={b}>{b}</option>
                     ))}
                   </select>

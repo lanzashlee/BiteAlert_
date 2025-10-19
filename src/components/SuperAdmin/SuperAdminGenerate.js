@@ -111,7 +111,7 @@ const SuperAdminGenerate = () => {
 
   // Centers
   const centers = [
-    "Balong-Bato Center", "Batis Center", "Greenhills Center", "Kabayanan Center",
+    "Balong-Bato Center", "Batis Center", "Greenhills Center",
     "Pasadena Center", "Salapan Center", "Tibagan Center", "West Crame Center"
   ];
 
