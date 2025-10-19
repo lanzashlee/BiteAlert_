@@ -861,7 +861,7 @@ const SuperAdminStaffManagement = () => {
                         <td>{s.staffId || '-'}</td>
                         <td>{s.fullName || `${s.firstName || ''} ${s.middleName || ''} ${s.lastName || ''}`.trim()}</td>
                         <td>{s.role || '-'}</td>
-                        <td>{(s.officeAddressString && s.officeAddressString.trim()) || s.center || '-'}</td>
+                        <td>{s.officeAddress || s.center || s.centerName || '-'}</td>
                         <td>{s.phone || '-'}</td>
                         <td>
                           <span className={`status-badge ${statusClass}`}>
