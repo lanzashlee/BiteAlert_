@@ -1131,6 +1131,17 @@ const SuperAdminDashboard = () => {
               });
               
               if (vaccinationDateString === todayString) {
+                // Only show appointments that are scheduled for today and not completed/missed
+                const status = schedule.status || 'scheduled';
+                const normalizedStatus = status.toString().toLowerCase().trim();
+                
+                // Skip completed and missed appointments
+                if (normalizedStatus === 'completed' || normalizedStatus === 'missed') {
+                  console.log(`🔍 SKIPPING ${schedule.day} - Status: ${status} (completed/missed)`);
+                  return;
+                }
+                
+                console.log(`🔍 INCLUDING ${schedule.day} - Status: ${status} (scheduled for today)`);
                 // Get patient information - try multiple ways to find the patient
                 let patient = null;
                 let patientName = 'Unknown Patient';
@@ -1222,7 +1233,7 @@ const SuperAdminDashboard = () => {
                   patientId: biteCase.patientId,
                   day: schedule.day,
                   date: vaccinationDate,
-                  status: schedule.status || 'scheduled', // Use actual status from bite case
+                  status: 'today', // Force "today" status for today's appointments
                   patientName: patientName,
                   vaccineType: biteCase.vaccineType || 'Anti-Rabies',
                   center: biteCase.center || biteCase.centerName || 'Unknown Center',
