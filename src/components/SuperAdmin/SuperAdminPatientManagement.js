@@ -22,8 +22,8 @@ const SuperAdminPatientManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [statusFilter, setStatusFilter] = useState('');
-  const [centerFilter, setCenterFilter] = useState('');
-  const [centerOptions, setCenterOptions] = useState([]);
+  const [barangayFilter, setBarangayFilter] = useState('');
+  const [barangayOptions, setBarangayOptions] = useState([]);
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -44,14 +44,14 @@ const SuperAdminPatientManagement = () => {
   // Reset all filters
   const resetFilters = () => {
     setSearchTerm('');
-    setCenterFilter('');
+    setBarangayFilter('');
     setStatusFilter('');
     setPage(1);
     console.log('🔍 FILTERS RESET');
   };
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm.trim() || centerFilter || statusFilter;
+  const hasActiveFilters = searchTerm.trim() || barangayFilter || statusFilter;
 
   // Password change modal states
 
@@ -655,41 +655,32 @@ const SuperAdminPatientManagement = () => {
 
   }, []);
 
-  // Load centers for dropdown
+  // Load barangays for dropdown
   useEffect(() => {
-    const fetchCenters = async () => {
+    const fetchBarangays = async () => {
       try {
-        const fetchAllPages = async () => {
-          let page = 1;
-          const pageSize = 100;
-          let all = [];
-          while (true) {
-            const res = await apiFetch(`/api/centers?page=${page}&limit=${pageSize}`);
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
-            if (!list || list.length === 0) break;
-            all = all.concat(list);
-            const totalPages = data.totalPages || data.pages || null;
-            if (totalPages && page >= totalPages) break;
-            if (!totalPages && list.length < pageSize) break;
-            page += 1;
-          }
-          return all;
-        };
-
-        const list = await fetchAllPages();
-        const names = Array.from(new Set((list || [])
-          .filter(c => !c.isArchived)
-          .map(c => String(c.centerName || c.name || '').trim())
-          .filter(Boolean)))
-          .sort((a,b)=>a.localeCompare(b));
-        setCenterOptions(names);
-      } catch (_) {
-        setCenterOptions([]);
+        // Get unique barangays from patients data
+        const uniqueBarangays = Array.from(new Set(patients
+          .map(p => p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '')
+          .filter(Boolean)
+          .map(b => String(b).trim())
+        )).sort((a,b) => a.localeCompare(b));
+        
+        console.log('🔍 BARANGAY OPTIONS DEBUG:');
+        console.log('Unique barangays found:', uniqueBarangays);
+        
+        setBarangayOptions(uniqueBarangays);
+      } catch (error) {
+        console.error('Error loading barangays:', error);
+        setBarangayOptions([]);
       }
     };
-    fetchCenters();
-  }, []);
+    
+    // Only fetch barangays when patients data is available
+    if (patients.length > 0) {
+      fetchBarangays();
+    }
+  }, [patients]);
 
 
 
@@ -789,8 +780,15 @@ const SuperAdminPatientManagement = () => {
       
       filteredPatients = filteredPatients.filter(p => {
         const isPending = !p.isVerified;
-        const isActive = p.isVerified && p.status !== 'Inactive';
-        const isInactive = p.status === 'Inactive';
+        const isActive = p.isVerified && (p.status === 'Active' || (!p.status && p.isVerified));
+        const isInactive = p.status === 'Inactive' || p.status === 'INACTIVE';
+        
+        console.log(`Patient: ${p.firstName} ${p.lastName}`);
+        console.log(`  - isVerified: ${p.isVerified}`);
+        console.log(`  - status: "${p.status}"`);
+        console.log(`  - isPending: ${isPending}`);
+        console.log(`  - isActive: ${isActive}`);
+        console.log(`  - isInactive: ${isInactive}`);
         
         let matches = false;
         
@@ -802,6 +800,8 @@ const SuperAdminPatientManagement = () => {
           matches = isInactive;
         }
         
+        console.log(`  - Filter: ${statusFilter}, Matches: ${matches}`);
+        
         if (matches) {
           console.log(`✅ STATUS MATCH: ${p.firstName} ${p.lastName} - ${statusFilter}`);
         }
@@ -812,32 +812,29 @@ const SuperAdminPatientManagement = () => {
       console.log('🔍 STATUS FILTER DEBUG: After status filtering:', filteredPatients.length);
     }
 
-    // Center filter
-    if (centerFilter) {
-      const normalizeCenter = (v) => String(v || '')
+    // Barangay filter
+    if (barangayFilter) {
+      const normalizeBarangay = (v) => String(v || '')
         .toLowerCase()
-        .replace(/\s*health\s*center$/i,'')
-        .replace(/\s*center$/i,'')
-        .replace(/-/g,' ')
         .trim();
       
-      const targetCenter = normalizeCenter(centerFilter);
-      console.log('🔍 CENTER FILTER DEBUG:');
-      console.log('Target center:', targetCenter);
+      const targetBarangay = normalizeBarangay(barangayFilter);
+      console.log('🔍 BARANGAY FILTER DEBUG:');
+      console.log('Target barangay:', targetBarangay);
       
       filteredPatients = filteredPatients.filter(p => {
-        const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
-        const normalizedPatientCenter = normalizeCenter(patientCenter);
+        const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
+        const normalizedPatientBarangay = normalizeBarangay(patientBarangay);
         
         console.log(`Patient: ${p.firstName} ${p.lastName}`);
-        console.log(`  - Original center: "${patientCenter}"`);
-        console.log(`  - Normalized center: "${normalizedPatientCenter}"`);
-        console.log(`  - Matches target: ${normalizedPatientCenter === targetCenter}`);
+        console.log(`  - Original barangay: "${patientBarangay}"`);
+        console.log(`  - Normalized barangay: "${normalizedPatientBarangay}"`);
+        console.log(`  - Matches target: ${normalizedPatientBarangay === targetBarangay}`);
         
-        return normalizedPatientCenter === targetCenter;
+        return normalizedPatientBarangay === targetBarangay;
       });
       
-      console.log('🔍 CENTER FILTER DEBUG: After center filtering:', filteredPatients.length);
+      console.log('🔍 BARANGAY FILTER DEBUG: After barangay filtering:', filteredPatients.length);
     }
 
 
@@ -856,7 +853,7 @@ const SuperAdminPatientManagement = () => {
     
     return filteredPatients.slice(startIndex, endIndex);
 
-  }, [searchTerm, statusFilter, centerFilter, patients, page]);
+  }, [searchTerm, statusFilter, barangayFilter, patients, page]);
 
 
 
@@ -978,15 +975,15 @@ const SuperAdminPatientManagement = () => {
 
             <div className="filter-controls">
               <select 
-                value={centerFilter} 
-                onChange={(e) => setCenterFilter(e.target.value)}
-                className={`filter-select ${centerFilter ? 'filter-active' : ''}`}
-                aria-label="Filter by health center"
-                title="Filter by center"
+                value={barangayFilter} 
+                onChange={(e) => setBarangayFilter(e.target.value)}
+                className={`filter-select ${barangayFilter ? 'filter-active' : ''}`}
+                aria-label="Filter by barangay"
+                title="Filter by barangay"
               >
-                <option value="">All Centers</option>
-                {centerOptions.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                <option value="">All Barangay</option>
+                {barangayOptions.map(b => (
+                  <option key={b} value={b}>{b}</option>
                 ))}
               </select>
               <select 
@@ -1028,9 +1025,9 @@ const SuperAdminPatientManagement = () => {
                       <i className="fa fa-search"></i> "{searchTerm}"
                     </span>
                   )}
-                  {centerFilter && (
+                  {barangayFilter && (
                     <span className="filter-tag">
-                      <i className="fa fa-hospital-o"></i> {centerFilter}
+                      <i className="fa fa-map-marker"></i> {barangayFilter}
                     </span>
                   )}
                   {statusFilter && (
