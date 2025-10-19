@@ -3849,7 +3849,36 @@ app.get('/api/vaccine-stock-trends', async (req, res) => {
                 ];
             }
             const allStocks = await VaccineStock.find(stockFilter);
-            const currentTotal = allStocks.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            console.log('🔍 VACCINE STOCK TRENDS: Found centers:', allStocks.length);
+            console.log('🔍 VACCINE STOCK TRENDS: Sample center structure:', allStocks[0]);
+            
+            // Calculate total from nested structure
+            let currentTotal = 0;
+            allStocks.forEach(center => {
+                if (center.vaccines && Array.isArray(center.vaccines)) {
+                    center.vaccines.forEach(vaccine => {
+                        if (vaccine.stockEntries && Array.isArray(vaccine.stockEntries)) {
+                            vaccine.stockEntries.forEach(entry => {
+                                let stockQuantity = entry.stock || 0;
+                                if (typeof stockQuantity === 'object') {
+                                    if (stockQuantity.$numberInt !== undefined) {
+                                        stockQuantity = parseInt(stockQuantity.$numberInt);
+                                    } else if (stockQuantity.$numberDouble !== undefined) {
+                                        stockQuantity = parseFloat(stockQuantity.$numberDouble);
+                                    } else {
+                                        stockQuantity = 0;
+                                    }
+                                } else {
+                                    stockQuantity = Number(stockQuantity) || 0;
+                                }
+                                currentTotal += stockQuantity;
+                            });
+                        }
+                    });
+                }
+            });
+            
+            console.log('🔍 VACCINE STOCK TRENDS: Current total calculated:', currentTotal);
             data[data.length - 1] = currentTotal;
         }
 
