@@ -1348,7 +1348,7 @@ const SuperAdminVaccinationSchedule = () => {
           return updated;
         });
 
-        showNotification('Vaccination status updated successfully!', 'success');
+        showNotification('Vaccination completed successfully! Status saved to database.', 'success');
         resetVaccineSelections();
 
         // Refresh the main vaccination list to reflect the completion
