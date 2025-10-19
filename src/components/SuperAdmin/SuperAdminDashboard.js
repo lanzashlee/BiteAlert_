@@ -511,7 +511,7 @@ const SuperAdminDashboard = () => {
       },
       datalabels: {
         display: true,
-        color: '#FFFFFF',
+        color: '#000000',
         font: { weight: 'bold', size: 16 },
         formatter: (value) => (value > 0 ? value : '')
       }
