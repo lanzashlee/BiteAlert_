@@ -446,7 +446,15 @@ const SuperAdminDashboard = () => {
       },
       x: { grid: { display: false }, ticks: { padding: 10 } }
     },
-    plugins: { ...commonOptions.plugins, title: { display: true, text: 'Cases per Center', padding: { top: 10, bottom: 30 }, font: { size: 16, weight: '500' } } }
+    plugins: { 
+      ...commonOptions.plugins, 
+      title: { display: true, text: 'Cases per Center', padding: { top: 10, bottom: 30 }, font: { size: 16, weight: '500' } },
+      datalabels: {
+        color: '#FFFFFF',
+        font: { weight: 'bold', size: 14 },
+        formatter: (value) => Math.round(value)
+      }
+    }
   }), [commonOptions]);
 
   const vaccinesChartOptions = useMemo(() => ({
@@ -477,6 +485,11 @@ const SuperAdminDashboard = () => {
             return `${context.dataset.label}: ${rounded} units`;
           }
         }
+      },
+      datalabels: {
+        color: '#FFFFFF',
+        font: { weight: 'bold', size: 14 },
+        formatter: (value) => Math.round(value)
       }
     }
   }), [commonOptions]);
@@ -498,7 +511,7 @@ const SuperAdminDashboard = () => {
       },
       datalabels: {
         display: true,
-        color: '#333',
+        color: '#FFFFFF',
         font: { weight: 'bold', size: 16 },
         formatter: (value) => (value > 0 ? value : '')
       }
