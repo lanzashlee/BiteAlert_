@@ -3422,6 +3422,13 @@ app.put('/api/vaccinations/:id', async (req, res) => {
         
         // If this is a completion update, also update the corresponding bite case
         if (updateData.status === 'completed' && updateData.vaccinesUsed) {
+            console.log('🔍 VACCINATION COMPLETION DETECTED:', {
+                vaccinationId: id,
+                patientId: vaccination.patientId,
+                registrationNumber: vaccination.registrationNumber,
+                vaccinationDay: updateData.vaccinationDay
+            });
+            
             try {
                 const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
                 
@@ -3429,6 +3436,12 @@ app.put('/api/vaccinations/:id', async (req, res) => {
                 const biteCase = await BiteCase.findOne({ 
                     patientId: vaccination.patientId,
                     registrationNumber: vaccination.registrationNumber 
+                });
+                
+                console.log('🔍 FOUND BITE CASE:', {
+                    biteCaseId: biteCase?._id,
+                    patientId: biteCase?.patientId,
+                    registrationNumber: biteCase?.registrationNumber
                 });
                 
                 if (biteCase) {
@@ -3441,13 +3454,24 @@ app.put('/api/vaccinations/:id', async (req, res) => {
                     };
                     
                     // Update specific day status in bite case
-                    const dayField = updateData.vaccinationDay?.replace('Day ', 'd').toLowerCase() + 'Status';
+                    const dayField = updateData.vaccinationDay?.replace('Day ', 'd') + 'Status';
                     if (dayField) {
                         biteCaseUpdate[dayField] = 'completed';
+                        console.log('🔍 UPDATING BITE CASE STATUS FIELD:', {
+                            vaccinationDay: updateData.vaccinationDay,
+                            dayField: dayField,
+                            status: 'completed',
+                            biteCaseId: biteCase._id
+                        });
                     }
                     
                     await BiteCase.findByIdAndUpdate(biteCase._id, { $set: biteCaseUpdate });
-                    console.log('Updated bite case with vaccination completion:', biteCase._id);
+                    console.log('🔍 BITE CASE UPDATE RESULT:', {
+                        biteCaseId: biteCase._id,
+                        updateData: biteCaseUpdate,
+                        dayField: dayField,
+                        statusValue: biteCaseUpdate[dayField]
+                    });
                     
                     // Check if all vaccinations are completed to move to case history
                     const allVaccinations = await VaccinationDate.find({ 
