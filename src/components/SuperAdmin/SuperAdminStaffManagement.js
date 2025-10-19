@@ -41,6 +41,21 @@ const SuperAdminStaffManagement = () => {
   const [showAdminInfo, setShowAdminInfo] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
 
+  // Add Staff Modal States
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [newStaffData, setNewStaffData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    role: '',
+    center: '',
+    officeAddress: '',
+    isApproved: false,
+    isVerified: false,
+  });
+  const [addStaffError, setAddStaffError] = useState(null);
+
   // Show notification
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
@@ -261,6 +276,195 @@ const SuperAdminStaffManagement = () => {
       setShowSignoutModal(false); // Close modal even on error
       await fullLogout(); // Fallback to basic logout
     }
+  };
+
+  // Open Add Staff Modal
+  const openAddModal = () => {
+    setNewStaffData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      role: '',
+      center: '',
+      officeAddress: '',
+      isApproved: false,
+      isVerified: false,
+    });
+    setAddStaffError(null);
+    setShowAddStaffModal(true);
+  };
+
+  // Close Add Staff Modal
+  const closeAddModal = () => {
+    setShowAddStaffModal(false);
+    setNewStaffData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      role: '',
+      center: '',
+      officeAddress: '',
+      isApproved: false,
+      isVerified: false,
+    });
+    setAddStaffError(null);
+  };
+
+  // Handle Add Staff form submission
+  const handleAddStaffSubmit = async (e) => {
+    e.preventDefault();
+    setAddStaffError(null);
+
+    if (!newStaffData.firstName || !newStaffData.lastName || !newStaffData.email || !newStaffData.role || !newStaffData.center) {
+      setAddStaffError('Please fill in all required fields (First Name, Last Name, Email, Role, Center)');
+      return;
+    }
+
+    if (!validateEmail(newStaffData.email)) {
+      setAddStaffError('Please enter a valid email address');
+      return;
+    }
+
+    if (!validatePhone(newStaffData.phone)) {
+      setAddStaffError('Please enter a valid phone number (e.g., 09123456789)');
+      return;
+    }
+
+    if (!newStaffData.password || !newStaffData.confirmPassword) {
+      setAddStaffError('Password fields cannot be empty');
+      return;
+    }
+
+    if (newStaffData.password !== newStaffData.confirmPassword) {
+      setAddStaffError('Passwords do not match');
+      return;
+    }
+
+    if (!validatePassword(newStaffData.password)) {
+      setAddStaffError('Password does not meet requirements');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const response = await apiFetch('/api/add-staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: newStaffData.firstName,
+          lastName: newStaffData.lastName,
+          email: newStaffData.email,
+          phone: newStaffData.phone,
+          role: newStaffData.role,
+          center: newStaffData.center,
+          officeAddress: newStaffData.officeAddress,
+          password: newStaffData.password,
+          isApproved: newStaffData.isApproved,
+          isVerified: newStaffData.isVerified,
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to add staff:', errorText);
+        throw new Error(`Failed to add staff: ${errorText}`);
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        showNotification('Staff added successfully', 'success');
+        closeAddModal();
+        // Refresh staff list
+        const userCenter = getUserCenter();
+        let apiUrl = '/api/staffs';
+        if (userCenter && userCenter !== 'all') {
+          console.log('Admin center detected, using client-side filtering for center:', userCenter);
+        } else if (!userCenter) {
+          console.log('No user center detected, fetching all staff for client-side filtering');
+        }
+        const res = await apiFetch(apiUrl);
+        const data = await res.json();
+        if (data.success) {
+          const allStaff = data.staffs || [];
+          const mappedStaff = allStaff.map(staff => ({
+            ...staff,
+            fullName: staff.fullName || `${staff.firstName || ''} ${staff.lastName || ''}`.trim(),
+            center: staff.center || staff.centerName,
+            // Prefer officeAddress array/string for display in the Center column
+            officeAddressString: Array.isArray(staff.officeAddress)
+              ? staff.officeAddress.filter(Boolean).join(', ')
+              : (staff.officeAddress || '')
+          }));
+          // Apply center filtering - prioritize officeAddress field
+          const filteredStaff = mappedStaff.filter(staff => {
+            if (userCenter && userCenter !== 'all') {
+              const staffCenter = staff.center || staff.centerName || '';
+              const officeAddress = staff.officeAddressString || '';
+              
+              // Primary: Check if office address contains the center name
+              let addressMatch = false;
+              if (officeAddress) {
+                const normalizedAddress = officeAddress.toLowerCase().trim();
+                const normalizedUserCenter = userCenter.toLowerCase().trim();
+                
+                addressMatch = normalizedAddress === normalizedUserCenter ||
+                              normalizedAddress.includes(normalizedUserCenter) ||
+                              normalizedUserCenter.includes(normalizedAddress) ||
+                              // Handle "Balong-Bato" vs "Balong-Bato Center" variations
+                              normalizedAddress.replace(/\s*center$/i, '') === normalizedUserCenter ||
+                              normalizedUserCenter.includes(normalizedAddress.replace(/\s*center$/i, ''));
+              }
+              
+              // Fallback: Check center field if office address doesn't match
+              let centerMatch = false;
+              if (!addressMatch && staffCenter) {
+                const normalizedCenter = staffCenter.toLowerCase().trim();
+                const normalizedUserCenter = userCenter.toLowerCase().trim();
+                
+                centerMatch = normalizedCenter === normalizedUserCenter ||
+                             normalizedCenter.includes(normalizedUserCenter) ||
+                             normalizedUserCenter.includes(normalizedCenter) ||
+                             normalizedCenter.replace(/\s*center$/i, '') === normalizedUserCenter ||
+                             normalizedUserCenter.includes(normalizedCenter.replace(/\s*center$/i, ''));
+              }
+              
+              const matches = addressMatch || centerMatch;
+              
+              if (!matches) {
+                return false;
+              }
+              return true;
+            }
+            return true; // Super admin sees all
+          });
+          setStaff(filteredStaff);
+        } else {
+          showNotification('Failed to load staff data after adding', 'error');
+        }
+      } else {
+        throw new Error(result.message || 'Failed to add staff');
+      }
+    } catch (error) {
+      console.error('Error adding staff:', error);
+      showNotification(error.message || 'Error adding staff', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Validate email
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validate phone number
+  const validatePhone = (phone) => {
+    const phoneRegex = /^09\d{9}$/; // Philippine mobile number format
+    return phoneRegex.test(phone);
   };
 
   useEffect(() => {
@@ -579,6 +783,12 @@ const SuperAdminStaffManagement = () => {
             </div>
           </div>
 
+          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:12 }}>
+            <button className="btn-approve" onClick={openAddModal}>
+              <i className="fa fa-user-plus" style={{ marginRight: 6 }}></i> Add Staff
+            </button>
+          </div>
+
           {loading ? (
             <UnifiedSpinner text="Loading staff..." />
           ) : (
@@ -803,6 +1013,209 @@ const SuperAdminStaffManagement = () => {
                 <li>Contains at least one number</li>
                 <li>Contains at least one special character (@$!%*?&)</li>
               </ul>
+            </div>
+          </div>
+        }
+      />
+
+      {/* Add Staff Modal */}
+      <UnifiedModal
+        isOpen={showAddModal}
+        onClose={closeAddModal}
+        title="Add Staff Account"
+        icon={<i className="fa-solid fa-user-plus"></i>}
+        iconType="info"
+        confirmText="Create Account"
+        cancelText="Cancel"
+        onConfirm={submitAddStaff}
+        isLoading={addSubmitting}
+        loadingText="Creating..."
+        size="md"
+        customContent={(
+          <div className="add-staff-form" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:12 }}>
+            <div>
+              <label>First Name</label>
+              <input type="text" value={addForm.firstName} onChange={(e)=>setAddForm({ ...addForm, firstName:e.target.value })} placeholder="First name" />
+            </div>
+            <div>
+              <label>Last Name</label>
+              <input type="text" value={addForm.lastName} onChange={(e)=>setAddForm({ ...addForm, lastName:e.target.value })} placeholder="Last name" />
+            </div>
+            <div>
+              <label>Email</label>
+              <input type="email" value={addForm.email} onChange={(e)=>setAddForm({ ...addForm, email:e.target.value })} placeholder="email@example.com" />
+            </div>
+            <div>
+              <label>Phone (11 digits)</label>
+              <input type="tel" value={addForm.phone} onChange={(e)=>{ const v = e.target.value.replace(/\D/g,'').slice(0,11); setAddForm({ ...addForm, phone:v }); }} placeholder="09XXXXXXXXX" />
+            </div>
+            <div>
+              <label>Role</label>
+              <select value={addForm.role} onChange={(e)=>setAddForm({ ...addForm, role:e.target.value })}>
+                <option>Staff</option>
+                <option>Admin</option>
+              </select>
+            </div>
+            {isSuperAdmin ? (
+              <div>
+                <label>Center</label>
+                <select value={addForm.center} onChange={(e)=>setAddForm({ ...addForm, center:e.target.value })}>
+                  <option value="">Select Center</option>
+                  {centerOptions.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label>Center</label>
+                <input type="text" value={userCenter || ''} readOnly />
+              </div>
+            )}
+            <div>
+              <label>Password</label>
+              <input type="password" value={addForm.password} onChange={(e)=>setAddForm({ ...addForm, password:e.target.value })} placeholder="Strong password" />
+            </div>
+            <div>
+              <label>Confirm Password</label>
+              <input type="password" value={addForm.confirmPassword} onChange={(e)=>setAddForm({ ...addForm, confirmPassword:e.target.value })} placeholder="Confirm password" />
+            </div>
+            {addError && (
+              <div style={{ gridColumn:'1/-1', color:'#b91c1c', background:'#fee2e2', padding:8, borderRadius:6 }}>
+                <i className="fa-solid fa-triangle-exclamation" style={{ marginRight:6 }}></i>
+                {addError}
+              </div>
+            )}
+          </div>
+        )}
+      />
+
+      {/* Add Staff Modal */}
+      <UnifiedModal
+        isOpen={showAddStaffModal}
+        onClose={closeAddModal}
+        title="Add New Staff"
+        message="Enter details for the new staff member."
+        icon={<i className="fa-solid fa-user-plus"></i>}
+        iconType="info"
+        confirmText="Add Staff"
+        cancelText="Cancel"
+        onConfirm={handleAddStaffSubmit}
+        isLoading={isProcessing}
+        loadingText="Adding Staff..."
+        size="md"
+        customContent={
+          <div className="add-staff-form">
+            {addStaffError && (
+              <div className="error-message">
+                <i className="fa-solid fa-exclamation-triangle"></i>
+                {addStaffError}
+              </div>
+            )}
+            <div className="form-group">
+              <label htmlFor="addFirstName">First Name</label>
+              <input
+                type="text"
+                id="addFirstName"
+                value={newStaffData.firstName}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, firstName: e.target.value }))}
+                placeholder="Enter first name"
+                className="form-control"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addLastName">Last Name</label>
+              <input
+                type="text"
+                id="addLastName"
+                value={newStaffData.lastName}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, lastName: e.target.value }))}
+                placeholder="Enter last name"
+                className="form-control"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addEmail">Email</label>
+              <input
+                type="email"
+                id="addEmail"
+                value={newStaffData.email}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Enter email address"
+                className="form-control"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addPhone">Phone</label>
+              <input
+                type="tel"
+                id="addPhone"
+                value={newStaffData.phone}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Enter phone number (e.g., 09123456789)"
+                className="form-control"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addRole">Role</label>
+              <select
+                id="addRole"
+                value={newStaffData.role}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, role: e.target.value }))}
+                className="form-control"
+                required
+              >
+                <option value="">Select Role</option>
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="addCenter">Center</label>
+              <select
+                id="addCenter"
+                value={newStaffData.center}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, center: e.target.value }))}
+                className="form-control"
+                required
+              >
+                <option value="">Select Center</option>
+                {centerOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="addOfficeAddress">Office Address (if applicable)</label>
+              <textarea
+                id="addOfficeAddress"
+                value={newStaffData.officeAddress}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, officeAddress: e.target.value }))}
+                placeholder="Enter office address (e.g., 123 Main St, Manila)"
+                className="form-control"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addIsApproved">Approved</label>
+              <input
+                type="checkbox"
+                id="addIsApproved"
+                checked={newStaffData.isApproved}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, isApproved: e.target.checked }))}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addIsVerified">Verified</label>
+              <input
+                type="checkbox"
+                id="addIsVerified"
+                checked={newStaffData.isVerified}
+                onChange={(e) => setNewStaffData(prev => ({ ...prev, isVerified: e.target.checked }))}
+              />
             </div>
           </div>
         }
