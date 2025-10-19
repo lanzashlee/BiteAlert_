@@ -69,21 +69,107 @@ const SuperAdminAuditTrail = () => {
         const patientKey = currentUser?._id || currentUser?.patientId || currentUser?.patientID || currentUser?.id || '';
         console.log('🔍 AUDIT TRAIL DEBUG:', { userCenter, roleFromUser, patientKey });
         
-        // Scope at API level when possible
-        let url = apiConfig.endpoints.auditTrail;
-        const params = new URLSearchParams();
-        let usedCenterParam = false;
-        if (roleFromUser === 'admin' || roleFromUser === 'staff') {
-          if (userCenter && userCenter !== 'all') params.set('center', userCenter);
-          usedCenterParam = userCenter && userCenter !== 'all';
-        } else if (roleFromUser === 'patient' && patientKey) {
-          params.set('patientId', patientKey);
+        // Fetch audit trail data from multiple sources
+        let allData = [];
+        
+        try {
+          // 1. Fetch admin audit trail
+          let url = apiConfig.endpoints.auditTrail;
+          const params = new URLSearchParams();
+          let usedCenterParam = false;
+          if (roleFromUser === 'admin' || roleFromUser === 'staff') {
+            if (userCenter && userCenter !== 'all') params.set('center', userCenter);
+            usedCenterParam = userCenter && userCenter !== 'all';
+          } else if (roleFromUser === 'patient' && patientKey) {
+            params.set('patientId', patientKey);
+          }
+          if ([...params.keys()].length > 0) url = `${apiConfig.endpoints.auditTrail}?${params.toString()}`;
+          
+          const res = await apiFetch(url);
+          if (res.ok) {
+            const json = await res.json();
+            const adminData = Array.isArray(json) ? json : (json.data || []);
+            allData = [...allData, ...adminData];
+          }
+        } catch (error) {
+          console.warn('Error fetching admin audit trail:', error);
         }
-        if ([...params.keys()].length > 0) url = `${apiConfig.endpoints.auditTrail}?${params.toString()}`;
-        const res = await apiFetch(url);
-        if (!res.ok) throw new Error('Failed to load audit trail');
-        const json = await res.json();
-        const allData = Array.isArray(json) ? json : (json.data || []);
+        
+        try {
+          // 2. Fetch staff activities
+          const staffRes = await apiFetch('/api/staffs');
+          if (staffRes.ok) {
+            const staffData = await staffRes.json();
+            const staffs = Array.isArray(staffData) ? staffData : (staffData.data || []);
+            
+            // Convert staff data to audit trail format
+            const staffAuditEntries = staffs
+              .filter(staff => {
+                if (userCenter && userCenter !== 'all') {
+                  const staffCenter = staff.center || staff.centerName || staff.officeAddress || '';
+                  return staffCenter.toLowerCase().includes(userCenter.toLowerCase()) ||
+                         userCenter.toLowerCase().includes(staffCenter.toLowerCase());
+                }
+                return true;
+              })
+              .map(staff => ({
+                id: staff.staffId || staff._id,
+                role: 'Staff',
+                name: staff.fullName || `${staff.firstName} ${staff.lastName}`,
+                action: 'Staff account created',
+                timestamp: staff.createdAt || new Date().toISOString(),
+                center: staff.center || staff.centerName || staff.officeAddress || '',
+                barangay: staff.barangay || '',
+                userId: staff._id,
+                staffId: staff.staffId
+              }));
+            
+            allData = [...allData, ...staffAuditEntries];
+          }
+        } catch (error) {
+          console.warn('Error fetching staff data:', error);
+        }
+        
+        try {
+          // 3. Fetch patient activities
+          const patientRes = await apiFetch('/api/patients');
+          if (patientRes.ok) {
+            const patientData = await patientRes.json();
+            const patients = Array.isArray(patientData) ? patientData : (patientData.data || []);
+            
+            // Convert patient data to audit trail format
+            const patientAuditEntries = patients
+              .filter(patient => {
+                if (userCenter && userCenter !== 'all') {
+                  const patientCenter = patient.center || patient.centerName || '';
+                  const patientBarangay = patient.barangay || patient.addressBarangay || '';
+                  return patientCenter.toLowerCase().includes(userCenter.toLowerCase()) ||
+                         patientBarangay.toLowerCase().includes(userCenter.toLowerCase()) ||
+                         userCenter.toLowerCase().includes(patientCenter.toLowerCase()) ||
+                         userCenter.toLowerCase().includes(patientBarangay.toLowerCase());
+                }
+                return true;
+              })
+              .map(patient => ({
+                id: patient.patientId || patient._id,
+                role: 'Patient',
+                name: patient.fullName || `${patient.firstName} ${patient.lastName}`,
+                action: 'Patient registered',
+                timestamp: patient.dateRegistered || patient.createdAt || new Date().toISOString(),
+                center: patient.center || patient.centerName || '',
+                barangay: patient.barangay || patient.addressBarangay || '',
+                userId: patient._id,
+                patientId: patient.patientId
+              }));
+            
+            allData = [...allData, ...patientAuditEntries];
+          }
+        } catch (error) {
+          console.warn('Error fetching patient data:', error);
+        }
+        
+        // Sort all data by timestamp (newest first)
+        allData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         
         // Apply client-side filtering for admin users
         let filteredData = allData;
@@ -113,7 +199,7 @@ const SuperAdminAuditTrail = () => {
         } else if (roleFromUser === 'patient' && patientKey) {
           // For patients, show only their own actions/records
           filteredData = allData.filter(entry => {
-            const idMatches = [entry.patientID, entry.userId, entry.id]
+            const idMatches = [entry.patientID, entry.userId, entry.id, entry.patientId]
               .filter(Boolean)
               .map(v => String(v))
               .some(v => v === String(patientKey));
