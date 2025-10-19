@@ -314,7 +314,9 @@ const SuperAdminStaffManagement = () => {
 
   // Handle Add Staff form submission
   const handleAddStaffSubmit = async (e) => {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     setAddStaffError(null);
 
     if (!newStaffData.firstName || !newStaffData.lastName || !newStaffData.email || !newStaffData.role || !newStaffData.center) {
