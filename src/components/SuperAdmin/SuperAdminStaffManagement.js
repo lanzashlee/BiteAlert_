@@ -357,8 +357,10 @@ const SuperAdminStaffManagement = () => {
       return;
     }
 
-    if (!validatePassword(newStaffData.password)) {
-      setAddStaffError('Password does not meet requirements');
+    // Validate password using same rules as Admin Create Account
+    const passwordValidationMsg = validatePassword(newStaffData.password);
+    if (passwordValidationMsg) {
+      setAddStaffError(passwordValidationMsg || 'Password does not meet requirements');
       return;
     }
 
