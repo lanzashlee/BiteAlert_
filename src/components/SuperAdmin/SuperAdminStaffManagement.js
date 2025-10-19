@@ -724,8 +724,17 @@ const SuperAdminStaffManagement = () => {
     <div className="dashboard-container">
       <ResponsiveSidebar onSignOut={handleSignOut} />
       <main className="main-content">
-        <div className="content-header">
-          <h2>Staff Account Management</h2>
+        <div className="content-header" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+          <h2 style={{ margin:0 }}>Staff Account Management</h2>
+          <button 
+            className="btn-approve"
+            onClick={openAddModal}
+            style={{ display:'inline-flex', alignItems:'center', gap:8 }}
+            title="Add Staff"
+          >
+            <i className="fa fa-user-plus"></i>
+            <span>Add Staff</span>
+          </button>
         </div>
 
                 <div className="accounts-container">
@@ -783,11 +792,7 @@ const SuperAdminStaffManagement = () => {
             </div>
           </div>
 
-          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:12 }}>
-            <button className="btn-approve" onClick={openAddModal}>
-              <i className="fa fa-user-plus" style={{ marginRight: 6 }}></i> Add Staff
-            </button>
-          </div>
+          
 
           {loading ? (
             <UnifiedSpinner text="Loading staff..." />
@@ -1022,21 +1027,20 @@ const SuperAdminStaffManagement = () => {
       <UnifiedModal
         isOpen={showAddStaffModal}
         onClose={closeAddModal}
-        title="Add New Staff"
-        message="Enter details for the new staff member."
+        title="Add Staff"
         icon={<i className="fa-solid fa-user-plus"></i>}
         iconType="info"
-        confirmText="Add Staff"
+        confirmText="Create"
         cancelText="Cancel"
         onConfirm={handleAddStaffSubmit}
         isLoading={isProcessing}
-        loadingText="Adding Staff..."
+        loadingText="Creating..."
         size="md"
         customContent={
-          <div className="add-staff-form">
+          <div className="add-staff-form" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:12 }}>
             {addStaffError && (
-              <div className="error-message">
-                <i className="fa-solid fa-exclamation-triangle"></i>
+              <div className="error-message" style={{ gridColumn:'1/-1', color:'#b91c1c', background:'#fee2e2', padding:8, borderRadius:6 }}>
+                <i className="fa-solid fa-triangle-exclamation" style={{ marginRight:6 }}></i>
                 {addStaffError}
               </div>
             )}
