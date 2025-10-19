@@ -170,20 +170,36 @@ const SuperAdminAuditTrail = () => {
               })
               .map(patient => {
                 // Try to find the proper patient ID from various possible fields
-                const patientId = patient.patientId || patient.patientID || patient.id || `PAT-${patient._id}`;
+                // Prioritize the properly formatted patient ID (PAT-EJ20250001 format)
+                const patientId = patient.patientId || patient.patientID || patient.id;
+                
+                // If no proper patient ID found, generate one in the correct format
+                let finalPatientId = patientId;
+                if (!finalPatientId || !finalPatientId.startsWith('PAT-')) {
+                  // Generate patient ID in PAT-EJ20250001 format
+                  const year = new Date().getFullYear();
+                  const initials = [patient.firstName, patient.middleName, patient.lastName]
+                    .filter(Boolean)
+                    .map(v => String(v).trim()[0] || '')
+                    .join('')
+                    .toUpperCase() || 'PTN';
+                  const sequence = String(patient._id).slice(-4);
+                  finalPatientId = `PAT-${initials}${year}${sequence}`;
+                }
+                
                 console.log('🔍 PATIENT ID MAPPING:', {
                   patientId: patient.patientId,
                   patientID: patient.patientID,
                   id: patient.id,
                   _id: patient._id,
-                  finalId: patientId,
+                  finalId: finalPatientId,
                   fullName: patient.fullName,
                   firstName: patient.firstName,
                   lastName: patient.lastName
                 });
                 
                 return {
-                  id: patientId,
+                  id: finalPatientId,
                   role: 'Patient',
                   name: patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown Patient',
                   action: 'Patient registered',
@@ -191,7 +207,7 @@ const SuperAdminAuditTrail = () => {
                   center: patient.center || patient.centerName || '',
                   barangay: patient.barangay || patient.addressBarangay || '',
                   userId: patient._id,
-                  patientId: patientId
+                  patientId: finalPatientId
                 };
               });
             

@@ -4262,13 +4262,12 @@ app.post('/api/patients', async (req, res) => {
         // Log audit trail for patient registration
         try {
         await logAuditTrail(
-            newPatient._id,
             'patient',
             newPatient.firstName,
             newPatient.middleName,
             newPatient.lastName,
             'Registered',
-            {},
+            { patientID: newPatient.patientId },
             newPatient.center || newPatient.centerName || newPatient.barangay || null
         );
         } catch (auditError) {
@@ -4468,12 +4467,12 @@ app.put('/api/patients/:id', async (req, res) => {
         if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
         // Log audit trail for patient update
         await logAuditTrail(
-            patient._id,
             'patient',
             patient.firstName,
             patient.middleName,
             patient.lastName,
-            'Updated profile'
+            'Updated profile',
+            { patientID: patient.patientId }
         );
         res.json({ success: true, patient });
     } catch (error) {
@@ -4490,12 +4489,12 @@ app.post('/api/patients/:id/status', async (req, res) => {
         if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
         // Log audit trail for status change
         await logAuditTrail(
-            patient._id,
             'patient',
             patient.firstName,
             patient.middleName,
             patient.lastName,
-            `Status changed to ${status}`
+            `Status changed to ${status}`,
+            { patientID: patient.patientId }
         );
         res.json({ success: true, patient });
     } catch (error) {
