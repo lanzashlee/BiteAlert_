@@ -1164,6 +1164,30 @@ const SuperAdminStaffManagement = () => {
               />
             </div>
             <div className="form-group">
+              <label htmlFor="addPassword">Password</label>
+              <input
+                id="addPassword"
+                type="password"
+                className="form-control"
+                placeholder="Create a strong password"
+                value={newStaffData.password || ''}
+                onChange={(e)=> setNewStaffData(prev => ({ ...prev, password: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="addConfirmPassword">Confirm Password</label>
+              <input
+                id="addConfirmPassword"
+                type="password"
+                className="form-control"
+                placeholder="Re-enter password"
+                value={newStaffData.confirmPassword || ''}
+                onChange={(e)=> setNewStaffData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="form-group">
               <label htmlFor="addCenter">Center</label>
               <select
                 id="addCenter"
