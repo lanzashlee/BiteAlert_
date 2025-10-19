@@ -89,6 +89,11 @@ const SuperAdminCenter = () => {
       setFormError('All fields are required.');
       return;
     }
+    // Validate contact number format
+    if (contactNumber.length !== 11 || !/^\d{11}$/.test(contactNumber)) {
+      setFormError('Contact number must be exactly 11 digits.');
+      return;
+    }
     // Check duplicate by name (case-insensitive) except self when editing
     const duplicate = centers.some((c) => (c.centerName || '').toLowerCase() === centerName.toLowerCase() && (!editId || c._id !== editId));
     if (duplicate && !editId) {
@@ -290,7 +295,25 @@ const SuperAdminCenter = () => {
                 </div>
                 <div className="form-row">
                   <label htmlFor="contactNumber">Contact Number</label>
-                  <input id="contactNumber" value={form.contactNumber} onChange={(e) => setForm({ ...form, contactNumber: e.target.value })} required />
+                  <input 
+                    id="contactNumber" 
+                    type="tel"
+                    value={form.contactNumber} 
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow digits and limit to 11 characters
+                      const digitsOnly = value.replace(/\D/g, '');
+                      if (digitsOnly.length <= 11) {
+                        setForm({ ...form, contactNumber: digitsOnly });
+                      }
+                    }}
+                    placeholder="09XXXXXXXXX (11 digits)"
+                    maxLength={11}
+                    required 
+                  />
+                  {form.contactNumber && form.contactNumber.length !== 11 && (
+                    <div className="error-text">Contact number must be exactly 11 digits</div>
+                  )}
                 </div>
               </div>
               <div className="react-modal-footer">
