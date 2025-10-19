@@ -487,9 +487,13 @@ const SuperAdminDashboard = () => {
         }
       },
       datalabels: {
+        display: true,
         color: '#FFFFFF',
         font: { weight: 'bold', size: 14 },
-        formatter: (value) => Math.round(value)
+        formatter: (value) => Math.round(value),
+        anchor: 'end',
+        align: 'top',
+        offset: 8
       }
     }
   }), [commonOptions]);
