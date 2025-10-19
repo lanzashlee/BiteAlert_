@@ -496,6 +496,24 @@ const SuperAdminVaccinationSchedule = () => {
   };
 
   const buildVaccinationsForBiteCase = (biteCase) => {
+    // PREFER scheduleDates array from bitecases for all reads
+    if (Array.isArray(biteCase.scheduleDates) && biteCase.scheduleDates.length > 0) {
+      const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
+      const days = labels.map((label, idx) => ({
+        day: label,
+        date: biteCase.scheduleDates[idx],
+        status: biteCase.status === 'completed' ? 'completed' : (biteCase[`${label.replace(' ', '').toLowerCase()}`] || 'scheduled')
+      }));
+      return days
+        .map(d => ({ ...d, date: normalizeDate(d.date) }))
+        .filter(d => d.date)
+        .map(d => ({
+          label: d.day,
+          date: toLocalDateOnlyString(d.date),
+          status: d.status || 'scheduled'
+        }));
+    }
+    // Fallback to legacy per-day fields only when scheduleDates is absent
     const fromPerDay = [
       { day: 'Day 0',  date: biteCase.d0Date,  status: biteCase.d0Status },
       { day: 'Day 3',  date: biteCase.d3Date,  status: biteCase.d3Status },
@@ -504,15 +522,6 @@ const SuperAdminVaccinationSchedule = () => {
       { day: 'Day 28', date: biteCase.d28Date, status: biteCase.d28Status }
     ];
     let days = fromPerDay;
-    const noDates = fromPerDay.every(d => !d.date);
-    if (noDates && Array.isArray(biteCase.scheduleDates) && biteCase.scheduleDates.length > 0) {
-      const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
-      days = labels.map((label, idx) => ({
-        day: label,
-        date: biteCase.scheduleDates[idx],
-        status: biteCase.status === 'completed' ? 'completed' : 'scheduled'
-      }));
-    }
     return days
       .map(d => ({ ...d, date: normalizeDate(d.date) }))
       .filter(d => d.date)
@@ -623,8 +632,6 @@ const SuperAdminVaccinationSchedule = () => {
 
       const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
       const addDays = [0,3,7,14,28];
-      const dateMap = { 'Day 0': 'd0Date', 'Day 3': 'd3Date', 'Day 7': 'd7Date', 'Day 14': 'd14Date', 'Day 28': 'd28Date' };
-      const statusMap = { 'Day 0': 'd0Status', 'Day 3': 'd3Status', 'Day 7': 'd7Status', 'Day 14': 'd14Status', 'Day 28': 'd28Status' };
 
       const idxBase = labels.indexOf(dayLabel);
       if (idxBase < 0) return;
@@ -665,48 +672,27 @@ const SuperAdminVaccinationSchedule = () => {
         return v;
       }));
 
-      // Build payload for backend
-      payload[dateMap[dayLabel]] = new Date(baseDate).toISOString();
-      const currentItem = (scheduleModalData?.schedule || []).find(s => s.label === dayLabel);
-      if (currentItem && currentItem.status !== 'completed') {
-        payload[statusMap[dayLabel]] = 'scheduled';
-      }
-      for (let i = idxBase + 1; i < labels.length; i++) {
+      // Build payload to update ONLY scheduleDates in bitecases
+      // We construct new scheduleDates array based on base date and addDays
+      const newScheduleDates = labels.map((_, idx) => {
         const d = new Date(baseDate);
-        d.setDate(d.getDate() + (addDays[i] - addDays[idxBase]));
-        payload[dateMap[labels[i]]] = new Date(d).toISOString();
-        const schedItem = (scheduleModalData?.schedule || []).find(s => s.label === labels[i]);
-        if (!schedItem || schedItem.status !== 'completed') {
-          payload[statusMap[labels[i]]] = 'scheduled';
-        }
-      }
+        d.setDate(d.getDate() + (addDays[idx] - addDays[idxBase]));
+        return new Date(d).toISOString();
+      });
+      payload.scheduleDates = newScheduleDates;
 
       let persisted = false;
-      // Try dedicated reschedule endpoint first when vdId is known
-      if (scheduleModalData?.vdId) {
-        try {
-          console.log('Trying reschedule endpoint:', { vdId: scheduleModalData.vdId, dayLabel, newDate: newDateStr });
-          const res0 = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}/reschedule`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dayLabel, newDate: newDateStr })
-          });
-          console.log('Reschedule endpoint response:', { ok: res0.ok, status: res0.status });
-          if (res0.ok) {
-            persisted = true;
-          }
-        } catch (error) {
-          console.error('Reschedule endpoint error:', error);
-        }
-      }
-      // Fallback: direct PUT on vaccinationdates/:id
-      if (!persisted && scheduleModalData?.vdId) {
-      const res = await apiFetch(`${apiConfig.endpoints.vaccinationDates}/${encodeURIComponent(scheduleModalData.vdId)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-        if (res.ok) persisted = true; else persisted = false;
+      // Persist by updating the bitecase's scheduleDates only
+      try {
+        const resBite = await apiFetch(`${apiConfig.endpoints.bitecases}/${encodeURIComponent(selectedVaccination.originalId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduleDates: payload.scheduleDates })
+        });
+        persisted = resBite.ok;
+      } catch (e) {
+        console.error('Failed updating bitecase scheduleDates:', e);
+        persisted = false;
       }
       if (!persisted && scheduleModalData?.biteCaseId) {
         const res2 = await apiFetch(`${apiConfig.endpoints.bitecases}/${encodeURIComponent(scheduleModalData.biteCaseId)}`, {
@@ -1130,28 +1116,9 @@ const SuperAdminVaccinationSchedule = () => {
       }
 
       // Map day labels to status fields for bite case
-      const dayStatusMap = {
-        'Day 0': 'd0Status',
-        'Day 3': 'd3Status', 
-        'Day 7': 'd7Status',
-        'Day 14': 'd14Status',
-        'Day 28': 'd28Status'
-      };
-
-      const dayDateMap = {
-        'Day 0': 'd0Date',
-        'Day 3': 'd3Date',
-        'Day 7': 'd7Date',
-        'Day 14': 'd14Date',
-        'Day 28': 'd28Date'
-      };
-
-      const statusField = dayStatusMap[scheduleItem.label];
-      const dateField = dayDateMap[scheduleItem.label];
-      
-      if (statusField) {
-        updateData[statusField] = 'completed';
-      }
+      // We no longer write per-day date fields; status completion stays for history
+      const statusField = null;
+      const dateField = null;
 
       // Find the vaccination record for this patient
       let vaccinationRecord = null;
