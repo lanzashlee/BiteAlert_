@@ -120,13 +120,19 @@ const SuperAdminAuditTrail = () => {
                   staffID: staff.staffID,
                   id: staff.id,
                   _id: staff._id,
-                  finalId: staffId
+                  finalId: staffId,
+                  fullName: staff.fullName,
+                  firstName: staff.firstName,
+                  lastName: staff.lastName,
+                  center: staff.center,
+                  centerName: staff.centerName,
+                  officeAddress: staff.officeAddress
                 });
                 
                 return {
                   id: staffId,
                   role: 'Staff',
-                  name: staff.fullName || `${staff.firstName} ${staff.lastName}`,
+                  name: staff.fullName || `${staff.firstName || ''} ${staff.lastName || ''}`.trim() || 'Unknown Staff',
                   action: 'Staff account created',
                   timestamp: staff.createdAt || new Date().toISOString(),
                   center: staff.center || staff.centerName || staff.officeAddress || '',
@@ -170,13 +176,16 @@ const SuperAdminAuditTrail = () => {
                   patientID: patient.patientID,
                   id: patient.id,
                   _id: patient._id,
-                  finalId: patientId
+                  finalId: patientId,
+                  fullName: patient.fullName,
+                  firstName: patient.firstName,
+                  lastName: patient.lastName
                 });
                 
                 return {
                   id: patientId,
                   role: 'Patient',
-                  name: patient.fullName || `${patient.firstName} ${patient.lastName}`,
+                  name: patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown Patient',
                   action: 'Patient registered',
                   timestamp: patient.dateRegistered || patient.createdAt || new Date().toISOString(),
                   center: patient.center || patient.centerName || '',
