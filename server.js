@@ -3319,7 +3319,7 @@ app.get('/api/bitecases', async (req, res) => {
         console.log('🔍 GET /api/bitecases called with query:', req.query);
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         
-        const { center, patientId, registrationNumber, name, firstName, lastName } = req.query;
+        const { center, patientId, registrationNumber, name, firstName, lastName, today } = req.query;
 
         const filter = {};
 
@@ -3359,6 +3359,36 @@ app.get('/api/bitecases', async (req, res) => {
 
         if (orConditions.length > 0) {
             filter.$or = orConditions;
+        }
+
+        // Add today's date filtering if requested
+        if (today === 'true') {
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+            
+            console.log('🔍 BACKEND: Filtering for today\'s appointments:', todayString);
+            
+            // Filter bite cases that have vaccination dates for today
+            const todayFilter = {
+                $or: [
+                    { d0Date: { $regex: `^${todayString}` } },
+                    { d3Date: { $regex: `^${todayString}` } },
+                    { d7Date: { $regex: `^${todayString}` } },
+                    { d14Date: { $regex: `^${todayString}` } },
+                    { d28Date: { $regex: `^${todayString}` } },
+                    // Also check scheduleDates array
+                    { 'scheduleDates': { $elemMatch: { $regex: `^${todayString}` } } }
+                ]
+            };
+            
+            // Combine with existing filter
+            if (Object.keys(filter).length > 0) {
+                filter.$and = [filter, todayFilter];
+            } else {
+                Object.assign(filter, todayFilter);
+            }
+            
+            console.log('🔍 BACKEND: Today filter applied:', JSON.stringify(filter, null, 2));
         }
 
         const cases = await BiteCase.find(filter).sort({ createdAt: -1, incidentDate: -1 });

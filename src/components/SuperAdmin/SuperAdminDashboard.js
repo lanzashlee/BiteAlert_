@@ -1101,11 +1101,11 @@ const SuperAdminDashboard = () => {
       
       // Build API URLs with center filter for non-superadmin users (EXACT same as scheduler)
       let patientsUrl = '/api/patients?page=1&limit=1000';
-      let biteCasesUrl = '/api/bitecases';
+      let biteCasesUrl = '/api/bitecases?today=true';
       
       if (userCenter && userCenter !== 'all') {
         patientsUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
-        biteCasesUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
+        biteCasesUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
       }
       
       // Fetch patients and bite cases in parallel (EXACT same as scheduler)
