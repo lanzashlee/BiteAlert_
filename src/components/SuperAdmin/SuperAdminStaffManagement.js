@@ -48,7 +48,7 @@ const SuperAdminStaffManagement = () => {
     lastName: '',
     email: '',
     phone: '',
-    role: '',
+    role: 'Staff',
     center: '',
     officeAddress: '',
     isApproved: false,
@@ -285,7 +285,7 @@ const SuperAdminStaffManagement = () => {
       lastName: '',
       email: '',
       phone: '',
-      role: '',
+      role: 'Staff',
       center: '',
       officeAddress: '',
       isApproved: false,
@@ -303,7 +303,7 @@ const SuperAdminStaffManagement = () => {
       lastName: '',
       email: '',
       phone: '',
-      role: '',
+      role: 'Staff',
       center: '',
       officeAddress: '',
       isApproved: false,
@@ -1094,17 +1094,13 @@ const SuperAdminStaffManagement = () => {
             </div>
             <div className="form-group">
               <label htmlFor="addRole">Role</label>
-              <select
+              <input
                 id="addRole"
-                value={newStaffData.role}
-                onChange={(e) => setNewStaffData(prev => ({ ...prev, role: e.target.value }))}
+                type="text"
                 className="form-control"
-                required
-              >
-                <option value="">Select Role</option>
-                <option value="admin">Admin</option>
-                <option value="staff">Staff</option>
-              </select>
+                value={newStaffData.role}
+                readOnly
+              />
             </div>
             <div className="form-group">
               <label htmlFor="addCenter">Center</label>
