@@ -1173,6 +1173,24 @@ const SuperAdminVaccinationSchedule = () => {
           )
         }));
 
+        // Also update the main vaccinations list immediately
+        setVaccinations(prev => {
+          const updated = prev.map(v => {
+            if (v.patientId === scheduleModalData.patient.patientId && 
+                v.vaccinationDay === scheduleItem.label) {
+              console.log('🔍 UPDATING VACCINATION STATUS IN MAIN LIST:', {
+                patientId: v.patientId,
+                vaccinationDay: v.vaccinationDay,
+                oldStatus: v.status,
+                newStatus: 'completed'
+              });
+              return { ...v, status: 'completed' };
+            }
+            return v;
+          });
+          return updated;
+        });
+
         showNotification('Vaccination status updated successfully!', 'success');
         resetVaccineSelections();
 
@@ -3413,6 +3431,16 @@ const SuperAdminVaccinationSchedule = () => {
     const today = todayLocalStr();
     const vaccinationDate = toLocalDateOnlyString(scheduledDate);
     
+    // Debug logging for status determination
+    console.log('🔍 STATUS BADGE DEBUG:', {
+      status,
+      scheduledDate,
+      vaccinationDate,
+      today,
+      statusFromDB: status,
+      isCompleted: status === 'completed'
+    });
+    
     // Use the actual status from database first
     if (status === 'completed') return 'status-completed';
     if (status === 'missed') return 'status-missed';
@@ -3430,6 +3458,16 @@ const SuperAdminVaccinationSchedule = () => {
   const getStatusText = (status, scheduledDate) => {
     const today = todayLocalStr();
     const vaccinationDate = toLocalDateOnlyString(scheduledDate);
+    
+    // Debug logging for status determination
+    console.log('🔍 STATUS TEXT DEBUG:', {
+      status,
+      scheduledDate,
+      vaccinationDate,
+      today,
+      statusFromDB: status,
+      isCompleted: status === 'completed'
+    });
     
     // Use the actual status from database first
     if (status === 'completed') return 'Completed';
