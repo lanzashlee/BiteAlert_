@@ -1278,8 +1278,8 @@ const SuperAdminVaccinationSchedule = () => {
         updateData[dateField] = new Date().toISOString();
       }
 
-      // Update the bite case directly with the completion status
-      console.log('🔍 UPDATING BITE CASE DIRECTLY:', {
+      // Update both bite case and vaccinationdates collections
+      console.log('🔍 UPDATING BOTH BITE CASE AND VACCINATIONDATES:', {
         biteCaseId: scheduleModalData.biteCaseId,
         statusField,
         dateField,
@@ -1294,9 +1294,20 @@ const SuperAdminVaccinationSchedule = () => {
         updatedAt: new Date().toISOString()
       };
       
-      console.log('🔍 BITE CASE UPDATE PAYLOAD:', biteCaseUpdate);
+      const vaccinationDatesUpdate = {
+        [statusField]: 'completed',
+        [dateField]: new Date().toISOString(),
+        completedDate: updateData.completedDate,
+        vaccinationDay: updateData.vaccinationDay,
+        vaccinesUsed: selectedVaccineList,
+        updatedAt: new Date().toISOString()
+      };
       
-      const response = await apiFetch(`/api/bitecases/${scheduleModalData.biteCaseId}`, {
+      console.log('🔍 BITE CASE UPDATE PAYLOAD:', biteCaseUpdate);
+      console.log('🔍 VACCINATIONDATES UPDATE PAYLOAD:', vaccinationDatesUpdate);
+      
+      // Update bite case
+      const biteCaseResponse = await apiFetch(`/api/bitecases/${scheduleModalData.biteCaseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1304,10 +1315,40 @@ const SuperAdminVaccinationSchedule = () => {
         body: JSON.stringify(biteCaseUpdate)
       });
       
-      console.log('🔍 Bite case update response status:', response.status, response.ok);
+      console.log('🔍 Bite case update response status:', biteCaseResponse.status, biteCaseResponse.ok);
 
-      if (response.ok) {
-        console.log('✅ BITE CASE UPDATED SUCCESSFULLY');
+      // Update vaccinationdates collection
+      let vaccinationDatesResponse = null;
+      if (vaccinationRecord && vaccinationRecord._id) {
+        console.log('🔍 UPDATING EXISTING VACCINATIONDATES RECORD:', vaccinationRecord._id);
+        vaccinationDatesResponse = await apiFetch(`/api/vaccinationdates/${vaccinationRecord._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(vaccinationDatesUpdate)
+        });
+        console.log('🔍 Vaccinationdates update response status:', vaccinationDatesResponse.status, vaccinationDatesResponse.ok);
+      } else {
+        console.log('🔍 CREATING NEW VACCINATIONDATES RECORD');
+        vaccinationDatesResponse = await apiFetch('/api/vaccinationdates', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            patientId: scheduleModalData.patient.patientId,
+            registrationNumber: scheduleModalData.patient.registrationNumber,
+            biteCaseId: scheduleModalData.biteCaseId,
+            ...vaccinationDatesUpdate,
+            createdAt: new Date().toISOString()
+          })
+        });
+        console.log('🔍 Vaccinationdates create response status:', vaccinationDatesResponse.status, vaccinationDatesResponse.ok);
+      }
+
+      if (biteCaseResponse.ok && vaccinationDatesResponse && vaccinationDatesResponse.ok) {
+        console.log('✅ BOTH BITE CASE AND VACCINATIONDATES UPDATED SUCCESSFULLY');
         
         // Update the overall bite case status based on completion progress
         try {
@@ -1317,6 +1358,12 @@ const SuperAdminVaccinationSchedule = () => {
           console.warn('Bite case status update failed:', statusError);
           // Don't fail the entire operation if status update fails
         }
+      } else {
+        const errors = [];
+        if (!biteCaseResponse.ok) errors.push('Failed to update bite case');
+        if (!vaccinationDatesResponse || !vaccinationDatesResponse.ok) errors.push('Failed to update vaccination dates');
+        throw new Error(`Database update failed: ${errors.join(', ')}`);
+      }
 
         // Stock deduction already handled above per selectedVaccineList
 
@@ -1348,7 +1395,7 @@ const SuperAdminVaccinationSchedule = () => {
           return updated;
         });
 
-        showNotification('Vaccination completed successfully! Status saved to database.', 'success');
+        showNotification('Vaccination completed successfully! Status saved to both bite case and vaccination records.', 'success');
         resetVaccineSelections();
 
         // Refresh the main vaccination list to reflect the completion
