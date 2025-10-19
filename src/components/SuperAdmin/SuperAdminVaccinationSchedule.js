@@ -1215,6 +1215,13 @@ const SuperAdminVaccinationSchedule = () => {
         // Try to create a vaccination record in vaccinationdates collection
         try {
           console.log('🔍 Creating new vaccination record in vaccinationdates collection');
+          console.log('🔍 CREATE DATA BEFORE:', {
+            patientId: scheduleModalData.patient.patientId,
+            registrationNumber: scheduleModalData.patient.registrationNumber,
+            biteCaseId: scheduleModalData.biteCaseId,
+            statusField,
+            dateField
+          });
           
           // Ensure we have valid data for creation
           const createData = {
@@ -1233,6 +1240,8 @@ const SuperAdminVaccinationSchedule = () => {
             createData[dateField] = new Date().toISOString();
           }
           
+          console.log('🔍 CREATE DATA FINAL:', createData);
+          
           const createResponse = await apiFetch('/api/vaccinationdates', {
             method: 'POST',
             headers: {
@@ -1241,13 +1250,21 @@ const SuperAdminVaccinationSchedule = () => {
             body: JSON.stringify(createData)
           });
           
+          console.log('🔍 CREATE RESPONSE STATUS:', createResponse.status, createResponse.ok);
+          
           if (createResponse.ok) {
             const newRecord = await createResponse.json();
             console.log('🔍 Created new vaccination record:', newRecord);
             const doc = newRecord?.data || newRecord;
             vaccinationRecord = doc;
+            console.log('🔍 SET VACCINATION RECORD:', vaccinationRecord);
           } else {
             const errorData = await createResponse.json().catch(() => ({}));
+            console.error('🔍 CREATE FAILED:', {
+              status: createResponse.status,
+              statusText: createResponse.statusText,
+              errorData
+            });
             throw new Error(`Failed to create vaccination record: ${errorData.message || createResponse.statusText}`);
           }
         } catch (createError) {
@@ -1261,62 +1278,44 @@ const SuperAdminVaccinationSchedule = () => {
         updateData[dateField] = new Date().toISOString();
       }
 
-      // Update the vaccinationdates collection
-      console.log('🔍 Updating vaccinationdates:', vaccinationRecord._id, 'with data:', updateData);
-      const response = await apiFetch(`/api/vaccinationdates/${vaccinationRecord._id}`, {
+      // Update the bite case directly with the completion status
+      console.log('🔍 UPDATING BITE CASE DIRECTLY:', {
+        biteCaseId: scheduleModalData.biteCaseId,
+        statusField,
+        dateField,
+        updateData
+      });
+      
+      const biteCaseUpdate = {
+        [statusField]: 'completed',
+        [dateField]: new Date().toISOString(),
+        lastVaccinationDate: updateData.completedDate,
+        lastVaccinationDay: updateData.vaccinationDay,
+        updatedAt: new Date().toISOString()
+      };
+      
+      console.log('🔍 BITE CASE UPDATE PAYLOAD:', biteCaseUpdate);
+      
+      const response = await apiFetch(`/api/bitecases/${scheduleModalData.biteCaseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(biteCaseUpdate)
       });
       
-      console.log('🔍 Update response status:', response.status, response.ok);
+      console.log('🔍 Bite case update response status:', response.status, response.ok);
 
       if (response.ok) {
-        // Also update the corresponding bite case to keep it in sync
+        console.log('✅ BITE CASE UPDATED SUCCESSFULLY');
+        
+        // Update the overall bite case status based on completion progress
         try {
-          if (vaccinationRecord.biteCaseId) {
-            // Update the bite case with the vaccination completion
-            const biteCaseUpdate = {
-              ...updateData,
-              lastVaccinationDate: updateData.completedDate,
-              lastVaccinationDay: updateData.vaccinationDay,
-              updatedAt: new Date().toISOString()
-            };
-            
-            // Add the specific day status field
-            if (statusField) {
-              biteCaseUpdate[statusField] = 'completed';
-            }
-            if (dateField) {
-              biteCaseUpdate[dateField] = new Date().toISOString();
-            }
-            
-            console.log('🔍 UPDATING BITE CASE WITH:', {
-              biteCaseId: vaccinationRecord.biteCaseId,
-              statusField,
-              dateField,
-              biteCaseUpdate
-            });
-            
-            const biteCaseResponse = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(biteCaseUpdate)
-            });
-            console.log('🔍 Bite case sync response:', biteCaseResponse.status);
-            
-            // Also update the overall bite case status based on completion progress
-            if (biteCaseResponse.ok) {
-              await updateBiteCaseStatusBasedOnVaccinations(vaccinationRecord.biteCaseId);
-            }
-          }
-        } catch (biteCaseError) {
-          console.warn('Bite case sync failed:', biteCaseError);
-          // Don't fail the entire operation if bite case sync fails
+          await updateBiteCaseStatusBasedOnVaccinations(scheduleModalData.biteCaseId);
+          console.log('✅ BITE CASE STATUS UPDATED BASED ON VACCINATIONS');
+        } catch (statusError) {
+          console.warn('Bite case status update failed:', statusError);
+          // Don't fail the entire operation if status update fails
         }
 
         // Stock deduction already handled above per selectedVaccineList
