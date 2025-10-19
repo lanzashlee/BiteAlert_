@@ -2454,6 +2454,45 @@ const SuperAdminVaccinationSchedule = () => {
     };
   }, []);
 
+  // Real-time vaccination data refresh - refresh every minute to keep "Today's Appointments" current
+  useEffect(() => {
+    const vaccinationRefreshInterval = setInterval(async () => {
+      try {
+        console.log('🔄 Auto-refreshing vaccination data for real-time updates');
+        await handleRefreshData();
+      } catch (error) {
+        console.error('Error refreshing vaccination data:', error);
+      }
+    }, 60000); // 1 minute
+
+    return () => clearInterval(vaccinationRefreshInterval);
+  }, []);
+
+  // Force refresh at midnight to update "Today's Appointments" when date changes
+  useEffect(() => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const midnightTimeout = setTimeout(async () => {
+      console.log('🔄 Midnight refresh - updating vaccination data for new day');
+      await handleRefreshData();
+      
+      // Set up daily refresh at midnight
+      const dailyRefresh = setInterval(async () => {
+        console.log('🔄 Daily midnight refresh - updating vaccination data');
+        await handleRefreshData();
+      }, 24 * 60 * 60 * 1000); // 24 hours
+      
+      return () => clearInterval(dailyRefresh);
+    }, msUntilMidnight);
+
+    return () => clearTimeout(midnightTimeout);
+  }, []);
+
   // Filtered vaccination data
   const filteredVaccinations = useMemo(() => {
     let filtered = vaccinations;
@@ -3666,10 +3705,17 @@ const SuperAdminVaccinationSchedule = () => {
 
   const getTodaysVaccinations = () => {
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+    
     return filteredVaccinations.filter(v => {
+      if (!v.scheduledDate) return false;
+      
+      // Convert scheduledDate to YYYY-MM-DD format for comparison
       const vaccinationDate = new Date(v.scheduledDate);
+      const vaccinationDateStr = vaccinationDate.toISOString().split('T')[0];
+      
       // Show only items scheduled for today that are not yet completed
-      return vaccinationDate.toDateString() === today.toDateString() && v.status !== 'completed';
+      return vaccinationDateStr === todayStr && v.status !== 'completed';
     });
   };
 
