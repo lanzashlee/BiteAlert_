@@ -2594,6 +2594,18 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Real-time vaccination data refresh - refresh every minute to keep "Today's Appointments" current
   useEffect(() => {
+    // Force initial refresh to ensure current data
+    const initialRefresh = async () => {
+      try {
+        console.log('🔄 Initial refresh for today\'s appointments');
+        await handleRefreshData();
+      } catch (error) {
+        console.error('Error in initial refresh:', error);
+      }
+    };
+    
+    initialRefresh();
+    
     const vaccinationRefreshInterval = setInterval(async () => {
       try {
         console.log('🔄 Auto-refreshing vaccination data for real-time updates');
@@ -3862,19 +3874,26 @@ const SuperAdminVaccinationSchedule = () => {
       const vaccinationDate = new Date(v.scheduledDate);
       const vaccinationDateStr = vaccinationDate.toISOString().split('T')[0];
       
+      // Additional validation: ensure the date is not in the past
+      const isToday = vaccinationDateStr === todayStr;
+      const isNotPast = vaccinationDate >= new Date(todayStr + 'T00:00:00.000Z');
+      
       console.log('🔍 VACCINATION DATE COMPARISON:', {
         patientName: v.patientName,
         scheduledDate: v.scheduledDate,
         vaccinationDateStr,
         todayStr,
-        isToday: vaccinationDateStr === todayStr,
+        isToday,
+        isNotPast,
+        vaccinationDate: vaccinationDate.toISOString(),
+        todayStart: new Date(todayStr + 'T00:00:00.000Z').toISOString(),
         status: v.status,
         isCompleted: v.status === 'completed',
-        shouldShow: vaccinationDateStr === todayStr && v.status !== 'completed'
+        shouldShow: isToday && isNotPast && v.status !== 'completed'
       });
       
-      // Show only items scheduled for today that are not yet completed
-      return vaccinationDateStr === todayStr && v.status !== 'completed';
+      // Show only items scheduled for today that are not yet completed and not in the past
+      return isToday && isNotPast && v.status !== 'completed';
     });
     
     console.log('🔍 TODAY\'S VACCINATIONS RESULT:', {
