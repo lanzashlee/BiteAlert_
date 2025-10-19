@@ -350,7 +350,7 @@ const SuperAdminStaffManagement = () => {
     setIsProcessing(true);
 
     try {
-      const response = await apiFetch('/api/add-staff', {
+      const response = await apiFetch('/api/staffs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -358,7 +358,7 @@ const SuperAdminStaffManagement = () => {
           lastName: newStaffData.lastName,
           email: newStaffData.email,
           phone: newStaffData.phone,
-          role: newStaffData.role,
+          role: (newStaffData.role || 'staff').toString().toLowerCase(),
           center: newStaffData.center,
           officeAddress: newStaffData.officeAddress,
           password: newStaffData.password,
