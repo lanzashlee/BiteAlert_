@@ -1176,6 +1176,11 @@ const SuperAdminVaccinationSchedule = () => {
         showNotification('Vaccination status updated successfully!', 'success');
         resetVaccineSelections();
 
+        // Refresh the main vaccination list to reflect the completion
+        setTimeout(() => {
+          handleRefreshData();
+        }, 500);
+
         // Check if all schedules are completed
         const updatedSchedule = scheduleModalData.schedule.map(item => 
           item.label === scheduleItem.label 
@@ -2346,7 +2351,8 @@ const SuperAdminVaccinationSchedule = () => {
         if (statusFilter === 'today') {
           const today = new Date(); today.setHours(0,0,0,0);
           const vaccinationDate = new Date(v.scheduledDate); vaccinationDate.setHours(0,0,0,0);
-          return vaccinationDate.getTime() === today.getTime();
+          // Only show today's appointments that are NOT completed
+          return vaccinationDate.getTime() === today.getTime() && v.status !== 'completed';
         }
         if (statusFilter === 'scheduled') {
           return v.status === 'scheduled' && !isPastByLocalDay(v.scheduledDate);
@@ -3365,7 +3371,8 @@ const SuperAdminVaccinationSchedule = () => {
           if (statusFilter === 'today') {
             const today = new Date();
             const vaccinationDate = new Date(v.scheduledDate);
-            return vaccinationDate.toDateString() === today.toDateString();
+            // Only show today's appointments that are NOT completed
+            return vaccinationDate.toDateString() === today.toDateString() && v.status !== 'completed';
           }
           if (statusFilter === 'scheduled') {
             return v.status === 'scheduled' && new Date(v.scheduledDate) > new Date();
