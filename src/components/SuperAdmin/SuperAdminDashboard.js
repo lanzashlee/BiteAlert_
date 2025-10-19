@@ -456,11 +456,30 @@ const SuperAdminDashboard = () => {
       y: {
         beginAtZero: true,
         grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
-        ticks: { padding: 10, callback: (v) => v + ' units' }
+        ticks: { 
+          padding: 10, 
+          callback: (v) => {
+            // Round to whole numbers and format nicely
+            const rounded = Math.round(v);
+            return rounded + ' units';
+          }
+        }
       },
       x: { grid: { display: false }, ticks: { padding: 10 } }
     },
-    plugins: { ...commonOptions.plugins, title: { display: true, text: 'Vaccine Stock Trends', padding: { top: 10, bottom: 30 }, font: { size: 16, weight: '500' } } }
+    plugins: { 
+      ...commonOptions.plugins, 
+      title: { display: true, text: 'Vaccine Stock Trends', padding: { top: 10, bottom: 30 }, font: { size: 16, weight: '500' } },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const value = context.raw;
+            const rounded = Math.round(value);
+            return `${context.dataset.label}: ${rounded} units`;
+          }
+        }
+      }
+    }
   }), [commonOptions]);
 
   const severityChartOptions = useMemo(() => ({
@@ -1392,10 +1411,13 @@ const SuperAdminDashboard = () => {
         
         if (!labels || labels.length === 0) { labels = ['No Data']; }
         if (!data || data.length === 0) { data = [0]; }
-        console.log('🔍 VACCINE STOCK TRENDS DEBUG: Final chart data:', { labels, data });
-      setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: data }] }));
+        
+        // Round data values to whole numbers
+        const roundedData = data.map(value => Math.round(value));
+        console.log('🔍 VACCINE STOCK TRENDS DEBUG: Final chart data:', { labels, data: roundedData });
+      setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: roundedData }] }));
       setLastStockUpdate(new Date().toLocaleTimeString());
-      const vaccineTrend = computeTrendFromSeries(labels, data, 'month');
+      const vaccineTrend = computeTrendFromSeries(labels, roundedData, 'month');
       if (vaccineTrend) {
         setTrends(prev => ({ ...prev, vaccineStocks: vaccineTrend }));
       }
