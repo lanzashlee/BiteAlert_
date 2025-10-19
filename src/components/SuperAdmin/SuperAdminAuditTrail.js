@@ -71,12 +71,12 @@ const SuperAdminAuditTrail = () => {
         
         // Fetch audit trail data from multiple sources
         let allData = [];
+        let usedCenterParam = false;
         
         try {
           // 1. Fetch admin audit trail
           let url = apiConfig.endpoints.auditTrail;
           const params = new URLSearchParams();
-          let usedCenterParam = false;
           if (roleFromUser === 'admin' || roleFromUser === 'staff') {
             if (userCenter && userCenter !== 'all') params.set('center', userCenter);
             usedCenterParam = userCenter && userCenter !== 'all';
