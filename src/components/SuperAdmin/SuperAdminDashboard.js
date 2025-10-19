@@ -1100,32 +1100,57 @@ const SuperAdminDashboard = () => {
       console.log('🔍 DASHBOARD: User center:', userCenter);
       
       // Build API URLs with center filter for non-superadmin users (EXACT same as scheduler)
-      let patientsUrl = '/api/patients?page=1&limit=1000';
-      let biteCasesUrl = '/api/bitecases?today=true';
+      let patientsUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
+      let vaccinationUrl = apiConfig.endpoints.bitecases;
       
       if (userCenter && userCenter !== 'all') {
         patientsUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
-        biteCasesUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
+        vaccinationUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
       }
       
       // Fetch patients and bite cases in parallel (EXACT same as scheduler)
-      const [patientsRes, biteCasesRes] = await Promise.all([
+      const [patientsRes, vaccinationRes] = await Promise.all([
         apiFetch(patientsUrl),
-        apiFetch(biteCasesUrl)
+        apiFetch(vaccinationUrl)
       ]);
       
       if (!patientsRes.ok) throw new Error(`Failed to fetch patients: ${patientsRes.status}`);
-      if (!biteCasesRes.ok) throw new Error(`Failed to fetch bite cases: ${biteCasesRes.status}`);
+      if (!vaccinationRes.ok) throw new Error(`Failed to fetch bite cases: ${vaccinationRes.status}`);
       
       const patientsData = await patientsRes.json();
-      const biteCasesData = await biteCasesRes.json();
+      const vaccinationData = await vaccinationRes.json();
       
       console.log('🔍 DASHBOARD: Patients from API:', patientsData.length);
-      console.log('🔍 DASHBOARD: Bite cases from API:', biteCasesData.length);
+      console.log('🔍 DASHBOARD: Vaccination data from API:', vaccinationData.length);
       
       // Handle different response formats (EXACT same as scheduler)
-      let patients = Array.isArray(patientsData) ? patientsData : (patientsData.data || []);
-      let biteCases = Array.isArray(biteCasesData) ? biteCasesData : (biteCasesData.data || []);
+      let patients = [];
+      let biteCases = [];
+      
+      if (patientsData.success && patientsData.data) {
+        patients = patientsData.data;
+      } else if (Array.isArray(patientsData)) {
+        patients = patientsData;
+      }
+
+      // Scope patients to admin barangay on client side as well
+      patients = filterByAdminBarangay(patients, 'center');
+      
+      if (Array.isArray(vaccinationData)) {
+        biteCases = vaccinationData;
+      } else if (vaccinationData && vaccinationData.success && Array.isArray(vaccinationData.data)) {
+        biteCases = vaccinationData.data;
+      } else if (vaccinationData && Array.isArray(vaccinationData.data)) {
+        biteCases = vaccinationData.data;
+      }
+
+      // Only include bite cases that already have an assigned schedule (EXACT same as scheduler)
+      const hasAssignedSchedule = (bc) => {
+        const perDay = [bc.d0Date, bc.d3Date, bc.d7Date, bc.d14Date, bc.d28Date].some(Boolean);
+        const arraySched = Array.isArray(bc.scheduleDates) && bc.scheduleDates.some(Boolean);
+        return perDay || arraySched;
+      };
+      biteCases = (biteCases || []).filter(hasAssignedSchedule);
 
       // Create patient lookup map (EXACT same as scheduler)
       const patientLookup = {};
@@ -1152,26 +1177,14 @@ const SuperAdminDashboard = () => {
       const vaccinationSchedule = [];
       
       biteCases.forEach(biteCase => {
-        // Find patient (EXACT same as scheduler)
-        let patient = null;
-        const possiblePatientIds = [
-          biteCase.patientId,
-          biteCase.patient_id,
-          biteCase.patient,
-          biteCase._id,
-          biteCase.id,
-          biteCase.registrationNumber,
-          biteCase.registration_number
-        ].filter(Boolean);
-        
-        for (const patientId of possiblePatientIds) {
-          if (patientLookup[patientId]) {
-            patient = patientLookup[patientId];
-            break;
-          }
-        }
-        
-        // Fallback patient using fields on biteCase (same as vaccination scheduler)
+        // Try multiple ways to associate patient (EXACT same as vaccination scheduler)
+        let patient = patients.find(p => 
+          p?._id === biteCase.patientId ||
+          p?.patientId === biteCase.patientId ||
+          (biteCase.registrationNumber && p?.registrationNumber === biteCase.registrationNumber)
+        );
+
+        // Fallback patient using fields on biteCase (ensures names show even if not in patients list)
         if (!patient) {
           const fallbackFullName = (biteCase.fullName && String(biteCase.fullName).trim().length > 0)
             ? biteCase.fullName
