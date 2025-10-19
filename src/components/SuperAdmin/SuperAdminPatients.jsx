@@ -1201,6 +1201,7 @@ const SuperAdminPatients = () => {
               if (matchingVaccinationDates.length > 0) {
                 // Build completedSchedules from vaccination data
                 const completedSchedules = [];
+                const scheduleMap = new Map(); // Use Map to deduplicate by day
                 
                 matchingVaccinationDates.forEach(vd => {
                   const scheduleData = [
@@ -1226,11 +1227,17 @@ const SuperAdminPatients = () => {
                       
                       // Only add records that have been completed, missed, or scheduled
                       if (record.status === 'completed' || record.status === 'missed' || record.status === 'scheduled') {
-                        completedSchedules.push(record);
+                        // Use day as key to prevent duplicates
+                        if (!scheduleMap.has(record.day)) {
+                          scheduleMap.set(record.day, record);
+                        }
                       }
                     }
                   });
                 });
+                
+                // Convert Map values to array
+                completedSchedules.push(...scheduleMap.values());
                 
                 // Add completedSchedules to the case
                 return { ...case_, completedSchedules };
