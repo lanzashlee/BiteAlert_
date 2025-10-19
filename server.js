@@ -226,15 +226,27 @@ const animalBiteSchema = new mongoose.Schema({
 
 // Staff Schema and Model
 const staffSchema = new mongoose.Schema({
+    firstName: { type: String, required: true },
+    middleName: { type: String, default: '' },
+    lastName: { type: String, required: true },
     fullName: String,
-    email: String,
+    email: { type: String, required: true, unique: true },
     phone: String,
     birthdate: Date,
-    password: String,
-    role: String,
-    createdAt: Date,
-    isApproved: { type: Boolean, default: false },
-    isVerified: { type: Boolean, default: false }
+    password: { type: String, required: true },
+    role: { type: String, required: true },
+    staffId: { type: String, unique: true },
+    center: String,
+    centerName: String,
+    officeAddress: String,
+    position: String,
+    department: String,
+    isApproved: { type: Boolean, default: true },
+    isVerified: { type: Boolean, default: true },
+    verificationToken: String,
+    tokenExpiry: Date,
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
 });
 const Staff = mongoose.model('Staff', staffSchema, 'staffs');
 
