@@ -287,7 +287,6 @@ const SuperAdminStaffManagement = () => {
       role: 'Staff',
       birthdate: '',
       center: '',
-      officeAddress: '',
       isApproved: true,
       isVerified: true,
     });
@@ -376,10 +375,10 @@ const SuperAdminStaffManagement = () => {
           lastName: newStaffData.lastName,
           email: newStaffData.email,
           phone: newStaffData.phone,
-          role: (newStaffData.role || 'staff').toString().toLowerCase(),
+          role: newStaffData.role || 'Staff',
           birthdate: newStaffData.birthdate ? new Date(newStaffData.birthdate).toISOString() : undefined,
           center: newStaffData.center,
-          officeAddress: newStaffData.officeAddress,
+          officeAddress: newStaffData.center,
           password: newStaffData.password,
           isApproved: newStaffData.isApproved,
           isVerified: newStaffData.isVerified,
@@ -1224,16 +1223,6 @@ const SuperAdminStaffManagement = () => {
                   <option key={name} value={name}>{name}</option>
                 ))}
               </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="addOfficeAddress">Office Address (if applicable)</label>
-              <textarea
-                id="addOfficeAddress"
-                value={newStaffData.officeAddress}
-                onChange={(e) => setNewStaffData(prev => ({ ...prev, officeAddress: e.target.value }))}
-                placeholder="Enter office address (e.g., 123 Main St, Manila)"
-                className="form-control"
-              />
             </div>
             {/* Auto-set status; no manual checkboxes to keep UI clean */}
           </div>
