@@ -1166,6 +1166,22 @@ const SuperAdminDashboard = () => {
           }
         }
         
+        // Fallback patient using fields on biteCase (same as vaccination scheduler)
+        if (!patient) {
+          const fallbackFullName = (biteCase.fullName && String(biteCase.fullName).trim().length > 0)
+            ? biteCase.fullName
+            : `${biteCase.firstName || ''} ${biteCase.middleName || ''} ${biteCase.lastName || ''}`.replace(/\s+/g, ' ').trim();
+          patient = {
+            _id: biteCase.patientId || biteCase._id,
+            patientId: biteCase.patientId || '',
+            fullName: fallbackFullName || 'Unknown Patient',
+            email: biteCase.email || '',
+            firstName: biteCase.firstName || '',
+            middleName: biteCase.middleName || '',
+            lastName: biteCase.lastName || ''
+          };
+        }
+        
         // Build vaccination days (EXACT same as scheduler)
         let vaccinationDays = [
           { day: 'Day 0',  date: biteCase.d0Date,  status: biteCase.d0Status },
@@ -2204,19 +2220,34 @@ const SuperAdminDashboard = () => {
                       day: 'numeric'
                     }) : 'Today';
                     
-                    // Get patient name from schedule data (many fallbacks)
+                    // Get patient name from schedule data (same as vaccination scheduler)
                     const getPatientName = (schedule) => {
+                      // First try to get from the patient object (same as vaccination scheduler)
+                      if (schedule.patient) {
+                        const patient = schedule.patient;
+                        const fullName = patient.fullName || patient.fullname || '';
+                        if (fullName && fullName.trim()) return fullName.trim();
+                        
+                        const firstName = patient.firstName || patient.first || patient.firstname || '';
+                        const lastName = patient.lastName || patient.last || patient.lastname || '';
+                        const middleName = patient.middleName || patient.middle || patient.middlename || '';
+                        
+                        if (firstName && lastName) {
+                          return middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
+                        }
+                        if (fullName) return fullName;
+                        if (firstName || lastName) return firstName || lastName;
+                      }
+                      
+                      // Fallback to schedule data
                       const fromSchedule = (schedule.patientName || '').trim();
                       if (fromSchedule) return fromSchedule;
-                      const bc = schedule.originalBiteCase || {};
-                      const first = bc.firstName || bc.first || bc.firstname || '';
-                      const last = bc.lastName || bc.last || bc.lastname || '';
-                      const middle = bc.middleName || bc.middle || bc.middlename || '';
-                      const full = bc.fullName || bc.fullname || bc.patientName || bc.name || '';
-                      if (first && last) return middle ? `${first} ${middle} ${last}` : `${first} ${last}`;
-                      if (full) return full;
-                      if (first || last) return first || last;
-                      if (schedule.registrationNumber && String(schedule.registrationNumber).trim()) return `Patient ${schedule.registrationNumber}`;
+                      
+                      // Last resort - use patient ID
+                      if (schedule.patientId && String(schedule.patientId).trim()) {
+                        return `Patient ${schedule.patientId}`;
+                      }
+                      
                       return 'Unknown Patient';
                     };
                     
