@@ -112,17 +112,29 @@ const SuperAdminAuditTrail = () => {
                 }
                 return true;
               })
-              .map(staff => ({
-                id: staff.staffId || `STF-${staff._id}`,
-                role: 'Staff',
-                name: staff.fullName || `${staff.firstName} ${staff.lastName}`,
-                action: 'Staff account created',
-                timestamp: staff.createdAt || new Date().toISOString(),
-                center: staff.center || staff.centerName || staff.officeAddress || '',
-                barangay: staff.barangay || '',
-                userId: staff._id,
-                staffId: staff.staffId
-              }));
+              .map(staff => {
+                // Try to find the proper staff ID from various possible fields
+                const staffId = staff.staffId || staff.staffID || staff.id || `STF-${staff._id}`;
+                console.log('🔍 STAFF ID MAPPING:', {
+                  staffId: staff.staffId,
+                  staffID: staff.staffID,
+                  id: staff.id,
+                  _id: staff._id,
+                  finalId: staffId
+                });
+                
+                return {
+                  id: staffId,
+                  role: 'Staff',
+                  name: staff.fullName || `${staff.firstName} ${staff.lastName}`,
+                  action: 'Staff account created',
+                  timestamp: staff.createdAt || new Date().toISOString(),
+                  center: staff.center || staff.centerName || staff.officeAddress || '',
+                  barangay: staff.barangay || '',
+                  userId: staff._id,
+                  staffId: staffId
+                };
+              });
             
             allData = [...allData, ...staffAuditEntries];
           }
@@ -150,17 +162,29 @@ const SuperAdminAuditTrail = () => {
                 }
                 return true;
               })
-              .map(patient => ({
-                id: patient.patientId || `PAT-${patient._id}`,
-                role: 'Patient',
-                name: patient.fullName || `${patient.firstName} ${patient.lastName}`,
-                action: 'Patient registered',
-                timestamp: patient.dateRegistered || patient.createdAt || new Date().toISOString(),
-                center: patient.center || patient.centerName || '',
-                barangay: patient.barangay || patient.addressBarangay || '',
-                userId: patient._id,
-                patientId: patient.patientId
-              }));
+              .map(patient => {
+                // Try to find the proper patient ID from various possible fields
+                const patientId = patient.patientId || patient.patientID || patient.id || `PAT-${patient._id}`;
+                console.log('🔍 PATIENT ID MAPPING:', {
+                  patientId: patient.patientId,
+                  patientID: patient.patientID,
+                  id: patient.id,
+                  _id: patient._id,
+                  finalId: patientId
+                });
+                
+                return {
+                  id: patientId,
+                  role: 'Patient',
+                  name: patient.fullName || `${patient.firstName} ${patient.lastName}`,
+                  action: 'Patient registered',
+                  timestamp: patient.dateRegistered || patient.createdAt || new Date().toISOString(),
+                  center: patient.center || patient.centerName || '',
+                  barangay: patient.barangay || patient.addressBarangay || '',
+                  userId: patient._id,
+                  patientId: patientId
+                };
+              });
             
             allData = [...allData, ...patientAuditEntries];
           }
