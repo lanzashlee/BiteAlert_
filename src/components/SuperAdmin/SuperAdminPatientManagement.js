@@ -41,7 +41,17 @@ const SuperAdminPatientManagement = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
 
-  
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchTerm('');
+    setCenterFilter('');
+    setStatusFilter('');
+    setPage(1);
+    console.log('🔍 FILTERS RESET');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = searchTerm.trim() || centerFilter || statusFilter;
 
   // Password change modal states
 
@@ -738,18 +748,35 @@ const SuperAdminPatientManagement = () => {
 
     if (searchTerm.trim()) {
 
-      const searchLower = searchTerm.toLowerCase();
-
-      filteredPatients = filteredPatients.filter(p => 
-
-        [p.fullName, p.email, p.phone, p.patientId, p.firstName, p.lastName]
-
-          .filter(Boolean)
-
-          .some(v => String(v).toLowerCase().includes(searchLower))
-
-      );
-
+      const searchLower = searchTerm.toLowerCase().trim();
+      console.log('🔍 SEARCH FILTER DEBUG:');
+      console.log('Search term:', searchLower);
+      
+      filteredPatients = filteredPatients.filter(p => {
+        const searchFields = [
+          p.fullName, 
+          p.email, 
+          p.phone, 
+          p.patientId, 
+          p.firstName, 
+          p.lastName,
+          p.address,
+          p.barangay,
+          p.center || p.centerName
+        ].filter(Boolean);
+        
+        const matches = searchFields.some(field => 
+          String(field).toLowerCase().includes(searchLower)
+        );
+        
+        if (matches) {
+          console.log(`✅ SEARCH MATCH: ${p.firstName} ${p.lastName}`);
+        }
+        
+        return matches;
+      });
+      
+      console.log('🔍 SEARCH FILTER DEBUG: After search filtering:', filteredPatients.length);
     }
 
 
@@ -757,31 +784,60 @@ const SuperAdminPatientManagement = () => {
     // Status filter
 
     if (statusFilter) {
-
+      console.log('🔍 STATUS FILTER DEBUG:');
+      console.log('Status filter:', statusFilter);
+      
       filteredPatients = filteredPatients.filter(p => {
-
-        if (statusFilter === 'pending') return !p.isVerified;
-
-        if (statusFilter === 'active') return p.isVerified && p.status !== 'Inactive';
-
-        if (statusFilter === 'inactive') return p.status === 'Inactive';
-
-        return true;
-
+        const isPending = !p.isVerified;
+        const isActive = p.isVerified && p.status !== 'Inactive';
+        const isInactive = p.status === 'Inactive';
+        
+        let matches = false;
+        
+        if (statusFilter === 'pending') {
+          matches = isPending;
+        } else if (statusFilter === 'active') {
+          matches = isActive;
+        } else if (statusFilter === 'inactive') {
+          matches = isInactive;
+        }
+        
+        if (matches) {
+          console.log(`✅ STATUS MATCH: ${p.firstName} ${p.lastName} - ${statusFilter}`);
+        }
+        
+        return matches;
       });
-
+      
+      console.log('🔍 STATUS FILTER DEBUG: After status filtering:', filteredPatients.length);
     }
 
     // Center filter
     if (centerFilter) {
-      const norm = (v) => String(v || '')
+      const normalizeCenter = (v) => String(v || '')
         .toLowerCase()
         .replace(/\s*health\s*center$/i,'')
         .replace(/\s*center$/i,'')
         .replace(/-/g,' ')
         .trim();
-      const want = norm(centerFilter);
-      filteredPatients = filteredPatients.filter(p => norm(p.center || p.centerName) === want);
+      
+      const targetCenter = normalizeCenter(centerFilter);
+      console.log('🔍 CENTER FILTER DEBUG:');
+      console.log('Target center:', targetCenter);
+      
+      filteredPatients = filteredPatients.filter(p => {
+        const patientCenter = p.center || p.centerName || p.healthCenter || p.facility || p.treatmentCenter || '';
+        const normalizedPatientCenter = normalizeCenter(patientCenter);
+        
+        console.log(`Patient: ${p.firstName} ${p.lastName}`);
+        console.log(`  - Original center: "${patientCenter}"`);
+        console.log(`  - Normalized center: "${normalizedPatientCenter}"`);
+        console.log(`  - Matches target: ${normalizedPatientCenter === targetCenter}`);
+        
+        return normalizedPatientCenter === targetCenter;
+      });
+      
+      console.log('🔍 CENTER FILTER DEBUG: After center filtering:', filteredPatients.length);
     }
 
 
@@ -924,7 +980,7 @@ const SuperAdminPatientManagement = () => {
               <select 
                 value={centerFilter} 
                 onChange={(e) => setCenterFilter(e.target.value)}
-                className="filter-select"
+                className={`filter-select ${centerFilter ? 'filter-active' : ''}`}
                 aria-label="Filter by health center"
                 title="Filter by center"
               >
@@ -936,7 +992,7 @@ const SuperAdminPatientManagement = () => {
               <select 
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="filter-select"
+                className={`filter-select ${statusFilter ? 'filter-active' : ''}`}
                 aria-label="Filter by patient status"
                 title="Filter by status"
               >
@@ -945,11 +1001,47 @@ const SuperAdminPatientManagement = () => {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
+              
+              {hasActiveFilters && (
+                <button 
+                  onClick={resetFilters}
+                  className="clear-filters-btn"
+                  title="Clear all filters"
+                >
+                  <i className="fa fa-times"></i> Clear Filters
+                </button>
+              )}
             </div>
 
           </div>
 
-
+          {/* Filter Summary */}
+          {hasActiveFilters && (
+            <div className="filter-summary">
+              <div className="filter-summary-content">
+                <span className="filter-results">
+                  Showing {filteredPatients.length} of {patients.length} patients
+                </span>
+                <div className="active-filters">
+                  {searchTerm.trim() && (
+                    <span className="filter-tag">
+                      <i className="fa fa-search"></i> "{searchTerm}"
+                    </span>
+                  )}
+                  {centerFilter && (
+                    <span className="filter-tag">
+                      <i className="fa fa-hospital-o"></i> {centerFilter}
+                    </span>
+                  )}
+                  {statusFilter && (
+                    <span className="filter-tag">
+                      <i className="fa fa-user"></i> {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <UnifiedSpinner text="Loading patients..." />
