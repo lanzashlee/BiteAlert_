@@ -135,16 +135,39 @@ const SuperAdminDashboard = () => {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
+        console.log('🔌 WebSocket connected for real-time updates');
         // Connected; no-op
       };
 
-      ws.onmessage = () => {
-        // Any event from server -> refresh today appointments and recent activity
-        fetchTodayAppointments();
-        fetchRecentActivity();
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('📡 WebSocket message received:', data);
+          
+          // Handle different types of real-time events
+          if (data.type === 'stock_update' || data.type === 'vaccine_stock_change') {
+            console.log('🔄 Real-time stock update received, refreshing vaccine chart');
+            updateVaccineStockTrends();
+          } else if (data.type === 'vaccination_update' || data.type === 'appointment_update') {
+            console.log('🔄 Real-time vaccination update received, refreshing data');
+            fetchTodayAppointments();
+            fetchRecentActivity();
+            updateVaccineStockTrends(); // Also update stock chart as vaccinations affect stock
+          } else {
+            // Any other event from server -> refresh today appointments and recent activity
+            fetchTodayAppointments();
+            fetchRecentActivity();
+          }
+        } catch (error) {
+          console.warn('Error parsing WebSocket message:', error);
+          // Fallback to general refresh
+          fetchTodayAppointments();
+          fetchRecentActivity();
+        }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (error) => {
+        console.warn('WebSocket error:', error);
         // Ignore; polling fallback below
       };
 
@@ -152,7 +175,7 @@ const SuperAdminDashboard = () => {
         try { ws.close(); } catch (_) {}
       };
     } catch (_) {}
-  }, []);
+  }, [updateVaccineStockTrends]);
 
   // Polling fallback (Render can sleep websockets on cold start)
   useEffect(() => {
@@ -355,6 +378,8 @@ const SuperAdminDashboard = () => {
       fill: true
     }]
   });
+
+  const [lastStockUpdate, setLastStockUpdate] = useState(null);
 
   const [severityChartData, setSeverityChartData] = useState({
     labels: ['Mild', 'Moderate', 'Severe'],
@@ -1364,6 +1389,7 @@ const SuperAdminDashboard = () => {
         if (!data || data.length === 0) { data = [0]; }
         console.log('🔍 VACCINE STOCK TRENDS DEBUG: Final chart data:', { labels, data });
       setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: data }] }));
+      setLastStockUpdate(new Date().toLocaleTimeString());
       const vaccineTrend = computeTrendFromSeries(labels, data, 'month');
       if (vaccineTrend) {
         setTrends(prev => ({ ...prev, vaccineStocks: vaccineTrend }));
@@ -1487,10 +1513,10 @@ const SuperAdminDashboard = () => {
     loadCharts();
 
     const vis = () => document.visibilityState === 'visible';
-    const every = 60000; // 60s near real-time refresh for summary and panels
+    const every = 30000; // 30s real-time refresh for summary and panels
     const summaryInterval = setInterval(() => { if (vis()) updateDashboardSummary(); }, every);
     
-    // Reduce chart update frequency to minimize TBT
+    // Real-time chart updates with more frequent refresh for vaccine stocks
     const chartInterval = setInterval(() => { 
       if (vis()) {
         const updateCharts = async () => {
@@ -1503,11 +1529,20 @@ const SuperAdminDashboard = () => {
         };
         updateCharts();
       }
-    }, every * 10); // Update charts every 10 minutes
+    }, every * 2); // Update charts every 2 minutes (60s) for real-time feel
+    
+    // Additional frequent refresh for vaccine stock trends specifically
+    const vaccineStockInterval = setInterval(() => {
+      if (vis()) {
+        console.log('🔄 Periodic vaccine stock chart refresh');
+        updateVaccineStockTrends();
+      }
+    }, every); // Update vaccine stock chart every 30 seconds
 
     return () => {
       clearInterval(summaryInterval);
       clearInterval(chartInterval);
+      clearInterval(vaccineStockInterval);
     };
   }, [updateDashboardSummary, updatePatientGrowth, updateCasesPerBarangay, updateVaccineStockTrends, updateSeverityChart]);
 
@@ -1912,6 +1947,8 @@ const SuperAdminDashboard = () => {
             barChartOptions={barChartOptions}
             vaccinesChartOptions={vaccinesChartOptions}
             severityChartOptions={severityChartOptions}
+            lastStockUpdate={lastStockUpdate}
+            onRefreshVaccineStock={updateVaccineStockTrends}
           />
         </Suspense>
       </main>
