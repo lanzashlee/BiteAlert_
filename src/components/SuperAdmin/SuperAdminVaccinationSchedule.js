@@ -2217,6 +2217,12 @@ const SuperAdminVaccinationSchedule = () => {
                 
                 if (statusField) {
                   actualStatus = biteCase[statusField];
+                  console.log('🔍 RETRIEVED STATUS FROM BITE CASE:', {
+                    day: vaccinationDay.day,
+                    statusField: statusField,
+                    statusValue: actualStatus,
+                    biteCaseId: biteCase._id
+                  });
                 }
               }
               
@@ -3463,14 +3469,34 @@ const SuperAdminVaccinationSchedule = () => {
       isCompleted: status === 'completed'
     });
     
-    // Use the actual status from database first
-    if (status === 'completed') return 'status-completed';
-    if (status === 'missed') return 'status-missed';
+    // Use the actual status from database first - with more robust checking
+    const normalizedStatus = status ? status.toString().toLowerCase().trim() : '';
+    
+    if (normalizedStatus === 'completed') {
+      console.log('✅ BADGE: COMPLETED - Returning status-completed');
+      return 'status-completed';
+    }
+    if (normalizedStatus === 'missed') {
+      console.log('❌ BADGE: MISSED - Returning status-missed');
+      return 'status-missed';
+    }
     
     // Only calculate overdue if status is still 'scheduled' and date has passed
-    if (status === 'scheduled' && vaccinationDate < today) return 'status-missed';
-    if (status === 'scheduled' && vaccinationDate === today) return 'status-today';
-    if (status === 'scheduled') return 'status-scheduled';
+    if (normalizedStatus === 'scheduled' && vaccinationDate < today) {
+      console.log('⏰ BADGE: SCHEDULED + PAST DATE - Returning status-missed');
+      return 'status-missed';
+    }
+    if (normalizedStatus === 'scheduled' && vaccinationDate === today) {
+      console.log('📅 BADGE: SCHEDULED + TODAY - Returning status-today');
+      return 'status-today';
+    }
+    if (normalizedStatus === 'scheduled') {
+      console.log('📋 BADGE: SCHEDULED - Returning status-scheduled');
+      return 'status-scheduled';
+    }
+    
+    // Handle unexpected status values
+    console.log('⚠️ BADGE UNEXPECTED STATUS:', { status, normalizedStatus, vaccinationDate, today });
     
     // Default fallback
     return 'status-scheduled';
@@ -3488,17 +3514,41 @@ const SuperAdminVaccinationSchedule = () => {
       vaccinationDate,
       today,
       statusFromDB: status,
-      isCompleted: status === 'completed'
+      isCompleted: status === 'completed',
+      statusType: typeof status,
+      statusLength: status ? status.length : 0,
+      statusTrimmed: status ? status.trim() : '',
+      statusLowercase: status ? status.toLowerCase() : ''
     });
     
-    // Use the actual status from database first
-    if (status === 'completed') return 'Completed';
-    if (status === 'missed') return 'Missed';
+    // Use the actual status from database first - with more robust checking
+    const normalizedStatus = status ? status.toString().toLowerCase().trim() : '';
+    
+    if (normalizedStatus === 'completed') {
+      console.log('✅ STATUS: COMPLETED - Returning Completed');
+      return 'Completed';
+    }
+    if (normalizedStatus === 'missed') {
+      console.log('❌ STATUS: MISSED - Returning Missed');
+      return 'Missed';
+    }
     
     // Only calculate overdue if status is still 'scheduled' and date has passed
-    if (status === 'scheduled' && vaccinationDate < today) return 'Missed';
-    if (status === 'scheduled' && vaccinationDate === today) return 'Today';
-    if (status === 'scheduled') return 'Scheduled';
+    if (normalizedStatus === 'scheduled' && vaccinationDate < today) {
+      console.log('⏰ STATUS: SCHEDULED + PAST DATE - Returning Missed');
+      return 'Missed';
+    }
+    if (normalizedStatus === 'scheduled' && vaccinationDate === today) {
+      console.log('📅 STATUS: SCHEDULED + TODAY - Returning Today');
+      return 'Today';
+    }
+    if (normalizedStatus === 'scheduled') {
+      console.log('📋 STATUS: SCHEDULED - Returning Scheduled');
+      return 'Scheduled';
+    }
+    
+    // Handle unexpected status values
+    console.log('⚠️ UNEXPECTED STATUS:', { status, normalizedStatus, vaccinationDate, today });
     
     // Default fallback
     return 'Scheduled';
