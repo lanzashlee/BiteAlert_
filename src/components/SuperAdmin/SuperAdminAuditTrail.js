@@ -77,17 +77,17 @@ const SuperAdminAuditTrail = () => {
           // 1. Fetch admin audit trail
           let url = apiConfig.endpoints.auditTrail;
           const params = new URLSearchParams();
-          if (roleFromUser === 'admin' || roleFromUser === 'staff') {
-            if (userCenter && userCenter !== 'all') params.set('center', userCenter);
-            usedCenterParam = userCenter && userCenter !== 'all';
-          } else if (roleFromUser === 'patient' && patientKey) {
-            params.set('patientId', patientKey);
-          }
-          if ([...params.keys()].length > 0) url = `${apiConfig.endpoints.auditTrail}?${params.toString()}`;
+        if (roleFromUser === 'admin' || roleFromUser === 'staff') {
+          if (userCenter && userCenter !== 'all') params.set('center', userCenter);
+          usedCenterParam = userCenter && userCenter !== 'all';
+        } else if (roleFromUser === 'patient' && patientKey) {
+          params.set('patientId', patientKey);
+        }
+        if ([...params.keys()].length > 0) url = `${apiConfig.endpoints.auditTrail}?${params.toString()}`;
           
-          const res = await apiFetch(url);
+        const res = await apiFetch(url);
           if (res.ok) {
-            const json = await res.json();
+        const json = await res.json();
             const adminData = Array.isArray(json) ? json : (json.data || []);
             allData = [...allData, ...adminData];
           }

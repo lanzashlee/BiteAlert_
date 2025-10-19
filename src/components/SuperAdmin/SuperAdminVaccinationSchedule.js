@@ -747,10 +747,10 @@ const SuperAdminVaccinationSchedule = () => {
       // Persist by updating the bitecase's scheduleDates only
       try {
         const resBite = await apiFetch(`${apiConfig.endpoints.bitecases}/${encodeURIComponent(selectedVaccination.originalId)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ scheduleDates: payload.scheduleDates })
-        });
+      });
         persisted = resBite.ok;
       } catch (e) {
         console.error('Failed updating bitecase scheduleDates:', e);
@@ -1188,11 +1188,11 @@ const SuperAdminVaccinationSchedule = () => {
       const dayToDateField = {
         'Day 0': 'd0Date',
         'Day 3': 'd3Date',
-        'Day 7': 'd7Date', 
+        'Day 7': 'd7Date',
         'Day 14': 'd14Date',
         'Day 28': 'd28Date'
       };
-      
+
       const statusField = dayToStatusField[scheduleItem.label];
       const dateField = dayToDateField[scheduleItem.label];
       
@@ -1322,10 +1322,10 @@ const SuperAdminVaccinationSchedule = () => {
       if (vaccinationRecord && vaccinationRecord._id) {
         console.log('🔍 UPDATING EXISTING VACCINATIONDATES RECORD:', vaccinationRecord._id);
         vaccinationDatesResponse = await apiFetch(`/api/vaccinationdates/${vaccinationRecord._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
           body: JSON.stringify(vaccinationDatesUpdate)
         });
         console.log('🔍 Vaccinationdates update response status:', vaccinationDatesResponse.status, vaccinationDatesResponse.ok);
@@ -1363,7 +1363,7 @@ const SuperAdminVaccinationSchedule = () => {
         if (!biteCaseResponse.ok) errors.push('Failed to update bite case');
         if (!vaccinationDatesResponse || !vaccinationDatesResponse.ok) errors.push('Failed to update vaccination dates');
         throw new Error(`Database update failed: ${errors.join(', ')}`);
-      }
+        }
 
         // Stock deduction already handled above per selectedVaccineList
 
@@ -1425,7 +1425,7 @@ const SuperAdminVaccinationSchedule = () => {
         if (allCompleted) {
           showNotification('All vaccination schedules completed! Patient will be moved to case history.', 'success');
           await movePatientToCaseHistory(scheduleModalData);
-        }
+      }
     } catch (error) {
       console.error('Error updating vaccination status:', error);
       showNotification('Error updating vaccination status. Please try again.', 'error');
@@ -1994,22 +1994,22 @@ const SuperAdminVaccinationSchedule = () => {
           });
           
           return {
-            id: bc._id,
-            registrationNumber: bc.registrationNumber,
-            dateRegistered: bc.dateRegistered || bc.createdAt,
-            createdAt: bc.createdAt,
-            center: bc.center || bc.centerName || '',
-            address: bc.address || bc.patientAddress || '',
-            exposureDate: bc.exposureDate,
-            severity: bc.severity || bc.exposureCategory || '',
-            woundLocation: bc.woundLocation || '',
+        id: bc._id,
+        registrationNumber: bc.registrationNumber,
+        dateRegistered: bc.dateRegistered || bc.createdAt,
+          createdAt: bc.createdAt,
+          center: bc.center || bc.centerName || '',
+          address: bc.address || bc.patientAddress || '',
+        exposureDate: bc.exposureDate,
+          severity: bc.severity || bc.exposureCategory || '',
+          woundLocation: bc.woundLocation || '',
             status: displayStatus,
             originalStatus: bc.status,
-            genericName: bc.genericName,
-            brandName: bc.brandName,
-            route: bc.route || bc.currentImmunization?.route?.[0] || '',
-            notes: bc.notes || bc.remarks || '',
-            scheduleDates: bc.scheduleDates || [],
+        genericName: bc.genericName,
+        brandName: bc.brandName,
+        route: bc.route || bc.currentImmunization?.route?.[0] || '',
+          notes: bc.notes || bc.remarks || '',
+        scheduleDates: bc.scheduleDates || [],
             vaccinations: buildVaccinationsForBiteCase(bc),
             vaccinationProgress: {
               completed: completedCount,

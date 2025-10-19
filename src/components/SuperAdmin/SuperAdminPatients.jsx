@@ -439,14 +439,14 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                     <td style={{ padding: '12px' }}>
                       {schedule.status === 'completed' ? (
                         schedule.vaccinesUsed ? (
-                          <div>
-                            {schedule.vaccinesUsed.map((vaccine, vIndex) => (
-                              <div key={vIndex} style={{ marginBottom: '4px' }}>
-                                <strong>{vaccine.type || vaccine.brand || 'Anti-Rabies'}</strong>
-                                {vaccine.route && ` (${vaccine.route})`}
-                              </div>
-                            ))}
-                          </div>
+                        <div>
+                          {schedule.vaccinesUsed.map((vaccine, vIndex) => (
+                            <div key={vIndex} style={{ marginBottom: '4px' }}>
+                              <strong>{vaccine.type || vaccine.brand || 'Anti-Rabies'}</strong>
+                              {vaccine.route && ` (${vaccine.route})`}
+                            </div>
+                          ))}
+                        </div>
                         ) : (
                           // Fallback to currentImmunization.vaccine data
                           caseData.currentImmunization?.vaccine?.map((v, vIndex) => (

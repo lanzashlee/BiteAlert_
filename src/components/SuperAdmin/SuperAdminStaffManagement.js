@@ -53,7 +53,7 @@ const SuperAdminStaffManagement = () => {
     birthdate: '',
     position: '',
     department: '',
-    center: '',
+    center: userCenter && userCenter !== 'all' ? userCenter : '', // Auto-fill for admin users
     officeAddress: '',
     isApproved: true,
     isVerified: true,
@@ -286,7 +286,7 @@ const SuperAdminStaffManagement = () => {
       phone: '',
       role: 'Staff',
       birthdate: '',
-      center: '',
+      center: userCenter && userCenter !== 'all' ? userCenter : '', // Auto-fill for admin users
       isApproved: true,
       isVerified: true,
     });
@@ -1211,18 +1211,30 @@ const SuperAdminStaffManagement = () => {
             </div>
             <div className="form-group">
               <label htmlFor="addCenter">Center</label>
-              <select
-                id="addCenter"
-                value={newStaffData.center}
-                onChange={(e) => setNewStaffData(prev => ({ ...prev, center: e.target.value }))}
-                className="form-control"
-                required
-              >
-                <option value="">Select Center</option>
-                {centerOptions.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
+              {isSuperAdmin ? (
+                <select
+                  id="addCenter"
+                  value={newStaffData.center}
+                  onChange={(e) => setNewStaffData(prev => ({ ...prev, center: e.target.value }))}
+                  className="form-control"
+                  required
+                >
+                  <option value="">Select Center</option>
+                  {centerOptions.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  id="addCenter"
+                  value={newStaffData.center}
+                  className="form-control"
+                  readOnly
+                  style={{ backgroundColor: '#f8f9fa', color: '#6c757d' }}
+                  title="Center is automatically set based on your assigned center"
+                />
+              )}
             </div>
             {/* Auto-set status; no manual checkboxes to keep UI clean */}
           </div>

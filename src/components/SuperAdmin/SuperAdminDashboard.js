@@ -152,8 +152,8 @@ const SuperAdminDashboard = () => {
             }
           } else if (data.type === 'vaccination_update' || data.type === 'appointment_update') {
             console.log('🔄 Real-time vaccination update received, refreshing data');
-            fetchTodayAppointments();
-            fetchRecentActivity();
+        fetchTodayAppointments();
+        fetchRecentActivity();
             if (updateVaccineStockTrendsRef.current) {
               updateVaccineStockTrendsRef.current(); // Also update stock chart as vaccinations affect stock
             }
