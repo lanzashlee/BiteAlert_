@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, memo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserCenter, filterByCenter, filterByAdminBarangay } from '../../utils/userContext';
 import { apiFetch, apiConfig, getApiUrl } from '../../config/api';
@@ -147,12 +147,16 @@ const SuperAdminDashboard = () => {
           // Handle different types of real-time events
           if (data.type === 'stock_update' || data.type === 'vaccine_stock_change') {
             console.log('🔄 Real-time stock update received, refreshing vaccine chart');
-            updateVaccineStockTrends();
+            if (updateVaccineStockTrendsRef.current) {
+              updateVaccineStockTrendsRef.current();
+            }
           } else if (data.type === 'vaccination_update' || data.type === 'appointment_update') {
             console.log('🔄 Real-time vaccination update received, refreshing data');
             fetchTodayAppointments();
             fetchRecentActivity();
-            updateVaccineStockTrends(); // Also update stock chart as vaccinations affect stock
+            if (updateVaccineStockTrendsRef.current) {
+              updateVaccineStockTrendsRef.current(); // Also update stock chart as vaccinations affect stock
+            }
           } else {
             // Any other event from server -> refresh today appointments and recent activity
             fetchTodayAppointments();
@@ -175,7 +179,7 @@ const SuperAdminDashboard = () => {
         try { ws.close(); } catch (_) {}
       };
     } catch (_) {}
-  }, [updateVaccineStockTrends]);
+  }, []);
 
   // Polling fallback (Render can sleep websockets on cold start)
   useEffect(() => {
@@ -380,6 +384,7 @@ const SuperAdminDashboard = () => {
   });
 
   const [lastStockUpdate, setLastStockUpdate] = useState(null);
+  const updateVaccineStockTrendsRef = useRef(null);
 
   const [severityChartData, setSeverityChartData] = useState({
     labels: ['Mild', 'Moderate', 'Severe'],
@@ -1403,6 +1408,9 @@ const SuperAdminDashboard = () => {
       setVaccinesChartData(prev => ({ ...prev, labels: ['No Data'], datasets: [{ ...prev.datasets[0], data: [0] }] }));
     }
   }, [timeRange]);
+
+  // Assign the function to the ref for WebSocket access
+  updateVaccineStockTrendsRef.current = updateVaccineStockTrends;
 
   const updateSeverityChart = useCallback(async () => {
     try {
