@@ -1237,20 +1237,30 @@ const SuperAdminDashboard = () => {
       });
       
       console.log('🔍 DASHBOARD: All vaccinations built:', vaccinationSchedule.length);
+      console.log('🔍 DASHBOARD: Today string:', todayString);
       
-      // Filter for today's appointments (EXACT same logic as scheduler's getTodaysVaccinations)
+      // Filter for today's appointments ONLY (EXACT same logic as scheduler's getTodaysVaccinations)
       const todaySchedules = vaccinationSchedule.filter(v => {
         if (!v.scheduledDate) return false;
         
         const vaccinationDate = new Date(v.scheduledDate);
         const vaccinationDateStr = vaccinationDate.toISOString().split('T')[0];
         
-        // Additional validation: ensure the date is not in the past (EXACT same as scheduler)
+        // Only show appointments scheduled for today
         const isToday = vaccinationDateStr === todayString;
-        const isNotPast = vaccinationDate >= new Date(todayString + 'T00:00:00.000Z');
+        
+        console.log('🔍 DASHBOARD FILTER DEBUG:', {
+          patientName: v.patient?.fullName || 'Unknown',
+          scheduledDate: v.scheduledDate,
+          vaccinationDateStr,
+          todayString,
+          isToday,
+          status: v.status,
+          willInclude: isToday && v.status !== 'completed'
+        });
         
         // Only show today's appointments that are not completed
-        return isToday && isNotPast && v.status !== 'completed';
+        return isToday && v.status !== 'completed';
       });
       
       console.log('🔍 DASHBOARD: Today\'s vaccination schedules found:', todaySchedules.length);
