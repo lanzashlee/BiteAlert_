@@ -1124,28 +1124,33 @@ const SuperAdminDashboard = () => {
             if (!isNaN(vaccinationDate.getTime())) {
               const vaccinationDateString = vaccinationDate.toISOString().split('T')[0];
               
-              console.log(`🔍 Checking ${schedule.day} date:`, {
+              console.log(`🔍 DASHBOARD: Checking ${schedule.day} date:`, {
                 biteCaseId: biteCase._id,
                 originalValue: schedule.date,
                 processedValue: dateValue,
                 vaccinationDate: vaccinationDate,
                 vaccinationDateString: vaccinationDateString,
                 todayString: todayString,
-                matches: vaccinationDateString === todayString
+                matches: vaccinationDateString === todayString,
+                isToday: vaccinationDateString === todayString,
+                isPast: vaccinationDateString < todayString,
+                isFuture: vaccinationDateString > todayString
               });
               
               if (vaccinationDateString === todayString) {
+                console.log(`🔍 DASHBOARD: Processing ${schedule.day} for today (${todayString})`);
+                
                 // Only show appointments that are scheduled for today and not completed/missed
                 const status = schedule.status || 'scheduled';
                 const normalizedStatus = status.toString().toLowerCase().trim();
                 
                 // Skip completed and missed appointments
                 if (normalizedStatus === 'completed' || normalizedStatus === 'missed') {
-                  console.log(`🔍 SKIPPING ${schedule.day} - Status: ${status} (completed/missed)`);
+                  console.log(`🔍 DASHBOARD: SKIPPING ${schedule.day} - Status: ${status} (completed/missed)`);
                   return;
                 }
                 
-                console.log(`🔍 INCLUDING ${schedule.day} - Status: ${status} (scheduled for today)`);
+                console.log(`🔍 DASHBOARD: INCLUDING ${schedule.day} - Status: ${status} (scheduled for today)`);
                 // Get patient information - try multiple ways to find the patient
                 let patient = null;
                 let patientName = 'Unknown Patient';
