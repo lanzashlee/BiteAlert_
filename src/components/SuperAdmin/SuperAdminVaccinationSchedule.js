@@ -444,8 +444,12 @@ const SuperAdminVaccinationSchedule = () => {
       
       if (biteCaseRes.ok) {
         console.log('✅ BITE CASE UPDATED SUCCESSFULLY');
+        const updatedBiteCase = await biteCaseRes.json();
+        console.log('🔍 UPDATED BITE CASE DATA:', updatedBiteCase);
       } else {
-        console.warn('⚠️ Failed to update bite case:', await biteCaseRes.text());
+        const errorText = await biteCaseRes.text();
+        console.warn('⚠️ Failed to update bite case:', errorText);
+        throw new Error(`Failed to update bite case: ${errorText}`);
       }
     } catch (error) {
       console.error('❌ Error updating bite case:', error);
@@ -503,6 +507,12 @@ const SuperAdminVaccinationSchedule = () => {
     }
 
     showNotification('Vaccination updated and stock deducted successfully', 'success');
+    
+    // Force refresh the data to ensure UI reflects the database changes
+    setTimeout(() => {
+      console.log('🔍 FORCE REFRESHING AFTER BITE CASE UPDATE');
+      handleRefreshData();
+    }, 1000);
   };
   
   // Best-effort display name for a patient
@@ -524,6 +534,17 @@ const SuperAdminVaccinationSchedule = () => {
   };
 
   const buildVaccinationsForBiteCase = (biteCase) => {
+    console.log('🔍 BUILDING VACCINATIONS FOR BITE CASE:', {
+      biteCaseId: biteCase._id,
+      patientName: biteCase.firstName + ' ' + biteCase.lastName,
+      d0Status: biteCase.d0Status,
+      d3Status: biteCase.d3Status,
+      d7Status: biteCase.d7Status,
+      d14Status: biteCase.d14Status,
+      d28Status: biteCase.d28Status,
+      scheduleDates: biteCase.scheduleDates
+    });
+    
     // PREFER scheduleDates array from bitecases for all reads
     if (Array.isArray(biteCase.scheduleDates) && biteCase.scheduleDates.length > 0) {
       const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
@@ -531,6 +552,13 @@ const SuperAdminVaccinationSchedule = () => {
         // Get individual day status from bite case fields (d0Status, d3Status, etc.)
         const dayField = label.replace('Day ', 'd') + 'Status';
         const individualStatus = biteCase[dayField];
+        
+        console.log('🔍 PROCESSING DAY:', {
+          label,
+          dayField,
+          individualStatus,
+          date: biteCase.scheduleDates[idx]
+        });
         
         return {
           day: label,
