@@ -1162,6 +1162,16 @@ const SuperAdminStaffManagement = () => {
                 onChange={(e)=> setNewStaffData(prev => ({ ...prev, password: e.target.value }))}
                 required
               />
+              {newStaffData.password && (
+                <div className="password-requirements">
+                  <small>Password must contain:</small>
+                  <ul>
+                    <li className={newStaffData.password.length >= 8 ? 'met' : ''}>At least 8 characters</li>
+                    <li className={/[A-Z]/.test(newStaffData.password) ? 'met' : ''}>One uppercase letter</li>
+                    <li className={/[!@#$%^&*(),.?":{}|<>]/.test(newStaffData.password) ? 'met' : ''}>One special character</li>
+                  </ul>
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label htmlFor="addConfirmPassword">Confirm Password</label>

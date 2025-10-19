@@ -588,6 +588,40 @@
   color: #374151;
 }
 
+/* Password Requirements Styling */
+.password-requirements {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.password-requirements small {
+  color: #6b7280;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.password-requirements ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.password-requirements li {
+  margin-bottom: 0.25rem;
+  transition: color 0.2s ease;
+}
+
+.password-requirements li.met {
+  color: #16a34a;
+  font-weight: 600;
+}
+
 /* Responsive Design for Filters */
 @media (max-width: 768px) {
   .filters-container {
