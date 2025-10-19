@@ -751,6 +751,87 @@ const SuperAdminVaccinationSchedule = () => {
     }
   };
 
+  // Update bite case status based on vaccination progress
+  const updateBiteCaseStatusBasedOnVaccinations = async (biteCaseId) => {
+    try {
+      console.log('🔍 UPDATING BITE CASE STATUS BASED ON VACCINATIONS:', biteCaseId);
+      
+      // Get the current bite case data
+      const biteCaseResponse = await apiFetch(`/api/bitecases/${biteCaseId}`);
+      if (!biteCaseResponse.ok) {
+        console.warn('Failed to fetch bite case for status update');
+        return;
+      }
+      
+      const biteCase = await biteCaseResponse.json();
+      
+      // Check vaccination status fields
+      const statusFields = ['d0Status', 'd3Status', 'd7Status', 'd14Status', 'd28Status'];
+      const completedCount = statusFields.filter(field => biteCase[field] === 'completed').length;
+      const missedCount = statusFields.filter(field => biteCase[field] === 'missed').length;
+      const totalCount = statusFields.length;
+      
+      console.log('🔍 VACCINATION PROGRESS:', {
+        completedCount,
+        missedCount,
+        totalCount,
+        statusFields: statusFields.map(field => ({ field, status: biteCase[field] }))
+      });
+      
+      // Determine overall status based on progress
+      let overallStatus = biteCase.status;
+      
+      if (completedCount > 0 && completedCount < totalCount) {
+        overallStatus = 'in-progress';
+      } else if (completedCount === totalCount) {
+        overallStatus = 'completed';
+      } else if (missedCount > 0 && completedCount === 0) {
+        overallStatus = 'missed';
+      } else if (completedCount === 0 && missedCount === 0) {
+        overallStatus = 'scheduled';
+      }
+      
+      // Update the bite case status if it has changed
+      if (overallStatus !== biteCase.status) {
+        console.log('🔍 UPDATING BITE CASE STATUS:', {
+          oldStatus: biteCase.status,
+          newStatus: overallStatus,
+          biteCaseId
+        });
+        
+        const statusUpdate = {
+          status: overallStatus,
+          updatedAt: new Date().toISOString(),
+          vaccinationProgress: {
+            completed: completedCount,
+            missed: missedCount,
+            total: totalCount,
+            percentage: Math.round((completedCount / totalCount) * 100)
+          }
+        };
+        
+        const updateResponse = await apiFetch(`/api/bitecases/${biteCaseId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(statusUpdate)
+        });
+        
+        if (updateResponse.ok) {
+          console.log('✅ BITE CASE STATUS UPDATED SUCCESSFULLY');
+        } else {
+          console.warn('Failed to update bite case status');
+        }
+      } else {
+        console.log('🔍 BITE CASE STATUS UNCHANGED:', overallStatus);
+      }
+      
+    } catch (error) {
+      console.error('Error updating bite case status:', error);
+    }
+  };
+
   // Move patient to case history when all schedules are completed
   const movePatientToCaseHistory = async (scheduleData) => {
     try {
@@ -1147,14 +1228,27 @@ const SuperAdminVaccinationSchedule = () => {
         // Also update the corresponding bite case to keep it in sync
         try {
           if (vaccinationRecord.biteCaseId) {
+            // Update the bite case with the vaccination completion
+            const biteCaseUpdate = {
+              ...updateData,
+              lastVaccinationDate: updateData.completedDate,
+              lastVaccinationDay: updateData.vaccinationDay,
+              updatedAt: new Date().toISOString()
+            };
+            
             const biteCaseResponse = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify(updateData)
+              body: JSON.stringify(biteCaseUpdate)
             });
             console.log('🔍 Bite case sync response:', biteCaseResponse.status);
+            
+            // Also update the overall bite case status based on completion progress
+            if (biteCaseResponse.ok) {
+              await updateBiteCaseStatusBasedOnVaccinations(vaccinationRecord.biteCaseId);
+            }
           }
         } catch (biteCaseError) {
           console.warn('Bite case sync failed:', biteCaseError);
@@ -1764,24 +1858,62 @@ const SuperAdminVaccinationSchedule = () => {
 
       // Normalize and enrich fields; sort most recent first
       const normalized = list
-        .map(bc => ({
-        id: bc._id,
-        registrationNumber: bc.registrationNumber,
-        dateRegistered: bc.dateRegistered || bc.createdAt,
-          createdAt: bc.createdAt,
-          center: bc.center || bc.centerName || '',
-          address: bc.address || bc.patientAddress || '',
-        exposureDate: bc.exposureDate,
-          severity: bc.severity || bc.exposureCategory || '',
-          woundLocation: bc.woundLocation || '',
-        status: bc.status,
-        genericName: bc.genericName,
-        brandName: bc.brandName,
-        route: bc.route || bc.currentImmunization?.route?.[0] || '',
-          notes: bc.notes || bc.remarks || '',
-        scheduleDates: bc.scheduleDates || [],
-        vaccinations: buildVaccinationsForBiteCase(bc)
-        }))
+        .map(bc => {
+          // Determine status based on vaccination progress
+          const statusFields = ['d0Status', 'd3Status', 'd7Status', 'd14Status', 'd28Status'];
+          const completedCount = statusFields.filter(field => bc[field] === 'completed').length;
+          const missedCount = statusFields.filter(field => bc[field] === 'missed').length;
+          const totalCount = statusFields.length;
+          
+          let displayStatus = bc.status;
+          
+          // Override status based on vaccination progress
+          if (completedCount > 0 && completedCount < totalCount) {
+            displayStatus = 'in-progress';
+          } else if (completedCount === totalCount) {
+            displayStatus = 'completed';
+          } else if (missedCount > 0 && completedCount === 0) {
+            displayStatus = 'missed';
+          } else if (completedCount === 0 && missedCount === 0) {
+            displayStatus = 'scheduled';
+          }
+          
+          console.log('🔍 CASE HISTORY STATUS DETERMINATION:', {
+            biteCaseId: bc._id,
+            originalStatus: bc.status,
+            displayStatus: displayStatus,
+            completedCount,
+            missedCount,
+            totalCount,
+            statusFields: statusFields.map(field => ({ field, status: bc[field] }))
+          });
+          
+          return {
+            id: bc._id,
+            registrationNumber: bc.registrationNumber,
+            dateRegistered: bc.dateRegistered || bc.createdAt,
+            createdAt: bc.createdAt,
+            center: bc.center || bc.centerName || '',
+            address: bc.address || bc.patientAddress || '',
+            exposureDate: bc.exposureDate,
+            severity: bc.severity || bc.exposureCategory || '',
+            woundLocation: bc.woundLocation || '',
+            status: displayStatus,
+            originalStatus: bc.status,
+            genericName: bc.genericName,
+            brandName: bc.brandName,
+            route: bc.route || bc.currentImmunization?.route?.[0] || '',
+            notes: bc.notes || bc.remarks || '',
+            scheduleDates: bc.scheduleDates || [],
+            vaccinations: buildVaccinationsForBiteCase(bc),
+            vaccinationProgress: {
+              completed: completedCount,
+              missed: missedCount,
+              total: totalCount,
+              percentage: Math.round((completedCount / totalCount) * 100)
+            }
+          };
+        })
         .sort((a, b) => new Date(b.dateRegistered || b.createdAt || 0) - new Date(a.dateRegistered || a.createdAt || 0));
 
       // Merge any statuses from current UI vaccinations state (ensures latest)
