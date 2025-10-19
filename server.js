@@ -2363,7 +2363,7 @@ app.post('/api/staffs', async (req, res) => {
             fullName,
             email,
             phone: phone || '',
-            role: role.toLowerCase(),
+            role: role,
             birthdate: birthdate ? new Date(birthdate) : null,
             center,
             centerName: center, // Also set centerName for compatibility
