@@ -56,6 +56,19 @@
   letter-spacing: -0.02em;
 }
 
+/* Modern Add Staff header button to match Create Account buttons */
+.content-header .btn-approve {
+  background: linear-gradient(135deg, #dc2626 0%, #7D0C0C 100%);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 10px 20px rgba(220,38,38,0.25);
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.content-header .btn-approve:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(220,38,38,0.35);
+}
+
 /* SuperAdmin Staff Management Specific Styles */
 .dashboard-container .action-buttons {
   display: flex;
