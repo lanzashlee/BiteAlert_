@@ -3845,16 +3845,48 @@ const SuperAdminVaccinationSchedule = () => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // Get YYYY-MM-DD format
     
-    return filteredVaccinations.filter(v => {
-      if (!v.scheduledDate) return false;
+    console.log('🔍 TODAY\'S VACCINATIONS DEBUG:', {
+      today: today.toISOString(),
+      todayStr,
+      currentTime: new Date().toLocaleString(),
+      totalVaccinations: filteredVaccinations.length
+    });
+    
+    const todaysVaccinations = filteredVaccinations.filter(v => {
+      if (!v.scheduledDate) {
+        console.log('🔍 VACCINATION MISSING SCHEDULED DATE:', v);
+        return false;
+      }
       
       // Convert scheduledDate to YYYY-MM-DD format for comparison
       const vaccinationDate = new Date(v.scheduledDate);
       const vaccinationDateStr = vaccinationDate.toISOString().split('T')[0];
       
+      console.log('🔍 VACCINATION DATE COMPARISON:', {
+        patientName: v.patientName,
+        scheduledDate: v.scheduledDate,
+        vaccinationDateStr,
+        todayStr,
+        isToday: vaccinationDateStr === todayStr,
+        status: v.status,
+        isCompleted: v.status === 'completed',
+        shouldShow: vaccinationDateStr === todayStr && v.status !== 'completed'
+      });
+      
       // Show only items scheduled for today that are not yet completed
       return vaccinationDateStr === todayStr && v.status !== 'completed';
     });
+    
+    console.log('🔍 TODAY\'S VACCINATIONS RESULT:', {
+      count: todaysVaccinations.length,
+      vaccinations: todaysVaccinations.map(v => ({
+        patientName: v.patientName,
+        scheduledDate: v.scheduledDate,
+        status: v.status
+      }))
+    });
+    
+    return todaysVaccinations;
   };
 
   return (

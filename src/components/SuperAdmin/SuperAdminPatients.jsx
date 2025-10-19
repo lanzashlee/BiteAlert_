@@ -1209,11 +1209,32 @@ const SuperAdminPatients = () => {
               );
               
               if (matchingVaccinationDates.length > 0) {
+                // Sort vaccination dates by creation date (newest first) to prioritize latest data
+                const sortedVaccinationDates = matchingVaccinationDates.sort((a, b) => 
+                  new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0)
+                );
+                
                 // Build completedSchedules from vaccination data
                 const completedSchedules = [];
                 const scheduleMap = new Map(); // Use Map to deduplicate by day
                 
-                matchingVaccinationDates.forEach(vd => {
+                console.log('🔍 PROCESSING VACCINATION DATES:', {
+                  totalRecords: matchingVaccinationDates.length,
+                  sortedRecords: sortedVaccinationDates.length,
+                  patientId: case_.patientId || case_.patientID
+                });
+                
+                sortedVaccinationDates.forEach((vd, index) => {
+                  console.log(`🔍 PROCESSING VACCINATION RECORD ${index + 1}:`, {
+                    recordId: vd._id,
+                    createdAt: vd.createdAt,
+                    d0Status: vd.d0Status,
+                    d3Status: vd.d3Status,
+                    d7Status: vd.d7Status,
+                    d14Status: vd.d14Status,
+                    d28Status: vd.d28Status
+                  });
+                  
                   const scheduleData = [
                     { day: 'Day 0', date: vd.d0Date, status: vd.d0Status },
                     { day: 'Day 3', date: vd.d3Date, status: vd.d3Status },
@@ -1237,17 +1258,25 @@ const SuperAdminPatients = () => {
                       
                       // Only add records that have been completed, missed, or scheduled
                       if (record.status === 'completed' || record.status === 'missed' || record.status === 'scheduled') {
-                        // Use day as key to prevent duplicates
+                        // Use day as key to prevent duplicates - prioritize newer records
                         if (!scheduleMap.has(record.day)) {
                           scheduleMap.set(record.day, record);
+                          console.log(`🔍 ADDED ${record.day} TO SCHEDULE MAP:`, record);
+                        } else {
+                          console.log(`🔍 SKIPPING DUPLICATE ${record.day} - already exists`);
                         }
                       }
                     }
                   });
                 });
                 
-                // Convert Map values to array
-                completedSchedules.push(...scheduleMap.values());
+                // Convert Map values to array and sort by day order
+                const scheduleArray = Array.from(scheduleMap.values());
+                const dayOrder = ['Day 0', 'Day 3', 'Day 7', 'Day 14', 'Day 28'];
+                scheduleArray.sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
+                
+                console.log('🔍 FINAL COMPLETED SCHEDULES:', scheduleArray);
+                completedSchedules.push(...scheduleArray);
                 
                 // Add completedSchedules to the case
                 return { ...case_, completedSchedules };
