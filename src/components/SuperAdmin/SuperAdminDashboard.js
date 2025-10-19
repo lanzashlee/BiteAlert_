@@ -66,6 +66,141 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const { initializeCSS } = useStandardizedCSS();
 
+  // Status functions (same as scheduler)
+  const todayLocalStr = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const toLocalDateOnlyString = (dateLike) => {
+    if (!dateLike) return null;
+    try {
+      const d = new Date(dateLike);
+      if (isNaN(d.getTime())) return null;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const getStatusBadgeClass = (status, scheduledDate) => {
+    const today = todayLocalStr();
+    const vaccinationDate = toLocalDateOnlyString(scheduledDate);
+    
+    // Debug logging for status determination
+    console.log('🔍 DASHBOARD STATUS BADGE DEBUG:', {
+      status,
+      scheduledDate,
+      vaccinationDate,
+      today,
+      statusFromDB: status,
+      isCompleted: status === 'completed',
+      statusType: typeof status,
+      statusLength: status ? status.length : 0,
+      statusTrimmed: status ? status.trim() : '',
+      statusLowercase: status ? status.toLowerCase() : ''
+    });
+    
+    // Normalize and trim status
+    const normalizedStatus = status ? status.toString().toLowerCase().trim() : '';
+    
+    // Check for completed status first
+    if (normalizedStatus === 'completed') {
+      console.log('✅ DASHBOARD STATUS: COMPLETED - Returning completed');
+      return 'completed';
+    }
+    
+    // Check for missed status
+    if (normalizedStatus === 'missed') {
+      console.log('❌ DASHBOARD STATUS: MISSED - Returning missed');
+      return 'missed';
+    }
+    
+    // Check if it's today
+    if (vaccinationDate === today) {
+      console.log('📅 DASHBOARD STATUS: TODAY - Returning today');
+      return 'today';
+    }
+    
+    // Check if it's scheduled for the future
+    if (vaccinationDate && vaccinationDate > today) {
+      console.log('⏰ DASHBOARD STATUS: SCHEDULED - Returning scheduled');
+      return 'scheduled';
+    }
+    
+    // Check if it's in the past
+    if (vaccinationDate && vaccinationDate < today) {
+      console.log('⏪ DASHBOARD STATUS: PAST - Returning missed');
+      return 'missed';
+    }
+    
+    // Default fallback
+    console.log('🔄 DASHBOARD STATUS: DEFAULT - Returning scheduled');
+    return 'scheduled';
+  };
+
+  const getStatusText = (status, scheduledDate) => {
+    const today = todayLocalStr();
+    const vaccinationDate = toLocalDateOnlyString(scheduledDate);
+    
+    // Debug logging for status determination
+    console.log('🔍 DASHBOARD STATUS TEXT DEBUG:', {
+      status,
+      scheduledDate,
+      vaccinationDate,
+      today,
+      statusFromDB: status,
+      isCompleted: status === 'completed',
+      statusType: typeof status,
+      statusLength: status ? status.length : 0,
+      statusTrimmed: status ? status.trim() : '',
+      statusLowercase: status ? status.toLowerCase() : ''
+    });
+    
+    // Normalize and trim status
+    const normalizedStatus = status ? status.toString().toLowerCase().trim() : '';
+    
+    // Check for completed status first
+    if (normalizedStatus === 'completed') {
+      console.log('✅ DASHBOARD STATUS TEXT: COMPLETED - Returning Completed');
+      return 'Completed';
+    }
+    
+    // Check for missed status
+    if (normalizedStatus === 'missed') {
+      console.log('❌ DASHBOARD STATUS TEXT: MISSED - Returning Missed');
+      return 'Missed';
+    }
+    
+    // Check if it's today
+    if (vaccinationDate === today) {
+      console.log('📅 DASHBOARD STATUS TEXT: TODAY - Returning Today');
+      return 'Today';
+    }
+    
+    // Check if it's scheduled for the future
+    if (vaccinationDate && vaccinationDate > today) {
+      console.log('⏰ DASHBOARD STATUS TEXT: SCHEDULED - Returning Scheduled');
+      return 'Scheduled';
+    }
+    
+    // Check if it's in the past
+    if (vaccinationDate && vaccinationDate < today) {
+      console.log('⏪ DASHBOARD STATUS TEXT: PAST - Returning Missed');
+      return 'Missed';
+    }
+    
+    // Default fallback
+    console.log('🔄 DASHBOARD STATUS TEXT: DEFAULT - Returning Scheduled');
+    return 'Scheduled';
+  };
+
   // Compute percentage change from the last two datapoints of a time series
   const computeTrendFromSeries = useCallback((labels, data, periodLabel) => {
     if (!Array.isArray(labels) || !Array.isArray(data) || data.length < 2) {
@@ -1087,7 +1222,7 @@ const SuperAdminDashboard = () => {
                   patientId: biteCase.patientId,
                   day: schedule.day,
                   date: vaccinationDate,
-                  status: 'today', // Always show as "today" for appointments due today
+                  status: schedule.status || 'scheduled', // Use actual status from bite case
                   patientName: patientName,
                   vaccineType: biteCase.vaccineType || 'Anti-Rabies',
                   center: biteCase.center || biteCase.centerName || 'Unknown Center',
@@ -2087,9 +2222,9 @@ const SuperAdminDashboard = () => {
                         </div>
                         <div className="appointment-time">
                           <div className="time">{dateString}</div>
-                          <div className="status today">
+                          <div className={`status ${getStatusBadgeClass(schedule.status, schedule.date)}`}>
                             <i className="fa-solid fa-calendar-day"></i>
-                            Today
+                            {getStatusText(schedule.status, schedule.date)}
                           </div>
                         </div>
                       </div>
