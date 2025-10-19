@@ -1263,6 +1263,20 @@ body {
   overflow-wrap: break-word;
 }
 
+.activity-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.activity-separator {
+  color: #d1d5db;
+  font-weight: 300;
+}
+
 .activity-time {
   font-size: 0.8rem;
   color: #9ca3af;

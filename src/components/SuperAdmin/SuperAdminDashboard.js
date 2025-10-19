@@ -1141,15 +1141,58 @@ const SuperAdminDashboard = () => {
           user: `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.user || 'System',
           timestamp: when ? when.toISOString() : null,
           role: a.role,
-          centerName: a.centerName || a.center || ''
+          centerName: a.centerName || a.center || '',
+          patientName: a.patientName || a.patient || '',
+          details: a.details || ''
         };
       }).filter(a => {
         if (!a.timestamp) return false;
         return a.timestamp.split('T')[0] === todayStr;
       }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-      // Take the latest few (e.g., 6)
-      const latest = normalized.slice(0, 6);
+      // Consolidate and deduplicate activities
+      const consolidated = [];
+      const patientActivityCount = {};
+      const actionTypes = new Set();
+      
+      for (const activity of normalized) {
+        const patientKey = activity.patientName || 'system';
+        const actionType = activity.action.toLowerCase();
+        
+        // Skip repetitive rescheduling actions for the same patient
+        if (actionType.includes('reschedule') && patientActivityCount[patientKey] >= 2) {
+          continue;
+        }
+        
+        // Skip duplicate action types for the same patient
+        const activityKey = `${patientKey}-${actionType}`;
+        if (actionTypes.has(activityKey)) {
+          continue;
+        }
+        
+        // Count activities per patient
+        patientActivityCount[patientKey] = (patientActivityCount[patientKey] || 0) + 1;
+        actionTypes.add(activityKey);
+        
+        // Consolidate multiple rescheduling actions into one
+        if (actionType.includes('reschedule')) {
+          const existingReschedule = consolidated.find(a => 
+            a.patientName === activity.patientName && 
+            a.action.toLowerCase().includes('reschedule')
+          );
+          
+          if (existingReschedule) {
+            // Update the existing reschedule entry to be more general
+            existingReschedule.action = `Rescheduled vaccinations for ${activity.patientName}`;
+            continue;
+          }
+        }
+        
+        consolidated.push(activity);
+      }
+
+      // Take the latest few (e.g., 6) with better diversity
+      const latest = consolidated.slice(0, 6);
       console.log('🔍 Recent activity (today):', latest.length);
 
       setRecentActivity(latest);
@@ -1955,6 +1998,18 @@ const SuperAdminDashboard = () => {
                     } else if (activity.action.toLowerCase().includes('vaccination') || activity.action.toLowerCase().includes('treatment')) {
                       iconClass = 'fa-solid fa-syringe';
                       iconColor = 'completed';
+                    } else if (activity.action.toLowerCase().includes('reschedule')) {
+                      iconClass = 'fa-solid fa-calendar-check';
+                      iconColor = 'payment';
+                    } else if (activity.action.toLowerCase().includes('complete')) {
+                      iconClass = 'fa-solid fa-check-circle';
+                      iconColor = 'completed';
+                    }
+                    
+                    // Format the action description to be more concise
+                    let displayAction = activity.action;
+                    if (activity.patientName && !activity.action.includes(activity.patientName)) {
+                      displayAction = `${activity.action} for ${activity.patientName}`;
                     }
                     
                     return (
@@ -1963,9 +2018,12 @@ const SuperAdminDashboard = () => {
                           <i className={iconClass}></i>
                         </div>
                         <div className="activity-info">
-                          <div className="activity-description">{activity.action}</div>
-                          <div className="activity-user">{activity.user}</div>
-                          <div className="activity-time">{timeAgo}</div>
+                          <div className="activity-description">{displayAction}</div>
+                          <div className="activity-meta">
+                            <span className="activity-user">{activity.user}</span>
+                            <span className="activity-separator">•</span>
+                            <span className="activity-time">{timeAgo}</span>
+                          </div>
                         </div>
                       </div>
                     );
