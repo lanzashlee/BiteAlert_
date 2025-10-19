@@ -1131,24 +1131,7 @@ const SuperAdminStaffManagement = () => {
                 className="form-control"
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="addIsApproved">Approved</label>
-              <input
-                type="checkbox"
-                id="addIsApproved"
-                checked={newStaffData.isApproved}
-                onChange={(e) => setNewStaffData(prev => ({ ...prev, isApproved: e.target.checked }))}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="addIsVerified">Verified</label>
-              <input
-                type="checkbox"
-                id="addIsVerified"
-                checked={newStaffData.isVerified}
-                onChange={(e) => setNewStaffData(prev => ({ ...prev, isVerified: e.target.checked }))}
-              />
-            </div>
+            {/* Auto-set status; no manual checkboxes to keep UI clean */}
           </div>
         }
       />
