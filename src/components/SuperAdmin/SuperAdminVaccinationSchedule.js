@@ -1178,9 +1178,29 @@ const SuperAdminVaccinationSchedule = () => {
       }
 
       // Map day labels to status fields for bite case
-      // We no longer write per-day date fields; status completion stays for history
-      const statusField = null;
-      const dateField = null;
+      const dayToStatusField = {
+        'Day 0': 'd0Status',
+        'Day 3': 'd3Status', 
+        'Day 7': 'd7Status',
+        'Day 14': 'd14Status',
+        'Day 28': 'd28Status'
+      };
+      const dayToDateField = {
+        'Day 0': 'd0Date',
+        'Day 3': 'd3Date',
+        'Day 7': 'd7Date', 
+        'Day 14': 'd14Date',
+        'Day 28': 'd28Date'
+      };
+      
+      const statusField = dayToStatusField[scheduleItem.label];
+      const dateField = dayToDateField[scheduleItem.label];
+      
+      console.log('🔍 MAPPING DAY TO FIELDS:', {
+        day: scheduleItem.label,
+        statusField,
+        dateField
+      });
 
       // Find the vaccination record for this patient
       let vaccinationRecord = null;
@@ -1264,6 +1284,21 @@ const SuperAdminVaccinationSchedule = () => {
               lastVaccinationDay: updateData.vaccinationDay,
               updatedAt: new Date().toISOString()
             };
+            
+            // Add the specific day status field
+            if (statusField) {
+              biteCaseUpdate[statusField] = 'completed';
+            }
+            if (dateField) {
+              biteCaseUpdate[dateField] = new Date().toISOString();
+            }
+            
+            console.log('🔍 UPDATING BITE CASE WITH:', {
+              biteCaseId: vaccinationRecord.biteCaseId,
+              statusField,
+              dateField,
+              biteCaseUpdate
+            });
             
             const biteCaseResponse = await apiFetch(`/api/bitecases/${vaccinationRecord.biteCaseId}`, {
               method: 'PUT',
