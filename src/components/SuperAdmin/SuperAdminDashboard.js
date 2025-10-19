@@ -201,6 +201,62 @@ const SuperAdminDashboard = () => {
     return 'Scheduled';
   };
 
+  // Build vaccinations for bite case (same as scheduler)
+  const buildVaccinationsForBiteCase = (biteCase) => {
+    console.log('🔍 DASHBOARD: BUILDING VACCINATIONS FOR BITE CASE:', {
+      biteCaseId: biteCase._id,
+      patientName: biteCase.firstName + ' ' + biteCase.lastName,
+      d0Status: biteCase.d0Status,
+      d3Status: biteCase.d3Status,
+      d7Status: biteCase.d7Status,
+      d14Status: biteCase.d14Status,
+      d28Status: biteCase.d28Status,
+      scheduleDates: biteCase.scheduleDates
+    });
+    
+    // PREFER scheduleDates array from bitecases for all reads
+    if (Array.isArray(biteCase.scheduleDates) && biteCase.scheduleDates.length > 0) {
+      const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
+      const days = labels.map((label, idx) => {
+        // Get individual day status from bite case fields (d0Status, d3Status, etc.)
+        const dayField = label.replace('Day ', 'd') + 'Status';
+        const individualStatus = biteCase[dayField];
+        
+        return {
+          day: label,
+          date: biteCase.scheduleDates[idx],
+          status: individualStatus || 'scheduled'
+        };
+      });
+      return days
+        .map(d => ({ ...d, date: d.date }))
+        .filter(d => d.date)
+        .map(d => ({
+          day: d.day,
+          date: d.date,
+          status: d.status || 'scheduled'
+        }));
+    }
+    
+    // Fallback to legacy per-day fields only when scheduleDates is absent
+    const fromPerDay = [
+      { day: 'Day 0',  date: biteCase.d0Date,  status: biteCase.d0Status },
+      { day: 'Day 3',  date: biteCase.d3Date,  status: biteCase.d3Status },
+      { day: 'Day 7',  date: biteCase.d7Date,  status: biteCase.d7Status },
+      { day: 'Day 14', date: biteCase.d14Date, status: biteCase.d14Status },
+      { day: 'Day 28', date: biteCase.d28Date, status: biteCase.d28Status }
+    ];
+    
+    return fromPerDay
+      .map(d => ({ ...d, date: d.date }))
+      .filter(d => d.date)
+      .map(d => ({
+        day: d.day,
+        date: d.date,
+        status: d.status || 'scheduled'
+      }));
+  };
+
   // Compute percentage change from the last two datapoints of a time series
   const computeTrendFromSeries = useCallback((labels, data, periodLabel) => {
     if (!Array.isArray(labels) || !Array.isArray(data) || data.length < 2) {
@@ -1025,7 +1081,7 @@ const SuperAdminDashboard = () => {
       }
     }, [timeRange]);
 
-  // Fetch today's vaccination schedules with patient names (using same approach as scheduler)
+  // Fetch today's vaccination schedules using the same logic as the scheduler
   const fetchTodayAppointments = useCallback(async () => {
     setAppointmentsLoading(true);
     try {
@@ -1034,47 +1090,41 @@ const SuperAdminDashboard = () => {
       
       console.log('🔍 DASHBOARD: Fetching today\'s vaccination schedules for date:', todayString);
       
-      // Use the same approach as the vaccination scheduler - fetch bite cases
+      // Use the same approach as the vaccination scheduler
       const userCenter = getUserCenter();
       console.log('🔍 DASHBOARD: User center:', userCenter);
       
-      let biteCasesUrl = '/api/bitecases';
+      // Build API URLs with center filter for non-superadmin users (same as scheduler)
       let patientsUrl = '/api/patients?page=1&limit=1000';
+      let vaccinationUrl = '/api/bitecases';
       
       if (userCenter && userCenter !== 'all') {
-        biteCasesUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
         patientsUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
+        vaccinationUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
       }
       
-      // Fetch bite cases and patients in parallel
-      const [biteCasesResponse, patientsResponse] = await Promise.all([
-        apiFetch(biteCasesUrl),
-        apiFetch(patientsUrl)
+      // Fetch patients and bite cases in parallel (same as scheduler)
+      const [patientsRes, vaccinationRes] = await Promise.all([
+        apiFetch(patientsUrl),
+        apiFetch(vaccinationUrl)
       ]);
       
-      if (!biteCasesResponse.ok) throw new Error('Failed to fetch bite cases');
-      if (!patientsResponse.ok) throw new Error('Failed to fetch patients');
+      if (!patientsRes.ok) throw new Error(`Failed to fetch patients: ${patientsRes.status}`);
+      if (!vaccinationRes.ok) throw new Error(`Failed to fetch bite cases: ${vaccinationRes.status}`);
       
-      const biteCasesData = await biteCasesResponse.json();
-      const patientsData = await patientsResponse.json();
+      const patientsData = await patientsRes.json();
+      const vaccinationData = await vaccinationRes.json();
       
-      console.log('🔍 DASHBOARD: Bite cases from API:', biteCasesData.length);
       console.log('🔍 DASHBOARD: Patients from API:', patientsData.length);
-      console.log('🔍 DASHBOARD: Sample bite case:', biteCasesData[0]);
-      console.log('🔍 DASHBOARD: Sample patient:', patientsData[0]);
+      console.log('🔍 DASHBOARD: Bite cases from API:', vaccinationData.length);
       
-      // Handle different response formats
-      let biteCases = Array.isArray(biteCasesData) ? biteCasesData : (biteCasesData.data || []);
+      // Handle different response formats (same as scheduler)
       let patients = Array.isArray(patientsData) ? patientsData : (patientsData.data || []);
+      let biteCases = Array.isArray(vaccinationData) ? vaccinationData : (vaccinationData.data || []);
 
-      // Strictly filter by admin barangay on client as well
-      biteCases = filterByAdminBarangay(biteCases, 'center');
-      patients = filterByAdminBarangay(patients, 'center');
-      
-      // Create patient lookup map with multiple ID variations
+      // Create patient lookup map (same as scheduler)
       const patientLookup = {};
       patients.forEach(patient => {
-        // Add patient with multiple possible ID keys
         const patientIds = [
           patient._id,
           patient.patientId,
@@ -1086,190 +1136,114 @@ const SuperAdminDashboard = () => {
           patientLookup[id] = patient;
         });
         
-        // Also add by registration number if available
         if (patient.registrationNumber || patient.registration_number) {
           patientLookup[patient.registrationNumber || patient.registration_number] = patient;
         }
       });
       
-      console.log('🔍 Patient lookup created:', Object.keys(patientLookup).length, 'entries');
-      console.log('🔍 Sample patient lookup keys:', Object.keys(patientLookup).slice(0, 5));
+      console.log('🔍 DASHBOARD: Patient lookup created:', Object.keys(patientLookup).length, 'entries');
       
       // Build vaccination schedules from bite cases (same logic as scheduler)
-      const todaySchedules = [];
+      const allVaccinations = [];
       
       biteCases.forEach(biteCase => {
-        // Extract vaccination schedule dates from bite case
-        const scheduleData = [
-          { day: 'Day 0', date: biteCase.d0Date || biteCase.day0Date, status: biteCase.d0Status || biteCase.day0Status },
-          { day: 'Day 3', date: biteCase.d3Date || biteCase.day3Date, status: biteCase.d3Status || biteCase.day3Status },
-          { day: 'Day 7', date: biteCase.d7Date || biteCase.day7Date, status: biteCase.d7Status || biteCase.day7Status },
-          { day: 'Day 14', date: biteCase.d14Date || biteCase.day14Date, status: biteCase.d14Status || biteCase.day14Status },
-          { day: 'Day 28', date: biteCase.d28Date || biteCase.day28Date, status: biteCase.d28Status || biteCase.day28Status }
-        ];
+        // Use the same buildVaccinationsForBiteCase logic as scheduler
+        const vaccinations = buildVaccinationsForBiteCase(biteCase);
         
-        scheduleData.forEach(schedule => {
-          if (schedule.date) {
-            let dateValue = schedule.date;
-            
-            // Handle MongoDB Extended JSON formats
-            if (dateValue && typeof dateValue === 'object' && dateValue.$date) {
-              dateValue = dateValue.$date;
-            }
-            if (dateValue && typeof dateValue === 'object' && dateValue.$numberLong) {
-              dateValue = parseInt(dateValue.$numberLong);
-            }
-            
-            const vaccinationDate = new Date(dateValue);
-            if (!isNaN(vaccinationDate.getTime())) {
-              const vaccinationDateString = vaccinationDate.toISOString().split('T')[0];
-              
-              console.log(`🔍 DASHBOARD: Checking ${schedule.day} date:`, {
-                biteCaseId: biteCase._id,
-                originalValue: schedule.date,
-                processedValue: dateValue,
-                vaccinationDate: vaccinationDate,
-                vaccinationDateString: vaccinationDateString,
-                todayString: todayString,
-                matches: vaccinationDateString === todayString,
-                isToday: vaccinationDateString === todayString,
-                isPast: vaccinationDateString < todayString,
-                isFuture: vaccinationDateString > todayString
-              });
-              
-              if (vaccinationDateString === todayString) {
-                console.log(`🔍 DASHBOARD: Processing ${schedule.day} for today (${todayString})`);
-                
-                // Only show appointments that are scheduled for today and not completed/missed
-                const status = schedule.status || 'scheduled';
-                const normalizedStatus = status.toString().toLowerCase().trim();
-                
-                // Skip completed and missed appointments
-                if (normalizedStatus === 'completed' || normalizedStatus === 'missed') {
-                  console.log(`🔍 DASHBOARD: SKIPPING ${schedule.day} - Status: ${status} (completed/missed)`);
-                  return;
-                }
-                
-                console.log(`🔍 DASHBOARD: INCLUDING ${schedule.day} - Status: ${status} (scheduled for today)`);
-                // Get patient information - try multiple ways to find the patient
-                let patient = null;
-                let patientName = 'Unknown Patient';
-                
-                // Try different patient ID fields
-                const possiblePatientIds = [
-                  biteCase.patientId,
-                  biteCase.patient_id,
-                  biteCase.patient,
-                  biteCase._id,
-                  biteCase.id,
-                  biteCase.registrationNumber,
-                  biteCase.registration_number
-                ].filter(Boolean);
-                
-                // Look up patient by any of the possible IDs
-                for (const patientId of possiblePatientIds) {
-                  if (patientLookup[patientId]) {
-                    patient = patientLookup[patientId];
-                    break;
-                  }
-                }
-                
-                if (patient) {
-                  console.log('🔍 Found patient data:', patient);
-                  const firstName = patient.firstName || patient.first || patient.firstname || '';
-                  const lastName = patient.lastName || patient.last || patient.lastname || '';
-                  const middleName = patient.middleName || patient.middle || patient.middlename || '';
-                  
-                  if (firstName && lastName) {
-                    patientName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
-                  } else if (firstName || lastName) {
-                    patientName = firstName || lastName;
-                  } else if (patient.fullName || patient.fullname) {
-                    patientName = patient.fullName || patient.fullname;
-                  } else if (patient.name) {
-                    patientName = patient.name;
-                  } else {
-                    patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
-                  }
-                } else {
-                  console.log('🔍 Patient not found for bite case:', {
-                    biteCaseId: biteCase._id,
-                    possiblePatientIds: possiblePatientIds,
-                    availablePatients: Object.keys(patientLookup).length
-                  });
-                  // Try to extract name directly from biteCase document
-                  const bcFirst = biteCase.firstName || biteCase.first || biteCase.firstname || '';
-                  const bcLast = biteCase.lastName || biteCase.last || biteCase.lastname || '';
-                  const bcMiddle = biteCase.middleName || biteCase.middle || biteCase.middlename || '';
-                  const bcFull = biteCase.fullName || biteCase.fullname || biteCase.patientName || biteCase.name;
-                  if (bcFirst && bcLast) {
-                    patientName = bcMiddle ? `${bcFirst} ${bcMiddle} ${bcLast}` : `${bcFirst} ${bcLast}`;
-                  } else if (bcFull) {
-                    patientName = bcFull;
-                  } else if (bcFirst || bcLast) {
-                    patientName = bcFirst || bcLast;
-                  } else {
-                    patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
-                  }
-                }
-                
-                // Enforce admin center/barangay guard one more time at insert time
-                const userCenterLocal = getUserCenter();
-                const norm = (v) => String(v||'').toLowerCase().replace(/\s*health\s*center$/,'').replace(/\s*center$/,'').trim();
-                const itemCenter = biteCase.center || biteCase.centerName || biteCase.healthCenter || biteCase.facility || biteCase.treatmentCenter || '';
-                const itemBarangay = (patient && (patient.barangay || patient.addressBarangay || patient.patientBarangay || patient.locationBarangay || patient.barangayName)) || '';
-                const allowByCenter = userCenterLocal === 'all' || (!userCenterLocal ? true : (norm(itemCenter) === norm(userCenterLocal) || norm(itemCenter).includes(norm(userCenterLocal)) || norm(userCenterLocal).includes(norm(itemCenter))));
-                const allowByBarangay = userCenterLocal === 'all' || (!userCenterLocal ? true : (norm(itemBarangay) === norm(userCenterLocal) || norm(itemBarangay).includes(norm(userCenterLocal)) || norm(userCenterLocal).includes(norm(itemBarangay))));
-
-                if (!(allowByCenter || allowByBarangay)) {
-                  return; // skip; not for this admin's center/barangay
-                }
-
-                console.log(`🔍 Found vaccination for today:`, {
-                  biteCaseId: biteCase._id,
-                  patientId: biteCase.patientId,
-                  patientName: patientName,
-                  day: schedule.day,
-                  date: vaccinationDateString,
-                  time: vaccinationDate.toLocaleTimeString(),
-                  status: schedule.status,
-                  patient: patient
-                });
-                
-                todaySchedules.push({
-                  _id: `${biteCase._id}_${schedule.day}`,
-                  biteCaseId: biteCase._id,
-                  patientId: biteCase.patientId,
-                  day: schedule.day,
-                  date: vaccinationDate,
-                  status: 'today', // Force "today" status for today's appointments
-                  patientName: patientName,
-                  vaccineType: biteCase.vaccineType || 'Anti-Rabies',
-                  center: biteCase.center || biteCase.centerName || 'Unknown Center',
-                  registrationNumber: biteCase.registrationNumber,
-                  originalBiteCase: biteCase,
-                  patient: patient
-                });
-              }
+        vaccinations.forEach(vaccination => {
+          // Find patient
+          let patient = null;
+          const possiblePatientIds = [
+            biteCase.patientId,
+            biteCase.patient_id,
+            biteCase.patient,
+            biteCase._id,
+            biteCase.id,
+            biteCase.registrationNumber,
+            biteCase.registration_number
+          ].filter(Boolean);
+          
+          for (const patientId of possiblePatientIds) {
+            if (patientLookup[patientId]) {
+              patient = patientLookup[patientId];
+              break;
             }
           }
+          
+          // Get patient name
+          let patientName = 'Unknown Patient';
+          if (patient) {
+            const first = patient.firstName || patient.first || patient.firstname || '';
+            const last = patient.lastName || patient.last || patient.lastname || '';
+            const middle = patient.middleName || patient.middle || patient.middlename || '';
+            const full = patient.fullName || patient.fullname || patient.patientName || patient.name || '';
+            
+            if (first && last) {
+              patientName = middle ? `${first} ${middle} ${last}` : `${first} ${last}`;
+            } else if (full) {
+              patientName = full;
+            } else if (first || last) {
+              patientName = first || last;
+            } else {
+              patientName = patient.registrationNumber ? `Patient ${patient.registrationNumber}` : 'Unknown Patient';
+            }
+          } else {
+            // Fallback to bite case data
+            const bcFirst = biteCase.firstName || biteCase.first || biteCase.firstname || '';
+            const bcLast = biteCase.lastName || biteCase.last || biteCase.lastname || '';
+            const bcMiddle = biteCase.middleName || biteCase.middle || biteCase.middlename || '';
+            const bcFull = biteCase.fullName || biteCase.fullname || biteCase.patientName || biteCase.name;
+            
+            if (bcFirst && bcLast) {
+              patientName = bcMiddle ? `${bcFirst} ${bcMiddle} ${bcLast}` : `${bcFirst} ${bcLast}`;
+            } else if (bcFull) {
+              patientName = bcFull;
+            } else if (bcFirst || bcLast) {
+              patientName = bcFirst || bcLast;
+            } else {
+              patientName = biteCase.registrationNumber ? `Patient ${biteCase.registrationNumber}` : 'Unknown Patient';
+            }
+          }
+          
+          allVaccinations.push({
+            _id: `${biteCase._id}_${vaccination.day}`,
+            biteCaseId: biteCase._id,
+            patientId: biteCase.patientId,
+            patient: patient,
+            patientName: patientName,
+            vaccinationDay: vaccination.day,
+            scheduledDate: vaccination.date,
+            status: vaccination.status,
+            vaccineType: biteCase.vaccineType || 'Anti-Rabies',
+            center: biteCase.center || biteCase.centerName || 'Unknown Center',
+            registrationNumber: biteCase.registrationNumber,
+            originalBiteCase: biteCase
+          });
         });
       });
       
-      // Sort by time and limit to 4
-      const sortedSchedules = todaySchedules.sort((a, b) => {
-        return a.date.getTime() - b.date.getTime();
-      }).slice(0, 4);
+      console.log('🔍 DASHBOARD: All vaccinations found:', allVaccinations.length);
       
-      console.log('🔍 DASHBOARD: Today\'s vaccination schedules found:', sortedSchedules.length);
-      console.log('🔍 DASHBOARD: Today\'s vaccination schedules data:', sortedSchedules);
-      console.log('🔍 DASHBOARD: Today\'s schedules details:', sortedSchedules.map(s => ({
+      // Filter for today's appointments (same logic as scheduler's getTodaysVaccinations)
+      const todaySchedules = allVaccinations.filter(v => {
+        if (!v.scheduledDate) return false;
+        
+        const vaccinationDate = new Date(v.scheduledDate);
+        const vaccinationDateStr = vaccinationDate.toISOString().split('T')[0];
+        
+        // Only show today's appointments that are not completed
+        return vaccinationDateStr === todayString && v.status !== 'completed';
+      });
+      
+      console.log('🔍 DASHBOARD: Today\'s vaccination schedules found:', todaySchedules.length);
+      console.log('🔍 DASHBOARD: Today\'s schedules details:', todaySchedules.map(s => ({
         patientName: s.patientName,
-        day: s.day,
-        date: s.date,
+        day: s.vaccinationDay,
+        date: s.scheduledDate,
         status: s.status
       })));
-      setTodayAppointments(sortedSchedules);
+      
+      setTodayAppointments(todaySchedules);
     } catch (error) {
       console.error('Error fetching today\'s vaccination schedules:', error);
       setTodayAppointments([]);
@@ -2196,11 +2170,11 @@ const SuperAdminDashboard = () => {
               ) : todayAppointments.length > 0 ? (
                 <div className="appointments-list">
                   {todayAppointments.map((schedule, index) => {
-                    const dateString = schedule.date.toLocaleDateString('en-US', { 
+                    const dateString = schedule.scheduledDate ? new Date(schedule.scheduledDate).toLocaleDateString('en-US', { 
                       weekday: 'short',
                       month: 'short', 
                       day: 'numeric'
-                    });
+                    }) : 'Today';
                     
                     // Get patient name from schedule data (many fallbacks)
                     const getPatientName = (schedule) => {
@@ -2220,9 +2194,9 @@ const SuperAdminDashboard = () => {
                     
                     // Get vaccination type/day from schedule data
                     const getVaccinationType = (schedule) => {
-                      // Use the day we already extracted (Day 0, Day 3, etc.)
-                      if (schedule.day && schedule.day.trim()) {
-                        return schedule.day;
+                      // Use the vaccination day we already extracted (Day 0, Day 3, etc.)
+                      if (schedule.vaccinationDay && schedule.vaccinationDay.trim()) {
+                        return schedule.vaccinationDay;
                       }
                       
                       // Fallback to vaccine type
@@ -2248,9 +2222,9 @@ const SuperAdminDashboard = () => {
                         </div>
                         <div className="appointment-time">
                           <div className="time">{dateString}</div>
-                          <div className={`status ${getStatusBadgeClass(schedule.status, schedule.date)}`}>
+                          <div className={`status ${getStatusBadgeClass(schedule.status, schedule.scheduledDate)}`}>
                             <i className="fa-solid fa-calendar-day"></i>
-                            {getStatusText(schedule.status, schedule.date)}
+                            {getStatusText(schedule.status, schedule.scheduledDate)}
                           </div>
                         </div>
                       </div>
