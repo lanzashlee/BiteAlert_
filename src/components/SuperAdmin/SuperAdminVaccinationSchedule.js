@@ -423,6 +423,34 @@ const SuperAdminVaccinationSchedule = () => {
       throw new Error('Failed to update vaccination dates');
     }
 
+    // Also update the bite case with the individual day status
+    try {
+      const biteCaseUpdatePayload = {};
+      if (fields && scheduleItem) {
+        if (scheduleItem.date) biteCaseUpdatePayload[fields.dateField] = new Date(scheduleItem.date).toISOString();
+        if (scheduleItem.status) biteCaseUpdatePayload[fields.statusField] = scheduleItem.status;
+      }
+      
+      console.log('🔍 UPDATING BITE CASE:', {
+        biteCaseId: scheduleModalData.biteCaseId,
+        payload: biteCaseUpdatePayload
+      });
+      
+      const biteCaseRes = await apiFetch(`/api/bitecases/${scheduleModalData.biteCaseId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(biteCaseUpdatePayload)
+      });
+      
+      if (biteCaseRes.ok) {
+        console.log('✅ BITE CASE UPDATED SUCCESSFULLY');
+      } else {
+        console.warn('⚠️ Failed to update bite case:', await biteCaseRes.text());
+      }
+    } catch (error) {
+      console.error('❌ Error updating bite case:', error);
+    }
+
     // Deduct from stock for selected vaccine
     const stockUpdates = [];
     if (selectedVaccine && selectedVaccineBrand) {
