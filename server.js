@@ -2368,6 +2368,8 @@ app.post('/api/staffs', async (req, res) => {
             center,
             centerName: center, // Also set centerName for compatibility
             officeAddress: officeAddress || '',
+            position: '', // Leave blank for mobile app editing
+            department: '', // Leave blank for mobile app editing
             password: hashedPassword,
             isApproved: isApproved !== undefined ? isApproved : true,
             isVerified: isVerified !== undefined ? isVerified : true,
