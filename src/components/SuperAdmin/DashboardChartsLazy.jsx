@@ -40,9 +40,7 @@ const DashboardChartsLazy = memo(({
   lineChartOptions,
   barChartOptions,
   vaccinesChartOptions,
-  severityChartOptions,
-  lastStockUpdate,
-  onRefreshVaccineStock
+  severityChartOptions
 }) => {
   return (
     <div className="row" aria-live="polite">
@@ -68,37 +66,8 @@ const DashboardChartsLazy = memo(({
       </div>
       <div className="col-md-6">
         <div className="panel panel-default" aria-label="Vaccine stocks trend chart">
-          <div className="panel-heading" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-            <h3 className="panel-title">
-              Vaccine Stock Levels
-              {lastStockUpdate && (
-                <span className="real-time-indicator" style={{
-                  fontSize: '12px',
-                  color: '#28a745',
-                  marginLeft: '10px',
-                  fontWeight: 'normal'
-                }}>
-                  <i className="fa-solid fa-circle" style={{color: '#28a745', marginRight: '5px'}}></i>
-                  Live • Updated {lastStockUpdate}
-                </span>
-              )}
-            </h3>
-            <button 
-              className="btn btn-sm btn-outline-primary"
-              onClick={onRefreshVaccineStock}
-              style={{
-                fontSize: '12px',
-                padding: '4px 8px',
-                border: '1px solid #007bff',
-                background: 'transparent',
-                color: '#007bff',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-              title="Refresh vaccine stock data"
-            >
-              <i className="fa-solid fa-refresh"></i> Refresh
-            </button>
+          <div className="panel-heading">
+            <h3 className="panel-title">Vaccine Stock Levels</h3>
           </div>
           <div className="panel-body" style={{height: 300, position: 'relative'}}>
             <LineChart data={vaccinesChartData} options={vaccinesChartOptions} />

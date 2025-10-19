@@ -383,7 +383,6 @@ const SuperAdminDashboard = () => {
     }]
   });
 
-  const [lastStockUpdate, setLastStockUpdate] = useState(null);
   const updateVaccineStockTrendsRef = useRef(null);
 
   const [severityChartData, setSeverityChartData] = useState({
@@ -1416,7 +1415,6 @@ const SuperAdminDashboard = () => {
         const roundedData = data.map(value => Math.round(value));
         console.log('🔍 VACCINE STOCK TRENDS DEBUG: Final chart data:', { labels, data: roundedData });
       setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: roundedData }] }));
-      setLastStockUpdate(new Date().toLocaleTimeString());
       const vaccineTrend = computeTrendFromSeries(labels, roundedData, 'month');
       if (vaccineTrend) {
         setTrends(prev => ({ ...prev, vaccineStocks: vaccineTrend }));
@@ -1977,8 +1975,6 @@ const SuperAdminDashboard = () => {
             barChartOptions={barChartOptions}
             vaccinesChartOptions={vaccinesChartOptions}
             severityChartOptions={severityChartOptions}
-            lastStockUpdate={lastStockUpdate}
-            onRefreshVaccineStock={updateVaccineStockTrends}
           />
         </Suspense>
       </main>
