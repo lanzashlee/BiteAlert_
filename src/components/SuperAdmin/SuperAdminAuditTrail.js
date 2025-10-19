@@ -113,7 +113,7 @@ const SuperAdminAuditTrail = () => {
                 return true;
               })
               .map(staff => ({
-                id: staff.staffId || staff._id,
+                id: staff.staffId || `STF-${staff._id}`,
                 role: 'Staff',
                 name: staff.fullName || `${staff.firstName} ${staff.lastName}`,
                 action: 'Staff account created',
@@ -151,7 +151,7 @@ const SuperAdminAuditTrail = () => {
                 return true;
               })
               .map(patient => ({
-                id: patient.patientId || patient._id,
+                id: patient.patientId || `PAT-${patient._id}`,
                 role: 'Patient',
                 name: patient.fullName || `${patient.firstName} ${patient.lastName}`,
                 action: 'Patient registered',
