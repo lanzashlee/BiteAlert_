@@ -1032,10 +1032,12 @@ const SuperAdminDashboard = () => {
       const today = new Date();
       const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
       
-      console.log('🔍 Fetching today\'s vaccination schedules for date:', todayString);
+      console.log('🔍 DASHBOARD: Fetching today\'s vaccination schedules for date:', todayString);
       
       // Use the same approach as the vaccination scheduler - fetch bite cases
       const userCenter = getUserCenter();
+      console.log('🔍 DASHBOARD: User center:', userCenter);
+      
       let biteCasesUrl = '/api/bitecases';
       let patientsUrl = '/api/patients?page=1&limit=1000';
       
@@ -1056,8 +1058,10 @@ const SuperAdminDashboard = () => {
       const biteCasesData = await biteCasesResponse.json();
       const patientsData = await patientsResponse.json();
       
-      console.log('🔍 Bite cases from API:', biteCasesData.length);
-      console.log('🔍 Patients from API:', patientsData.length);
+      console.log('🔍 DASHBOARD: Bite cases from API:', biteCasesData.length);
+      console.log('🔍 DASHBOARD: Patients from API:', patientsData.length);
+      console.log('🔍 DASHBOARD: Sample bite case:', biteCasesData[0]);
+      console.log('🔍 DASHBOARD: Sample patient:', patientsData[0]);
       
       // Handle different response formats
       let biteCases = Array.isArray(biteCasesData) ? biteCasesData : (biteCasesData.data || []);
@@ -1252,8 +1256,14 @@ const SuperAdminDashboard = () => {
         return a.date.getTime() - b.date.getTime();
       }).slice(0, 4);
       
-      console.log('🔍 Today\'s vaccination schedules found:', sortedSchedules.length);
-      console.log('🔍 Today\'s vaccination schedules data:', sortedSchedules);
+      console.log('🔍 DASHBOARD: Today\'s vaccination schedules found:', sortedSchedules.length);
+      console.log('🔍 DASHBOARD: Today\'s vaccination schedules data:', sortedSchedules);
+      console.log('🔍 DASHBOARD: Today\'s schedules details:', sortedSchedules.map(s => ({
+        patientName: s.patientName,
+        day: s.day,
+        date: s.date,
+        status: s.status
+      })));
       setTodayAppointments(sortedSchedules);
     } catch (error) {
       console.error('Error fetching today\'s vaccination schedules:', error);
