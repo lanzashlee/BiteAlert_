@@ -1159,7 +1159,14 @@ const SuperAdminStaffManagement = () => {
                 className="form-control"
                 placeholder="Create a strong password"
                 value={newStaffData.password || ''}
-                onChange={(e)=> setNewStaffData(prev => ({ ...prev, password: e.target.value }))}
+                onChange={(e)=> {
+                  const newPassword = e.target.value;
+                  setNewStaffData(prev => ({ ...prev, password: newPassword }));
+                  // Clear password error if password becomes valid
+                  if (newPassword && !validatePassword(newPassword)) {
+                    setAddStaffError(null);
+                  }
+                }}
                 required
               />
               {newStaffData.password && (
@@ -1181,7 +1188,14 @@ const SuperAdminStaffManagement = () => {
                 className="form-control"
                 placeholder="Re-enter password"
                 value={newStaffData.confirmPassword || ''}
-                onChange={(e)=> setNewStaffData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                onChange={(e)=> {
+                  const newConfirmPassword = e.target.value;
+                  setNewStaffData(prev => ({ ...prev, confirmPassword: newConfirmPassword }));
+                  // Clear error if passwords match and password is valid
+                  if (newConfirmPassword && newStaffData.password === newConfirmPassword && !validatePassword(newStaffData.password)) {
+                    setAddStaffError(null);
+                  }
+                }}
                 required
               />
             </div>
