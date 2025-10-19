@@ -2298,6 +2298,107 @@ app.get('/api/staffs', async (req, res) => {
     }
 });
 
+// API endpoint to create new staff
+app.post('/api/staffs', async (req, res) => {
+    try {
+        const {
+            firstName,
+            middleName,
+            lastName,
+            email,
+            phone,
+            role,
+            birthdate,
+            center,
+            officeAddress,
+            password,
+            isApproved,
+            isVerified
+        } = req.body;
+
+        // Validate required fields
+        if (!firstName || !lastName || !email || !role || !center || !password) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Missing required fields: firstName, lastName, email, role, center, password' 
+            });
+        }
+
+        // Check if email already exists
+        const existingStaff = await Staff.findOne({ email });
+        if (existingStaff) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Email already exists' 
+            });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Generate staff ID
+        const staffCount = await Staff.countDocuments();
+        const staffId = `STF-${new Date().getFullYear()}${String(staffCount + 1).padStart(5, '0')}`;
+
+        // Create full name
+        const fullName = `${firstName} ${middleName ? middleName + ' ' : ''}${lastName}`.trim();
+
+        // Create new staff
+        const newStaff = new Staff({
+            firstName,
+            middleName: middleName || '',
+            lastName,
+            fullName,
+            email,
+            phone: phone || '',
+            role: role.toLowerCase(),
+            birthdate: birthdate ? new Date(birthdate) : null,
+            center,
+            centerName: center, // Also set centerName for compatibility
+            officeAddress: officeAddress || '',
+            password: hashedPassword,
+            isApproved: isApproved !== undefined ? isApproved : true,
+            isVerified: isVerified !== undefined ? isVerified : true,
+            staffId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+
+        const savedStaff = await newStaff.save();
+
+        // Log audit trail
+        const auditUserId = getAuditUserId(req);
+        await logAuditTrail(
+            auditUserId,
+            'system',
+            firstName,
+            middleName || '',
+            lastName,
+            'Staff account created',
+            { staffId: savedStaff.staffId, email: savedStaff.email }
+        );
+
+        res.status(201).json({ 
+            success: true, 
+            message: 'Staff created successfully',
+            staff: {
+                _id: savedStaff._id,
+                staffId: savedStaff.staffId,
+                fullName: savedStaff.fullName,
+                email: savedStaff.email,
+                role: savedStaff.role,
+                center: savedStaff.center,
+                isApproved: savedStaff.isApproved,
+                isVerified: savedStaff.isVerified
+            }
+        });
+
+    } catch (error) {
+        console.error('Error creating staff:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Approve staff
 app.post('/api/staffs/:id/approve', async (req, res) => {
     try {
