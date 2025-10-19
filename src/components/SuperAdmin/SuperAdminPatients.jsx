@@ -409,8 +409,12 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                     }}></span>
                     ERIG
                   </td>
-                  <td style={{ padding: '12px' }}>-</td>
-                  <td style={{ padding: '12px' }}>-</td>
+                  <td style={{ padding: '12px' }}>
+                    {caseData.currentImmunization?.erig?.medicineUsed || '-'}
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    {caseData.currentImmunization?.erig?.branchNo || caseData?.center || caseData?.centerName || '001'}
+                  </td>
                 </tr>
                 
                 {/* Schedule Rows */}
@@ -427,13 +431,6 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                       {schedule.day}
                     </td>
                     <td style={{ padding: '12px' }}>
-                      {schedule.date ? new Date(schedule.date).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      }) : '-'}
-                    </td>
-                    <td style={{ padding: '12px' }}>
                       {schedule.vaccinesUsed ? (
                         <div>
                           {schedule.vaccinesUsed.map((vaccine, vIndex) => (
@@ -443,7 +440,17 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                             </div>
                           ))}
                         </div>
-                      ) : '-'}
+                      ) : (
+                        // Fallback to currentImmunization.vaccine data
+                        caseData.currentImmunization?.vaccine?.map((v, vIndex) => (
+                          <div key={vIndex} style={{ marginBottom: '4px' }}>
+                            <strong>{v === 'PCEC' ? 'VAXIRAB (PCEC)' : v === 'PVRV' ? 'SPEEDA (PVRV)' : 'VAXIRAB (BOOSTER)'}</strong>
+                          </div>
+                        )) || '-'
+                      )}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      {caseData?.center || caseData?.centerName || '001'}
                     </td>
                   </tr>
                 ))}
