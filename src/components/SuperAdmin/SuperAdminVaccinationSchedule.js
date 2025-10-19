@@ -1426,11 +1426,6 @@ const SuperAdminVaccinationSchedule = () => {
           showNotification('All vaccination schedules completed! Patient will be moved to case history.', 'success');
           await movePatientToCaseHistory(scheduleModalData);
         }
-      } else {
-        const error = await response.json();
-        console.error('❌ Update failed:', error);
-        throw new Error(error.message || `Failed to update vaccination status (${response.status})`);
-      }
     } catch (error) {
       console.error('Error updating vaccination status:', error);
       showNotification('Error updating vaccination status. Please try again.', 'error');
