@@ -413,7 +413,7 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                     {caseData.currentImmunization?.erig?.medicineUsed || '-'}
                   </td>
                   <td style={{ padding: '12px' }}>
-                    {caseData.currentImmunization?.erig?.branchNo || caseData?.center || caseData?.centerName || '001'}
+                    {caseData.currentImmunization?.erig?.branchNo || '-'}
                   </td>
                 </tr>
                 
@@ -450,7 +450,18 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                       )}
                     </td>
                     <td style={{ padding: '12px' }}>
-                      {caseData?.center || caseData?.centerName || '001'}
+                      {schedule.vaccinesUsed ? (
+                        <div>
+                          {schedule.vaccinesUsed.map((vaccine, vIndex) => (
+                            <div key={vIndex} style={{ marginBottom: '4px' }}>
+                              {vaccine.branchNo || vaccine.branchNumber || '-'}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        // Fallback to currentImmunization branch data
+                        caseData.currentImmunization?.branchNo || '-'
+                      )}
                     </td>
                   </tr>
                 ))}
