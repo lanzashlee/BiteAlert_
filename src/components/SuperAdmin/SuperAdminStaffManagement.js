@@ -292,8 +292,6 @@ const SuperAdminStaffManagement = () => {
       phone: '',
       role: 'Staff',
       birthdate: '',
-      position: '',
-      department: '',
       center: '',
       officeAddress: '',
       isApproved: true,
@@ -346,6 +344,15 @@ const SuperAdminStaffManagement = () => {
       return;
     }
 
+    // Validate age (must be 18 or older)
+    if (newStaffData.birthdate) {
+      const age = calculateAge(newStaffData.birthdate);
+      if (age < 18) {
+        setAddStaffError('Staff must be 18 years old or above to create an account');
+        return;
+      }
+    }
+
     if (!newStaffData.password || !newStaffData.confirmPassword) {
       setAddStaffError('Password fields cannot be empty');
       return;
@@ -375,8 +382,6 @@ const SuperAdminStaffManagement = () => {
           phone: newStaffData.phone,
           role: (newStaffData.role || 'staff').toString().toLowerCase(),
           birthdate: newStaffData.birthdate ? new Date(newStaffData.birthdate).toISOString() : undefined,
-          position: newStaffData.position,
-          department: newStaffData.department,
           center: newStaffData.center,
           officeAddress: newStaffData.officeAddress,
           password: newStaffData.password,
@@ -483,6 +488,18 @@ const SuperAdminStaffManagement = () => {
   const validatePhone = (phone) => {
     const phoneRegex = /^09\d{9}$/; // Philippine mobile number format
     return phoneRegex.test(phone);
+  };
+
+  // Calculate age from birthdate
+  const calculateAge = (birthdate) => {
+    const today = new Date();
+    const birth = new Date(birthdate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
   };
 
   useEffect(() => {
@@ -1138,28 +1155,6 @@ const SuperAdminStaffManagement = () => {
                 className="form-control"
                 value={newStaffData.birthdate}
                 onChange={(e)=> setNewStaffData(prev => ({ ...prev, birthdate: e.target.value }))}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="addPosition">Position</label>
-              <input
-                id="addPosition"
-                type="text"
-                className="form-control"
-                placeholder="e.g., Staff"
-                value={newStaffData.position}
-                onChange={(e)=> setNewStaffData(prev => ({ ...prev, position: e.target.value }))}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="addDepartment">Department</label>
-              <input
-                id="addDepartment"
-                type="text"
-                className="form-control"
-                placeholder="e.g., Health Services"
-                value={newStaffData.department}
-                onChange={(e)=> setNewStaffData(prev => ({ ...prev, department: e.target.value }))}
               />
             </div>
             <div className="form-group">
