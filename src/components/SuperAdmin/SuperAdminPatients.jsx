@@ -410,10 +410,16 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                     ERIG
                   </td>
                   <td style={{ padding: '12px' }}>
-                    {caseData.currentImmunization?.erig?.medicineUsed || '-'}
+                    {caseData.currentImmunization?.erig?.status === 'completed' 
+                      ? (caseData.currentImmunization?.erig?.medicineUsed || '-')
+                      : ''
+                    }
                   </td>
                   <td style={{ padding: '12px' }}>
-                    {caseData.currentImmunization?.erig?.branchNo || '-'}
+                    {caseData.currentImmunization?.erig?.status === 'completed' 
+                      ? (caseData.currentImmunization?.erig?.branchNo || '-')
+                      : ''
+                    }
                   </td>
                 </tr>
                 
@@ -431,37 +437,41 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                       {schedule.day}
                     </td>
                     <td style={{ padding: '12px' }}>
-                      {schedule.vaccinesUsed ? (
-                        <div>
-                          {schedule.vaccinesUsed.map((vaccine, vIndex) => (
-                            <div key={vIndex} style={{ marginBottom: '4px' }}>
-                              <strong>{vaccine.type || vaccine.brand || 'Anti-Rabies'}</strong>
-                              {vaccine.route && ` (${vaccine.route})`}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        // Fallback to currentImmunization.vaccine data
-                        caseData.currentImmunization?.vaccine?.map((v, vIndex) => (
-                          <div key={vIndex} style={{ marginBottom: '4px' }}>
-                            <strong>{v === 'PCEC' ? 'VAXIRAB (PCEC)' : v === 'PVRV' ? 'SPEEDA (PVRV)' : 'VAXIRAB (BOOSTER)'}</strong>
+                      {schedule.status === 'completed' ? (
+                        schedule.vaccinesUsed ? (
+                          <div>
+                            {schedule.vaccinesUsed.map((vaccine, vIndex) => (
+                              <div key={vIndex} style={{ marginBottom: '4px' }}>
+                                <strong>{vaccine.type || vaccine.brand || 'Anti-Rabies'}</strong>
+                                {vaccine.route && ` (${vaccine.route})`}
+                              </div>
+                            ))}
                           </div>
-                        )) || '-'
-                      )}
+                        ) : (
+                          // Fallback to currentImmunization.vaccine data
+                          caseData.currentImmunization?.vaccine?.map((v, vIndex) => (
+                            <div key={vIndex} style={{ marginBottom: '4px' }}>
+                              <strong>{v === 'PCEC' ? 'VAXIRAB (PCEC)' : v === 'PVRV' ? 'SPEEDA (PVRV)' : 'VAXIRAB (BOOSTER)'}</strong>
+                            </div>
+                          )) || '-'
+                        )
+                      ) : ''}
                     </td>
                     <td style={{ padding: '12px' }}>
-                      {schedule.vaccinesUsed ? (
-                        <div>
-                          {schedule.vaccinesUsed.map((vaccine, vIndex) => (
-                            <div key={vIndex} style={{ marginBottom: '4px' }}>
-                              {vaccine.branchNo || vaccine.branchNumber || '-'}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        // Fallback to currentImmunization branch data
-                        caseData.currentImmunization?.branchNo || '-'
-                      )}
+                      {schedule.status === 'completed' ? (
+                        schedule.vaccinesUsed ? (
+                          <div>
+                            {schedule.vaccinesUsed.map((vaccine, vIndex) => (
+                              <div key={vIndex} style={{ marginBottom: '4px' }}>
+                                {vaccine.branchNo || vaccine.branchNumber || '-'}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          // Fallback to currentImmunization branch data
+                          caseData.currentImmunization?.branchNo || '-'
+                        )
+                      ) : ''}
                     </td>
                   </tr>
                 ))}
