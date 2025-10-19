@@ -3069,6 +3069,16 @@ const SuperAdminPatients = () => {
                   <button 
                     type="button"
                     className="patient-modal-btn"
+                    onClick={() => handleEditPatient(selectedPatient)}
+                    style={{ backgroundColor: '#3b82f6', color: 'white' }}
+                  >
+                    Edit Patient
+                  </button>
+                )}
+                {!showCaseForm && !showHistory && !showCaseDetails && (
+                  <button 
+                    type="button"
+                    className="patient-modal-btn"
                     onClick={() => { setShowHistory(true); loadCaseHistoryForPatient(selectedPatient); }}
                   >
                     Case History
@@ -3604,6 +3614,142 @@ const SuperAdminPatients = () => {
                     ) : (
                       'Add Patient'
                     )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Patient Modal */}
+      {showEditModal && selectedPatient && (
+        <div className="patient-modal-overlay">
+          <div className="patient-modal">
+            <div className="patient-modal-header">
+              <h3>Edit Patient Information</h3>
+              <button 
+                type="button" 
+                onClick={() => setShowEditModal(false)}
+                className="patient-modal-close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="patient-modal-body">
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  const response = await apiFetch(`/api/patients/${selectedPatient._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(selectedPatient)
+                  });
+                  if (response.ok) {
+                    alert('Patient updated successfully');
+                    setShowEditModal(false);
+                    // Refresh the patient list
+                    window.location.reload();
+                  } else {
+                    alert('Failed to update patient');
+                  }
+                } catch (error) {
+                  alert('Error updating patient');
+                }
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                  <div>
+                    <label>First Name</label>
+                    <input
+                      type="text"
+                      value={selectedPatient.firstName || ''}
+                      onChange={(e) => setSelectedPatient({...selectedPatient, firstName: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label>Last Name</label>
+                    <input
+                      type="text"
+                      value={selectedPatient.lastName || ''}
+                      onChange={(e) => setSelectedPatient({...selectedPatient, lastName: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label>Gender</label>
+                    <select
+                      value={selectedPatient.gender || selectedPatient.sex || ''}
+                      onChange={(e) => setSelectedPatient({...selectedPatient, gender: e.target.value, sex: e.target.value})}
+                      required
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Phone Number</label>
+                    <input
+                      type="tel"
+                      value={selectedPatient.phone || selectedPatient.contactNumber || ''}
+                      onChange={(e) => setSelectedPatient({...selectedPatient, phone: e.target.value, contactNumber: e.target.value})}
+                      placeholder="09XXXXXXXXX"
+                    />
+                  </div>
+                  <div>
+                    <label>Barangay</label>
+                    <select
+                      value={selectedPatient.barangay || ''}
+                      onChange={(e) => setSelectedPatient({...selectedPatient, barangay: e.target.value})}
+                    >
+                      <option value="">Select Barangay</option>
+                      <option value="Addition Hills">Addition Hills</option>
+                      <option value="Balong-Bato">Balong-Bato</option>
+                      <option value="Batis">Batis</option>
+                      <option value="Corazon de Jesus">Corazon de Jesus</option>
+                      <option value="Ermitaño">Ermitaño</option>
+                      <option value="Greenhills">Greenhills</option>
+                      <option value="Isabelita">Isabelita</option>
+                      <option value="Little Baguio">Little Baguio</option>
+                      <option value="Maytunas">Maytunas</option>
+                      <option value="Onse">Onse</option>
+                      <option value="Pasadena">Pasadena</option>
+                      <option value="Pedro Cruz">Pedro Cruz</option>
+                      <option value="Progreso">Progreso</option>
+                      <option value="Rivera">Rivera</option>
+                      <option value="Salapan">Salapan</option>
+                      <option value="San Perfecto">San Perfecto</option>
+                      <option value="Santa Lucia">Santa Lucia</option>
+                      <option value="Tibagan">Tibagan</option>
+                      <option value="West Crame">West Crame</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Address</label>
+                    <input
+                      type="text"
+                      value={selectedPatient.address || ''}
+                      onChange={(e) => setSelectedPatient({...selectedPatient, address: e.target.value})}
+                      placeholder="Street address"
+                    />
+                  </div>
+                </div>
+                <div className="patient-modal-footer" style={{ justifyContent: 'flex-end', gap: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="patient-modal-btn"
+                    style={{ backgroundColor: '#6b7280', color: 'white' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="patient-modal-btn"
+                    style={{ backgroundColor: '#dc2626', color: 'white' }}
+                  >
+                    Update Patient
                   </button>
                 </div>
               </form>
