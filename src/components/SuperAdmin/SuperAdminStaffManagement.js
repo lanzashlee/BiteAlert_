@@ -341,7 +341,7 @@ const SuperAdminStaffManagement = () => {
       return;
     }
 
-    if (!validatePhone(newStaffData.phone)) {
+    if (newStaffData.phone && !validatePhone(newStaffData.phone)) {
       setAddStaffError('Please enter a valid phone number (e.g., 09123456789)');
       return;
     }
@@ -1118,7 +1118,6 @@ const SuperAdminStaffManagement = () => {
                 onChange={(e) => setNewStaffData(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="Enter phone number (e.g., 09123456789)"
                 className="form-control"
-                required
               />
             </div>
             <div className="form-group">
