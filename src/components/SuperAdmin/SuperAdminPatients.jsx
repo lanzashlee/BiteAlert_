@@ -2660,7 +2660,14 @@ const SuperAdminPatients = () => {
                             }}>
                               {(() => {
                                 const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                return currentCase?.currentImmunization?.erig?.medicineUsed || '-';
+                                // Try multiple possible fields for medicine used
+                                return currentCase?.erigMedicine || 
+                                       currentCase?.erigMedicineUsed || 
+                                       currentCase?.medicineUsed || 
+                                       currentCase?.brandName || 
+                                       currentCase?.genericName || 
+                                       currentCase?.currentImmunization?.erig?.medicineUsed || 
+                                       '-';
                               })()}
                             </td>
                             <td style={{ 
@@ -2725,15 +2732,24 @@ const SuperAdminPatients = () => {
                             }}>
                               {(() => {
                                 const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                const v = currentCase?.completedSchedules?.[0]?.vaccinesUsed;
-                                if (Array.isArray(v) && v.length) {
-                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
-                                }
+                                // Try multiple possible fields for D0 medicine used
+                                const d0Medicine = currentCase?.d0Medicine || 
+                                                 currentCase?.d0MedicineUsed || 
+                                                 currentCase?.day0Medicine || 
+                                                 currentCase?.day0MedicineUsed ||
+                                                 currentCase?.completedSchedules?.[0]?.vaccinesUsed?.[0]?.brand ||
+                                                 currentCase?.completedSchedules?.[0]?.vaccinesUsed?.[0]?.type ||
+                                                 currentCase?.completedSchedules?.[0]?.vaccinesUsed?.[0]?.name;
+                                
+                                if (d0Medicine) return d0Medicine;
+                                
+                                // Fallback to currentImmunization data
                                 if (currentCase?.currentImmunization?.vaccine) {
                                   const t = currentCase.currentImmunization.vaccine[0];
                                   if (t === 'PCEC') return 'VAXIRAB (PCEC)';
                                   if (t === 'PVRV') return 'SPEEDA (PVRV)';
                                 }
+                                
                                 return currentCase?.brandName || currentCase?.genericName || '-';
                               })()}
                             </td>
@@ -2799,15 +2815,24 @@ const SuperAdminPatients = () => {
                             }}>
                               {(() => {
                                 const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                const v = currentCase?.completedSchedules?.[1]?.vaccinesUsed;
-                                if (Array.isArray(v) && v.length) {
-                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
-                                }
+                                // Try multiple possible fields for D3 medicine used
+                                const d3Medicine = currentCase?.d3Medicine || 
+                                                 currentCase?.d3MedicineUsed || 
+                                                 currentCase?.day3Medicine || 
+                                                 currentCase?.day3MedicineUsed ||
+                                                 currentCase?.completedSchedules?.[1]?.vaccinesUsed?.[0]?.brand ||
+                                                 currentCase?.completedSchedules?.[1]?.vaccinesUsed?.[0]?.type ||
+                                                 currentCase?.completedSchedules?.[1]?.vaccinesUsed?.[0]?.name;
+                                
+                                if (d3Medicine) return d3Medicine;
+                                
+                                // Fallback to currentImmunization data
                                 if (currentCase?.currentImmunization?.vaccine) {
                                   const t = currentCase.currentImmunization.vaccine[0];
                                   if (t === 'PCEC') return 'VAXIRAB (PCEC)';
                                   if (t === 'PVRV') return 'SPEEDA (PVRV)';
                                 }
+                                
                                 return currentCase?.brandName || currentCase?.genericName || '-';
                               })()}
                             </td>
