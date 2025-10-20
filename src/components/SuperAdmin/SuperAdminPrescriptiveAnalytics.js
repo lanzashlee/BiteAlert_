@@ -234,56 +234,51 @@ const SuperAdminPrescriptiveAnalytics = () => {
     const severityLevel = severe > 0 ? 'critical' : 'standard';
     const resourceLevel = riskScore > 70 ? 'intensive' : riskScore > 40 ? 'enhanced' : 'baseline';
     
-    // Generate unique intervention based on data combinations
-    const interventionComponents = {
-      high: [
-        `Deploy mobile vaccination team to ${barangay} within 48 hours following WHO emergency protocols`,
-        `Establish temporary clinic with extended hours for 7-day intensive campaign`,
-        `Implement Category III exposure management with immediate ERIG administration`,
-        `Coordinate with ${center || 'nearest health center'} for resource allocation`,
-        `Ensure cold-chain maintenance and adequate vaccine/ERIG stocks`,
-        `Conduct daily case monitoring and follow-up for defaulters`
-      ],
-      medium: [
-        `Schedule additional vaccination day in ${barangay} next week with WHO-standard protocols`,
-        `Implement Category II exposure management with PEP vaccination schedules`,
-        `Organize community education sessions on bite prevention and wound care`,
-        `Coordinate with ${center || 'local health center'} for resource support`,
-        `Monitor vaccine stocks and prepare contingency supplies`,
-        `Conduct targeted outreach to high-risk populations`
-      ],
-      low: [
-        `Maintain routine vaccination services in ${barangay} with WHO-standard protocols`,
-        `Continue Category I exposure management with wound washing and observation`,
-        `Conduct quarterly community education on rabies prevention and proper wound care`,
-        `Coordinate with ${center || 'nearest health center'} for ongoing support`,
-        `Monitor vaccine stocks and maintain baseline inventory`,
-        `Implement regular health talks in schools and community centers`
-      ]
-    };
+    // Generate specific, actionable interventions based on data
+    let intervention = '';
     
-    // Select components based on priority and data
-    const components = interventionComponents[priority] || interventionComponents.low;
-    const selectedComponents = components.slice(0, Math.min(4, components.length));
+    if (priority === 'high') {
+      const highInterventions = [
+        `IMMEDIATE ACTION: Deploy mobile vaccination team to ${barangay} within 48 hours. Set up temporary clinic at ${center || 'barangay hall'} with extended hours (7 AM - 7 PM) for 7-day intensive campaign. Ensure ${Math.max(20, total * 2)} ARV doses and ${severe > 0 ? 'ERIG vials' : 'vaccine vials'} are available.`,
+        
+        `URGENT RESPONSE: Activate surge operations in ${barangay} with mobile team deployment. Establish temporary vaccination post at ${center || 'community center'} with 24/7 availability for critical cases. Stock ${Math.max(15, recent * 3)} ARV doses and coordinate with ${center || 'nearest health center'} for ERIG supply.`,
+        
+        `EMERGENCY DEPLOYMENT: Mobilize vaccination team to ${barangay} immediately. Create overflow clinic with weekend operations for 2-week intensive period. Prepare ${Math.max(25, total * 2.5)} ARV doses and ensure cold-chain storage. Partner with ${center || 'local health center'} for resource sharing.`
+      ];
+      intervention = randFrom(highInterventions);
+    } else if (priority === 'medium') {
+      const mediumInterventions = [
+        `SCHEDULE ADDITIONAL CLINIC: Add extra vaccination day in ${barangay} next week (Wednesday 8 AM - 5 PM). Organize community education session at ${center || 'barangay hall'} on bite prevention. Prepare ${Math.max(10, recent * 2)} ARV doses and coordinate with ${center || 'local health center'} for support.`,
+        
+        `ENHANCE SERVICES: Open overflow clinic half-day in ${barangay} (Saturday 8 AM - 12 PM). Conduct information drive via barangay announcements and social media. Stock ${Math.max(8, total)} ARV doses and monitor consumption. Partner with ${center || 'health center'} for coordinated response.`,
+        
+        `FAST-TRACK LANE: Designate priority lane in ${barangay} for follow-up cases. Schedule community health education at ${center || 'school'} emphasizing early consultation. Maintain ${Math.max(12, total * 1.5)} ARV doses inventory. Collaborate with ${center || 'health center'} for resource optimization.`
+      ];
+      intervention = randFrom(mediumInterventions);
+    } else {
+      const lowInterventions = [
+        `ROUTINE MAINTENANCE: Continue standard vaccination services in ${barangay} (Monday-Friday 8 AM - 5 PM). Schedule quarterly health education at ${center || 'barangay hall'} on rabies prevention. Maintain ${Math.max(5, total)} ARV doses baseline stock. Coordinate with ${center || 'nearest health center'} for ongoing support.`,
+        
+        `PREVENTIVE MEASURES: Sustain baseline ARV services in ${barangay} with monthly IEC sessions. Organize awareness campaigns targeting pet owners and vulnerable groups. Keep ${Math.max(8, total * 1.2)} ARV doses available. Partner with ${center || 'local health center'} for continued collaboration.`,
+        
+        `EDUCATION FOCUS: Maintain routine vaccination in ${barangay} with enhanced community education. Schedule regular health talks at ${center || 'schools and community centers'} on proper wound care. Ensure ${Math.max(6, total)} ARV doses minimum stock. Work with ${center || 'health center'} for coordinated prevention efforts.`
+      ];
+      intervention = randFrom(lowInterventions);
+    }
     
     // Add data-specific modifications
-    let intervention = selectedComponents.join('. ') + '.';
-    
-    // Add urgency-specific language
     if (urgencyLevel === 'urgent') {
-      intervention += ` Implement immediate surge response protocols.`;
+      intervention += ` Implement daily case monitoring and aggressive defaulter tracing.`;
     }
     
-    // Add severity-specific language
     if (severityLevel === 'critical') {
-      intervention += ` Prioritize Category III exposures requiring immediate ERIG.`;
+      intervention += ` Prioritize Category III exposures with immediate ERIG administration protocols.`;
     }
     
-    // Add resource-specific language
     if (resourceLevel === 'intensive') {
-      intervention += ` Deploy additional resources and personnel.`;
+      intervention += ` Deploy additional nursing staff and physician support.`;
     } else if (resourceLevel === 'enhanced') {
-      intervention += ` Enhance existing services with targeted support.`;
+      intervention += ` Provide targeted training for healthcare workers.`;
     }
     
     return intervention;
