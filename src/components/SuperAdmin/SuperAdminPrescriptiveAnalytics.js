@@ -225,63 +225,176 @@ const SuperAdminPrescriptiveAnalytics = () => {
     return baseAnalysis + additionalContext;
   };
 
-  // Generate unique intervention based on specific barangay data
+  // Generate truly dynamic, data-driven interventions
   const generateUniqueIntervention = (barangay, data) => {
     const { total, recent, severe, priority, riskScore, center } = data;
     
-    // Create data-driven intervention components
+    // Calculate dynamic parameters based on actual data
     const urgencyLevel = recent >= Math.max(2, Math.round(total * 0.25)) ? 'urgent' : 'routine';
     const severityLevel = severe > 0 ? 'critical' : 'standard';
     const resourceLevel = riskScore > 70 ? 'intensive' : riskScore > 40 ? 'enhanced' : 'baseline';
     
-    // Generate specific, actionable interventions based on data
+    // Generate dynamic intervention based on specific data combinations
+    const intervention = generateDynamicIntervention(barangay, {
+      total, recent, severe, priority, riskScore, center,
+      urgencyLevel, severityLevel, resourceLevel
+    });
+    
+    return intervention;
+  };
+
+  // Generate truly dynamic interventions based on data patterns
+  const generateDynamicIntervention = (barangay, params) => {
+    const { total, recent, severe, priority, riskScore, center, urgencyLevel, severityLevel, resourceLevel } = params;
+    
+    // Build intervention dynamically based on data patterns
     let intervention = '';
     
-    if (priority === 'high') {
-      const highInterventions = [
-        `IMMEDIATE ACTION: Deploy mobile vaccination team to ${barangay} within 48 hours. Set up temporary clinic at ${center || 'barangay hall'} with extended hours (7 AM - 7 PM) for 7-day intensive campaign. Ensure ${Math.max(20, total * 2)} ARV doses and ${severe > 0 ? 'ERIG vials' : 'vaccine vials'} are available.`,
-        
-        `URGENT RESPONSE: Activate surge operations in ${barangay} with mobile team deployment. Establish temporary vaccination post at ${center || 'community center'} with 24/7 availability for critical cases. Stock ${Math.max(15, recent * 3)} ARV doses and coordinate with ${center || 'nearest health center'} for ERIG supply.`,
-        
-        `EMERGENCY DEPLOYMENT: Mobilize vaccination team to ${barangay} immediately. Create overflow clinic with weekend operations for 2-week intensive period. Prepare ${Math.max(25, total * 2.5)} ARV doses and ensure cold-chain storage. Partner with ${center || 'local health center'} for resource sharing.`
-      ];
-      intervention = randFrom(highInterventions);
-    } else if (priority === 'medium') {
-      const mediumInterventions = [
-        `SCHEDULE ADDITIONAL CLINIC: Add extra vaccination day in ${barangay} next week (Wednesday 8 AM - 5 PM). Organize community education session at ${center || 'barangay hall'} on bite prevention. Prepare ${Math.max(10, recent * 2)} ARV doses and coordinate with ${center || 'local health center'} for support.`,
-        
-        `ENHANCE SERVICES: Open overflow clinic half-day in ${barangay} (Saturday 8 AM - 12 PM). Conduct information drive via barangay announcements and social media. Stock ${Math.max(8, total)} ARV doses and monitor consumption. Partner with ${center || 'health center'} for coordinated response.`,
-        
-        `FAST-TRACK LANE: Designate priority lane in ${barangay} for follow-up cases. Schedule community health education at ${center || 'school'} emphasizing early consultation. Maintain ${Math.max(12, total * 1.5)} ARV doses inventory. Collaborate with ${center || 'health center'} for resource optimization.`
-      ];
-      intervention = randFrom(mediumInterventions);
+    // Determine action type based on data
+    const actionType = determineActionType(total, recent, severe, priority, riskScore);
+    const timeframe = calculateTimeframe(urgencyLevel, priority);
+    const resources = calculateResources(total, recent, severe, riskScore);
+    const location = determineLocation(center, barangay);
+    const coordination = determineCoordination(center, priority);
+    
+    // Build intervention sentence by sentence based on data
+    intervention = buildInterventionSentence(actionType, barangay, timeframe, resources, location, coordination, params);
+    
+    return intervention;
+  };
+
+  // Determine action type based on data patterns
+  const determineActionType = (total, recent, severe, priority, riskScore) => {
+    if (priority === 'high' || riskScore > 70) {
+      if (recent >= Math.max(2, Math.round(total * 0.25))) {
+        return 'emergency_deployment';
+      } else if (severe > 0) {
+        return 'critical_response';
+      } else {
+        return 'intensive_campaign';
+      }
+    } else if (priority === 'medium' || riskScore > 40) {
+      if (recent > 0) {
+        return 'enhanced_services';
+      } else {
+        return 'preventive_measures';
+      }
     } else {
-      const lowInterventions = [
-        `ROUTINE MAINTENANCE: Continue standard vaccination services in ${barangay} (Monday-Friday 8 AM - 5 PM). Schedule quarterly health education at ${center || 'barangay hall'} on rabies prevention. Maintain ${Math.max(5, total)} ARV doses baseline stock. Coordinate with ${center || 'nearest health center'} for ongoing support.`,
+      return 'routine_maintenance';
+    }
+  };
+
+  // Calculate timeframe based on urgency
+  const calculateTimeframe = (urgencyLevel, priority) => {
+    if (urgencyLevel === 'urgent') {
+      return 'within 48 hours';
+    } else if (priority === 'medium') {
+      return 'next week';
+    } else {
+      return 'ongoing';
+    }
+  };
+
+  // Calculate resources based on data
+  const calculateResources = (total, recent, severe, riskScore) => {
+    const baseDoses = Math.max(5, total);
+    const recentMultiplier = recent > 0 ? Math.ceil(recent * 1.5) : 1;
+    const severityMultiplier = severe > 0 ? 2 : 1;
+    const riskMultiplier = riskScore > 70 ? 2 : riskScore > 40 ? 1.5 : 1;
+    
+    return {
+      arvDoses: Math.ceil(baseDoses * recentMultiplier * severityMultiplier * riskMultiplier),
+      erigNeeded: severe > 0,
+      staffLevel: riskScore > 70 ? 'intensive' : riskScore > 40 ? 'enhanced' : 'standard'
+    };
+  };
+
+  // Determine location based on center and data
+  const determineLocation = (center, barangay) => {
+    if (center) {
+      return center;
+    } else {
+      return `${barangay} barangay hall`;
+    }
+  };
+
+  // Determine coordination needs
+  const determineCoordination = (center, priority) => {
+    if (center) {
+      return `Coordinate with ${center}`;
+    } else if (priority === 'high') {
+      return 'Coordinate with nearest health center';
+    } else {
+      return 'Coordinate with local health center';
+    }
+  };
+
+  // Build intervention sentence dynamically
+  const buildInterventionSentence = (actionType, barangay, timeframe, resources, location, coordination, params) => {
+    const { total, recent, severe, priority, riskScore } = params;
+    
+    let sentence = '';
+    
+    // Build action based on type
+    switch (actionType) {
+      case 'emergency_deployment':
+        sentence = `IMMEDIATE ACTION: Deploy mobile vaccination team to ${barangay} ${timeframe}. `;
+        sentence += `Establish temporary clinic at ${location} with extended hours for ${Math.max(3, recent)}-day intensive campaign. `;
+        sentence += `Ensure ${resources.arvDoses} ARV doses and ${resources.erigNeeded ? 'ERIG vials' : 'vaccine vials'} are available. `;
+        sentence += `${coordination} for resource allocation.`;
+        break;
         
-        `PREVENTIVE MEASURES: Sustain baseline ARV services in ${barangay} with monthly IEC sessions. Organize awareness campaigns targeting pet owners and vulnerable groups. Keep ${Math.max(8, total * 1.2)} ARV doses available. Partner with ${center || 'local health center'} for continued collaboration.`,
+      case 'critical_response':
+        sentence = `URGENT RESPONSE: Activate surge operations in ${barangay} ${timeframe}. `;
+        sentence += `Set up temporary vaccination post at ${location} with 24/7 availability for critical cases. `;
+        sentence += `Stock ${resources.arvDoses} ARV doses and ${coordination.toLowerCase()} for ERIG supply. `;
+        sentence += `Implement Category III exposure protocols.`;
+        break;
         
-        `EDUCATION FOCUS: Maintain routine vaccination in ${barangay} with enhanced community education. Schedule regular health talks at ${center || 'schools and community centers'} on proper wound care. Ensure ${Math.max(6, total)} ARV doses minimum stock. Work with ${center || 'health center'} for coordinated prevention efforts.`
-      ];
-      intervention = randFrom(lowInterventions);
+      case 'intensive_campaign':
+        sentence = `INTENSIVE CAMPAIGN: Mobilize vaccination team to ${barangay} ${timeframe}. `;
+        sentence += `Create overflow clinic with weekend operations for ${Math.max(2, Math.ceil(total/5))}-week intensive period. `;
+        sentence += `Prepare ${resources.arvDoses} ARV doses and ensure cold-chain storage. `;
+        sentence += `Partner with ${location} for resource sharing.`;
+        break;
+        
+      case 'enhanced_services':
+        sentence = `ENHANCE SERVICES: Add extra vaccination day in ${barangay} ${timeframe}. `;
+        sentence += `Organize community education session at ${location} on bite prevention. `;
+        sentence += `Prepare ${resources.arvDoses} ARV doses and ${coordination.toLowerCase()} for support. `;
+        sentence += `Conduct targeted outreach to high-risk populations.`;
+        break;
+        
+      case 'preventive_measures':
+        sentence = `PREVENTIVE MEASURES: Open overflow clinic half-day in ${barangay} ${timeframe}. `;
+        sentence += `Conduct information drive via barangay announcements and social media. `;
+        sentence += `Stock ${resources.arvDoses} ARV doses and monitor consumption. `;
+        sentence += `Partner with ${location} for coordinated response.`;
+        break;
+        
+      default: // routine_maintenance
+        sentence = `ROUTINE MAINTENANCE: Continue standard vaccination services in ${barangay} ${timeframe}. `;
+        sentence += `Schedule quarterly health education at ${location} on rabies prevention. `;
+        sentence += `Maintain ${resources.arvDoses} ARV doses baseline stock. `;
+        sentence += `${coordination} for ongoing support.`;
     }
     
     // Add data-specific modifications
-    if (urgencyLevel === 'urgent') {
-      intervention += ` Implement daily case monitoring and aggressive defaulter tracing.`;
+    if (recent >= Math.max(2, Math.round(total * 0.25))) {
+      sentence += ` Implement daily case monitoring and aggressive defaulter tracing.`;
     }
     
-    if (severityLevel === 'critical') {
-      intervention += ` Prioritize Category III exposures with immediate ERIG administration protocols.`;
+    if (severe > 0) {
+      sentence += ` Prioritize Category III exposures with immediate ERIG administration protocols.`;
     }
     
-    if (resourceLevel === 'intensive') {
-      intervention += ` Deploy additional nursing staff and physician support.`;
-    } else if (resourceLevel === 'enhanced') {
-      intervention += ` Provide targeted training for healthcare workers.`;
+    if (resources.staffLevel === 'intensive') {
+      sentence += ` Deploy additional nursing staff and physician support.`;
+    } else if (resources.staffLevel === 'enhanced') {
+      sentence += ` Provide targeted training for healthcare workers.`;
     }
     
-    return intervention;
+    return sentence;
   };
 
   const buildPriorityPlan = (priority, barangay, coord, metrics = { total:0, recent:0, severe:0, risk:0 }) => {
