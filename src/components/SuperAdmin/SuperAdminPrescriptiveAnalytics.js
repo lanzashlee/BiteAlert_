@@ -143,25 +143,40 @@ const SuperAdminPrescriptiveAnalytics = () => {
     }
   };
 
-  // Build heuristic interventions from a riskAnalysis object
+  // Build dynamic, data-driven interventions from a riskAnalysis object
   const buildHeuristicInterventions = (riskAnalysis = {}) => {
     try {
       return Object.entries(riskAnalysis)
         .filter(([, d]) => (d?.totalCases || 0) > 0) // Only show barangays with cases
-        .map(([barangay, d]) => ({
-          barangay,
-          riskScore: d.riskScore || 0,
-          priority: d.priority || 'low',
-          reasoning: buildAnalysisParagraph(barangay, d),
-          intervention: ensureRecommendationLength('', d.priority || 'low', barangay, d.topCenter, { total: d.totalCases, recent: d.recentCases, severe: d.severeCases, risk: d.riskScore }),
-          totalCases: d.totalCases || 0,
-          recentCases: d.recentCases || 0,
-          severeCases: d.severeCases || 0,
-          ageGroupFocus: '',
-          timePattern: '',
-          resourceNeeds: d.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
-          coordinationRequired: d.topCenter ? `Coordinate with ${d.topCenter}` : 'Coordinate with nearest health center'
-        }))
+        .map(([barangay, d]) => {
+          const total = d.totalCases || 0;
+          const recent = d.recentCases || 0;
+          const severe = d.severeCases || 0;
+          const priority = d.priority || 'low';
+          const riskScore = d.riskScore || 0;
+          const center = d.topCenter || '';
+          
+          // Generate unique analysis based on specific data
+          const analysis = generateUniqueAnalysis(barangay, { total, recent, severe, priority, riskScore, center });
+          
+          // Generate unique intervention based on specific data
+          const intervention = generateUniqueIntervention(barangay, { total, recent, severe, priority, riskScore, center });
+          
+          return {
+            barangay,
+            riskScore,
+            priority,
+            reasoning: analysis,
+            intervention: intervention,
+            totalCases: total,
+            recentCases: recent,
+            severeCases: severe,
+            ageGroupFocus: '',
+            timePattern: '',
+            resourceNeeds: priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
+            coordinationRequired: center ? `Coordinate with ${center}` : 'Coordinate with nearest health center'
+          };
+        })
         .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0));
     } catch (_) {
       return [];
@@ -178,6 +193,101 @@ const SuperAdminPrescriptiveAnalytics = () => {
   };
 
   const randFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  // Generate unique analysis based on specific barangay data
+  const generateUniqueAnalysis = (barangay, data) => {
+    const { total, recent, severe, priority, riskScore, center } = data;
+    
+    // Create unique analysis based on actual data patterns
+    const trend = recent >= Math.max(2, Math.round(total * 0.25)) ? 'increased activity' : 'stable patterns';
+    const severityContext = severe > 0 ? `Critical Category III exposures (${severe}) require immediate attention` : 'No severe exposures detected';
+    const centerContext = center ? `Primary focus area: ${center}` : 'Community-wide approach needed';
+    
+    // Generate unique analysis based on specific data combinations
+    const analysisPatterns = [
+      `Epidemiological assessment for ${barangay} reveals ${total} documented cases with ${recent} recent incidents, indicating ${trend}. ${severityContext}. ${centerContext}. Risk assessment score: ${riskScore}/100. Priority classification: ${priority.toUpperCase()} based on WHO criteria.`,
+      
+      `Case surveillance data for ${barangay} shows ${total} total incidents with ${recent} occurring in the recent period, demonstrating ${trend}. ${severityContext}. ${centerContext}. Current risk level: ${riskScore}/100. WHO priority: ${priority.toUpperCase()} requiring targeted intervention.`,
+      
+      `Public health analysis of ${barangay} indicates ${total} reported cases with ${recent} recent occurrences, showing ${trend}. ${severityContext}. ${centerContext}. Risk score: ${riskScore}/100. Intervention priority: ${priority.toUpperCase()} based on epidemiological indicators.`
+    ];
+    
+    // Add data-specific variations
+    const dataSpecificAdditions = [];
+    if (recent > total * 0.3) dataSpecificAdditions.push('Recent surge pattern detected');
+    if (severe > 0) dataSpecificAdditions.push('High-severity cases present');
+    if (riskScore > 70) dataSpecificAdditions.push('Elevated risk indicators');
+    if (center) dataSpecificAdditions.push('Geographic clustering observed');
+    
+    const baseAnalysis = randFrom(analysisPatterns);
+    const additionalContext = dataSpecificAdditions.length > 0 ? ` Additional factors: ${dataSpecificAdditions.join(', ')}.` : '';
+    
+    return baseAnalysis + additionalContext;
+  };
+
+  // Generate unique intervention based on specific barangay data
+  const generateUniqueIntervention = (barangay, data) => {
+    const { total, recent, severe, priority, riskScore, center } = data;
+    
+    // Create data-driven intervention components
+    const urgencyLevel = recent >= Math.max(2, Math.round(total * 0.25)) ? 'urgent' : 'routine';
+    const severityLevel = severe > 0 ? 'critical' : 'standard';
+    const resourceLevel = riskScore > 70 ? 'intensive' : riskScore > 40 ? 'enhanced' : 'baseline';
+    
+    // Generate unique intervention based on data combinations
+    const interventionComponents = {
+      high: [
+        `Deploy mobile vaccination team to ${barangay} within 48 hours following WHO emergency protocols`,
+        `Establish temporary clinic with extended hours for 7-day intensive campaign`,
+        `Implement Category III exposure management with immediate ERIG administration`,
+        `Coordinate with ${center || 'nearest health center'} for resource allocation`,
+        `Ensure cold-chain maintenance and adequate vaccine/ERIG stocks`,
+        `Conduct daily case monitoring and follow-up for defaulters`
+      ],
+      medium: [
+        `Schedule additional vaccination day in ${barangay} next week with WHO-standard protocols`,
+        `Implement Category II exposure management with PEP vaccination schedules`,
+        `Organize community education sessions on bite prevention and wound care`,
+        `Coordinate with ${center || 'local health center'} for resource support`,
+        `Monitor vaccine stocks and prepare contingency supplies`,
+        `Conduct targeted outreach to high-risk populations`
+      ],
+      low: [
+        `Maintain routine vaccination services in ${barangay} with WHO-standard protocols`,
+        `Continue Category I exposure management with wound washing and observation`,
+        `Conduct quarterly community education on rabies prevention and proper wound care`,
+        `Coordinate with ${center || 'nearest health center'} for ongoing support`,
+        `Monitor vaccine stocks and maintain baseline inventory`,
+        `Implement regular health talks in schools and community centers`
+      ]
+    };
+    
+    // Select components based on priority and data
+    const components = interventionComponents[priority] || interventionComponents.low;
+    const selectedComponents = components.slice(0, Math.min(4, components.length));
+    
+    // Add data-specific modifications
+    let intervention = selectedComponents.join('. ') + '.';
+    
+    // Add urgency-specific language
+    if (urgencyLevel === 'urgent') {
+      intervention += ` Implement immediate surge response protocols.`;
+    }
+    
+    // Add severity-specific language
+    if (severityLevel === 'critical') {
+      intervention += ` Prioritize Category III exposures requiring immediate ERIG.`;
+    }
+    
+    // Add resource-specific language
+    if (resourceLevel === 'intensive') {
+      intervention += ` Deploy additional resources and personnel.`;
+    } else if (resourceLevel === 'enhanced') {
+      intervention += ` Enhance existing services with targeted support.`;
+    }
+    
+    return intervention;
+  };
 
   const buildPriorityPlan = (priority, barangay, coord, metrics = { total:0, recent:0, severe:0, risk:0 }) => {
     const coordLine = coord && coord !== 'Coordinate with nearest health center' ? `${coord}.` : 'Coordinate with the nearest health center.';
