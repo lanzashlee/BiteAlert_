@@ -151,7 +151,7 @@ body {
   cursor: pointer;
 }
 
-/* Forgot + Remember row alignment and fonts */
+/* Forgot Password row alignment and fonts */
 .auth-row {
   display: flex;
   align-items: center;
@@ -169,16 +169,6 @@ body {
   cursor: pointer;
 }
 
-.remember-me {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #800000;
-  font-size: 0.95rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.remember-me input { accent-color: #800000; }
 
 .error-message {
   background: #fff3f3;

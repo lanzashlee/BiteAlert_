@@ -9,7 +9,6 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Logging in...');
   const [error, setError] = useState('');
   const [showEmailPopup, setShowEmailPopup] = useState(false);
@@ -321,13 +320,9 @@ const Login = () => {
                 </ul>
               </div>
             </div>
-            {/* Forgot + Remember row */}
+            {/* Forgot Password row */}
             <div className="auth-row">
               <button type="button" className="forgot-password" onClick={() => setForgotOpen(true)}>Forgot Password?</button>
-              <label className="remember-me">
-                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                <span>Remember me</span>
-              </label>
             </div>
             <button type="submit" className="sign-in-btn-modern" disabled={loading}>
               Sign In
