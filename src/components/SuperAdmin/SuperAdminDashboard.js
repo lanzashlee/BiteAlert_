@@ -1733,9 +1733,9 @@ const SuperAdminDashboard = () => {
       console.log('🔍 VACCINE STOCK TRENDS DEBUG: Fetching vaccine stock data directly');
       
       // Fetch vaccine stocks data directly instead of using trends endpoint
-      const vaccineRes = await apiFetch(`${apiConfig.endpoints.vaccinestocks}`);
+            const vaccineRes = await apiFetch(`${apiConfig.endpoints.vaccinestocks}`);
       console.log('🔍 VACCINE STOCK TRENDS DEBUG: Vaccine stocks response status:', vaccineRes.status);
-      const vaccineData = await vaccineRes.json();
+            const vaccineData = await vaccineRes.json();
       console.log('🔍 VACCINE STOCK TRENDS DEBUG: Vaccine stocks data:', vaccineData);
       
       if (vaccineRes.ok && vaccineData) {
@@ -1746,13 +1746,13 @@ const SuperAdminDashboard = () => {
         let filteredVaccines = allVaccines;
         if (userCenter && userCenter !== 'all') {
           filteredVaccines = allVaccines.filter(v => {
-            const vaccineCenter = v.center || v.centerName || v.healthCenter || v.facility || v.treatmentCenter || '';
-            const normalizedCenter = vaccineCenter.toLowerCase().trim();
-            const normalizedUserCenter = userCenter.toLowerCase().trim();
-            return normalizedCenter === normalizedUserCenter || 
-                   normalizedCenter.includes(normalizedUserCenter) || 
-                   normalizedUserCenter.includes(normalizedCenter);
-          });
+              const vaccineCenter = v.center || v.centerName || v.healthCenter || v.facility || v.treatmentCenter || '';
+              const normalizedCenter = vaccineCenter.toLowerCase().trim();
+              const normalizedUserCenter = userCenter.toLowerCase().trim();
+              return normalizedCenter === normalizedUserCenter || 
+                     normalizedCenter.includes(normalizedUserCenter) || 
+                     normalizedUserCenter.includes(normalizedCenter);
+            });
         }
         
         console.log('🔍 VACCINE STOCK TRENDS DEBUG: Filtered vaccines:', filteredVaccines.length);
@@ -1795,11 +1795,11 @@ const SuperAdminDashboard = () => {
         const roundedData = data.map(value => Math.round(value));
         console.log('🔍 VACCINE STOCK TRENDS DEBUG: Final chart data:', { labels, data: roundedData });
         
-        setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: roundedData }] }));
-        const vaccineTrend = computeTrendFromSeries(labels, roundedData, 'month');
-        if (vaccineTrend) {
-          setTrends(prev => ({ ...prev, vaccineStocks: vaccineTrend }));
-        }
+      setVaccinesChartData(prev => ({ ...prev, labels: labels, datasets: [{ ...prev.datasets[0], data: roundedData }] }));
+      const vaccineTrend = computeTrendFromSeries(labels, roundedData, 'month');
+      if (vaccineTrend) {
+        setTrends(prev => ({ ...prev, vaccineStocks: vaccineTrend }));
+      }
       } else {
         console.log('🔍 VACCINE STOCK TRENDS DEBUG: API call failed, using fallback data');
         setVaccinesChartData(prev => ({ ...prev, labels: ['No Data'], datasets: [{ ...prev.datasets[0], data: [0] }] }));
