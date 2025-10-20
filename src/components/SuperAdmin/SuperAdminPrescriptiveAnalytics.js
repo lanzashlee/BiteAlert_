@@ -669,12 +669,6 @@ const SuperAdminPrescriptiveAnalytics = () => {
 
           {/* Interventions Section */}
           <div className="interventions-section">
-            <div className="section-header">
-              <h3>Prescriptive Analytics: Barangay Action Plans</h3>
-              <p>
-                 AI-powered recommendations providing specific, actionable steps that barangay officials must implement based on current case data and risk assessment
-              </p>
-            </div>
 
             <div className="interventions-header">
               <div className="ih-grid">
