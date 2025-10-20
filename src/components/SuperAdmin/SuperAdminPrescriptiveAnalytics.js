@@ -84,6 +84,10 @@ const SuperAdminPrescriptiveAnalytics = () => {
       }
       // Ensure we always have interventions; synthesize heuristics if missing/empty
       let data = json.data || { cases: [], riskAnalysis: {}, interventionRecommendations: [] };
+      
+      console.log('🔍 AI DEBUG: Full server response:', json);
+      console.log('🔍 AI DEBUG: Data object:', data);
+      console.log('🔍 AI DEBUG: Intervention recommendations:', data.interventionRecommendations);
 
       // Enforce role-based scoping for admins: only their assigned barangay
       try {
@@ -106,7 +110,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
       let interventions = Array.isArray(data.interventionRecommendations) ? data.interventionRecommendations : [];
       if (interventions.length === 0) {
         console.log('🔍 AI DEBUG: No AI interventions received from server');
-        setAiError('AI service did not return interventions. Please check server configuration.');
+        setAiError('AI service is not configured. Please add GOOGLE_API_KEY to your environment variables to enable AI-generated interventions.');
         // Don't use hardcoded fallback - let the AI service handle it
         interventions = [];
       } else {
@@ -584,12 +588,12 @@ const SuperAdminPrescriptiveAnalytics = () => {
           }
         } else {
           console.log('AI service failed - no hardcoded fallback');
-          setAiError('AI service is not responding. Please check server configuration and try again.');
+          setAiError('AI service is not configured. Please add GOOGLE_API_KEY to your environment variables to enable AI-generated interventions.');
           setAnalyticsData({ ...processedData, interventionRecommendations: [] });
         }
       } catch (e) {
         console.warn('Fallback AI fetch failed:', e);
-        setAiError('AI service is completely unavailable. Please check server configuration and API keys.');
+        setAiError('AI service is not configured. Please add GOOGLE_API_KEY to your environment variables to enable AI-generated interventions.');
         setAnalyticsData({ ...processedData, interventionRecommendations: [] });
       }
     } catch (e) {
