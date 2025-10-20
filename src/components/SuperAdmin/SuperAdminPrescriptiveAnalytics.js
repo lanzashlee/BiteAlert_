@@ -18,14 +18,8 @@ const SuperAdminPrescriptiveAnalytics = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
+  const [availableCenters, setAvailableCenters] = useState([]);
   const location = useLocation();
-
-  const sanJuanBarangays = [
-    "Addition Hills", "Balong-Bato", "Batis", "Corazon de Jesus", "Ermitaño",
-    "Greenhills", "Isabelita", "Kabayanan", "Little Baguio",
-    "Maytunas", "Onse", "Pasadena", "Pedro Cruz", "Progreso", "Rivera",
-    "Salapan", "San Perfecto", "Santa Lucia", "Tibagan", "West Crame"
-  ];
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('currentUser')) || JSON.parse(localStorage.getItem('userData'));
@@ -41,6 +35,29 @@ const SuperAdminPrescriptiveAnalytics = () => {
     }
     fetchAnalyticsData();
   }, [timeRange, selectedBarangay]);
+
+  // Fetch available centers from backend
+  useEffect(() => {
+    const fetchCenters = async () => {
+      try {
+        const res = await apiFetch(apiConfig.endpoints.centers);
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.data || data.centers || []);
+        // Filter out archived centers and get unique center names
+        const activeCenters = Array.from(new Set((list || [])
+          .filter(c => !c.isArchived)
+          .map(c => String(c.centerName || c.name || '').trim())
+          .filter(Boolean)))
+          .sort((a, b) => a.localeCompare(b));
+        setAvailableCenters(activeCenters);
+        console.log('🔍 PRESCRIPTIVE ANALYTICS: Available centers:', activeCenters);
+      } catch (error) {
+        console.error('Error fetching centers:', error);
+        setAvailableCenters([]);
+      }
+    };
+    fetchCenters();
+  }, []);
 
   const fetchAnalyticsData = async () => {
     setLoading(true);
@@ -361,7 +378,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
   const inferBarangayFromText = (text) => {
     if (!text) return null;
     const hay = String(text).toLowerCase();
-    const match = sanJuanBarangays.find(b => hay.includes(b.toLowerCase()));
+    const match = availableCenters.find(b => hay.includes(b.toLowerCase()));
     return match || null;
   };
 
@@ -427,7 +444,10 @@ const SuperAdminPrescriptiveAnalytics = () => {
   const calculateRiskScores = (cases) => {
     const barangayData = {};
     
-    sanJuanBarangays.forEach(barangay => {
+    // Use available centers instead of hardcoded San Juan barangays
+    const centersToProcess = availableCenters.length > 0 ? availableCenters : ['All Centers'];
+    
+    centersToProcess.forEach(barangay => {
       barangayData[barangay] = {
         totalCases: 0,
         severeCases: 0,
@@ -592,9 +612,9 @@ const SuperAdminPrescriptiveAnalytics = () => {
             <div className="filter-group">
               {getUserCenter() === 'all' ? (
                 <select value={selectedBarangay} onChange={(e) => setSelectedBarangay(e.target.value)} className="form-control">
-                  <option value="all">All Barangays</option>
-                  {sanJuanBarangays.map(barangay => (
-                    <option key={barangay} value={barangay}>{barangay}</option>
+                  <option value="all">All Centers</option>
+                  {availableCenters.map(center => (
+                    <option key={center} value={center}>{center}</option>
                   ))}
                 </select>
               ) : (
