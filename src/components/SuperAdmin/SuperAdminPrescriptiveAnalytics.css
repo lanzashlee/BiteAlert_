@@ -261,19 +261,6 @@
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15);
 }
 
-.intervention-item.ai-generated::before {
-  content: "🤖 AI Generated";
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-}
 
 .intervention-item:hover {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
