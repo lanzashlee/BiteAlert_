@@ -84,10 +84,6 @@ const SuperAdminPrescriptiveAnalytics = () => {
       }
       // Ensure we always have interventions; synthesize heuristics if missing/empty
       let data = json.data || { cases: [], riskAnalysis: {}, interventionRecommendations: [] };
-      
-      console.log('🔍 AI DEBUG: Full server response:', json);
-      console.log('🔍 AI DEBUG: Data object:', data);
-      console.log('🔍 AI DEBUG: Intervention recommendations:', data.interventionRecommendations);
 
       // Enforce role-based scoping for admins: only their assigned barangay
       try {
@@ -109,31 +105,15 @@ const SuperAdminPrescriptiveAnalytics = () => {
       } catch (_) {}
       let interventions = Array.isArray(data.interventionRecommendations) ? data.interventionRecommendations : [];
       if (interventions.length === 0) {
-        console.log('🔍 AI DEBUG: No AI interventions received from server');
-        setAiError('AI service is not configured. Please add GOOGLE_API_KEY to your environment variables to enable AI-generated interventions.');
-        // Don't use hardcoded fallback - let the AI service handle it
-        interventions = [];
-      } else {
-        console.log('🔍 AI DEBUG: AI interventions received:', interventions.length, 'interventions');
-        console.log('🔍 AI DEBUG: Sample intervention:', interventions[0]);
+        const heuristics = buildHeuristicInterventions(data.riskAnalysis);
+        interventions = heuristics;
       }
-      
-      // Use AI-generated interventions as-is (no hardcoded fallback)
-      const enriched = interventions.map((it) => {
-        // AI should provide complete text - use as-is
-        return {
-          ...it,
-          // Ensure required fields exist
-          totalCases: it.totalCases || 0,
-          recentCases: it.recentCases || 0,
-          severeCases: it.severeCases || 0,
-          riskScore: it.riskScore || 0,
-          priority: it.priority || 'low',
-          barangay: it.barangay || 'Unknown',
-          reasoning: it.reasoning || it.analysis || 'AI-generated analysis',
-          intervention: it.intervention || it.recommendation || it.recommendations || 'AI-generated intervention'
-        };
-      });
+      // Enforce 3–4 sentence recommendations and analyses
+      const enriched = interventions.map((it) => ({
+        ...it,
+        intervention: ensureRecommendationLength(it.intervention, it.priority, it.barangay, it.coordinationRequired, { total: it.totalCases, recent: it.recentCases, severe: it.severeCases, risk: it.riskScore }),
+        reasoning: ensureAnalysisLength(it.reasoning, it.barangay, it.totalCases, it.recentCases, it.severeCases, it.priority, it.ageGroupFocus, it.timePattern, it.coordinationRequired)
+      }));
       setAnalyticsData({ ...data, interventionRecommendations: enriched });
       setAiError('');
     } catch (error) {
@@ -153,40 +133,25 @@ const SuperAdminPrescriptiveAnalytics = () => {
     }
   };
 
-  // Build dynamic, data-driven interventions from a riskAnalysis object
+  // Build heuristic interventions from a riskAnalysis object
   const buildHeuristicInterventions = (riskAnalysis = {}) => {
     try {
       return Object.entries(riskAnalysis)
         .filter(([, d]) => (d?.totalCases || 0) > 0) // Only show barangays with cases
-        .map(([barangay, d]) => {
-          const total = d.totalCases || 0;
-          const recent = d.recentCases || 0;
-          const severe = d.severeCases || 0;
-          const priority = d.priority || 'low';
-          const riskScore = d.riskScore || 0;
-          const center = d.topCenter || '';
-          
-          // Generate unique analysis based on specific data
-          const analysis = generateUniqueAnalysis(barangay, { total, recent, severe, priority, riskScore, center });
-          
-          // Generate unique intervention based on specific data
-          const intervention = generateUniqueIntervention(barangay, { total, recent, severe, priority, riskScore, center });
-          
-          return {
-            barangay,
-            riskScore,
-            priority,
-            reasoning: analysis,
-            intervention: intervention,
-            totalCases: total,
-            recentCases: recent,
-            severeCases: severe,
-            ageGroupFocus: '',
-            timePattern: '',
-            resourceNeeds: priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
-            coordinationRequired: center ? `Coordinate with ${center}` : 'Coordinate with nearest health center'
-          };
-        })
+        .map(([barangay, d]) => ({
+          barangay,
+          riskScore: d.riskScore || 0,
+          priority: d.priority || 'low',
+          reasoning: buildAnalysisParagraph(barangay, d),
+          intervention: ensureRecommendationLength('', d.priority || 'low', barangay, d.topCenter, { total: d.totalCases, recent: d.recentCases, severe: d.severeCases, risk: d.riskScore }),
+          totalCases: d.totalCases || 0,
+          recentCases: d.recentCases || 0,
+          severeCases: d.severeCases || 0,
+          ageGroupFocus: '',
+          timePattern: '',
+          resourceNeeds: d.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
+          coordinationRequired: d.topCenter ? `Coordinate with ${d.topCenter}` : 'Coordinate with nearest health center'
+        }))
         .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0));
     } catch (_) {
       return [];
@@ -203,209 +168,6 @@ const SuperAdminPrescriptiveAnalytics = () => {
   };
 
   const randFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-  // Generate unique analysis based on specific barangay data
-  const generateUniqueAnalysis = (barangay, data) => {
-    const { total, recent, severe, priority, riskScore, center } = data;
-    
-    // Create unique analysis based on actual data patterns
-    const trend = recent >= Math.max(2, Math.round(total * 0.25)) ? 'increased activity' : 'stable patterns';
-    const severityContext = severe > 0 ? `Critical Category III exposures (${severe}) require immediate attention` : 'No severe exposures detected';
-    const centerContext = center ? `Primary focus area: ${center}` : 'Community-wide approach needed';
-    
-    // Generate unique analysis based on specific data combinations
-    const analysisPatterns = [
-      `Epidemiological assessment for ${barangay} reveals ${total} documented cases with ${recent} recent incidents, indicating ${trend}. ${severityContext}. ${centerContext}. Risk assessment score: ${riskScore}/100. Priority classification: ${priority.toUpperCase()} based on WHO criteria.`,
-      
-      `Case surveillance data for ${barangay} shows ${total} total incidents with ${recent} occurring in the recent period, demonstrating ${trend}. ${severityContext}. ${centerContext}. Current risk level: ${riskScore}/100. WHO priority: ${priority.toUpperCase()} requiring targeted intervention.`,
-      
-      `Public health analysis of ${barangay} indicates ${total} reported cases with ${recent} recent occurrences, showing ${trend}. ${severityContext}. ${centerContext}. Risk score: ${riskScore}/100. Intervention priority: ${priority.toUpperCase()} based on epidemiological indicators.`
-    ];
-    
-    // Add data-specific variations
-    const dataSpecificAdditions = [];
-    if (recent > total * 0.3) dataSpecificAdditions.push('Recent surge pattern detected');
-    if (severe > 0) dataSpecificAdditions.push('High-severity cases present');
-    if (riskScore > 70) dataSpecificAdditions.push('Elevated risk indicators');
-    if (center) dataSpecificAdditions.push('Geographic clustering observed');
-    
-    const baseAnalysis = randFrom(analysisPatterns);
-    const additionalContext = dataSpecificAdditions.length > 0 ? ` Additional factors: ${dataSpecificAdditions.join(', ')}.` : '';
-    
-    return baseAnalysis + additionalContext;
-  };
-
-  // Generate truly dynamic, data-driven interventions
-  const generateUniqueIntervention = (barangay, data) => {
-    const { total, recent, severe, priority, riskScore, center } = data;
-    
-    // Calculate dynamic parameters based on actual data
-    const urgencyLevel = recent >= Math.max(2, Math.round(total * 0.25)) ? 'urgent' : 'routine';
-    const severityLevel = severe > 0 ? 'critical' : 'standard';
-    const resourceLevel = riskScore > 70 ? 'intensive' : riskScore > 40 ? 'enhanced' : 'baseline';
-    
-    // Generate dynamic intervention based on specific data combinations
-    const intervention = generateDynamicIntervention(barangay, {
-      total, recent, severe, priority, riskScore, center,
-      urgencyLevel, severityLevel, resourceLevel
-    });
-    
-    return intervention;
-  };
-
-  // Generate truly dynamic interventions based on data patterns
-  const generateDynamicIntervention = (barangay, params) => {
-    const { total, recent, severe, priority, riskScore, center, urgencyLevel, severityLevel, resourceLevel } = params;
-    
-    // Build intervention dynamically based on data patterns
-    let intervention = '';
-    
-    // Determine action type based on data
-    const actionType = determineActionType(total, recent, severe, priority, riskScore);
-    const timeframe = calculateTimeframe(urgencyLevel, priority);
-    const resources = calculateResources(total, recent, severe, riskScore);
-    const location = determineLocation(center, barangay);
-    const coordination = determineCoordination(center, priority);
-    
-    // Build intervention sentence by sentence based on data
-    intervention = buildInterventionSentence(actionType, barangay, timeframe, resources, location, coordination, params);
-    
-    return intervention;
-  };
-
-  // Determine action type based on data patterns
-  const determineActionType = (total, recent, severe, priority, riskScore) => {
-    if (priority === 'high' || riskScore > 70) {
-      if (recent >= Math.max(2, Math.round(total * 0.25))) {
-        return 'emergency_deployment';
-      } else if (severe > 0) {
-        return 'critical_response';
-      } else {
-        return 'intensive_campaign';
-      }
-    } else if (priority === 'medium' || riskScore > 40) {
-      if (recent > 0) {
-        return 'enhanced_services';
-      } else {
-        return 'preventive_measures';
-      }
-    } else {
-      return 'routine_maintenance';
-    }
-  };
-
-  // Calculate timeframe based on urgency
-  const calculateTimeframe = (urgencyLevel, priority) => {
-    if (urgencyLevel === 'urgent') {
-      return 'within 48 hours';
-    } else if (priority === 'medium') {
-      return 'next week';
-    } else {
-      return 'ongoing';
-    }
-  };
-
-  // Calculate resources based on data
-  const calculateResources = (total, recent, severe, riskScore) => {
-    const baseDoses = Math.max(5, total);
-    const recentMultiplier = recent > 0 ? Math.ceil(recent * 1.5) : 1;
-    const severityMultiplier = severe > 0 ? 2 : 1;
-    const riskMultiplier = riskScore > 70 ? 2 : riskScore > 40 ? 1.5 : 1;
-    
-    return {
-      arvDoses: Math.ceil(baseDoses * recentMultiplier * severityMultiplier * riskMultiplier),
-      erigNeeded: severe > 0,
-      staffLevel: riskScore > 70 ? 'intensive' : riskScore > 40 ? 'enhanced' : 'standard'
-    };
-  };
-
-  // Determine location based on center and data
-  const determineLocation = (center, barangay) => {
-    if (center) {
-      return center;
-    } else {
-      return `${barangay} barangay hall`;
-    }
-  };
-
-  // Determine coordination needs
-  const determineCoordination = (center, priority) => {
-    if (center) {
-      return `Coordinate with ${center}`;
-    } else if (priority === 'high') {
-      return 'Coordinate with nearest health center';
-    } else {
-      return 'Coordinate with local health center';
-    }
-  };
-
-  // Build intervention sentence dynamically
-  const buildInterventionSentence = (actionType, barangay, timeframe, resources, location, coordination, params) => {
-    const { total, recent, severe, priority, riskScore } = params;
-    
-    let sentence = '';
-    
-    // Build action based on type
-    switch (actionType) {
-      case 'emergency_deployment':
-        sentence = `IMMEDIATE ACTION: Deploy mobile vaccination team to ${barangay} ${timeframe}. `;
-        sentence += `Establish temporary clinic at ${location} with extended hours for ${Math.max(3, recent)}-day intensive campaign. `;
-        sentence += `Ensure ${resources.arvDoses} ARV doses and ${resources.erigNeeded ? 'ERIG vials' : 'vaccine vials'} are available. `;
-        sentence += `${coordination} for resource allocation.`;
-        break;
-        
-      case 'critical_response':
-        sentence = `URGENT RESPONSE: Activate surge operations in ${barangay} ${timeframe}. `;
-        sentence += `Set up temporary vaccination post at ${location} with 24/7 availability for critical cases. `;
-        sentence += `Stock ${resources.arvDoses} ARV doses and ${coordination.toLowerCase()} for ERIG supply. `;
-        sentence += `Implement Category III exposure protocols.`;
-        break;
-        
-      case 'intensive_campaign':
-        sentence = `INTENSIVE CAMPAIGN: Mobilize vaccination team to ${barangay} ${timeframe}. `;
-        sentence += `Create overflow clinic with weekend operations for ${Math.max(2, Math.ceil(total/5))}-week intensive period. `;
-        sentence += `Prepare ${resources.arvDoses} ARV doses and ensure cold-chain storage. `;
-        sentence += `Partner with ${location} for resource sharing.`;
-        break;
-        
-      case 'enhanced_services':
-        sentence = `ENHANCE SERVICES: Add extra vaccination day in ${barangay} ${timeframe}. `;
-        sentence += `Organize community education session at ${location} on bite prevention. `;
-        sentence += `Prepare ${resources.arvDoses} ARV doses and ${coordination.toLowerCase()} for support. `;
-        sentence += `Conduct targeted outreach to high-risk populations.`;
-        break;
-        
-      case 'preventive_measures':
-        sentence = `PREVENTIVE MEASURES: Open overflow clinic half-day in ${barangay} ${timeframe}. `;
-        sentence += `Conduct information drive via barangay announcements and social media. `;
-        sentence += `Stock ${resources.arvDoses} ARV doses and monitor consumption. `;
-        sentence += `Partner with ${location} for coordinated response.`;
-        break;
-        
-      default: // routine_maintenance
-        sentence = `ROUTINE MAINTENANCE: Continue standard vaccination services in ${barangay} ${timeframe}. `;
-        sentence += `Schedule quarterly health education at ${location} on rabies prevention. `;
-        sentence += `Maintain ${resources.arvDoses} ARV doses baseline stock. `;
-        sentence += `${coordination} for ongoing support.`;
-    }
-    
-    // Add data-specific modifications
-    if (recent >= Math.max(2, Math.round(total * 0.25))) {
-      sentence += ` Implement daily case monitoring and aggressive defaulter tracing.`;
-    }
-    
-    if (severe > 0) {
-      sentence += ` Prioritize Category III exposures with immediate ERIG administration protocols.`;
-    }
-    
-    if (resources.staffLevel === 'intensive') {
-      sentence += ` Deploy additional nursing staff and physician support.`;
-    } else if (resources.staffLevel === 'enhanced') {
-      sentence += ` Provide targeted training for healthcare workers.`;
-    }
-    
-    return sentence;
-  };
 
   const buildPriorityPlan = (priority, barangay, coord, metrics = { total:0, recent:0, severe:0, risk:0 }) => {
     const coordLine = coord && coord !== 'Coordinate with nearest health center' ? `${coord}.` : 'Coordinate with the nearest health center.';
@@ -440,32 +202,13 @@ const SuperAdminPrescriptiveAnalytics = () => {
       ]);
       return `${plan} ${severityFocus} Run information drives via barangay channels focused on bite prevention and defaulter tracing. Verify stock and prepare ${Math.max(10, recent * 2)} ARV doses and ERIG contingency; line‑list ${recent} recent patients for follow‑up. ${coordLine}`;
     }
-    // For low priority (including 0 cases), provide preventive measures with more variety
+    // For low priority (including 0 cases), provide preventive measures
     const lowOps = randFrom([
       `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels.`,
       `Keep routine services steady in ${barangay} and circulate monthly IEC through schools and barangay pages.`,
-      `Sustain baseline ARV services in ${barangay} and run brief IEC during clinic hours.`,
-      `Continue standard vaccination protocols in ${barangay} with enhanced community awareness campaigns.`,
-      `Preserve existing healthcare infrastructure in ${barangay} while strengthening preventive education.`,
-      `Uphold regular vaccination schedules in ${barangay} with targeted outreach to high-risk populations.`
+      `Sustain baseline ARV services in ${barangay} and run brief IEC during clinic hours.`
     ]);
-    
-    const additionalMeasures = randFrom([
-      `Conduct quarterly school/community IEC with emphasis on wound washing and early consultation.`,
-      `Implement regular community health education focusing on rabies prevention and proper wound care.`,
-      `Organize periodic awareness campaigns targeting vulnerable groups and pet owners.`,
-      `Schedule regular health talks in schools and community centers about rabies prevention.`,
-      `Develop ongoing education programs emphasizing the importance of immediate medical attention.`
-    ]);
-    
-    const stockMeasures = randFrom([
-      `Review stock minimums and keep at least ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; monitor trends for any uptick.`,
-      `Ensure adequate vaccine supply with ${Math.max(10, Math.ceil(total/2)+5)} ARV doses available; track consumption patterns.`,
-      `Maintain vaccine inventory with minimum ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; analyze usage trends.`,
-      `Keep vaccine stock at ${Math.max(10, Math.ceil(total/2)+5)} ARV doses minimum; evaluate demand fluctuations.`
-    ]);
-    
-    return `${lowOps} ${additionalMeasures} ${stockMeasures} ${coordLine}`;
+    return `${lowOps} Conduct quarterly school/community IEC with emphasis on wound washing and early consultation. Review stock minimums and keep at least ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; monitor trends for any uptick. ${coordLine}`;
   };
 
   // Ensure analysis text reaches 3–5 sentences by building an explanatory paragraph
@@ -485,33 +228,15 @@ const SuperAdminPrescriptiveAnalytics = () => {
     const center = d.topCenter ? ` Cases appear to cluster around ${d.topCenter}.` : '';
     
     if (total === 0) {
-      const noCaseVariations = [
-        `In ${barangay}, no cases have been reported in the current period, indicating a low-risk area. This suggests effective prevention measures or limited animal exposure. Continue routine surveillance and maintain baseline vaccination capacity. Overall priority is ${priority.toUpperCase()} based on the absence of reported incidents.`,
-        `No rabies cases have been documented in ${barangay} during this timeframe, reflecting successful prevention strategies. The absence of incidents may indicate good community awareness and effective animal control measures. Maintain standard vaccination protocols and continue monitoring. Priority level remains ${priority.toUpperCase()} due to zero case activity.`,
-        `${barangay} shows no reported cases in the current period, suggesting effective rabies prevention measures are in place. This could indicate successful community education or limited animal-human contact. Continue routine surveillance while preserving vaccination readiness. Overall assessment is ${priority.toUpperCase()} priority based on zero case activity.`
-      ];
-      return randFrom(noCaseVariations);
+      return `In ${barangay}, no cases have been reported in the current period, indicating a low-risk area. This suggests effective prevention measures or limited animal exposure. Continue routine surveillance and maintain baseline vaccination capacity. Overall priority is ${priority.toUpperCase()} based on the absence of reported incidents.`;
     }
     
     const trend = recent >= Math.max(2, Math.round(total * 0.25)) ? 'a recent uptick' : 'stable activity';
-    const trendVariations = {
-      'uptick': ['a recent uptick', 'increased activity', 'a surge in cases', 'elevated case frequency'],
-      'stable': ['stable activity', 'consistent patterns', 'steady case levels', 'maintained activity']
-    };
-    const selectedTrend = randFrom(trendVariations[recent >= Math.max(2, Math.round(total * 0.25)) ? 'uptick' : 'stable']);
-    
     const severityLine = severe > 0 ? ` ${severe} severe exposure${severe > 1 ? 's' : ''} were recorded, elevating risk.` : ' No severe exposures were recorded in the current window.';
     const patternLine = timePattern ? ` Incidents tend to occur during ${timePattern.toLowerCase()}.` : '';
     const ageLine = ageGroup ? ` The most affected age group is ${ageGroup}.` : '';
     const priorityLine = ` Overall priority is ${priority.toUpperCase()} based on volume and recency.`;
-    
-    const analysisVariations = [
-      `In ${barangay}, there are ${total} total reported cases with ${recent} occurring in the recent period, indicating ${selectedTrend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`,
-      `${barangay} has recorded ${total} total cases with ${recent} recent incidents, showing ${selectedTrend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`,
-      `Case analysis for ${barangay} reveals ${total} total incidents with ${recent} occurring recently, demonstrating ${selectedTrend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`
-    ];
-    
-    return randFrom(analysisVariations);
+    return `In ${barangay}, there are ${total} total reported cases with ${recent} occurring in the recent period, indicating ${trend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`;
   };
 
   // Fallback path used when server doesn't have /api/prescriptive-analytics yet (404)
@@ -587,14 +312,62 @@ const SuperAdminPrescriptiveAnalytics = () => {
             setAiError('');
           }
         } else {
-          console.log('AI service failed - no hardcoded fallback');
-          setAiError('AI service is not configured. Please add GOOGLE_API_KEY to your environment variables to enable AI-generated interventions.');
-          setAnalyticsData({ ...processedData, interventionRecommendations: [] });
+          console.log('AI service failed, using heuristic fallback');
+          // Generate basic heuristic interventions
+          const heuristicInterventions = Object.entries(processedData.riskAnalysis)
+            .filter(([_, data]) => data.totalCases > 0) // Only show barangays with cases
+            .map(([barangay, data]) => ({
+              barangay,
+              riskScore: data.riskScore,
+              priority: data.priority,
+              reasoning: data.factors.join('; ') || 'Automated analysis based on case data.',
+              intervention: data.priority === 'high' 
+                ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability.'
+                : data.priority === 'medium'
+                  ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                  : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+              totalCases: data.totalCases,
+              recentCases: data.recentCases,
+              severeCases: data.severeCases,
+              ageGroupFocus: '',
+              timePattern: '',
+              resourceNeeds: data.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
+              coordinationRequired: data.topCenter ? `Coordinate with ${data.topCenter}` : 'Coordinate with nearest health center'
+            }))
+            .sort((a, b) => b.riskScore - a.riskScore);
+          
+          console.log('Generated heuristic interventions:', heuristicInterventions);
+          setAnalyticsData({ ...processedData, interventionRecommendations: heuristicInterventions });
+          setAiError('');
         }
       } catch (e) {
         console.warn('Fallback AI fetch failed:', e);
-        setAiError('AI service is not configured. Please add GOOGLE_API_KEY to your environment variables to enable AI-generated interventions.');
-        setAnalyticsData({ ...processedData, interventionRecommendations: [] });
+        // Generate basic heuristic interventions even if AI completely fails
+        const heuristicInterventions = Object.entries(processedData.riskAnalysis)
+          .filter(([_, data]) => data.totalCases > 0)
+          .map(([barangay, data]) => ({
+            barangay,
+            riskScore: data.riskScore,
+            priority: data.priority,
+            reasoning: data.factors.join('; ') || 'Automated analysis based on case data.',
+            intervention: data.priority === 'high' 
+              ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability.'
+              : data.priority === 'medium'
+                ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
+            totalCases: data.totalCases,
+            recentCases: data.recentCases,
+            severeCases: data.severeCases,
+            ageGroupFocus: '',
+            timePattern: '',
+            resourceNeeds: data.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : 'Routine supplies',
+            coordinationRequired: data.topCenter ? `Coordinate with ${data.topCenter}` : 'Coordinate with nearest health center'
+          }))
+          .sort((a, b) => b.riskScore - a.riskScore);
+        
+        console.log('Generated heuristic interventions (AI failed):', heuristicInterventions);
+        setAnalyticsData({ ...processedData, interventionRecommendations: heuristicInterventions });
+        setAiError('AI service unavailable; showing heuristic recommendations.');
       }
     } catch (e) {
       console.error('Fallback flow failed:', e);

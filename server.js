@@ -6298,56 +6298,18 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
             }
 
             if (!genAI) {
-                // WHO-compliant heuristic fallback with diverse templates
-                const generateWHOIntervention = (s) => {
-                    const priority = s.priority || 'low';
-                    const total = s.totalCases || 0;
-                    const recent = s.recentCases || 0;
-                    const severe = s.severeCases || 0;
-                    const center = s.topCenter || '';
-                    
-                    // WHO-based analysis variations
-                    const analysisTemplates = [
-                        `In ${s.barangay}, ${total} total cases with ${recent} recent incidents indicate ${recent >= Math.max(2, Math.round(total * 0.25)) ? 'increased activity requiring immediate attention' : 'stable patterns requiring routine monitoring'}. ${severe > 0 ? `Category III exposures (${severe}) demand immediate PEP and ERIG protocols.` : 'No severe exposures recorded, maintaining standard WHO protocols.'} ${center ? `Cases cluster around ${center}, requiring targeted intervention.` : 'Geographic distribution suggests community-wide prevention needed.'} Priority level: ${priority.toUpperCase()} based on WHO risk assessment criteria.`,
-                        
-                        `${s.barangay} shows ${total} documented cases with ${recent} occurring recently, demonstrating ${recent >= Math.max(2, Math.round(total * 0.25)) ? 'elevated risk requiring enhanced surveillance' : 'consistent baseline activity'}. ${severe > 0 ? `Severe exposures (${severe}) necessitate immediate WHO Category III protocols.` : 'No Category III exposures detected, following standard prevention measures.'} ${center ? `Primary center: ${center} requires coordination.` : 'Multi-center approach needed for comprehensive coverage.'} WHO risk classification: ${priority.toUpperCase()} priority.`,
-                        
-                        `Case analysis for ${s.barangay} reveals ${total} total incidents with ${recent} recent occurrences, showing ${recent >= Math.max(2, Math.round(total * 0.25)) ? 'concerning trends requiring urgent response' : 'stable epidemiological patterns'}. ${severe > 0 ? `Critical exposures (${severe}) require immediate ERIG and PEP according to WHO guidelines.` : 'No severe exposures, maintaining preventive focus.'} ${center ? `Focus area: ${center} needs targeted resources.` : 'Community-wide prevention strategy recommended.'} Overall assessment: ${priority.toUpperCase()} priority based on WHO criteria.`
-                    ];
-                    
-                    // WHO-based intervention variations
-                    const interventionTemplates = {
-                        high: [
-                            `Deploy mobile vaccination team to ${s.barangay} within 48 hours following WHO emergency protocols. Implement Category III exposure management with immediate ERIG administration. Establish temporary clinic with extended hours for 7-day intensive campaign. Coordinate with ${center || 'nearest health center'} for resource allocation. Ensure cold-chain maintenance and adequate vaccine/ERIG stocks. Conduct daily case monitoring and follow-up for defaulters.`,
-                            
-                            `Activate surge response in ${s.barangay} with WHO-compliant mobile team deployment. Prioritize Category III exposures requiring immediate PEP + ERIG. Set up temporary vaccination post with 24/7 availability for critical cases. Partner with ${center || 'local health center'} for coordinated response. Maintain vaccine potency through proper cold-chain protocols. Implement aggressive defaulter tracing and community education.`,
-                            
-                            `Mobilize emergency vaccination services in ${s.barangay} following WHO outbreak response guidelines. Focus on Category III exposures with immediate ERIG and PEP protocols. Establish overflow clinic with weekend operations for 2-week intensive period. Collaborate with ${center || 'designated health center'} for resource sharing. Ensure adequate vaccine/ERIG inventory with daily monitoring. Conduct community-wide risk communication and education.`
-                        ],
-                        medium: [
-                            `Schedule additional vaccination day in ${s.barangay} next week with WHO-standard protocols. Implement Category II exposure management with PEP vaccination schedules. Organize community education sessions on bite prevention and wound care. Coordinate with ${center || 'nearest health center'} for resource support. Monitor vaccine stocks and prepare contingency supplies. Conduct targeted outreach to high-risk populations.`,
-                            
-                            `Open overflow clinic half-day in ${s.barangay} following WHO guidelines for medium-risk areas. Provide Category II exposure management with standard PEP protocols. Implement information drives via barangay channels focusing on prevention. Partner with ${center || 'local health center'} for coordinated response. Ensure adequate vaccine supply with monitoring protocols. Conduct age-specific education targeting vulnerable groups.`,
-                            
-                            `Designate fast-track vaccination lane in ${s.barangay} for follow-up cases per WHO recommendations. Apply Category II exposure protocols with appropriate PEP schedules. Organize community health education emphasizing early consultation. Collaborate with ${center || 'health center'} for resource optimization. Maintain vaccine inventory with regular stock checks. Implement targeted prevention messaging for at-risk demographics.`
-                        ],
-                        low: [
-                            `Maintain routine vaccination services in ${s.barangay} with WHO-standard protocols. Continue Category I exposure management with wound washing and observation. Conduct quarterly community education on rabies prevention and proper wound care. Coordinate with ${center || 'nearest health center'} for ongoing support. Monitor vaccine stocks and maintain baseline inventory. Implement regular health talks in schools and community centers.`,
-                            
-                            `Sustain baseline ARV services in ${s.barangay} following WHO preventive guidelines. Apply Category I protocols with emphasis on wound management and observation. Organize periodic awareness campaigns targeting pet owners and vulnerable groups. Partner with ${center || 'local health center'} for continued collaboration. Ensure adequate vaccine supply with regular monitoring. Develop ongoing education programs emphasizing immediate medical attention.`,
-                            
-                            `Preserve existing healthcare infrastructure in ${s.barangay} while strengthening WHO-compliant prevention measures. Maintain Category I exposure protocols with proper wound care education. Schedule regular health education focusing on rabies prevention and early consultation. Work with ${center || 'health center'} for coordinated prevention efforts. Keep vaccine inventory at optimal levels with trend monitoring. Conduct community outreach emphasizing the importance of timely medical care.`
-                        ]
-                    };
-                    
-                    const randFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-                    
-                    return {
+                // Heuristic fallback
+                interventions = barangaySummaries
+                    .map(s => ({
                         barangay: s.barangay,
                         riskScore: Number(s.riskScore) || 0,
-                        priority: priority,
-                        reasoning: randFrom(analysisTemplates),
-                        intervention: randFrom(interventionTemplates[priority] || interventionTemplates.low),
+                        priority: s.priority || 'low',
+                        reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
+                        intervention: s.priority === 'high'
+                            ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
+                            : s.priority === 'medium'
+                                ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
+                                : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
                         ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
                         timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
                         resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
@@ -6355,58 +6317,13 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                         totalCases: s.totalCases || 0,
                         recentCases: s.recentCases || 0,
                         severeCases: s.severeCases || 0
-                    };
-                };
-                
-                interventions = barangaySummaries
-                    .map(generateWHOIntervention)
+                    }))
                     .sort((a, b) => b.riskScore - a.riskScore);
             } else {
                 const model = await getWorkingGeminiModel();
                 const recentWindowDays = ({ week:7, month:30, quarter:90, year:365 }[timeRange] || 30);
-                const systemInstruction = `You are a senior public health physician specializing in rabies prevention and post-exposure prophylaxis (PEP) following WHO guidelines. Create diverse, context-specific action plans for each barangay based on WHO rabies prevention protocols.
-
-CRITICAL REQUIREMENTS:
-- Follow WHO Category I, II, III exposure classifications
-- Use WHO-recommended PEP schedules (0, 3, 7, 14, 28 days)
-- Apply WHO risk assessment criteria
-- Include WHO-recommended wound management protocols
-- Vary language, sentence structure, and recommendations for each barangay
-- Make each intervention unique and specific to the barangay's data
-- Use different vocabulary and phrasing patterns
-- Avoid repetitive templates or identical language
-
-WHO GUIDELINES TO FOLLOW:
-- Category III exposures: Immediate PEP + ERIG
-- Category II exposures: PEP vaccination only
-- Category I exposures: Wound washing + observation
-- High-risk areas: Enhanced surveillance + mobile teams
-- Medium-risk areas: Targeted education + additional clinic days
-- Low-risk areas: Routine surveillance + preventive education
-
-OUTPUT FORMAT: Return JSON array with objects containing:
-- barangay: string
-- analysis: 4-6 sentences of situation analysis (vary structure per barangay)
-- recommendation: 4-6 sentences of specific WHO-based interventions (vary language per barangay)
-- riskScore: number
-- priority: string
-- ageGroupFocus: string
-- timePattern: string
-- resourceNeeds: string
-- coordinationRequired: string
-
-Make each barangay's analysis and recommendations distinctly different in language, structure, and specific actions.`;
-                
-                const userInstruction = `Time Range: ${timeRange} (≈${recentWindowDays} days)
-Selected Barangay Filter: ${selectedBarangay}
-
-BARANGAY DATA (cases, risk scores, priorities, centers):
-${JSON.stringify(barangaySummaries, null, 2)}
-
-DETAILED CASE ANALYSIS (age patterns, time trends, severity breakdown):
-${JSON.stringify(caseAnalysis, null, 2)}
-
-Generate unique, WHO-compliant interventions for each barangay. Make each one distinctly different in language, recommendations, and approach while following WHO rabies prevention protocols.`;
+                const systemInstruction = 'You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.';
+                const userInstruction = `Time Range: ${timeRange} (≈${recentWindowDays} days)\nSelected Barangay Filter: ${selectedBarangay}\nBarangay Summaries (counts, recent, severe, priority, topCenter):\n${JSON.stringify(barangaySummaries, null, 2)}\n\nCase Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):\n${JSON.stringify(caseAnalysis, null, 2)}`;
                 let result = await model.generateContent({
                     contents: [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'user', parts: [{ text: userInstruction }] } ],
                     generationConfig: { temperature: 0.9, topP: 0.9, topK: 40, maxOutputTokens: 2048 }
