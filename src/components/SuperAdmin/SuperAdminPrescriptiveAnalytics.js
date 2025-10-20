@@ -105,15 +105,25 @@ const SuperAdminPrescriptiveAnalytics = () => {
       } catch (_) {}
       let interventions = Array.isArray(data.interventionRecommendations) ? data.interventionRecommendations : [];
       if (interventions.length === 0) {
+        console.log('🔍 AI DEBUG: No AI interventions received, using heuristic fallback');
         const heuristics = buildHeuristicInterventions(data.riskAnalysis);
         interventions = heuristics;
+      } else {
+        console.log('🔍 AI DEBUG: AI interventions received:', interventions.length, 'interventions');
       }
-      // Enforce 3–4 sentence recommendations and analyses
-      const enriched = interventions.map((it) => ({
-        ...it,
-        intervention: ensureRecommendationLength(it.intervention, it.priority, it.barangay, it.coordinationRequired, { total: it.totalCases, recent: it.recentCases, severe: it.severeCases, risk: it.riskScore }),
-        reasoning: ensureAnalysisLength(it.reasoning, it.barangay, it.totalCases, it.recentCases, it.severeCases, it.priority, it.ageGroupFocus, it.timePattern, it.coordinationRequired)
-      }));
+      // Only enrich if using heuristics (AI should already provide complete text)
+      const enriched = interventions.map((it) => {
+        // If intervention text is empty or too short, use heuristics
+        if (!it.intervention || it.intervention.trim().length < 50) {
+          return {
+            ...it,
+            intervention: ensureRecommendationLength(it.intervention, it.priority, it.barangay, it.coordinationRequired, { total: it.totalCases, recent: it.recentCases, severe: it.severeCases, risk: it.riskScore }),
+            reasoning: ensureAnalysisLength(it.reasoning, it.barangay, it.totalCases, it.recentCases, it.severeCases, it.priority, it.ageGroupFocus, it.timePattern, it.coordinationRequired)
+          };
+        }
+        // AI provided complete text, use as-is
+        return it;
+      });
       setAnalyticsData({ ...data, interventionRecommendations: enriched });
       setAiError('');
     } catch (error) {
@@ -202,13 +212,32 @@ const SuperAdminPrescriptiveAnalytics = () => {
       ]);
       return `${plan} ${severityFocus} Run information drives via barangay channels focused on bite prevention and defaulter tracing. Verify stock and prepare ${Math.max(10, recent * 2)} ARV doses and ERIG contingency; line‑list ${recent} recent patients for follow‑up. ${coordLine}`;
     }
-    // For low priority (including 0 cases), provide preventive measures
+    // For low priority (including 0 cases), provide preventive measures with more variety
     const lowOps = randFrom([
       `Maintain routine vaccination services in ${barangay} with weekly IEC reminders through barangay channels.`,
       `Keep routine services steady in ${barangay} and circulate monthly IEC through schools and barangay pages.`,
-      `Sustain baseline ARV services in ${barangay} and run brief IEC during clinic hours.`
+      `Sustain baseline ARV services in ${barangay} and run brief IEC during clinic hours.`,
+      `Continue standard vaccination protocols in ${barangay} with enhanced community awareness campaigns.`,
+      `Preserve existing healthcare infrastructure in ${barangay} while strengthening preventive education.`,
+      `Uphold regular vaccination schedules in ${barangay} with targeted outreach to high-risk populations.`
     ]);
-    return `${lowOps} Conduct quarterly school/community IEC with emphasis on wound washing and early consultation. Review stock minimums and keep at least ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; monitor trends for any uptick. ${coordLine}`;
+    
+    const additionalMeasures = randFrom([
+      `Conduct quarterly school/community IEC with emphasis on wound washing and early consultation.`,
+      `Implement regular community health education focusing on rabies prevention and proper wound care.`,
+      `Organize periodic awareness campaigns targeting vulnerable groups and pet owners.`,
+      `Schedule regular health talks in schools and community centers about rabies prevention.`,
+      `Develop ongoing education programs emphasizing the importance of immediate medical attention.`
+    ]);
+    
+    const stockMeasures = randFrom([
+      `Review stock minimums and keep at least ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; monitor trends for any uptick.`,
+      `Ensure adequate vaccine supply with ${Math.max(10, Math.ceil(total/2)+5)} ARV doses available; track consumption patterns.`,
+      `Maintain vaccine inventory with minimum ${Math.max(10, Math.ceil(total/2)+5)} ARV doses; analyze usage trends.`,
+      `Keep vaccine stock at ${Math.max(10, Math.ceil(total/2)+5)} ARV doses minimum; evaluate demand fluctuations.`
+    ]);
+    
+    return `${lowOps} ${additionalMeasures} ${stockMeasures} ${coordLine}`;
   };
 
   // Ensure analysis text reaches 3–5 sentences by building an explanatory paragraph
@@ -228,15 +257,33 @@ const SuperAdminPrescriptiveAnalytics = () => {
     const center = d.topCenter ? ` Cases appear to cluster around ${d.topCenter}.` : '';
     
     if (total === 0) {
-      return `In ${barangay}, no cases have been reported in the current period, indicating a low-risk area. This suggests effective prevention measures or limited animal exposure. Continue routine surveillance and maintain baseline vaccination capacity. Overall priority is ${priority.toUpperCase()} based on the absence of reported incidents.`;
+      const noCaseVariations = [
+        `In ${barangay}, no cases have been reported in the current period, indicating a low-risk area. This suggests effective prevention measures or limited animal exposure. Continue routine surveillance and maintain baseline vaccination capacity. Overall priority is ${priority.toUpperCase()} based on the absence of reported incidents.`,
+        `No rabies cases have been documented in ${barangay} during this timeframe, reflecting successful prevention strategies. The absence of incidents may indicate good community awareness and effective animal control measures. Maintain standard vaccination protocols and continue monitoring. Priority level remains ${priority.toUpperCase()} due to zero case activity.`,
+        `${barangay} shows no reported cases in the current period, suggesting effective rabies prevention measures are in place. This could indicate successful community education or limited animal-human contact. Continue routine surveillance while preserving vaccination readiness. Overall assessment is ${priority.toUpperCase()} priority based on zero case activity.`
+      ];
+      return randFrom(noCaseVariations);
     }
     
     const trend = recent >= Math.max(2, Math.round(total * 0.25)) ? 'a recent uptick' : 'stable activity';
+    const trendVariations = {
+      'uptick': ['a recent uptick', 'increased activity', 'a surge in cases', 'elevated case frequency'],
+      'stable': ['stable activity', 'consistent patterns', 'steady case levels', 'maintained activity']
+    };
+    const selectedTrend = randFrom(trendVariations[recent >= Math.max(2, Math.round(total * 0.25)) ? 'uptick' : 'stable']);
+    
     const severityLine = severe > 0 ? ` ${severe} severe exposure${severe > 1 ? 's' : ''} were recorded, elevating risk.` : ' No severe exposures were recorded in the current window.';
     const patternLine = timePattern ? ` Incidents tend to occur during ${timePattern.toLowerCase()}.` : '';
     const ageLine = ageGroup ? ` The most affected age group is ${ageGroup}.` : '';
     const priorityLine = ` Overall priority is ${priority.toUpperCase()} based on volume and recency.`;
-    return `In ${barangay}, there are ${total} total reported cases with ${recent} occurring in the recent period, indicating ${trend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`;
+    
+    const analysisVariations = [
+      `In ${barangay}, there are ${total} total reported cases with ${recent} occurring in the recent period, indicating ${selectedTrend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`,
+      `${barangay} has recorded ${total} total cases with ${recent} recent incidents, showing ${selectedTrend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`,
+      `Case analysis for ${barangay} reveals ${total} total incidents with ${recent} occurring recently, demonstrating ${selectedTrend}.${severityLine}${patternLine}${ageLine}${center} ${priorityLine}`
+    ];
+    
+    return randFrom(analysisVariations);
   };
 
   // Fallback path used when server doesn't have /api/prescriptive-analytics yet (404)
