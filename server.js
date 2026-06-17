@@ -3,17 +3,32 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 const path = require('path');
+const dns = require('dns');
 const http = require('http');
 const WebSocket = require('ws');
 const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { generatePrescriptions, classifySeverity } = require('./src/utils/prescriptionEngine');
 
 // Initialize Express app
 const app = express();
-// Use PORT for Render deployment, fallback to API_PORT for local development
-const PORT = process.env.PORT || process.env.API_PORT || 4000;
+// Use API_PORT for local development, fallback to PORT for Render deployment
+const PORT = process.env.API_PORT || process.env.PORT || 4000;
+
+// Optional: override DNS resolvers for Atlas SRV lookups in environments
+// where the default resolver refuses SRV queries.
+if (process.env.MONGODB_DNS_SERVERS) {
+    const dnsServers = process.env.MONGODB_DNS_SERVERS
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    if (dnsServers.length > 0) {
+        dns.setServers(dnsServers);
+        console.log('Using custom DNS resolvers for MongoDB:', dnsServers.join(', '));
+    }
+}
 
 // Security Headers Middleware
 app.use((req, res, next) => {
@@ -98,54 +113,63 @@ app.use((req, res, next) => {
 });
 // Remove static file serving - frontend will be served separately
 
-// Initialize Gemini client (server-side only)
-let genAI = null;
-try {
-    // If key missing, try loading .env from project root (one level up)
-    if (!process.env.GOOGLE_API_KEY) {
-        const rootEnvPath = path.join(__dirname, '..', '.env');
-        require('dotenv').config({ path: rootEnvPath });
-    }
-    // Support alternative env var names; trim quotes/spaces
-    let apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLEAI_API_KEY;
-    if (apiKey) {
-        apiKey = apiKey.replace(/^['\"]|['\"]$/g, '').trim();
-    }
-    if (apiKey) {
-        genAI = new GoogleGenerativeAI(apiKey);
-    } else {
-        console.warn('GOOGLE_API_KEY not set; /api/prescriptions will fallback to local rules');
-    }
-} catch (e) {
-    console.warn('Failed to initialize GoogleGenerativeAI:', e.message);
-}
+const normCenterLabel = (v) => String(v || '')
+    .toLowerCase()
+    .replace(/\s*health\s*center$/i, '')
+    .replace(/\s*center$/i, '')
+    .replace(/-/g, ' ')
+    .trim();
 
-// Helper: select a working Gemini model among several candidates
-async function getWorkingGeminiModel(preferredModel) {
-    if (!genAI) return null;
-    const candidates = [
-        (preferredModel || process.env.GEMINI_MODEL || '').trim(),
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-pro',
-        'gemini-1.0-pro'
-    ].filter(Boolean);
+const extractBarangayFromCenterRecord = (center = {}) => {
+    const raw = center.centerName || center.name || '';
+    const match = String(raw).match(/barangay health center\s*-\s*(.+)/i);
+    if (match) return match[1].trim();
+    return String(raw).replace(/barangay health center\s*/i, '').trim();
+};
 
-    for (const modelId of candidates) {
-        try {
-            const model = genAI.getGenerativeModel({ model: modelId });
-            const test = await model.generateContent('ping');
-            if (test?.response) {
-                console.log('Using Gemini model:', modelId);
-                return model;
-            }
-        } catch (err) {
-            console.warn(`Model candidate failed (${modelId}):`, err?.message || String(err));
-        }
+const coerceCaseDate = (c = {}) => {
+    const v = c.incidentDate || c.exposureDate || c.dateRegistered || c.arrivalDate || c.createdAt || c.updatedAt;
+    if (!v) return null;
+    if (typeof v === 'string') return new Date(v);
+    if (typeof v === 'number') return new Date(v);
+    if (v?.$date?.$numberLong) return new Date(Number(v.$date.$numberLong));
+    if (v?.$date) return new Date(v.$date);
+    return new Date(v);
+};
+
+const getCaseExposureMeta = (c = {}) => {
+    const mgmtCategory = Array.isArray(c.management?.category) ? c.management.category[0] : c.management?.category;
+    const raw = String(c.exposureCategory || mgmtCategory || c.category || '').toUpperCase();
+    if (raw.includes('III') || raw === '3' || raw.includes('CATEGORY 3')) {
+        return { exposureCategory: 'III', exposureType: '3', severity: 'high' };
     }
-    console.warn('No working Gemini model found from candidates');
-    return null;
-}
+    if (raw.includes('II') || raw === '2' || raw.includes('CATEGORY 2')) {
+        return { exposureCategory: 'II', exposureType: '2', severity: 'medium' };
+    }
+    if (raw.includes('I') || raw === '1' || raw.includes('CATEGORY 1')) {
+        return { exposureCategory: 'I', exposureType: '1', severity: 'low' };
+    }
+    const exposureType = (c.exposureType || '').toString();
+    if (exposureType === '3') return { exposureCategory: 'III', exposureType: '3', severity: 'high' };
+    if (exposureType === '2') return { exposureCategory: 'II', exposureType: '2', severity: 'medium' };
+    return { exposureCategory: 'I', exposureType: '1', severity: c.severity || 'low' };
+};
+
+const emptyBarangayRisk = () => ({
+    totalCases: 0,
+    severeCases: 0,
+    moderateCases: 0,
+    mildCases: 0,
+    recentCases: 0,
+    category1Cases: 0,
+    category2Cases: 0,
+    category3Cases: 0,
+    riskScore: 0,
+    priority: 'low',
+    factors: [],
+    centerCounts: {},
+    topCenter: null
+});
 
 // MongoDB Configuration
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://lricamara6:Lanz0517@bitealert.febjlgm.mongodb.net/bitealert?retryWrites=true&w=majority";
@@ -409,12 +433,24 @@ async function logAuditTrail(role, firstName, middleName, lastName, action, ids 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+process.on('uncaughtException', (error) => {
+    if (error && error.code === 'WS_ERR_INVALID_CLOSE_CODE') {
+        console.warn('Ignoring malformed WebSocket close frame:', error.message);
+        return;
+    }
+    throw error;
+});
+
 // WebSocket connections store
 const clients = new Set();
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
     clients.add(ws);
+
+    ws.on('error', (error) => {
+        console.warn('WebSocket client error:', error.message);
+    });
 
     ws.on('close', () => {
         clients.delete(ws);
@@ -1783,7 +1819,9 @@ app.post('/api/prescriptions', async (req, res) => {
             priority: d.priority || 'low',
             factors: d.factors || [],
             topCenter: d.topCenter || null,
-            // Add comprehensive analysis data
+            category3Cases: d.category3Cases || 0,
+            category2Cases: d.category2Cases || 0,
+            category1Cases: d.category1Cases || 0,
             ageDistribution: caseAnalysis[barangay]?.ageDistribution || {},
             timePatterns: caseAnalysis[barangay]?.timePatterns || {},
             severityBreakdown: caseAnalysis[barangay]?.severityBreakdown || {},
@@ -1808,241 +1846,10 @@ app.post('/api/prescriptions', async (req, res) => {
             console.warn('Center filter skipped:', e.message);
         }
 
-        // Re-initialize Gemini client at request-time if not yet initialized
-        if (!genAI) {
-            try {
-                let apiKey = (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLEAI_API_KEY || '').replace(/^['\"]|['\"]$/g, '').trim();
-                if (apiKey) {
-                    const { GoogleGenerativeAI } = require('@google/generative-ai');
-                    genAI = new GoogleGenerativeAI(apiKey);
-                    console.log('Gemini AI client initialized on-demand');
-                }
-            } catch (e) {
-                console.warn('On-demand Gemini init failed:', e.message);
-            }
-        }
-
-        if (!genAI) {
-            console.warn('Gemini AI not initialized - returning heuristic fallback interventions');
-            const interventions = barangaySummaries
-                .map(s => ({
-                    barangay: s.barangay,
-                    riskScore: Number(s.riskScore) || 0,
-                    priority: s.priority || 'low',
-                    reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
-                    intervention: s.priority === 'high'
-                        ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
-                        : s.priority === 'medium'
-                            ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
-                            : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
-                    ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
-                    timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
-                    resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
-                    coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
-                    totalCases: s.totalCases || 0,
-                    recentCases: s.recentCases || 0,
-                    severeCases: s.severeCases || 0
-                }))
-                .sort((a, b) => b.riskScore - a.riskScore);
-            return res.json({ interventions });
-        }
-
-        const model = await getWorkingGeminiModel();
-        if (!model) {
-            console.warn('Gemini AI not initialized - returning heuristic fallback interventions');
-            const interventions = barangaySummaries
-                .map(s => ({
-                    barangay: s.barangay,
-                    riskScore: Number(s.riskScore) || 0,
-                    priority: s.priority || 'low',
-                    reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
-                    intervention: s.priority === 'high'
-                        ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
-                        : s.priority === 'medium'
-                            ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
-                            : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
-                    ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
-                    timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
-                    resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
-                    coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
-                    totalCases: s.totalCases || 0,
-                    recentCases: s.recentCases || 0,
-                    severeCases: s.severeCases || 0
-                }))
-                .sort((a, b) => b.riskScore - a.riskScore);
-            return res.json({ interventions });
-        }
-        const systemInstruction = `You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City, following World Health Organization (WHO) guidelines for rabies prevention and control. Your output must be specific per barangay/center and grounded ONLY on the supplied data.
-
-WHO GUIDELINES COMPLIANCE
-- Follow WHO exposure categories: Category I (touching/feeding animals, licks on intact skin), Category II (nibbling of uncovered skin, minor scratches without bleeding), Category III (transdermal bites/scratches, licks on broken skin, mucous membrane contamination)
-- Apply WHO post-exposure prophylaxis (PEP) protocols: Category I (no PEP), Category II (vaccination + wound care), Category III (vaccination + rabies immunoglobulin + wound care)
-- Emphasize immediate wound care: thorough washing with soap and water for minimum 15 minutes
-- Prioritize high-risk exposures (Category III) for immediate intervention
-- Follow WHO vaccination schedules and immunoglobulin administration protocols
-
-STRICT REQUIREMENTS
-- Use: counts, recent dates window, age distributions, daily/weekly/monthly patterns, severity, and the topCenter (managed health center) for coordination.
-- Tailor: recommendations must be unique per barangay; avoid templates or generic phrases.
-- Justify: reasoning must cite the concrete patterns (e.g., "weekly spike on Fridays", "age 13–18 high", "5 severe in last 7 days").
-- Operations: specify what to do in the next 24–48 hours (locations, teams, materials), and who coordinates (name the top center when present).
-- WHO Compliance: Ensure all recommendations align with WHO guidelines for rabies prevention and post-exposure management.
-
-After preparing your analysis, recommendations and prediction per barangay, include ONLY ONE fenced code block that contains a JSON array with the schema below. Do not include commentary outside the code block. Keys must match exactly.
-
-JSON SCHEMA EXAMPLE (values are placeholders; replace with real content for each barangay):
-[
-  {
-    "barangay": "Balong-Bato",
-    "priority": "high|medium|low",
-    "riskScore": 72,
-    "analysis": "4–6 full sentences…",
-    "recommendation": "4–6 full sentences…",
-    "prediction": "2–3 sentences about expected trend if actions are done",
-    "ageGroupFocus": "13–18",
-    "timePattern": "Weekend spikes",
-    "resourceNeeds": "ERIG, 2 nurses, 1 physician, IEC materials",
-    "coordinationRequired": "San Juan Health Center"
-  }
-]
-
-OUTPUT JSON ONLY (no markdown outside the code block)
-[
-  {
-    "barangay": "string",
-    "priority": "high|medium|low",
-    "riskScore": number,
-    "reasoning": "4–6 full sentences citing actual patterns, dates window, day-of-week/month clustering, and age groups",
-    "recommendations": "4–6 full sentences with concrete steps (venues, teams, dates/times, supplies) customized to this barangay/center",
-    "ageGroupFocus": "dominant age bracket",
-    "timePattern": "e.g., weekend spikes / afternoon clustering",
-    "resourceNeeds": "vaccines/ERIG/staff/logistics",
-    "coordinationRequired": "which center to coordinate (topCenter)"
-  }
-]
-
-WHO-BASED PRIORITY GUIDELINES (apply strictly)
-- HIGH: >=15 total OR >=5 severe OR clear recent spike OR high Category III exposure rate
-- MEDIUM: 5–14 total OR 2–4 severe OR moderate patterns OR significant Category II exposure rate
-- LOW: otherwise OR low exposure rates with proper WHO-compliant management
-
-WHO INTERVENTION REQUIREMENTS
-- Category I exposures: No PEP required, wound care only
-- Category II exposures: Immediate vaccination + thorough wound care (15+ minutes soap/water)
-- Category III exposures: Immediate vaccination + rabies immunoglobulin + thorough wound care
-- All exposures: Immediate wound washing, tetanus prophylaxis if needed, antibiotic prophylaxis for high-risk wounds
-- Follow-up: Monitor for 10-14 days, ensure vaccination completion per WHO schedule`;
-
-        const recentWindowDays = ( { week:7, month:30, quarter:90, year:365 }[timeRange] || 30 );
-        const userInstruction = `Time Range: ${timeRange || 'month'} (≈${recentWindowDays} days)
-Selected Barangay Filter: ${selectedBarangay || 'all'}
-Barangay Summaries (counts, recent, severe, priority, topCenter):
-${JSON.stringify(barangaySummaries, null, 2)}
-
-Case Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):
-${JSON.stringify(caseAnalysis, null, 2)}`;
-
-        let result = await model.generateContent({
-            contents: [
-                { role: 'user', parts: [{ text: systemInstruction }] },
-                { role: 'user', parts: [{ text: userInstruction }] }
-            ],
-            generationConfig: {
-                temperature: 0.9,
-                topP: 0.9,
-                topK: 40,
-                maxOutputTokens: 2048
-            }
-        });
-
-        let text = result.response.text();
-        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-        if (jsonMatch) text = jsonMatch[1];
-
-        let json;
-        try {
-            json = JSON.parse(text);
-        } catch (e) {
-            const arrayMatch = text.match(/\[\s*{[\s\S]*}\s*\]/);
-            json = arrayMatch ? JSON.parse(arrayMatch[0]) : [];
-        }
-
-        // Normalize and enforce fields from the schema
-        const ensureLength = (s) => {
-            if (!s) return s;
-            const count = (s.match(/[.!?]/g) || []).length;
-            if (count < 4) {
-                return s + ' Provide targeted risk communication, coordinate with the top center, and ensure sufficient vaccine and ERIG stocks while monitoring age‑specific attendance over the next two weeks.';
-            }
-            return s;
-        };
-
-        let interventions = (Array.isArray(json) ? json : []).map(it => ({
-            barangay: it.barangay,
-            riskScore: Number(it.riskScore) || 0,
-            priority: it.priority || 'low',
-            reasoning: ensureLength(it.analysis || it.reasoning || ''),
-            intervention: ensureLength(it.recommendation || it.recommendations || ''),
-            prediction: it.prediction || '',
-            ageGroupFocus: it.ageGroupFocus || '',
-            timePattern: it.timePattern || '',
-            resourceNeeds: it.resourceNeeds || '',
-            coordinationRequired: it.coordinationRequired || '',
-            totalCases: barangaySummaries.find(b => b.barangay === it.barangay)?.totalCases || 0,
-            recentCases: barangaySummaries.find(b => b.barangay === it.barangay)?.recentCases || 0,
-            severeCases: barangaySummaries.find(b => b.barangay === it.barangay)?.severeCases || 0
-        })).sort((a, b) => b.riskScore - a.riskScore);
-
-        // If the model returned too short or empty content, retry once with a stronger instruction
-        const tooShort = interventions.length === 0 || interventions.some(it => ((it.reasoning.match(/[.!?]/g) || []).length < 4) || ((it.intervention.match(/[.!?]/g) || []).length < 4));
-        if (tooShort && genAI) {
-            try {
-                const strongerUser = userInstruction + "\n\nIMPORTANT: Your previous answer was too short. For EACH barangay, provide 4–6 sentences for reasoning AND 4–6 sentences for recommendations, grounded on the specific age distributions, time patterns, severe and recent counts, and topCenter.";
-                result = await model.generateContent({
-                    contents: [
-                        { role: 'user', parts: [{ text: systemInstruction }] },
-                        { role: 'user', parts: [{ text: strongerUser }] }
-                    ],
-                    generationConfig: {
-                        temperature: 0.95,
-                        topP: 0.95,
-                        topK: 50,
-                        maxOutputTokens: 3072
-                    }
-                });
-                let text2 = result.response.text();
-                const jsonMatch2 = text2.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-                if (jsonMatch2) text2 = jsonMatch2[1];
-                let json2;
-                try {
-                    json2 = JSON.parse(text2);
-                } catch (e) {
-                    const am = text2.match(/\[\s*{[\s\S]*}\s*\]/);
-                    json2 = am ? JSON.parse(am[0]) : [];
-                }
-                interventions = (Array.isArray(json2) ? json2 : []).map(it => ({
-                    barangay: it.barangay,
-                    riskScore: Number(it.riskScore) || 0,
-                    priority: it.priority || 'low',
-                    reasoning: ensureLength(it.reasoning || ''),
-                    intervention: ensureLength(it.recommendations || ''),
-                    ageGroupFocus: it.ageGroupFocus || '',
-                    timePattern: it.timePattern || '',
-                    resourceNeeds: it.resourceNeeds || '',
-                    coordinationRequired: it.coordinationRequired || '',
-                    totalCases: barangaySummaries.find(b => b.barangay === it.barangay)?.totalCases || 0,
-                    recentCases: barangaySummaries.find(b => b.barangay === it.barangay)?.recentCases || 0,
-                    severeCases: barangaySummaries.find(b => b.barangay === it.barangay)?.severeCases || 0
-                })).sort((a, b) => b.riskScore - a.riskScore);
-            } catch (retryErr) {
-                console.warn('Gemini retry failed:', retryErr.message);
-            }
-        }
-
+        const interventions = generatePrescriptions(barangaySummaries);
         return res.json({ interventions });
     } catch (err) {
-        console.error('Gemini /api/prescriptions error:', err);
-        // Attempt a minimal safe fallback if possible
+        console.error('/api/prescriptions error:', err);
         try {
             const { riskAnalysis } = req.body || {};
             if (riskAnalysis && typeof riskAnalysis === 'object') {
@@ -2054,29 +1861,12 @@ ${JSON.stringify(caseAnalysis, null, 2)}`;
                     riskScore: d.riskScore || 0,
                     priority: d.priority || 'low',
                     factors: d.factors || [],
-                    topCenter: d.topCenter || null
+                    topCenter: d.topCenter || null,
+                    category3Cases: d.category3Cases || 0,
+                    category2Cases: d.category2Cases || 0,
+                    category1Cases: d.category1Cases || 0
                 }));
-                const interventions = barangaySummaries
-                    .map(s => ({
-                        barangay: s.barangay,
-                        riskScore: Number(s.riskScore) || 0,
-                        priority: s.priority || 'low',
-                        reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
-                        intervention: s.priority === 'high'
-                            ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
-                            : s.priority === 'medium'
-                                ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
-                                : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
-                        ageGroupFocus: '',
-                        timePattern: '',
-                        resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
-                        coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
-                        totalCases: s.totalCases || 0,
-                        recentCases: s.recentCases || 0,
-                        severeCases: s.severeCases || 0
-                    }))
-                    .sort((a, b) => b.riskScore - a.riskScore);
-                return res.json({ interventions });
+                return res.json({ interventions: generatePrescriptions(barangaySummaries) });
             }
         } catch (_) {}
         return res.status(500).json({ error: 'Failed to generate prescriptions' });
@@ -2710,6 +2500,7 @@ const centerSchema = new mongoose.Schema({
   address: { type: String, required: true },
   contactPerson: { type: String, required: true },
   contactNumber: { type: String, required: true },
+  code: { type: String }, // Added to prevent duplicate key error on old code_1 index
   isArchived: { type: Boolean, default: false },
   lastUpdated: { type: Date, default: Date.now },
   serviceHours: [
@@ -2779,6 +2570,7 @@ app.post('/api/centers', async (req, res) => {
       address,
       contactPerson,
       contactNumber,
+      code: 'CTR-' + Date.now().toString() + '-' + Math.floor(Math.random() * 1000), // Generate unique code
       lastUpdated: new Date()
     });
 
@@ -2788,7 +2580,12 @@ app.post('/api/centers', async (req, res) => {
     
     res.status(201).json({ success: true, data: savedCenter });
   } catch (err) {
-    console.error('Error adding center:', err);
+    console.error('Error adding center:', err.name, err.code, err.message);
+    const fs = require('fs');
+    fs.appendFileSync('server_error.log', new Date().toISOString() + ' Error adding center: ' + err.message + '\n' + JSON.stringify(err) + '\n');
+    if (err.code === 11000) {
+      return res.status(500).json({ success: false, message: 'A center with this name already exists in the database (even if archived).', error: err.message });
+    }
     res.status(500).json({ success: false, message: 'Failed to add center', error: err.message });
   }
 });
@@ -2881,6 +2678,97 @@ app.put('/api/centers/:id/archive', async (req, res) => {
   }
 });
 
+// Self-correcting migration to clean up duplicated center hours documents
+async function cleanDuplicateCenterHours() {
+  try {
+    console.log('[CenterHours Migration] Scanning for duplicate center hours documents...');
+    const docs = await CenterHours.find();
+    const groups = {};
+    
+    // Group documents by normalized name
+    docs.forEach(doc => {
+      const nameKey = String(doc.centerName || doc.name || '').toLowerCase().trim();
+      if (!nameKey) return;
+      if (!groups[nameKey]) groups[nameKey] = [];
+      groups[nameKey].push(doc);
+    });
+    
+    // Process each group with duplicates
+    for (const nameKey in groups) {
+      const group = groups[nameKey];
+      if (group.length > 1) {
+        console.log(`[CenterHours Migration] Found ${group.length} duplicates for "${nameKey}". Merging...`);
+        
+        // Find the best document to keep (prefer centerId, then centerName, then document with hours, then latest updatedAt)
+        let bestDoc = group[0];
+        for (let i = 1; i < group.length; i++) {
+          const doc = group[i];
+          const hasHours = doc.hours && Object.keys(doc.hours).length > 0;
+          const bestHasHours = bestDoc.hours && Object.keys(bestDoc.hours).length > 0;
+          
+          if (doc.centerId && !bestDoc.centerId) {
+            bestDoc = doc;
+          } else if (!doc.centerId && bestDoc.centerId) {
+            // keep bestDoc
+          } else if (hasHours && !bestHasHours) {
+            bestDoc = doc;
+          } else if (!hasHours && bestHasHours) {
+            // keep bestDoc
+          } else if (doc.updatedAt && (!bestDoc.updatedAt || doc.updatedAt > bestDoc.updatedAt)) {
+            bestDoc = doc;
+          }
+        }
+        
+        // Merge information from other documents into bestDoc
+        let mergedHours = { ...(bestDoc.hours || {}) };
+        let mergedContact = bestDoc.contactNumber || '';
+        let mergedAddress = bestDoc.address || '';
+        let mergedCenterId = bestDoc.centerId || '';
+        let mergedCenterName = bestDoc.centerName || bestDoc.name || '';
+        
+        for (const doc of group) {
+          if (doc._id.toString() === bestDoc._id.toString()) continue;
+          
+          // Merge hours (if any day is defined in other doc but not bestDoc)
+          if (doc.hours) {
+            Object.keys(doc.hours).forEach(day => {
+              if (!mergedHours[day] && doc.hours[day]) {
+                mergedHours[day] = doc.hours[day];
+              }
+            });
+          }
+          if (!mergedContact && doc.contactNumber) mergedContact = doc.contactNumber;
+          if (!mergedAddress && doc.address) mergedAddress = doc.address;
+          if (!mergedCenterId && doc.centerId) mergedCenterId = doc.centerId;
+          if (!mergedCenterName && (doc.centerName || doc.name)) {
+            mergedCenterName = doc.centerName || doc.name;
+          }
+        }
+        
+        // Update the best document
+        bestDoc.hours = mergedHours;
+        bestDoc.contactNumber = mergedContact;
+        bestDoc.address = mergedAddress;
+        bestDoc.centerId = mergedCenterId;
+        bestDoc.centerName = mergedCenterName;
+        bestDoc.name = mergedCenterName;
+        bestDoc.updatedAt = new Date();
+        await bestDoc.save();
+        
+        // Delete the other duplicate documents
+        for (const doc of group) {
+          if (doc._id.toString() === bestDoc._id.toString()) continue;
+          await CenterHours.deleteOne({ _id: doc._id });
+          console.log(`[CenterHours Migration] Deleted duplicate document ID: ${doc._id}`);
+        }
+      }
+    }
+    console.log('[CenterHours Migration] Scan and merge completed.');
+  } catch (err) {
+    console.error('[CenterHours Migration] Error cleaning duplicates:', err);
+  }
+}
+
 // Connect to MongoDB with retry logic
 const connectWithRetry = async (retryCount = 0, maxRetries = 3) => {
     try {
@@ -2898,6 +2786,7 @@ const connectWithRetry = async (retryCount = 0, maxRetries = 3) => {
         // Create initial super admin after successful connection
         await createInitialSuperAdmins();
         await patchAdminAndSuperAdminIDs();
+        await cleanDuplicateCenterHours();
         
         // Start the server only after successful database connection
         server.listen(PORT, () => {
@@ -5699,14 +5588,36 @@ app.post('/api/center-hours/update', async (req, res) => {
 app.put('/api/center_hours/:centerId', async (req, res) => {
   try {
     const { centerId } = req.params;
-    const { centerName, hours, contactNumber } = req.body;
+    const { centerName, name, hours, contactNumber, address } = req.body;
     if (!centerId) return res.status(400).json({ success: false, message: 'centerId is required' });
-    const updated = await CenterHours.findOneAndUpdate(
-      { centerId },
-      { centerId, centerName, hours, contactNumber, updatedAt: new Date() },
-      { new: true, upsert: true }
-    );
-    res.json({ success: true, data: updated });
+    
+    let existing = await CenterHours.findOne({ centerId });
+    const finalName = centerName || name;
+    
+    if (existing) {
+      if (hours !== undefined) existing.hours = hours;
+      if (contactNumber !== undefined) existing.contactNumber = contactNumber;
+      if (finalName) {
+        existing.centerName = finalName;
+        existing.name = finalName;
+      }
+      if (address !== undefined) existing.address = address;
+      existing.updatedAt = new Date();
+      await existing.save();
+      res.json({ success: true, data: existing });
+    } else {
+      const newDoc = new CenterHours({
+        centerId,
+        centerName: finalName,
+        name: finalName,
+        hours,
+        contactNumber: contactNumber || '',
+        address: address || '',
+        updatedAt: new Date()
+      });
+      await newDoc.save();
+      res.json({ success: true, data: newDoc });
+    }
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to save center_hours', error: err.message });
   }
@@ -5714,17 +5625,52 @@ app.put('/api/center_hours/:centerId', async (req, res) => {
 
 app.post('/api/center_hours', async (req, res) => {
   try {
-    const { centerId, centerName, hours, contactNumber } = req.body;
-    const query = centerId ? { centerId } : { centerName };
-    if (!query.centerId && !query.centerName) {
-      return res.status(400).json({ success: false, message: 'centerId or centerName is required' });
+    const { centerId, centerName, hours, contactNumber, address, name } = req.body;
+    const finalName = centerName || name;
+    
+    let existing = null;
+    if (centerId) {
+      existing = await CenterHours.findOne({ centerId });
+    } else {
+      if (finalName) {
+        existing = await CenterHours.findOne({
+          $or: [
+            { centerId: finalName },
+            { centerName: finalName },
+            { name: finalName }
+          ]
+        });
+      }
     }
-    const updated = await CenterHours.findOneAndUpdate(
-      query,
-      { centerId, centerName, hours, contactNumber, updatedAt: new Date() },
-      { new: true, upsert: true }
-    );
-    res.json({ success: true, data: updated });
+
+    if (existing) {
+      if (hours !== undefined) existing.hours = hours;
+      if (contactNumber !== undefined) existing.contactNumber = contactNumber;
+      if (finalName) {
+        existing.centerName = finalName;
+        existing.name = finalName;
+      }
+      if (centerId) existing.centerId = centerId;
+      if (address !== undefined) existing.address = address;
+      existing.updatedAt = new Date();
+      await existing.save();
+      res.json({ success: true, data: existing });
+    } else {
+      if (!centerId && !finalName) {
+        return res.status(400).json({ success: false, message: 'centerId or centerName/name is required' });
+      }
+      const newDoc = new CenterHours({
+        centerId: centerId || undefined,
+        centerName: finalName,
+        name: finalName,
+        hours,
+        contactNumber: contactNumber || '',
+        address: address || '',
+        updatedAt: new Date()
+      });
+      await newDoc.save();
+      res.json({ success: true, data: newDoc });
+    }
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to save center_hours', error: err.message });
   }
@@ -5792,23 +5738,13 @@ app.get('/api/db-test', async (req, res) => {
     }
 });
 
-// AI Service diagnostic endpoint
-app.get('/api/ai-diagnostic', (req, res) => {
-    try {
-        const hasApiKey = !!process.env.GOOGLE_API_KEY || !!process.env.GEMINI_API_KEY || !!process.env.GOOGLEAI_API_KEY;
-        const genAIStatus = genAI ? 'Initialized' : 'Not Initialized';
-        
-        res.json({
-            hasApiKey,
-            genAIStatus,
-            apiKeyLength: process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.length : 0,
-            apiKeyPrefix: process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.substring(0, 10) + '...' : 'Not set',
-            environment: process.env.NODE_ENV,
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+// Prescription engine status endpoint
+app.get('/api/prescription-engine/status', (req, res) => {
+    res.json({
+        source: 'rule-engine',
+        version: '1.0',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Notifications endpoint
@@ -5873,29 +5809,14 @@ app.get('/api/profile-picture', async (req, res) => {
     }
 });
 
-// Simple AI test endpoint
-app.post('/api/ai-test', async (req, res) => {
-    try {
-        if (!genAI) {
-            return res.status(500).json({ error: 'AI service not initialized' });
-        }
-
-        const model = await getWorkingGeminiModel();
-        const result = await model.generateContent('Hello, respond with just "AI is working"');
-        const text = result.response.text();
-
-        res.json({ 
-            success: true, 
-            response: text,
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        console.error('AI test error:', error);
-        res.status(500).json({ 
-            error: 'AI test failed', 
-            details: error.message 
-        });
-    }
+// Legacy AI test endpoint — redirects to prescription engine status
+app.post('/api/ai-test', (req, res) => {
+    res.json({
+        success: true,
+        response: 'Rule-based prescription engine is active',
+        source: 'rule-engine',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Missing endpoints that frontend is calling
@@ -6090,176 +6011,207 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
     try {
         const { timeRange = 'month', selectedBarangay = 'all' } = req.body || {};
 
-        // Models
         const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
         const Center = mongoose.connection.model('Center', new mongoose.Schema({}, { strict: false }), 'centers');
 
-        // Fetch cases within time range
         const now = new Date();
         const timeRangeMap = { week: 7, month: 30, quarter: 90, year: 365 };
         const daysBack = timeRangeMap[timeRange] || 30;
-        const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
+        const windowStart = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
 
-        const rawCases = await BiteCase.find({ createdAt: { $gte: startDate } }).lean();
+        const rawCases = await BiteCase.find({}).lean();
 
-        // Fetch valid centers and normalize names for filtering
-        let validCentersSet = null;
+        let activeCenterLabels = [];
+        const knownBarangayTokens = new Set();
         try {
             const centers = await Center.find({ isArchived: { $ne: true } }, { centerName: 1, name: 1 }).lean();
-            const norm = (v) => String(v || '')
-                .toLowerCase()
-                .replace(/\s*health\s*center$/i, '')
-                .replace(/\s*center$/i, '')
-                .replace(/-/g, ' ')
-                .trim();
-            validCentersSet = new Set((centers || []).map(c => norm(c.centerName || c.name)).filter(Boolean));
+            activeCenterLabels = (centers || [])
+                .map(c => extractBarangayFromCenterRecord(c) || c.centerName || c.name)
+                .map(v => String(v || '').trim())
+                .filter(Boolean);
+            (centers || []).forEach(c => {
+                [c.centerName, c.name, extractBarangayFromCenterRecord(c)].forEach(v => {
+                    const token = normCenterLabel(v);
+                    if (token) knownBarangayTokens.add(token);
+                });
+            });
         } catch (_) {}
 
-        // Helpers to normalize case data similar to frontend logic
-        const inferBarangayFromText = (text) => {
+        const inferBarangayFromText = (text, extraTokens = []) => {
             if (!text) return null;
             const hay = String(text).toLowerCase();
-            const barangays = [
-                'addition hills', 'balong-bato', 'batis', 'corazon de jesus', 'ermitaño',
-                'greenhills', 'isabelita', 'kabayanan', 'little baguio', 'maytunas', 'onse',
-                'pasadena', 'pedro cruz', 'progreso', 'rivera', 'salapan', 'san perfecto',
-                'santa lucia', 'tibagan', 'west crame'
+            const tokens = [
+                ...activeCenterLabels,
+                ...Array.from(knownBarangayTokens),
+                ...extraTokens
             ];
-            const match = barangays.find(b => hay.includes(b));
-            // Capitalize each word to match display
-            return match ? match.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
-        };
-
-        const coerceDate = (v) => {
-            if (!v) return null;
-            if (typeof v === 'string') return new Date(v);
-            if (typeof v === 'number') return new Date(v);
-            if (v?.$date?.$numberLong) return new Date(Number(v.$date.$numberLong));
-            if (v?.$date) return new Date(v.$date);
-            return new Date(v);
-        };
-        const mapSeverity = (c) => {
-            const exposureCategory = (c.exposureCategory || '').toString().toUpperCase();
-            const exposureType = (c.exposureType || '').toString();
-            if (exposureCategory === 'III' || exposureType === '3') return 'high';
-            if (exposureCategory === 'II' || exposureType === '2') return 'medium';
-            return 'low';
+            const match = tokens.find(b => hay.includes(String(b).toLowerCase()));
+            return match || null;
         };
 
         const normalized = (rawCases || []).map(c => {
-            const incidentDate = coerceDate(c.incidentDate || c.exposureDate || c.dateRegistered || c.createdAt || c.updatedAt);
-            const severity = c.severity || mapSeverity(c);
+            const incidentDate = coerceCaseDate(c);
+            const exposureMeta = getCaseExposureMeta(c);
+            const severity = c.severity || exposureMeta.severity;
             const center = c.center || c.centerName || c.healthCenter || c.facility || c.treatmentCenter || null;
             const barangayDirect = c.barangay || c.addressBarangay || c.patientBarangay || c.locationBarangay || c.barangayName || null;
             const addressBlob = c.address || c.patientAddress || c.location || c.addressString || c.fullAddress || '';
-            const barangay = barangayDirect || inferBarangayFromText(addressBlob);
-            const centerNorm = String(center || '')
-                .toLowerCase()
-                .replace(/\s*health\s*center$/i, '')
-                .replace(/\s*center$/i, '')
-                .replace(/-/g, ' ')
-                .trim();
-            return { incidentDate, severity, center, centerNorm, barangay };
+            const barangay = barangayDirect || inferBarangayFromText(addressBlob, activeCenterLabels);
+            return {
+                ...c,
+                incidentDate,
+                severity,
+                center,
+                barangay,
+                exposureCategory: exposureMeta.exposureCategory,
+                exposureType: exposureMeta.exposureType
+            };
         }).filter(c => !!c.incidentDate && !!c.barangay);
 
-        const filteredByCenter = validCentersSet
-            ? normalized.filter(c => validCentersSet.has(c.centerNorm) || validCentersSet.has(String(c.barangay || '').toLowerCase()))
-            : normalized;
+        const timeFilteredCases = normalized.filter(c => new Date(c.incidentDate) >= windowStart);
 
-        // Filter by selected barangay
-        const finalCases = selectedBarangay === 'all' ? filteredByCenter : filteredByCenter.filter(c => c.barangay === selectedBarangay);
+        const finalCases = selectedBarangay === 'all'
+            ? timeFilteredCases
+            : timeFilteredCases.filter(c => normCenterLabel(c.barangay) === normCenterLabel(selectedBarangay));
 
-        // Calculate risk scores (mirrors frontend logic)
         const barangayData = {};
+        activeCenterLabels.forEach(label => {
+            barangayData[label] = emptyBarangayRisk();
+        });
+
         finalCases.forEach(case_ => {
             const barangay = case_.barangay;
             if (!barangayData[barangay]) {
-                barangayData[barangay] = {
-                    totalCases: 0,
-                    severeCases: 0,
-                    moderateCases: 0,
-                    mildCases: 0,
-                    recentCases: 0,
-                    riskScore: 0,
-                    priority: 'low',
-                    factors: [],
-                    centerCounts: {},
-                    topCenter: null
-                };
+                barangayData[barangay] = emptyBarangayRisk();
             }
             barangayData[barangay].totalCases++;
             if (case_.severity === 'high') barangayData[barangay].severeCases++;
             else if (case_.severity === 'medium') barangayData[barangay].moderateCases++;
             else barangayData[barangay].mildCases++;
+
+            if (case_.exposureCategory === 'III' || case_.exposureType === '3') {
+                barangayData[barangay].category3Cases++;
+            } else if (case_.exposureCategory === 'II' || case_.exposureType === '2') {
+                barangayData[barangay].category2Cases++;
+            } else if (case_.exposureCategory === 'I' || case_.exposureType === '1') {
+                barangayData[barangay].category1Cases++;
+            }
+
             const caseDate = new Date(case_.incidentDate);
             const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
             if (caseDate > weekAgo) barangayData[barangay].recentCases++;
+
             const centerName = case_.center || case_.healthCenter || case_.centerName || case_.facility || null;
             if (centerName) {
-                if (!barangayData[barangay].centerCounts[centerName]) barangayData[barangay].centerCounts[centerName] = 0;
+                if (!barangayData[barangay].centerCounts[centerName]) {
+                    barangayData[barangay].centerCounts[centerName] = 0;
+                }
                 barangayData[barangay].centerCounts[centerName]++;
             }
         });
+
         Object.keys(barangayData).forEach(barangay => {
             const data = barangayData[barangay];
             const factors = [];
-            let riskScore = 0;
             const centers = Object.entries(data.centerCounts);
             if (centers.length > 0) {
-                centers.sort((a,b) => b[1] - a[1]);
+                centers.sort((a, b) => b[1] - a[1]);
                 data.topCenter = centers[0][0];
             }
-            
-            // Initialize WHO category counts
-            data.category1Cases = data.category1Cases || 0;
-            data.category2Cases = data.category2Cases || 0;
-            data.category3Cases = data.category3Cases || 0;
-            // WHO-based risk scoring with exposure category weighting
-            if (data.totalCases >= 15) { factors.push('Very high case count (>=15)'); riskScore += 45; }
-            else if (data.totalCases >= 7) { factors.push('Elevated case count (>=7)'); riskScore += 30; }
-            else if (data.totalCases > 0) { factors.push('Cases present'); riskScore += 15; }
-            
-            // WHO Category III exposures (highest risk) - require immediate PEP
-            if (data.category3Cases > 0) { 
-                factors.push(`Category III exposures present (${data.category3Cases}) - immediate PEP required`); 
-                riskScore += 40; 
+
+            // 1) Determine severity tier from case count (DOH tiers)
+            //    Low: 0-5, Medium: 6-15, High: 16+
+            let severity;
+            if (data.totalCases >= 16) {
+                severity = 'high';
+                factors.push('Very high case count (>=16)');
+            } else if (data.totalCases >= 6) {
+                severity = 'medium';
+                factors.push('Elevated case count (6-15)');
+            } else if (data.totalCases > 0) {
+                severity = 'low';
+                factors.push('Cases present');
+            } else {
+                severity = 'low';
             }
-            
-            // WHO Category II exposures (moderate risk) - require vaccination
-            if (data.category2Cases > 0) { 
-                factors.push(`Category II exposures present (${data.category2Cases}) - vaccination required`); 
-                riskScore += 25; 
+
+            // 2) Compute a factor sub-score (0 to 1) to place within the tier range
+            let factorScore = 0;
+            const maxFactorScore = 11; // sum of all possible factor points below
+
+            // Category III exposures (max 3 pts)
+            if (data.category3Cases >= 3) {
+                factors.push(`Category III exposures present (${data.category3Cases}) - immediate PEP required`);
+                factorScore += 3;
+            } else if (data.category3Cases > 0) {
+                factors.push(`Category III exposures present (${data.category3Cases}) - immediate PEP required`);
+                factorScore += 2;
             }
-            
-            if (data.recentCases >= 5) { factors.push('Recent spike in cases'); riskScore += 35; }
-            else if (data.recentCases >= 2) { factors.push('Multiple recent cases'); riskScore += 20; }
-            if (data.severeCases > 0) { factors.push('Severe cases present'); riskScore += 25; }
-            else if (data.moderateCases >= 3) { factors.push('Several moderate cases'); riskScore += 15; }
+
+            // Category II exposures (max 2 pts)
+            if (data.category2Cases >= 3) {
+                factors.push(`Category II exposures present (${data.category2Cases}) - vaccination required`);
+                factorScore += 2;
+            } else if (data.category2Cases > 0) {
+                factors.push(`Category II exposures present (${data.category2Cases}) - vaccination required`);
+                factorScore += 1;
+            }
+
+            // Recent cases (max 3 pts)
+            if (data.recentCases >= 5) {
+                factors.push('Recent spike in cases');
+                factorScore += 3;
+            } else if (data.recentCases >= 2) {
+                factors.push('Multiple recent cases');
+                factorScore += 2;
+            } else if (data.recentCases > 0) {
+                factorScore += 1;
+            }
+
+            // Severe cases (max 2 pts)
+            if (data.severeCases > 0) {
+                factors.push('Severe cases present');
+                factorScore += 2;
+            } else if (data.moderateCases >= 3) {
+                factors.push('Several moderate cases');
+                factorScore += 1;
+            }
+
+            // High population density (max 1 pt)
             const highDensityBarangays = ['Greenhills', 'Addition Hills', 'Kabayanan', 'Corazon de Jesus'];
-            if (highDensityBarangays.includes(barangay)) { factors.push('High population density'); riskScore += 20; }
-            data.riskScore = Math.min(100, riskScore);
+            if (highDensityBarangays.includes(barangay)) {
+                factors.push('High population density');
+                factorScore += 1;
+            }
+
+            // 3) Map sub-score into the severity tier's score range
+            //    Low: 1–33, Medium: 34–66, High: 67–100
+            const normalized = maxFactorScore > 0 ? factorScore / maxFactorScore : 0;
+            let rangeMin, rangeMax;
+            if (severity === 'high') { rangeMin = 67; rangeMax = 100; }
+            else if (severity === 'medium') { rangeMin = 34; rangeMax = 66; }
+            else { rangeMin = 1; rangeMax = 33; }
+
+            data.riskScore = data.totalCases === 0 ? 0 : Math.max(rangeMin, Math.round(rangeMin + normalized * (rangeMax - rangeMin)));
             data.factors = factors;
-            if (data.riskScore >= 70) data.priority = 'high';
-            else if (data.riskScore >= 40) data.priority = 'medium';
-            else data.priority = 'low';
+            data.priority = severity;
         });
 
-        // Generate interventions using existing AI endpoint logic (reuse route internals)
-        // We'll call the same generation flow locally to avoid HTTP overhead
         let interventions = [];
+
         try {
-            // Reuse analyzeCasePatterns from this file for AI context
             const caseAnalysis = analyzeCasePatterns(finalCases.map(c => ({
                 barangay: c.barangay,
-                age: 0,
+                age: c.age || 0,
                 createdAt: c.incidentDate,
                 incidentDate: c.incidentDate,
-                severity: c.severity
+                severity: c.severity,
+                exposureCategory: c.exposureCategory,
+                category: c.exposureCategory
             })), selectedBarangay);
 
-            // Prepare barangay summaries for AI prompt - only include barangays with cases
-            let barangaySummaries = Object.entries(barangayData)
-                .filter(([_, d]) => (d.totalCases || 0) > 0) // Only show barangays with cases
+            const barangaySummaries = Object.entries(barangayData)
+                .filter(([barangay]) => selectedBarangay === 'all' || normCenterLabel(barangay) === normCenterLabel(selectedBarangay))
                 .map(([barangay, d]) => ({
                     barangay,
                     totalCases: d.totalCases || 0,
@@ -6269,89 +6221,49 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                     priority: d.priority || 'low',
                     factors: d.factors || [],
                     topCenter: d.topCenter || null,
+                    category3Cases: d.category3Cases || 0,
+                    category2Cases: d.category2Cases || 0,
+                    category1Cases: d.category1Cases || 0,
                     ageDistribution: caseAnalysis[barangay]?.ageDistribution || {},
                     timePatterns: caseAnalysis[barangay]?.timePatterns || {},
                     severityBreakdown: caseAnalysis[barangay]?.severityBreakdown || {},
                     trendAnalysis: caseAnalysis[barangay]?.trendAnalysis || {}
                 }));
 
-            // Filter to valid centers if available
-            if (validCentersSet && validCentersSet.size > 0) {
-                const norm = (v) => String(v || '')
-                    .toLowerCase()
-                    .replace(/\s*health\s*center$/i, '')
-                    .replace(/\s*center$/i, '')
-                    .replace(/-/g, ' ')
-                    .trim();
-                barangaySummaries = barangaySummaries.filter(b => validCentersSet.has(norm(b.topCenter)) || validCentersSet.has(norm(b.barangay)));
-            }
-
-            // Initialize Gemini on-demand if needed (reuse global genAI)
-            if (!genAI) {
-                try {
-                    let apiKey = (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLEAI_API_KEY || '').replace(/^['\"]|['\"]$/g, '').trim();
-                    if (apiKey) {
-                        const { GoogleGenerativeAI } = require('@google/generative-ai');
-                        genAI = new GoogleGenerativeAI(apiKey);
-                    }
-                } catch (_) {}
-            }
-
-            if (!genAI) {
-                // Heuristic fallback
-                interventions = barangaySummaries
-                    .map(s => ({
-                        barangay: s.barangay,
-                        riskScore: Number(s.riskScore) || 0,
-                        priority: s.priority || 'low',
-                        reasoning: (s.factors || []).join('; ') || 'Automated heuristic based on recent and severe cases.',
-                        intervention: s.priority === 'high'
-                            ? 'Deploy mobile vaccination team; intensify risk communication; ensure ERIG availability; coordinate with top center.'
-                            : s.priority === 'medium'
-                                ? 'Conduct barangay info drive; schedule additional vaccination day; monitor stocks.'
-                                : 'Maintain routine surveillance and education; ensure baseline vaccine availability.',
-                        ageGroupFocus: Object.entries(s.ageDistribution || {}).sort((a,b)=>b[1]-a[1])[0]?.[0] || '',
-                        timePattern: (s.timePatterns && Object.keys(s.timePatterns.weekly || {}).sort((a,b)=> (s.timePatterns.weekly[b]||0)-(s.timePatterns.weekly[a]||0))[0]) || '',
-                        resourceNeeds: s.priority === 'high' ? 'Additional vaccines, ERIG, 2 nurses, 1 physician' : s.priority === 'medium' ? 'Vaccines, 1 nurse' : 'Routine supplies',
-                        coordinationRequired: s.topCenter ? `Coordinate with ${s.topCenter}` : 'Coordinate with nearest health center',
-                        totalCases: s.totalCases || 0,
-                        recentCases: s.recentCases || 0,
-                        severeCases: s.severeCases || 0
-                    }))
-                    .sort((a, b) => b.riskScore - a.riskScore);
-            } else {
-                const model = await getWorkingGeminiModel();
-                const recentWindowDays = ({ week:7, month:30, quarter:90, year:365 }[timeRange] || 30);
-                const systemInstruction = 'You are a senior public health physician creating prescriptive, context-aware action plans for animal bite prevention and post‑exposure management in San Juan City. Your output must be specific per barangay/center and grounded ONLY on the supplied data.';
-                const userInstruction = `Time Range: ${timeRange} (≈${recentWindowDays} days)\nSelected Barangay Filter: ${selectedBarangay}\nBarangay Summaries (counts, recent, severe, priority, topCenter):\n${JSON.stringify(barangaySummaries, null, 2)}\n\nCase Pattern Analysis (ageDistribution, timePatterns, severityBreakdown, trendAnalysis):\n${JSON.stringify(caseAnalysis, null, 2)}`;
-                let result = await model.generateContent({
-                    contents: [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'user', parts: [{ text: userInstruction }] } ],
-                    generationConfig: { temperature: 0.9, topP: 0.9, topK: 40, maxOutputTokens: 2048 }
-                });
-                let text = result.response.text();
-                const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-                if (jsonMatch) text = jsonMatch[1];
-                let json;
-                try { json = JSON.parse(text); } catch (e) { const am = text.match(/\[\s*{[\s\S]*}\s*\]/); json = am ? JSON.parse(am[0]) : []; }
-                const ensureLength = (s) => { if (!s) return s; const count = (s.match(/[.!?]/g) || []).length; return count < 4 ? s + ' Provide targeted risk communication, coordinate with the top center, and ensure sufficient vaccine and ERIG stocks while monitoring age‑specific attendance over the next two weeks.' : s; };
-                interventions = (Array.isArray(json) ? json : []).map(it => ({
-                    barangay: it.barangay,
-                    riskScore: Number(it.riskScore) || 0,
-                    priority: it.priority || 'low',
-                    reasoning: ensureLength(it.analysis || it.reasoning || ''),
-                    intervention: ensureLength(it.recommendation || it.recommendations || ''),
-                    prediction: it.prediction || '',
-                    ageGroupFocus: it.ageGroupFocus || '',
-                    timePattern: it.timePattern || '',
-                    resourceNeeds: it.resourceNeeds || '',
-                    coordinationRequired: it.coordinationRequired || '',
-                    totalCases: barangaySummaries.find(b => b.barangay === it.barangay)?.totalCases || 0,
-                    recentCases: barangaySummaries.find(b => b.barangay === it.barangay)?.recentCases || 0,
-                    severeCases: barangaySummaries.find(b => b.barangay === it.barangay)?.severeCases || 0
-                })).sort((a, b) => b.riskScore - a.riskScore);
-            }
+            interventions = generatePrescriptions(barangaySummaries);
         } catch (genErr) {
-            console.warn('Prescriptive analytics generation failed, using heuristic fallback:', genErr.message);
+            console.warn('Prescriptive analytics generation failed:', genErr.message);
+            const fallbackSummaries = Object.entries(barangayData).map(([barangay, d]) => ({
+                barangay,
+                totalCases: d.totalCases || 0,
+                recentCases: d.recentCases || 0,
+                severeCases: d.severeCases || 0,
+                riskScore: d.riskScore || 0,
+                priority: d.priority || 'low',
+                factors: d.factors || [],
+                topCenter: d.topCenter || null,
+                category3Cases: d.category3Cases || 0,
+                category2Cases: d.category2Cases || 0,
+                category1Cases: d.category1Cases || 0
+            }));
+            interventions = generatePrescriptions(fallbackSummaries);
+        }
+
+        if (interventions.length === 0) {
+            const fallbackSummaries = Object.entries(barangayData).map(([barangay, d]) => ({
+                barangay,
+                totalCases: d.totalCases || 0,
+                recentCases: d.recentCases || 0,
+                severeCases: d.severeCases || 0,
+                riskScore: d.riskScore || 0,
+                priority: d.priority || 'low',
+                factors: d.factors || [],
+                topCenter: d.topCenter || null,
+                category3Cases: d.category3Cases || 0,
+                category2Cases: d.category2Cases || 0,
+                category1Cases: d.category1Cases || 0
+            }));
+            interventions = generatePrescriptions(fallbackSummaries);
         }
 
         return res.json({
@@ -6360,6 +6272,10 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                 cases: finalCases.map(({ centerNorm, ...rest }) => rest),
                 riskAnalysis: barangayData,
                 interventionRecommendations: interventions
+            },
+            meta: {
+                source: 'rule-engine',
+                caseCount: finalCases.length
             }
         });
     } catch (error) {

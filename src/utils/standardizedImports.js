@@ -1,6 +1,8 @@
 // Standardized CSS Import Utility
 // This ensures all components load CSS in the correct order
 
+import { useCallback } from 'react';
+
 // Standard CSS import order for all SuperAdmin components
 // In production, dynamic CSS imports can break due to bundler pathing.
 // We now rely on static imports from App.js, so keep this list empty.
@@ -72,11 +74,11 @@ export const layoutUtils = {
 
 // Hook for components to use standardized CSS loading
 export const useStandardizedCSS = () => {
-  const initializeCSS = async () => {
+  const initializeCSS = useCallback(async () => {
     await loadStandardCSS();
     layoutUtils.ensureLayoutClasses();
     layoutUtils.forceLayoutRecalculation();
-  };
+  }, []);
 
   return { initializeCSS };
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
-import { apiFetch } from '../../config/api';
+import { apiFetch, apiConfig } from '../../config/api';
 import './SuperAdminProfile.css';
 import { fullLogout } from '../../utils/auth';
 
@@ -121,7 +121,7 @@ const SuperAdminProfile = () => {
       }
 
       console.log('Fetching profile for user ID:', id);
-      console.log('API base URL from config:', process.env.REACT_APP_API_URL || 'https://bitealert-backend.onrender.com');
+      console.log('API base URL from config:', apiConfig.baseURL);
       
       // Use user data from localStorage for faster loading
       console.log('Using cached user data for profile');

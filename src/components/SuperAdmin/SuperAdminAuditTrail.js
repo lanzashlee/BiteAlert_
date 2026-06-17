@@ -23,7 +23,7 @@ function formatDateTime(value) {
 
 const SuperAdminAuditTrail = () => {
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -35,8 +35,6 @@ const SuperAdminAuditTrail = () => {
   
   // Pagination states
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
   const PAGE_SIZE = 50;
   
   const [showSignoutModal, setShowSignoutModal] = useState(false);
@@ -324,17 +322,16 @@ const SuperAdminAuditTrail = () => {
         );
       });
     }
-    // Calculate pagination
     const total = arr.length;
-    const totalPagesCount = Math.ceil(total / PAGE_SIZE);
-    setTotalItems(total);
-    setTotalPages(totalPagesCount);
-    
-    // Apply pagination
+    const totalPagesCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
     const startIndex = (page - 1) * PAGE_SIZE;
     const endIndex = startIndex + PAGE_SIZE;
-    
-    return arr.slice(startIndex, endIndex);
+
+    return {
+      items: arr.slice(startIndex, endIndex),
+      totalItems: total,
+      totalPages: totalPagesCount
+    };
   }, [data, from, to, role, center, search, page]);
 
   return (
@@ -348,6 +345,12 @@ const SuperAdminAuditTrail = () => {
         </div>
 
         <div className="content-body">
+          {loading ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+              <div>Loading audit trail...</div>
+            </div>
+          ) : (
+          <>
           {/* Search and Filters */}
           <div className="filters-container">
             <div className="search-box">
@@ -405,7 +408,7 @@ const SuperAdminAuditTrail = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {filtered.items.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="empty-cell">
                       <div className="empty-state">
@@ -415,7 +418,7 @@ const SuperAdminAuditTrail = () => {
                       </div>
                     </td>
                   </tr>
-                ) : filtered.map((entry, idx) => {
+                ) : filtered.items.map((entry, idx) => {
                   let displayId = '';
                   // Prefer explicit IDs
                   if (entry.role === 'admin' && entry.adminID) displayId = entry.adminID;
@@ -457,7 +460,7 @@ const SuperAdminAuditTrail = () => {
           </div>
 
           {/* Pagination */}
-          {filtered.length > 0 && (
+          {filtered.items.length > 0 && (
             <div className="pagination-container">
               <button 
                 disabled={page <= 1} 
@@ -465,14 +468,16 @@ const SuperAdminAuditTrail = () => {
               >
                 <i className="fa fa-chevron-left"></i> Prev
               </button>
-              <span>Page {page} of {totalPages} ({totalItems} total)</span>
+              <span>Page {page} of {filtered.totalPages} ({filtered.totalItems} total)</span>
               <button 
-                disabled={page >= totalPages} 
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= filtered.totalPages} 
+                onClick={() => setPage((p) => Math.min(filtered.totalPages, p + 1))}
               >
                 Next <i className="fa fa-chevron-right"></i>
               </button>
             </div>
+          )}
+          </>
           )}
         </div>
       </main>

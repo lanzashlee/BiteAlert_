@@ -4,6 +4,7 @@ import UnifiedSpinner from '../Common/UnifiedSpinner';
 import UnifiedModal from '../UnifiedModal';
 import './SuperAdminCenter.css';
 import { apiFetch } from '../../config/api';
+import formatAddress from '../../utils/formatAddress';
 import { fullLogout } from '../../utils/auth';
 
 const SuperAdminCenter = () => {
@@ -72,7 +73,7 @@ const SuperAdminCenter = () => {
   const openEdit = (c) => {
     setForm({
       centerName: c.centerName || '',
-      address: c.address || '',
+      address: formatAddress(c.address) || '',
       contactPerson: c.contactPerson || '',
       contactNumber: c.contactNumber || ''
     });
@@ -85,18 +86,24 @@ const SuperAdminCenter = () => {
   const submitForm = async (e) => {
     e.preventDefault();
     const { centerName, address, contactPerson, contactNumber } = form;
+    console.log('[AddCenter] Form data:', { centerName, address, contactPerson, contactNumber });
+    console.log('[AddCenter] editId:', editId);
     if (!centerName || !address || !contactPerson || !contactNumber) {
+      console.log('[AddCenter] BLOCKED: Missing fields');
       setFormError('All fields are required.');
       return;
     }
     // Validate contact number format
     if (contactNumber.length !== 11 || !/^\d{11}$/.test(contactNumber)) {
+      console.log('[AddCenter] BLOCKED: Invalid contact number');
       setFormError('Contact number must be exactly 11 digits.');
       return;
     }
     // Check duplicate by name (case-insensitive) except self when editing
     const duplicate = centers.some((c) => (c.centerName || '').toLowerCase() === centerName.toLowerCase() && (!editId || c._id !== editId));
-    if (duplicate && !editId) {
+    console.log('[AddCenter] Duplicate check:', duplicate, 'Centers count:', centers.length);
+    if (duplicate) {
+      console.log('[AddCenter] BLOCKED: Duplicate name found');
       setFormError('A center with this name already exists.');
       return;
     }
@@ -107,16 +114,22 @@ const SuperAdminCenter = () => {
         body: JSON.stringify({ centerName, address, contactPerson, contactNumber })
       };
       const url = editId ? `/api/centers/${editId}` : '/api/centers';
+      console.log('[AddCenter] Sending request:', opts.method, url, opts.body);
       const res = await apiFetch(url, opts);
+      console.log('[AddCenter] Response status:', res.status, 'ok:', res.ok);
       const json = await res.json();
+      console.log('[AddCenter] Response body:', json);
       if (!res.ok || json.success === false) throw new Error(json.message || 'Save failed');
+      console.log('[AddCenter] SUCCESS - closing modal');
       setShowModal(false);
-      // refresh
+      // refresh — filter out archived centers to keep the list consistent
       const r = await apiFetch('/api/centers');
       const d = await r.json();
       const list = Array.isArray(d) ? d : (d.data || d.centers || []);
-      setCenters(list);
+      const activeOnly = (list || []).filter((c) => !c.isArchived);
+      setCenters(activeOnly);
     } catch (err) {
+      console.error('[AddCenter] ERROR:', err);
       setFormError(err.message || 'Error saving center');
     }
   };
@@ -247,7 +260,7 @@ const SuperAdminCenter = () => {
                        <td>
                          <strong style={{ color: '#1e293b', fontSize: '1.1rem' }}>{c.centerName || '—'}</strong>
                        </td>
-                       <td style={{ fontSize: '1rem' }}>{c.address || '—'}</td>
+                       <td style={{ fontSize: '1rem' }}>{formatAddress(c.address) || '—'}</td>
                        <td style={{ fontSize: '1rem' }}>{c.contactPerson || '—'}</td>
                        <td style={{ fontSize: '1rem' }}>{c.contactNumber || '—'}</td>
                                              <td className="table-actions">
@@ -351,7 +364,7 @@ const SuperAdminCenter = () => {
             <div className="react-modal-body">
               <p>Are you sure you want to archive the following center?</p>
               <p><strong>Center Name:</strong> {archiveTarget.centerName}</p>
-              <p><strong>Address:</strong> {archiveTarget.address}</p>
+              <p><strong>Address:</strong> {formatAddress(archiveTarget.address)}</p>
               <p><strong>Contact Person:</strong> {archiveTarget.contactPerson}</p>
               <p><strong>Contact Number:</strong> {archiveTarget.contactNumber}</p>
             </div>

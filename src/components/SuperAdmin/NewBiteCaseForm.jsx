@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useContext } from 'react';
 import './NewBiteCaseForm.css';
 import { apiFetch } from '../../config/api';
 // notifications removed per request
 
 
 // Reusable input component (defined outside to avoid re-creation and focus loss)
-function FormInput({ name, label, type = 'text', placeholder = '', value = '', error, onChange, disabled = false }) {
+function FormInput({ name, label, type = 'text', placeholder = '', value = '', error, onChange, disabled = false, onFieldActivity }) {
   return (
     <div className="w-full">
       <label className="form-label">{label}</label>
@@ -18,11 +18,74 @@ function FormInput({ name, label, type = 'text', placeholder = '', value = '', e
         className="form-input"
         aria-invalid={!!error}
         disabled={disabled}
+        onFocus={() => onFieldActivity?.(name)}
+        onSelect={() => onFieldActivity?.(name)}
+        onClick={() => onFieldActivity?.(name)}
       />
       {error && (
         <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{error}</div>
       )}
     </div>
+  );
+}
+
+const BiteCaseFormContext = React.createContext(null);
+
+function Input(props) {
+  const { form, errors, handleChange, rememberFieldActivity } = useContext(BiteCaseFormContext);
+  return (
+    <FormInput
+      {...props}
+      value={form[props.name] ?? ''}
+      error={errors[props.name]}
+      disabled={props.disabled}
+      onFieldActivity={rememberFieldActivity}
+      onChange={(e) => {
+        const next = e.target.value;
+        rememberFieldActivity(props.name);
+        if (typeof props.onChange === 'function') props.onChange(e);
+        handleChange(props.name, next);
+      }}
+    />
+  );
+}
+
+function TextArea({ name, label, rows = 3, disabled = false }) {
+  const { form, errors, handleChange, rememberFieldActivity } = useContext(BiteCaseFormContext);
+  return (
+    <div className="w-full">
+      <label className="form-label">{label}</label>
+      <textarea
+        id={name}
+        rows={rows}
+        value={form[name] ?? ''}
+        disabled={disabled}
+        onFocus={() => rememberFieldActivity(name)}
+        onSelect={() => rememberFieldActivity(name)}
+        onClick={() => rememberFieldActivity(name)}
+        onChange={(e) => {
+          rememberFieldActivity(name);
+          handleChange(name, e.target.value);
+        }}
+        className="form-textarea"
+        aria-invalid={!!errors[name]}
+      />
+      {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
+    </div>
+  );
+}
+
+function Check({ name, label, onChange }) {
+  const { form, handleChange } = useContext(BiteCaseFormContext);
+  return (
+    <label className="checkbox-item">
+      <input
+        type="checkbox"
+        checked={!!form[name]}
+        onChange={onChange ? onChange : ((e) => handleChange(name, e.target.checked))}
+      />
+      {label}
+    </label>
   );
 }
 
@@ -50,6 +113,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     street: '',
     barangay: '',
     municipality: '',
+    city: '',
     province: '',
     zipCode: '',
     // Initialize all other fields with empty strings
@@ -57,13 +121,15 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     timeOfInjury: '',
     placeOfOccurrence: '',
     placeOthers: '',
+    externalCauseBiteSting: false,
+    externalCauseChemical: false,
     treatedHome: false,
     transferred: false,
     transferredTo: '',
     provoked: false,
     unprovoked: false,
     species: '',
-    spOthers: false,
+    spOthers: '',
     spOthersSpecify: '',
     healthy: false,
     sick: false,
@@ -89,8 +155,51 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0);
   const [centers, setCenters] = useState([]);
   const [toast, setToast] = useState(null);
+  const [prefillDone, setPrefillDone] = useState(false);
+  const activeFieldRef = useRef(null);
+  const totalSteps = 5; // 0..4
+  const isLastStep = () => step === totalSteps - 1;
+  const nextStep = () => setStep(s => Math.min(totalSteps - 1, s + 1));
+  const prevStep = () => setStep(s => Math.max(0, s - 1));
+  const stepLabels = ['Registration','Personal','Address','History','Review'];
+  const stepDescriptions = [
+    'Case identifiers and center details',
+    'Patient identity and demographics',
+    'Address and contact details',
+    'Exposure, injury, and disposition',
+    'Animal profile, immunization, and management'
+  ];
+  const progressPercent = ((step + 1) / totalSteps) * 100;
+  const rememberFieldActivity = (name) => {
+    activeFieldRef.current = name;
+  };
+
+  // Load draft from localStorage if present
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('newBiteCaseDraft');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.form) setForm(prev => ({ ...prev, ...parsed.form }));
+          if (typeof parsed.step === 'number') setStep(parsed.step);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  // Persist draft on changes
+  useEffect(() => {
+    try {
+      const payload = { form, step, updatedAt: Date.now() };
+      localStorage.setItem('newBiteCaseDraft', JSON.stringify(payload));
+    } catch (e) {}
+  }, [form, step]);
 
   // Ensure form is properly initialized on mount
   useEffect(() => {
@@ -98,37 +207,58 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     setForm(prev => ({ ...prev }));
   }, []);
 
-  // Prefill from selected patient (only when patient identity changes)
-  const prefilledRef = useRef(false);
+  // Prefill from selected patient — runs every time the patient changes
   useEffect(() => {
-    if (!selectedPatient || prefilledRef.current) return;
-    prefilledRef.current = true;
+    if (!selectedPatient) return;
+
+    // Compute age accurately from birthdate
+    let computedAge = selectedPatient.age || '';
+    if (selectedPatient.birthdate) {
+      try {
+        const bd = new Date(selectedPatient.birthdate);
+        const today = new Date();
+        let a = today.getFullYear() - bd.getFullYear();
+        const m = today.getMonth() - bd.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) a--;
+        computedAge = String(Math.max(0, a));
+      } catch (_) {}
+    }
+
     setForm(prev => ({
       ...prev,
-      firstName: selectedPatient.firstName || '',
-      middleName: selectedPatient.middleName || '',
-      lastName: selectedPatient.lastName || '',
-      weight: selectedPatient.weight || '',
-      civilStatus: selectedPatient.civilStatus || '',
-      sex: selectedPatient.sex || '',
-      birthdate: selectedPatient.birthdate ? new Date(selectedPatient.birthdate).toISOString().slice(0,10) : '',
-      birthplace: selectedPatient.birthplace || '',
-      age: selectedPatient.birthdate ? String(new Date().getFullYear() - new Date(selectedPatient.birthdate).getFullYear()) : (selectedPatient.age || ''),
-      nationality: selectedPatient.nationality || '',
-      religion: selectedPatient.religion || '',
-      occupation: selectedPatient.occupation || '',
-      contactNo: selectedPatient.phone || selectedPatient.contactNo || '',
-      // Address
-      houseNo: selectedPatient.houseNo || '',
-      street: selectedPatient.street || '',
-      barangay: selectedPatient.barangay || selectedPatient.addressBarangay || '',
-      subdivision: selectedPatient.subdivision || '',
-      city: selectedPatient.city || '',
-      province: selectedPatient.province || '',
-      zipCode: selectedPatient.zipCode || '',
-      centerName: selectedPatient.barangay ? `${selectedPatient.barangay} Center` : (prev.centerName || ''),
+      // ── Personal ───────────────────────────────────────────
+      firstName:    selectedPatient.firstName    || '',
+      middleName:   selectedPatient.middleName   || '',
+      lastName:     selectedPatient.lastName     || '',
+      weight:       selectedPatient.weight       || '',
+      civilStatus:  selectedPatient.civilStatus  || '',
+      sex:          selectedPatient.sex          || '',
+      birthdate:    selectedPatient.birthdate
+                      ? new Date(selectedPatient.birthdate).toISOString().slice(0, 10)
+                      : '',
+      birthplace:   selectedPatient.birthplace   || '',
+      age:          computedAge,
+      nationality:  selectedPatient.nationality  || '',
+      religion:     selectedPatient.religion     || '',
+      occupation:   selectedPatient.occupation   || '',
+      contactNo:    selectedPatient.phone || selectedPatient.contactNo || selectedPatient.phoneNumber || '',
+      philhealthNo: selectedPatient.philhealthNo || selectedPatient.philHealthNo || '',
+      // ── Address ────────────────────────────────────────────
+      houseNo:      selectedPatient.houseNo      || '',
+      street:       selectedPatient.street       || '',
+      barangay:     selectedPatient.barangay     || selectedPatient.addressBarangay || '',
+      subdivision:  selectedPatient.subdivision  || '',
+      city:         selectedPatient.city         || selectedPatient.municipality || '',
+      municipality: selectedPatient.municipality || selectedPatient.city || '',
+      province:     selectedPatient.province     || '',
+      zipCode:      selectedPatient.zipCode      || '',
+      // ── Auto-set center from barangay if not already set ───
+      centerName:   prev.centerName
+                      || (selectedPatient.barangay ? `${selectedPatient.barangay} Center` : ''),
     }));
-  }, [selectedPatient?._id]);
+
+    setPrefillDone(true);
+  }, [selectedPatient]);
 
   // Initialize defaults once (registration number, dateRegistered, initial schedule)
   useEffect(() => {
@@ -201,24 +331,22 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     if (errors[name]) clearError(name);
   };
 
-  // Input component - regular function to prevent focus loss
-  const Input = (props) => (
-    <FormInput
-      {...props}
-      key={props.name} // Force re-render when form state changes
-      value={form[props.name] ?? ''}
-      error={errors[props.name]}
-      disabled={props.disabled}
-      onChange={(e) => {
-        const next = e.target.value;
-        if (typeof props.onChange === 'function') props.onChange(e);
-        handleChange(props.name, next);
-      }}
-    />
-  );
-
   const setError = (name, message) => setErrors(prev => ({ ...prev, [name]: message }));
   const clearError = (name) => setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
+
+  const focusField = (name) => {
+    if (!name || typeof document === 'undefined') return;
+    const field = document.getElementById(name);
+    if (!field) return;
+    try { field.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+    try { field.focus({ preventScroll: true }); } catch {}
+  };
+
+  const focusFirstError = (nextErrors, orderedKeys = []) => {
+    const firstKey = orderedKeys.find((key) => nextErrors[key]);
+    if (firstKey) requestAnimationFrame(() => focusField(firstKey));
+    return firstKey;
+  };
 
   // Toast notification helper
   const showToast = (message, type = 'success') => {
@@ -229,8 +357,14 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
   // Single-select for exposure: "bite" or "nonBite"
   const toggleExposure = (key) => {
     const next = key === 'bite' ? { bite: true, nonBite: false } : { bite: false, nonBite: true };
+    if (key === 'nonBite') {
+      siteKeys.forEach((_, i) => {
+        next[`site_${i}`] = false;
+      });
+    }
     setForm(prev => ({ ...prev, ...next }));
     clearError('exposure');
+    if (key === 'nonBite') clearError('site');
   };
 
   // Single-select radio button helpers
@@ -252,10 +386,15 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       updates.owner_1 = value === 'neighbor';
       updates.owner_2 = value === 'stray';
     } else if (group === 'clinicalStatus') {
-      ['cs_0', 'cs_1', 'cs_2', 'cs_3', 'cs_4', 'cs_5'].forEach(key => {
+      ['cs_0', 'cs_1', 'cs_2', 'cs_3'].forEach(key => {
         updates[key] = false;
       });
       updates[`cs_${value}`] = true;
+    } else if (group === 'brainExam') {
+      ['brain_0', 'brain_1', 'brain_2'].forEach(key => {
+        updates[key] = false;
+      });
+      updates[`brain_${value}`] = true;
     } else if (group === 'multipleInjuries') {
       updates.multiInjuriesYes = value === 'yes';
       updates.multiInjuriesNo = value === 'no';
@@ -290,12 +429,12 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
 
   // Handle external causes conditional logic
   const toggleExternalCause = (cause, checked) => {
-    const updates = { [cause]: checked };
-    // Clear detail fields when unchecked
-    if (!checked) {
-      if (cause === 'causeBiteSting') updates.causeBiteStingDetail = '';
-      if (cause === 'causeChemical') updates.causeChemicalDetail = '';
-    }
+    const updates = {
+      externalCauseBiteSting: cause === 'causeBiteSting' ? checked : false,
+      externalCauseChemical: cause === 'causeChemical' ? checked : false,
+    };
+    if (!checked || cause !== 'causeBiteSting') updates.causeBiteStingDetail = '';
+    if (!checked || cause !== 'causeChemical') updates.causeChemicalDetail = '';
     setForm(prev => ({ ...prev, ...updates }));
   };
 
@@ -308,17 +447,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       updates.animalImmunizedYear = '';
     } else if (type === 'animalImmunized' && !checked) {
       updates.animalImmunizedYear = '';
-    }
-    setForm(prev => ({ ...prev, ...updates }));
-  };
-
-  // Handle DPT immunization conditional logic
-  const toggleDPTImmunization = (type, checked) => {
-    const updates = { [type]: checked };
-    // Clear related fields when unchecked
-    if (!checked) {
-      if (type === 'dptComplete') updates.dptYear = '';
-      if (type === 'dptIncomplete') updates.dptDoses = '';
     }
     setForm(prev => ({ ...prev, ...updates }));
   };
@@ -448,9 +576,9 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
     if (exposureCount !== 1) nextErrors.exposure = 'Please select type of exposure';
 
-    // Site of bite: at least one
+    // Site of bite: required only when BITE is selected
     const hasSite = siteKeys.some((_, i) => !!form[`site_${i}`]);
-    if (!hasSite) nextErrors.site = 'Please select at least one site of bite';
+    if (form.bite && !hasSite) nextErrors.site = 'Please select at least one site of bite';
 
     // Simple radio button validations
     const oneTrue = (keys) => keys.some(k => !!form[k]);
@@ -458,10 +586,73 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     if (!oneTrue(['cat1','cat2','cat3'])) nextErrors.category = 'Please select a category';
     if (!oneTrue(['spDog','spCat']) && !String(form.spOthers || '').trim()) nextErrors.species = 'Please select species or specify others';
     if (!oneTrue(['owner_0','owner_1','owner_2'])) nextErrors.ownership = 'Please select ownership';
-    if (!oneTrue(['cs_0','cs_1','cs_2','cs_3','cs_4','cs_5'])) nextErrors.clinicalStatus = 'Please select clinical status';
+    if (!oneTrue(['cs_0','cs_1','cs_2','cs_3'])) nextErrors.clinicalStatus = 'Please select clinical status';
 
     setErrors(nextErrors);
+    focusFirstError(nextErrors, ['registrationNumber', 'firstName', 'lastName', 'barangay', 'exposure', 'site', 'washingWound', 'category', 'species', 'ownership', 'clinicalStatus']);
     return Object.keys(nextErrors).length === 0;
+  };
+
+  // Validate only fields relevant to the current step (partial validation)
+  const validateStep = (s) => {
+    const nextErrors = {};
+    const req = (key, label) => { if (!String(form[key] || '').trim()) nextErrors[key] = `${label} is required.`; };
+    if (s === 0) {
+      [['registrationNumber','Registration Number'], ['dateRegistered','Date Registered'], ['centerName','Center Name']].forEach(([k,l])=>req(k,l));
+    } else if (s === 1) {
+      [['firstName','First Name'], ['lastName','Last Name'], ['birthdate','Birthdate'], ['age','Age']].forEach(([k,l])=>req(k,l));
+    } else if (s === 2) {
+      [['barangay','Barangay']].forEach(([k,l])=>req(k,l));
+    } else if (s === 3) {
+      // History of bite: exposure, site, date/time
+      const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
+      if (exposureCount !== 1) nextErrors.exposure = 'Please select type of exposure';
+      const hasSite = siteKeys.some((_, i) => !!form[`site_${i}`]);
+      if (form.bite && !hasSite) nextErrors.site = 'Please select at least one site of bite';
+      [['dateOfInquiry','Date of Injury'], ['timeOfInjury','Time of Injury']].forEach(([k,l])=> { if (!String(form[k] || '').trim()) nextErrors[k] = `${l} is required.`; });
+    }
+    setErrors(nextErrors);
+    focusFirstError(
+      nextErrors,
+      s === 0
+        ? ['registrationNumber', 'dateRegistered', 'centerName']
+        : s === 1
+          ? ['firstName', 'middleName', 'lastName', 'weight', 'birthdate', 'birthplace', 'age', 'nationality', 'religion', 'occupation', 'contactNo']
+          : s === 2
+            ? ['barangay', 'houseNo', 'street', 'subdivision', 'city', 'province', 'zipCode']
+            : ['exposure', 'site', 'dateOfInquiry', 'timeOfInjury']
+    );
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  // Non-destructive check whether a step is complete (no side-effects)
+  const isStepComplete = (s) => {
+    const req = (key) => !!String(form[key] || '').trim();
+    if (s === 0) {
+      return req('registrationNumber') && req('dateRegistered') && req('centerName');
+    }
+    if (s === 1) {
+      return req('firstName') && req('lastName') && req('birthdate') && req('age');
+    }
+    if (s === 2) {
+      return req('barangay');
+    }
+    if (s === 3) {
+      const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
+      const hasSite = siteKeys.some((_, i) => !!form[`site_${i}`]);
+      const siteOk = form.bite ? hasSite : true;
+      return exposureCount === 1 && siteOk && req('dateOfInquiry') && req('timeOfInjury');
+    }
+    // Step 4: animal profile / immunization / management essentials
+    if (s === 4) {
+      const speciesOk = form.spDog || form.spCat || String(form.spOthers || '').trim();
+      const ownershipOk = form.owner_0 || form.owner_1 || form.owner_2;
+      const clinicalOk = ['cs_0','cs_1','cs_2','cs_3'].some(k => !!form[k]);
+      const categoryOk = form.cat1 || form.cat2 || form.cat3;
+      const washOk = form.woundWashYes || form.woundWashNo;
+      return speciesOk && ownershipOk && clinicalOk && categoryOk && washOk;
+    }
+    return false;
   };
 
   // Auto-calc schedule dates from D0
@@ -479,14 +670,6 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         sched_4: addDays(28),
       }));
     } catch {}
-  };
-
-  const toIsoUtcNoon = (dateString) => {
-    if (!dateString) return null;
-    try {
-      const d = new Date(dateString);
-      return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0)).toISOString();
-    } catch { return null; }
   };
 
   const toDateOnly = (dateString) => {
@@ -511,6 +694,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     e.preventDefault();
     if (!validate()) return;
 
+    setSaving(true);
     try {
       const selectedSites = siteKeys.filter((_, i) => !!form[`site_${i}`]);
       const typeOfExposure = form.bite ? ['BITE'] : ['NON-BITE'];
@@ -532,8 +716,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         ...(form.owner_1 ? ['Neighbor'] : []),
         ...(form.owner_2 ? ['Stray'] : []),
       ];
-      const clinical = ['Healthy','Sick','Died','Killed','No Brain Exam Done','Unknown']
-        .filter((_, i) => !!form[`cs_${i}`]);
+      const clinical = ['Healthy','Sick','Died','Killed'].filter((_, i) => !!form[`cs_${i}`]);
+      const brainExam = ['Brain Exam Done','No Brain Exam','Unknown'].filter((_, i) => !!form[`brain_${i}`]);
       const washingWound = [
         ...(form.woundWashYes ? ['Yes'] : []),
         ...(form.woundWashNo ? ['No'] : []),
@@ -545,15 +729,32 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       ];
 
       const scheduleDates = [0,1,2,3,4]
-        .map(i => toIsoUtcNoon(form[`sched_${i}`]))
+        .map(i => toDateOnly(form[`sched_${i}`]))
         .filter(Boolean);
+      const currentTypes = [
+        ...(form.curActive ? ['Active'] : []),
+        ...(form.cur_0 ? ['Post-exposure'] : []),
+        ...(form.cur_1 ? ['Pre-exposure'] : []),
+        ...(form.cur_2 ? ['Previously Immunized'] : []),
+      ];
+      const patientDpt = [
+        ...(form.dptComplete ? ['Complete'] : []),
+        ...(form.dptIncomplete ? ['Incomplete'] : []),
+        ...(form.dptNone ? ['None'] : []),
+      ];
+      const currentSchedule = [
+        ...(form.structured ? ['Structured'] : []),
+        ...(form.unstructured ? ['Unstructured'] : []),
+      ];
+      const hasSkinTest = !!(form.skinTimeTested || form.skinTimeRead || form.skinResult || form.skinDateGiven);
+      const hasHrig = !!(form.hrigDose || form.hrigDate || form.localInfiltration || currentSchedule.length);
 
       const payload = {
         // registration/meta
         registrationNumber: form.registrationNumber || '',
         philhealthNo: form.philhealthNo || '',
-        dateRegistered: toIsoUtcNoon(form.dateRegistered),
-        arrivalDate: toDateOnly(form.dateOfInquiry) || toLongDate(form.dateOfInquiry),
+        dateRegistered: toDateOnly(form.dateRegistered),
+        arrivalDate: toDateOnly(form.dateOfInquiry),
         arrivalTime: form.timeOfInjury || '',
         center: form.centerName || '',
 
@@ -567,7 +768,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         weight: form.weight || '',
         civilStatus: form.civilStatus || '',
         sex: form.sex || '',
-        birthdate: form.birthdate ? new Date(form.birthdate).toISOString() : null,
+        birthdate: toDateOnly(form.birthdate),
         birthplace: form.birthplace || '',
         age: form.age || '',
         nationality: form.nationality || '',
@@ -580,7 +781,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         street: form.street || '',
         barangay: form.barangay || '',
         subdivision: form.subdivision || '',
-        city: form.city || '',
+        city: form.city || form.municipality || '',
         province: form.province || '',
         zipCode: form.zipCode || '',
 
@@ -594,8 +795,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         burnSite: form.burnSite || '',
         othersInjuryDetails: form.injOthers || '',
         externalCause: [
-          ...(form.causeBiteSting ? ['Bite/Sting'] : []),
-          ...(form.causeChemical ? ['Chemical Substance'] : []),
+          ...(form.externalCauseBiteSting ? ['Bite/Sting'] : []),
+          ...(form.externalCauseChemical ? ['Chemical Substance'] : []),
         ],
         biteStingDetails: form.causeBiteStingDetail || '',
         chemicalSubstanceDetails: form.causeChemicalDetail || '',
@@ -617,11 +818,11 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         // animal profile
         animalProfile: {
           species,
-          othersSpecify: form.spOthers ? (form.spOthersSpecify || '') : null,
+          othersSpecify: form.spOthers || form.spOthersSpecify || '',
           clinicalStatus: clinical.length ? clinical : ['Healthy'],
-          brainExam: [],
+          brainExam,
           vaccinationStatus: form.animalImmunized ? ['Immunized'] : ['Not Immunized'],
-          vaccinationDate: form.animalImmunizedYear || null,
+          vaccinationDate: form.animalImmunizedYear || '',
           ownership: ownership.length ? ownership : ['Pet'],
         },
 
@@ -635,28 +836,43 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
           managementDetails: form.management || '',
         },
 
-        patientImmunization: {},
+        patientImmunization: {
+          dpt: patientDpt,
+          dptYearGiven: form.dptYear || '',
+          dptDosesGiven: form.dptDoses || '',
+          tt: [],
+          ttDates: [form.prevYearLastDose || form.prevDoseNo || ''].filter(Boolean),
+          skinTest: false,
+          skinTestTime: '',
+          skinTestReadTime: '',
+          skinTestResult: '',
+          skinTestDose: '',
+          skinTestDate: '',
+          tig: false,
+          tigDose: '',
+          tigDate: '',
+        },
 
         currentImmunization: {
           erig: { dateTaken: '', medicineUsed: '', branchNo: '' },
-          type: ['Active'],
+          type: currentTypes.length ? currentTypes : ['Active'],
           vaccine: form.vacVaxirab ? ['PCEC'] : ['PVRV'],
           route: form.routeIM ? ['IM'] : ['ID'],
-          passive: false,
-          skinTest: false,
-          skinTestTime: null,
-          skinTestReadTime: null,
-          skinTestResult: null,
-          skinTestDate: null,
-          hrig: false,
-          hrigDose: null,
-          hrigDate: '',
+          passive: hasHrig,
+          skinTest: hasSkinTest,
+          skinTestTime: form.skinTimeTested || '',
+          skinTestReadTime: form.skinTimeRead || '',
+          skinTestResult: form.skinResult || '',
+          skinTestDate: toDateOnly(form.skinDateGiven),
+          hrig: hasHrig,
+          hrigDose: form.hrigDose || '',
+          hrigDate: toDateOnly(form.hrigDate),
           localInfiltration: !!form.localInfiltration,
-          schedule: [],
+          schedule: currentSchedule,
           doseMedicines: [],
         },
 
-        status: 'completed',
+        status: 'in_progress',
         // explicit day fields like in sample
         d0Date: scheduleDates[0] || null,
         d3Date: scheduleDates[1] || null,
@@ -734,130 +950,169 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
 
       if (onSaved) onSaved(data);
       showToast('Bite case created successfully!', 'success');
+      try { localStorage.removeItem('newBiteCaseDraft'); } catch {}
       if (onClose) onClose();
     } catch (err) {
       showToast(`Error: ${err.message || 'Failed to create bite case'}`, 'error');
       setError('submit', String(err.message || err));
+    } finally {
+      setSaving(false);
     }
   };
-
-
-  // TextArea component - regular function to prevent focus loss
-  const TextArea = ({ name, label, rows = 3, disabled = false }) => (
-    <div className="w-full">
-      <label className="form-label">{label}</label>
-      <textarea
-        id={name}
-        rows={rows}
-        value={form[name] ?? ''}
-        disabled={disabled}
-        onChange={(e) => handleChange(name, e.target.value)}
-        className="form-textarea"
-        aria-invalid={!!errors[name]}
-      />
-      {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
-    </div>
-  );
-
-  // Check component - regular function to prevent focus loss
-  const Check = ({ name, label, onChange }) => (
-    <label className="checkbox-item">
-      <input 
-        type="checkbox" 
-        checked={!!form[name]} 
-        onChange={onChange ? onChange : ((e) => handleChange(name, e.target.checked))} 
-      />
-      {label}
-    </label>
-  );
-
   const handleClose = () => {
+    try { localStorage.removeItem('newBiteCaseDraft'); } catch {}
     if (onClose) return onClose();
     if (onCancel) return onCancel();
   };
 
   const content = (
+    <BiteCaseFormContext.Provider value={{ form, errors, handleChange, rememberFieldActivity }}>
     <div>
       <div className="bitecase-panel">
         <div className="bitecase-header">
           <div className="bitecase-title">Create New Bite Case</div>
           <button type="button" aria-label="Close" className="bitecase-close" onClick={handleClose}>✕</button>
         </div>
+        <div className="bitecase-progress-shell">
+          <div className="bitecase-progress-meta">
+            <div>
+              <div className="bitecase-progress-label">Step {step + 1} of {totalSteps}</div>
+              <div className="bitecase-progress-title">{stepLabels[step]}</div>
+            </div>
+            <div className="bitecase-progress-percent">{Math.round(progressPercent)}%</div>
+          </div>
+          <div className="bitecase-progress-track" aria-hidden="true">
+            <div className="bitecase-progress-fill" style={{ width: `${progressPercent}%` }} />
+          </div>
+          <div className="bitecase-progress-note">{stepDescriptions[step]}</div>
+          <div className="bitecase-stepper">
+            {stepLabels.map((lbl, i) => (
+              <div key={lbl} className={`bitecase-step ${i === step ? 'is-active' : i < step ? 'is-complete' : ''}`}>
+                <div className="bitecase-step-badge">{i + 1}</div>
+                <div className="bitecase-step-label">{lbl}</div>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="bitecase-separator" />
         <div className="bitecase-body">
           <form onSubmit={async (e)=>{
+            e.preventDefault();
+            if (!isLastStep()) {
+              const ok = validateStep(step);
+              if (!ok) return;
+              nextStep();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
+            // Final step: full validation then submit
             const ok = validate();
             if (!ok) {
-              e.preventDefault();
-              const firstKey = Object.keys(errors).concat(Object.keys(form))[0];
-              try { document.getElementById(firstKey)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
               return;
             }
             await handleSubmit(e);
-          }} className="space-y-6" style={{maxWidth: '100%', margin: '0', padding: '0 20px', minHeight: '400px'}}>
+          }} className="bitecase-form space-y-6">
             {/* Removed blocking banner to allow free typing */}
-            {/* Registration */}
-            <section className="section">
-              <div className="section-title">Registration</div>
-              <div className="form-grid grid-2">
-                <Input name="registrationNumber" label="Registration Number *" />
-                <Input name="philhealthNo" label="Philhealth No." />
-                <Input name="dateRegistered" type="date" label="Date Registered *" />
-                <Input name="centerName" label="Center Name *" />
-              </div>
-            </section>
+            {/* Step 0: Registration */}
+            {step === 0 && (
+              <section className="section">
+                <div className="section-title">Registration</div>
+                <div className="form-grid grid-2">
+                  <Input name="registrationNumber" label="Registration Number *" />
+                  <Input name="philhealthNo" label="Philhealth No." />
+                  <Input name="dateRegistered" type="date" label="Date Registered *" />
+                  <Input name="centerName" label="Center Name *" />
+                </div>
+              </section>
+            )}
 
-            {/* Personal Information */}
-            <section className="section">
-              <div className="section-title">Personal Information</div>
-              <div className="form-grid grid-3">
-                <Input name="firstName" label="First Name" />
-                <Input name="middleName" label="Middle Name" />
-                <Input name="lastName" label="Last Name" />
-                <Input name="weight" label="Weight *" />
-                <Input name="civilStatus" label="Civil Status" />
-                <Input name="sex" label="Sex" />
-                <Input name="birthdate" type="date" label="Birthdate *" />
-                <Input name="birthplace" label="Birthplace *" />
-                <Input name="age" label="Age *" />
-                <Input name="nationality" label="Nationality *" />
-                <Input name="religion" label="Religion *" />
-                <Input name="occupation" label="Occupation *" />
-                <Input name="contactNo" label="Contact No. *" />
-              </div>
-            </section>
+            {/* Step 1: Personal Information */}
+            {step === 1 && (
+              <section className="section">
+                <div className="section-title">Personal Information</div>
 
-            {/* Address */}
-            <section className="section">
-              <div className="section-title">Address</div>
-              <div className="form-grid grid-2">
-                <Input name="houseNo" label="House No." />
-                <Input name="street" label="Street" />
-                <Input name="barangay" label="Barangay" />
-                <Input name="subdivision" label="Subdivision" />
-                <Input name="city" label="City" />
-                <Input name="province" label="Province" />
-                <Input name="zipCode" label="Zip Code" />
-              </div>
-            </section>
+                {/* Auto-fill banner */}
+                {prefillDone && selectedPatient && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    marginBottom: '18px',
+                    fontSize: '0.85rem',
+                    color: '#1e40af',
+                    fontWeight: '500',
+                  }}>
+                    <i className="fa-solid fa-circle-check" style={{ fontSize: '1rem', color: '#2563eb' }} />
+                    Fields have been auto-filled from{' '}
+                    <strong>
+                      {[selectedPatient.firstName, selectedPatient.middleName, selectedPatient.lastName]
+                        .filter(Boolean).join(' ')}
+                    </strong>'s profile. You can still edit any field below.
+                  </div>
+                )}
+
+                <div className="form-grid grid-3">
+                  <Input name="firstName" label="First Name *" />
+                  <Input name="middleName" label="Middle Name" />
+                  <Input name="lastName" label="Last Name *" />
+                  <Input name="weight" label="Weight" />
+                  <Input name="civilStatus" label="Civil Status" />
+                  <Input name="sex" label="Sex" />
+                  <Input name="birthdate" type="date" label="Birthdate *" />
+                  <Input name="birthplace" label="Birthplace" />
+                  <Input name="age" label="Age *" />
+                  <Input name="nationality" label="Nationality" />
+                  <Input name="religion" label="Religion" />
+                  <Input name="occupation" label="Occupation" />
+                  <Input name="contactNo" label="Contact No." />
+                  <Input name="philhealthNo" label="Philhealth No." />
+                </div>
+              </section>
+            )}
+
+            {/* Step 2: Address */}
+            {step === 2 && (
+              <section className="section">
+                <div className="section-title">Address</div>
+                <div className="form-grid grid-2">
+                  <Input name="houseNo" label="House No." />
+                  <Input name="street" label="Street" />
+                  <Input name="barangay" label="Barangay" />
+                  <Input name="subdivision" label="Subdivision" />
+                  <Input name="city" label="City" />
+                  <Input name="province" label="Province" />
+                  <Input name="zipCode" label="Zip Code" />
+                </div>
+              </section>
+            )}
 
             {/* History of Bite */}
+            {step === 3 && (
+            <>
             <section className="section">
               <div className="section-title">History of Bite</div>
               <div className="form-label">Type of Exposure</div>
-              <div className="checkbox-row">
-                <Check name="nonBite" label="NON-BITE" onChange={() => toggleExposure('nonBite')} />
-                <Check name="bite" label="BITE" onChange={() => toggleExposure('bite')} />
-            </div>
+              <div className="choice-grid choice-grid-2">
+                <button type="button" className={`choice-pill ${form.nonBite ? 'active' : ''}`} onClick={() => toggleExposure('nonBite')}>NON-BITE</button>
+                <button type="button" className={`choice-pill ${form.bite ? 'active' : ''}`} onClick={() => toggleExposure('bite')}>BITE</button>
+              </div>
               {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
 
-              <div className="form-label">Site of Bite</div>
-              <div className="checkbox-row">
-                {siteKeys.map((lbl,i)=> (
-                  <Check key={i} name={`site_${i}`} label={lbl} onChange={() => toggleSite(i)} />
-          ))}
-        </div>
-              {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
+              {form.bite && (
+                <>
+                  <div className="form-label">Site of Bite</div>
+                  <div className="choice-grid choice-grid-2">
+                    {siteKeys.map((lbl,i)=> (
+                      <button key={i} type="button" className={`choice-pill ${form[`site_${i}`] ? 'active' : ''}`} onClick={() => toggleSite(i)}>{lbl}</button>
+                    ))}
+                  </div>
+                  {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
+                </>
+              )}
 
               <div className="form-grid grid-2" style={{marginTop: '10px'}}>
                 <Input name="dateOfInquiry" type="date" label="Date of Injury *" />
@@ -893,15 +1148,19 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">External Causes / Place of Occurrence</div>
               <div className="form-label">External causes</div>
-              <Check name="causeBiteSting" label="Bite/ Sting (specify animal/insect)" onChange={(e) => toggleExternalCause('causeBiteSting', e.target.checked)} />
-              <Input name="causeBiteStingDetail" label="" disabled={!form.causeBiteSting} />
-              <Check name="causeChemical" label="Chemical Substance (applied to bite site)" onChange={(e) => toggleExternalCause('causeChemical', e.target.checked)} />
-              <Input name="causeChemicalDetail" label="" disabled={!form.causeChemical} />
+              <div className="choice-grid choice-grid-2">
+                <button type="button" className={`choice-pill ${form.externalCauseBiteSting ? 'active' : ''}`} onClick={() => toggleExternalCause('causeBiteSting', !form.externalCauseBiteSting)}>Bite / Sting</button>
+                <button type="button" className={`choice-pill ${form.externalCauseChemical ? 'active' : ''}`} onClick={() => toggleExternalCause('causeChemical', !form.externalCauseChemical)}>Chemical Substance</button>
+              </div>
+              {form.externalCauseBiteSting && <Input name="causeBiteStingDetail" label="Specify animal / insect" />}
+              {form.externalCauseChemical && <Input name="causeChemicalDetail" label="Applied substance" />}
               <div className="form-label" style={{marginTop: '10px'}}>Place of Occurrence</div>
-              <div className="checkbox-row">
-                {['Home','School','Road','Neighbor'].map((lbl,i)=> (<Check key={i} name={`place_${i}`} label={lbl} onChange={(e) => togglePlace(i, e.target.checked)} />))}
-                </div>
-              <Input name="placeOthers" label="Others" />
+              <div className="choice-grid choice-grid-2">
+                {['Home','School','Road','Neighbor'].map((lbl,i)=> (
+                  <button key={i} type="button" className={`choice-pill ${form[`place_${i}`] ? 'active' : ''}`} onClick={() => togglePlace(i, !form[`place_${i}`])}>{lbl}</button>
+                ))}
+              </div>
+              <Input name="placeOthers" label="Others / Details" />
             </section>
 
             {/* Disposition & Circumstance */}
@@ -931,7 +1190,11 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Check name="unprovoked" label="Unprovoked" onChange={(e) => toggleProvoked('unprovoked', e.target.checked)} />
               </div>
             </section>
+            </>
+            )}
 
+            {step === 4 && (
+            <>
             {/* Animal Profile */}
             <section className="section">
               <div className="section-title">Animal Profile</div>
@@ -944,9 +1207,13 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               {errors.species && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.species}</div>}
               <div className="form-label" style={{marginTop: '10px'}}>Clinical Status</div>
               <div className="checkbox-row">
-                {['Healthy','Sick','Died','Killed','No Brain Exam Done','Unknown'].map((lbl,i)=> (<Check key={i} name={`cs_${i}`} label={lbl} onChange={() => toggleRadio('clinicalStatus', i)} />))}
+                {['Healthy','Sick','Died','Killed'].map((lbl,i)=> (<Check key={i} name={`cs_${i}`} label={lbl} onChange={() => toggleRadio('clinicalStatus', i)} />))}
               </div>
               {errors.clinicalStatus && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.clinicalStatus}</div>}
+              <div className="form-label" style={{marginTop: '10px'}}>Brain Exam</div>
+              <div className="checkbox-row">
+                {['Brain Exam Done','No Brain Exam','Unknown'].map((lbl,i)=> (<Check key={i} name={`brain_${i}`} label={lbl} onChange={() => toggleRadio('brainExam', i)} />))}
+              </div>
               <div className="form-label" style={{marginTop: '10px'}}>Anti-Rabies Vaccination Status of Animal</div>
               <Check name="animalImmunized" label="Immunized, when:" onChange={(e) => toggleAnimalImmunization('animalImmunized', e.target.checked)} />
               <Input name="animalImmunizedYear" label="Year" disabled={!form.animalImmunized} />
@@ -977,7 +1244,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <div className="section-title">Current Anti-Rabies Immunization</div>
               <Check name="curActive" label="Active" />
               <div className="checkbox-row">
-                {['Post Exposure','Pre-Exposure Prophylaxis','Previously Immunized(PEP)'].map((lbl,i)=> (<Check key={i} name={`cur_${i}`} label={lbl} onChange={(e) => toggleCurrentAntiRabies(i, e.target.checked)} />))}
+                {['Post-exposure','Pre-exposure','Previously Immunized'].map((lbl,i)=> (<Check key={i} name={`cur_${i}`} label={lbl} onChange={(e) => toggleCurrentAntiRabies(i, e.target.checked)} />))}
               </div>
               <div className="form-label" style={{marginTop: '10px'}}>Vaccine Name</div>
               <div className="checkbox-row">
@@ -1039,22 +1306,36 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <Input name="maintenance" label="Maintenance Medications" />
               <TextArea name="management" label="Management:" rows={4} />
             </section>
+            </>
+            )}
 
             <div className="actions">
-              <button type="button" className="btn btn-secondary" onClick={handleClose}>
-                <i className="fa fa-arrow-left"></i> Cancel
-              </button>
-              <button type="submit" className="btn btn-primary" disabled={saving}>
-                {saving ? (
-                  <>
-                    <i className="fa fa-spinner fa-spin"></i> Saving...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa fa-save"></i> Save Case
-                  </>
+              <div className="actions-left">
+                <button type="button" className="btn btn-secondary" onClick={handleClose}>
+                  <i className="fa fa-times" /> Cancel
+                </button>
+                {step > 0 && (
+                  <button type="button" className="btn btn-outline" onClick={prevStep}>
+                    <i className="fa fa-arrow-left" /> Back
+                  </button>
                 )}
-              </button>
+              </div>
+              <div className="actions-right">
+                {!isLastStep() ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => nextStep()}
+                    disabled={!isStepComplete(step)}
+                  >
+                    Next <i className="fa fa-arrow-right" />
+                  </button>
+                ) : (
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? (<><i className="fa fa-spinner fa-spin"></i> Saving...</>) : (<><i className="fa fa-save"></i> Save Case</>)}
+                  </button>
+                )}
+              </div>
             </div>
         </form>
           </div>
@@ -1062,25 +1343,12 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       
       {/* Toast Notification */}
       {toast && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          backgroundColor: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#f59e0b',
-          color: 'white',
-          padding: '12px 16px',
-          borderRadius: '6px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          zIndex: 9999,
-          fontSize: '14px',
-          fontWeight: '500',
-          minWidth: '250px',
-          maxWidth: '400px'
-        }}>
+        <div className={`bitecase-toast ${toast.type || 'success'}`}>
           {toast.message}
         </div>
       )}
     </div>
+    </BiteCaseFormContext.Provider>
   );
 
   return content;

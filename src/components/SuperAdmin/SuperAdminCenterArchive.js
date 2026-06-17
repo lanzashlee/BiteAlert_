@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiFetch } from '../../config/api';
+import formatAddress from '../../utils/formatAddress';
 import ResponsiveSidebar from './ResponsiveSidebar';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import './SuperAdminCenterArchive.css';
@@ -99,7 +100,7 @@ const SuperAdminCenterArchive = () => {
                 ) : centers.map((c) => (
                   <tr key={c._id}>
                     <td>{c.centerName || ''}</td>
-                    <td>{c.address || ''}</td>
+                    <td>{formatAddress(c.address) || ''}</td>
                     <td>{c.contactPerson || ''}</td>
                     <td>{c.contactNumber || ''}</td>
                     <td className="table-actions">
@@ -123,7 +124,7 @@ const SuperAdminCenterArchive = () => {
             <div className="react-modal-body">
               <p>Are you sure you want to restore the following center?</p>
               <p><strong>Center Name:</strong> {target.centerName}</p>
-              <p><strong>Address:</strong> {target.address}</p>
+              <p><strong>Address:</strong> {formatAddress(target.address)}</p>
               <p><strong>Contact Person:</strong> {target.contactPerson}</p>
               <p><strong>Contact Number:</strong> {target.contactNumber}</p>
             </div>

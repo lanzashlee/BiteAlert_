@@ -4,23 +4,23 @@
 @import './ResponsiveSidebar.css';
 
 /* Performance optimizations */
-.main-content,
-.table-responsive,
-.patient-modal,
-.admin-dashboard-filters {
+.superadmin-patients-page .main-content,
+.superadmin-patients-page .table-responsive,
+.superadmin-patients-page .patient-modal,
+.superadmin-patients-page .admin-dashboard-filters {
     transform: translateZ(0);
     will-change: transform;
     backface-visibility: hidden;
 }
 
 /* Optimize rendering performance */
-.table-responsive,
-.patient-modal {
+.superadmin-patients-page .table-responsive,
+.superadmin-patients-page .patient-modal {
     contain: layout style paint;
 }
 
 /* Reduce layout thrashing */
-.table {
+.superadmin-patients-page .table {
     contain: layout;
 }
 
@@ -34,15 +34,15 @@
 }
 
 /* Smooth transitions for interactive elements */
-.table tbody tr,
-.patient-modal-btn,
-.contact-item,
-.address-info {
+.superadmin-patients-page .table tbody tr,
+.superadmin-patients-page .patient-modal-btn,
+.superadmin-patients-page .contact-item,
+.superadmin-patients-page .address-info {
     transition: all 0.2s ease;
 }
 
 /* Main Content Styling */
-.main-content {
+.superadmin-patients-page .main-content {
   padding: 1rem 1.5rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
@@ -66,7 +66,7 @@
 
 /* Desktop landscape optimization */
 @media (min-width: 1024px) and (orientation: landscape) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     padding: 1.5rem 2rem;
     left: 320px;
     width: calc(100% - 320px);
@@ -76,12 +76,12 @@
 }
 
 /* Align standalone top-level titles (e.g., Patient Management) with global header spacing */
-.main-content > h2 {
+.superadmin-patients-page .main-content > h2 {
   margin: 0 6rem 2rem 4rem;
   font-size: 2.5rem;
 }
 
-.content-header {
+.superadmin-patients-page .content-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -98,14 +98,14 @@
 
 /* Desktop landscape header optimization */
 @media (min-width: 1024px) and (orientation: landscape) {
-  .content-header {
+  .superadmin-patients-page .content-header {
     padding: 1.5rem 2rem;
     margin-bottom: 1.5rem;
     gap: 1.5rem;
   }
 }
 
-.content-header h2 {
+.superadmin-patients-page .content-header h2 {
   font-size: 1.8rem;
   font-weight: 700;
   color: #1e293b;
@@ -119,13 +119,13 @@
 
 /* Desktop landscape title optimization */
 @media (min-width: 1024px) and (orientation: landscape) {
-  .content-header h2 {
+  .superadmin-patients-page .content-header h2 {
     font-size: 2rem;
   }
 }
 
 /* Filters Section */
-.admin-dashboard-filters {
+.superadmin-patients-page .admin-dashboard-filters {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   padding: 1rem 1.5rem;
@@ -142,7 +142,7 @@
 
 /* Desktop landscape filters optimization */
 @media (min-width: 1024px) and (orientation: landscape) {
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     padding: 1.5rem 2rem;
     margin-bottom: 1.5rem;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -150,8 +150,8 @@
   }
 }
 
-.admin-dashboard-filters input[type="text"],
-.admin-dashboard-filters input[type="date"] {
+.superadmin-patients-page .admin-dashboard-filters input[type="text"],
+.superadmin-patients-page .admin-dashboard-filters input[type="date"] {
   padding: 12px 16px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
@@ -164,22 +164,22 @@
 
 /* Desktop landscape input optimization */
 @media (min-width: 1024px) and (orientation: landscape) {
-  .admin-dashboard-filters input[type="text"],
-  .admin-dashboard-filters input[type="date"] {
+  .superadmin-patients-page .admin-dashboard-filters input[type="text"],
+  .superadmin-patients-page .admin-dashboard-filters input[type="date"] {
     padding: 16px 20px;
     font-size: 1rem;
   }
 }
 
-.admin-dashboard-filters input[type="text"]:focus,
-.admin-dashboard-filters input[type="date"]:focus {
+.superadmin-patients-page .admin-dashboard-filters input[type="text"]:focus,
+.superadmin-patients-page .admin-dashboard-filters input[type="date"]:focus {
   outline: none;
   border-color: #dc2626;
   box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1), 0 4px 16px rgba(220, 38, 38, 0.1);
   transform: translateY(-1px);
 }
 
-.admin-dashboard-filters select {
+.superadmin-patients-page .admin-dashboard-filters select {
   padding: 12px 16px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
@@ -193,13 +193,13 @@
 
 /* Desktop landscape select optimization */
 @media (min-width: 1024px) and (orientation: landscape) {
-  .admin-dashboard-filters select {
+  .superadmin-patients-page .admin-dashboard-filters select {
     padding: 16px 20px;
     font-size: 1rem;
   }
 }
 
-.admin-dashboard-filters select:focus {
+.superadmin-patients-page .admin-dashboard-filters select:focus {
   outline: none;
   border-color: #dc2626;
   box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1), 0 4px 16px rgba(220, 38, 38, 0.1);
@@ -239,7 +239,7 @@
 }
 
 /* Table Container */
-.table-responsive {
+.superadmin-patients-page .table-responsive {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: clamp(16px, 2vw, 20px);
@@ -256,7 +256,7 @@
 
 /* Desktop landscape table optimization */
 @media (min-width: 1024px) and (orientation: landscape) {
-  .table-responsive {
+  .superadmin-patients-page .table-responsive {
     max-height: 80vh;
     min-height: 500px;
     border-radius: 20px;
@@ -264,36 +264,36 @@
 }
 
 /* Custom Scrollbar Styling */
-.table-responsive::-webkit-scrollbar {
+.superadmin-patients-page .table-responsive::-webkit-scrollbar {
   width: 12px;
   height: 12px;
 }
 
-.table-responsive::-webkit-scrollbar-track {
+.superadmin-patients-page .table-responsive::-webkit-scrollbar-track {
   background: rgba(241, 245, 249, 0.8);
   border-radius: 10px;
   margin: 4px;
 }
 
-.table-responsive::-webkit-scrollbar-thumb {
+.superadmin-patients-page .table-responsive::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   border-radius: 10px;
   border: 2px solid rgba(255, 255, 255, 0.8);
   transition: all 0.3s ease;
 }
 
-.table-responsive::-webkit-scrollbar-thumb:hover {
+.superadmin-patients-page .table-responsive::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
   transform: scale(1.05);
 }
 
-.table-responsive::-webkit-scrollbar-corner {
+.superadmin-patients-page .table-responsive::-webkit-scrollbar-corner {
   background: rgba(241, 245, 249, 0.8);
   border-radius: 10px;
 }
 
 /* Firefox Scrollbar Styling */
-.table-responsive {
+.superadmin-patients-page .table-responsive {
   scrollbar-width: thin;
   scrollbar-color: #dc2626 rgba(241, 245, 249, 0.8);
 }
@@ -524,7 +524,7 @@
 }
 
 /* Pagination */
-.pagination-container {
+.superadmin-patients-page .pagination-container {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -538,7 +538,7 @@
   border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
-.pagination-container button {
+.superadmin-patients-page .pagination-container button {
   padding: 12px 20px;
   border: 2px solid #e2e8f0;
   background: rgba(255, 255, 255, 0.9);
@@ -555,7 +555,7 @@
   gap: 0.5rem;
 }
 
-.pagination-container button:hover:not(:disabled) {
+.superadmin-patients-page .pagination-container button:hover:not(:disabled) {
   border-color: #dc2626;
   color: #dc2626;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
@@ -563,7 +563,7 @@
   box-shadow: 0 8px 25px rgba(220, 38, 38, 0.15);
 }
 
-.pagination-container button:disabled {
+.superadmin-patients-page .pagination-container button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: #f1f5f9;
@@ -571,7 +571,7 @@
   box-shadow: none;
 }
 
-.pagination-container span {
+.superadmin-patients-page .pagination-container span {
   font-weight: 600;
   color: #64748b;
   font-size: 1rem;
@@ -581,7 +581,7 @@
 }
 
 /* Status Badge Styling */
-.status-badge {
+.superadmin-patients-page .status-badge {
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -592,12 +592,12 @@
   transition: all 0.3s ease;
 }
 
-.status-badge.active {
+.superadmin-patients-page .status-badge.active {
   background: #d4edda;
   color: #155724;
 }
 
-.status-badge.loading {
+.superadmin-patients-page .status-badge.loading {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   color: #0369a1;
 }
@@ -716,14 +716,14 @@
   color: #374151;
 }
 
-.table tbody tr:hover .status-badge {
+.table tbody tr:hover .superadmin-patients-page .status-badge {
   transform: scale(1.05);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* Responsive Design - Fluid approach with container queries */
 @container (max-width: 1200px) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     margin-left: 0;
     width: 100%;
   }
@@ -734,7 +734,7 @@
 }
 
 @media (max-width: 1200px) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     left: 300px;
     width: calc(100% - 300px);
     margin: 0;
@@ -747,7 +747,7 @@
 }
 
 @media (max-width: 768px) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     padding: clamp(0.75rem, 2vw, 1rem);
     left: 0;
     width: 100%;
@@ -755,24 +755,24 @@
     border: none;
   }
   
-  .content-header {
+  .superadmin-patients-page .content-header {
     flex-direction: column;
     gap: clamp(0.75rem, 2vw, 1rem);
     align-items: flex-start;
     padding: clamp(0.75rem, 2vw, 1rem);
   }
   
-  .content-header h2 {
+  .superadmin-patients-page .content-header h2 {
     font-size: clamp(1.4rem, 4vw, 1.8rem);
   }
   
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     grid-template-columns: 1fr;
     gap: clamp(0.75rem, 2vw, 1rem);
     padding: clamp(0.75rem, 2vw, 1rem);
   }
   
-  .table-responsive {
+  .superadmin-patients-page .table-responsive {
     max-height: clamp(50vh, 60vh, 70vh);
     border-radius: clamp(8px, 2vw, 12px);
   }
@@ -824,7 +824,7 @@
 }
 
 @media (max-width: 480px) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     padding: clamp(0.5rem, 1.5vw, 0.75rem);
     left: 0;
     width: 100%;
@@ -832,11 +832,11 @@
     border: none;
   }
   
-  .content-header h2 {
+  .superadmin-patients-page .content-header h2 {
     font-size: clamp(1.2rem, 4vw, 1.5rem);
   }
   
-  .table-responsive {
+  .superadmin-patients-page .table-responsive {
     max-height: clamp(40vh, 50vh, 60vh);
     border-radius: clamp(6px, 1.5vw, 8px);
   }
@@ -1374,42 +1374,42 @@
 }
 
 /* Case History Table Scrollbar */
-.info-section .table-responsive {
+.info-section .superadmin-patients-page .table-responsive {
   scrollbar-width: thin;
   scrollbar-color: #dc2626 rgba(241, 245, 249, 0.8);
 }
 
-.info-section .table-responsive::-webkit-scrollbar {
+.info-section .superadmin-patients-page .table-responsive::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.info-section .table-responsive::-webkit-scrollbar-track {
+.info-section .superadmin-patients-page .table-responsive::-webkit-scrollbar-track {
   background: rgba(241, 245, 249, 0.6);
   border-radius: 6px;
   margin: 2px;
 }
 
-.info-section .table-responsive::-webkit-scrollbar-thumb {
+.info-section .superadmin-patients-page .table-responsive::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.6);
   transition: all 0.3s ease;
 }
 
-.info-section .table-responsive::-webkit-scrollbar-thumb:hover {
+.info-section .superadmin-patients-page .table-responsive::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
 }
 
 /* Case History Table Responsive Styles */
-.info-section .table-responsive {
+.info-section .superadmin-patients-page .table-responsive {
   overflow-x: auto;
   overflow-y: auto;
   max-height: 400px;
   min-height: 200px;
 }
 
-.info-section .table-responsive .table {
+.info-section .superadmin-patients-page .table-responsive .table {
   min-width: 800px;
   table-layout: fixed;
   width: 100%;
@@ -1480,7 +1480,7 @@
 }
 
 /* Case History Status Badge */
-.info-section .status-badge {
+.info-section .superadmin-patients-page .status-badge {
   padding: 2px 6px;
   border-radius: 12px;
   font-size: 0.7rem;
@@ -1490,7 +1490,7 @@
   white-space: nowrap;
 }
 
-.info-section .status-badge.active {
+.info-section .superadmin-patients-page .status-badge.active {
   background: #d4edda;
   color: #155724;
 }
@@ -1519,7 +1519,7 @@
 
 /* Case History Responsive Breakpoints */
 @media (max-width: 1200px) {
-  .info-section .table-responsive .table {
+  .info-section .superadmin-patients-page .table-responsive .table {
     min-width: 700px;
   }
   
@@ -1545,7 +1545,7 @@
     gap: 1rem;
   }
   
-  .info-section .table-responsive .table {
+  .info-section .superadmin-patients-page .table-responsive .table {
     min-width: 600px;
   }
   
@@ -1559,7 +1559,7 @@
     font-size: 0.65rem;
   }
   
-  .info-section .status-badge {
+  .info-section .superadmin-patients-page .status-badge {
     padding: 1px 4px;
     font-size: 0.6rem;
   }
@@ -1582,7 +1582,7 @@
 
 /* Responsive Design - Enhanced mobile experience */
 @media (max-width: 768px) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     padding: clamp(0.75rem, 2vw, 1rem);
     left: 0;
     width: 100%;
@@ -1590,29 +1590,29 @@
     border: none;
   }
   
-  .content-header {
+  .superadmin-patients-page .content-header {
     flex-direction: column;
     align-items: flex-start;
     gap: clamp(0.75rem, 2vw, 1rem);
   }
   
-  .content-header h2 {
+  .superadmin-patients-page .content-header h2 {
     font-size: clamp(1.4rem, 4vw, 1.8rem);
   }
   
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     grid-template-columns: 1fr;
     gap: clamp(0.75rem, 2vw, 1rem);
     padding: clamp(1rem, 2.5vw, 1.5rem);
   }
   
-  .admin-dashboard-filters input[type="text"],
-  .admin-dashboard-filters input[type="date"],
-  .admin-dashboard-filters select {
+  .superadmin-patients-page .admin-dashboard-filters input[type="text"],
+  .superadmin-patients-page .admin-dashboard-filters input[type="date"],
+  .superadmin-patients-page .admin-dashboard-filters select {
     width: 100%;
   }
   
-  .table-responsive {
+  .superadmin-patients-page .table-responsive {
     overflow-x: auto;
     max-height: clamp(50vh, 60vh, 70vh);
   }
@@ -1660,12 +1660,12 @@
   }
   
   /* Case History Mobile Styles */
-  .info-section .table-responsive {
+  .info-section .superadmin-patients-page .table-responsive {
     max-height: 300px;
     border-radius: 8px;
   }
   
-  .info-section .table-responsive .table {
+  .info-section .superadmin-patients-page .table-responsive .table {
     min-width: 500px;
   }
   
@@ -1679,12 +1679,12 @@
     font-size: 0.6rem;
   }
   
-  .info-section .status-badge {
+  .info-section .superadmin-patients-page .status-badge {
     padding: 1px 3px;
     font-size: 0.55rem;
   }
   
-  .pagination-container {
+  .superadmin-patients-page .pagination-container {
     flex-direction: column;
     gap: 1rem;
     padding: 1.5rem;
@@ -1773,7 +1773,7 @@
 }
 
 @media (max-width: 480px) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     padding: 0.75rem;
     left: 0;
     width: 100%;
@@ -1781,15 +1781,15 @@
     border: none;
   }
   
-  .content-header h2 {
+  .superadmin-patients-page .content-header h2 {
     font-size: 1.6rem;
   }
   
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     padding: 1.25rem;
   }
   
-  .table-responsive {
+  .superadmin-patients-page .table-responsive {
     max-height: calc(100vh - 200px);
   }
   
@@ -1804,12 +1804,12 @@
   }
   
   /* Case History Extra Small Screens */
-  .info-section .table-responsive {
+  .info-section .superadmin-patients-page .table-responsive {
     max-height: 250px;
     border-radius: 6px;
   }
   
-  .info-section .table-responsive .table {
+  .info-section .superadmin-patients-page .table-responsive .table {
     min-width: 400px;
   }
   
@@ -1823,7 +1823,7 @@
     font-size: 0.55rem;
   }
   
-  .info-section .status-badge {
+  .info-section .superadmin-patients-page .status-badge {
     padding: 1px 2px;
     font-size: 0.5rem;
   }
@@ -1933,20 +1933,20 @@
 
 /* Animation for screen size transitions */
 @media (prefers-reduced-motion: no-preference) {
-  .main-content,
-  .content-header,
-  .admin-dashboard-filters,
-  .table-responsive,
+  .superadmin-patients-page .main-content,
+  .superadmin-patients-page .content-header,
+  .superadmin-patients-page .admin-dashboard-filters,
+  .superadmin-patients-page .table-responsive,
   .patient-modal,
   .patient-modal-backdrop {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     animation: fadeIn 0.4s ease-out;
   }
   
-  .table-responsive {
+  .superadmin-patients-page .table-responsive {
     animation: fadeIn 0.4s ease-out;
   }
   
@@ -1957,7 +1957,7 @@
 
 /* Ultra-wide screen support */
 @media (min-width: 1920px) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     max-width: 1800px;
     margin: 0 auto;
     margin-left: clamp(280px, 15vw, 400px);
@@ -1968,18 +1968,18 @@
     min-width: 1600px;
   }
   
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     padding: 3rem 4rem;
     gap: 2.5rem;
   }
   
-  .content-header {
+  .superadmin-patients-page .content-header {
     padding: 2.5rem 4rem;
     margin-bottom: 3rem;
   }
   
-  .content-header h2 {
+  .superadmin-patients-page .content-header h2 {
     font-size: 3rem;
   }
   
@@ -1996,7 +1996,7 @@
 
 /* Large tablet and small desktop support */
 @media (min-width: 1024px) and (max-width: 1366px) {
-  .main-content {
+  .superadmin-patients-page .main-content {
     left: 300px;
     width: calc(100% - 300px);
     padding: 2rem 2.5rem;
@@ -2008,36 +2008,36 @@
     min-width: clamp(1000px, 95vw, 1200px);
   }
   
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     padding: 2rem 2.5rem;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
   
-  .content-header {
+  .superadmin-patients-page .content-header {
     padding: 1.5rem 2.5rem;
   }
 }
 
 /* Container queries for component-level responsiveness */
 @container (max-width: 600px) {
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     grid-template-columns: 1fr;
   }
   
-  .content-header {
+  .superadmin-patients-page .content-header {
     flex-direction: column;
     text-align: center;
   }
 }
 
 @container (min-width: 1200px) {
-  .admin-dashboard-filters {
+  .superadmin-patients-page .admin-dashboard-filters {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
 }
 
 /* Ensure main content is properly glued to sidebar */
-.dashboard-container {
+.superadmin-patients-page .dashboard-container {
   position: relative;
   width: 100%;
   height: 100vh;

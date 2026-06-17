@@ -1110,3 +1110,193 @@
     font-size: 1.3rem;
   }
 }
+/* Custom Add Stock Modal (VAXIRAB) Styles */
+.custom-vax-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-vax-modal .vax-modal-content {
+  background: white;
+  width: 100%;
+  max-width: 550px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.vax-modal-header {
+  background-color: #8B0000;
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.vax-modal-header-text h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.vax-modal-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vax-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.vax-modal-body {
+  padding: 24px;
+  background-color: #ffffff;
+}
+
+.vax-stock-info {
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+.vax-stock-label {
+  color: #8B0000;
+  font-weight: 600;
+}
+
+.vax-stock-value {
+  color: #8B0000;
+  font-weight: 600;
+}
+
+.vax-unit-selection {
+  margin-bottom: 20px;
+}
+
+.vax-label-main {
+  display: block;
+  color: #8B0000;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.vax-checkbox-group {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+}
+
+.vax-checkbox-label {
+  display: flex;
+  align-items: center;
+  color: #8B0000;
+  font-size: 0.95rem;
+  cursor: pointer;
+  position: relative;
+}
+
+.vax-checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.vax-checkbox-custom {
+  height: 20px;
+  width: 20px;
+  background-color: transparent;
+  border: 2px solid #8B0000;
+  border-radius: 4px;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vax-checkbox:checked ~ .vax-checkbox-custom {
+  background-color: #8B0000;
+}
+
+.vax-checkbox:checked ~ .vax-checkbox-custom:after {
+  content: "";
+  display: block;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.vax-form-group {
+  margin-bottom: 20px;
+}
+
+.vax-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #8B0000;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #333;
+  outline: none;
+}
+
+.vax-input::placeholder {
+  color: #999;
+}
+
+.vax-input:focus {
+  box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.1);
+}
+
+.vax-modal-footer {
+  padding: 0 24px 24px 24px;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+}
+
+.vax-cancel-text {
+  color: #333;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  position: absolute;
+  left: 24px; /* Optional: adjust based on visual alignment */
+}
+
+.vax-submit-btn {
+  background-color: #8B0000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 150px;
+  display: block;
+  margin: 0 auto;
+}
+
+.vax-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

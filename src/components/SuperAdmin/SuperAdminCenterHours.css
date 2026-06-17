@@ -2,215 +2,683 @@
 @import '../GlobalResponsive.css';
 @import './SuperAdminCenter.css';
 
-/* SuperAdmin Center Hours Styles */
-.content-header { margin: 0 5rem 1.25rem 3rem; padding: 1.5rem 2.5rem; background:#fff; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
-.hours-section {
-  background: white;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
+/* ═══════════════════════════════════════════════════════════
+   SuperAdmin Center Hours — Scoped Styles
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Page header ─────────────────────────────────────────── */
+.ch-page .content-header {
+  margin: 0 5rem 1.25rem 3rem;
+  padding: 1.25rem 2rem;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.hours-header {
-  font-size: var(--font-size-2xl);
+.ch-page .content-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-sm) 0;
+  color: #111827;
 }
 
-.hours-description {
-  color: var(--text-secondary);
-  font-size: var(--font-size-base);
-  margin: 0 0 var(--spacing-lg) 0;
-  line-height: 1.6;
+/* ── Table wrapper (enables horizontal scroll) ───────────── */
+.ch-table-wrapper {
+  margin: 0 5rem 2rem 3rem;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  overflow: hidden;
 }
 
-.accounts-table {
+.ch-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Table ───────────────────────────────────────────────── */
+.ch-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  table-layout: fixed; /* ensure headers and cells align based on set widths */
+  min-width: 860px; /* forces scroll on small screens */
+  table-layout: auto;
 }
 
-/* Column sizing for weekdays/weekend layout */
-.accounts-table th:nth-child(1),
-.accounts-table td:nth-child(1) { /* Center */
-  width: 25%;
+/* Header */
+.ch-table thead tr {
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
 }
-.accounts-table th:nth-child(2),
-.accounts-table td:nth-child(2) { /* Weekdays */
-  width: 20%;
-  text-align: center;
-}
-.accounts-table th:nth-child(3),
-.accounts-table td:nth-child(3) { /* Weekend */
-  width: 20%;
-  text-align: center;
-}
-.accounts-table th:nth-child(4),
-.accounts-table td:nth-child(4) { /* Contact */
-  width: 20%;
+
+.ch-table th {
+  padding: 13px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
   white-space: nowrap;
 }
-.accounts-table th:nth-child(5),
-.accounts-table td:nth-child(5) { /* Actions */
-  width: 15%;
+
+/* Center name column — slightly wider */
+.ch-table th:first-child,
+.ch-table td:first-child {
+  min-width: 150px;
+  font-weight: 600;
+}
+
+/* Day columns — equal, compact */
+.ch-table th.ch-day-col,
+.ch-table td.ch-day-col {
+  min-width: 115px;
+  text-align: center;
+}
+
+/* Contact column */
+.ch-table th.ch-contact-col,
+.ch-table td.ch-contact-col {
+  min-width: 130px;
+  white-space: nowrap;
+}
+
+/* Actions column */
+.ch-table th.ch-actions-col,
+.ch-table td.ch-actions-col {
+  min-width: 90px;
   text-align: right;
 }
 
-.accounts-table th {
-  background: var(--gray-50);
-  padding: 12px 14px;
-  text-align: left;
+/* Body rows */
+.ch-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.ch-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.ch-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.ch-table td {
+  padding: 13px 14px;
+  font-size: 0.85rem;
+  color: #374151;
+  vertical-align: middle;
+}
+
+/* ── Day cell badge ──────────────────────────────────────── */
+.ch-day-open {
+  display: inline-block;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  line-height: 1.4;
 }
 
-.accounts-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border-color);
-  font-size: var(--font-size-sm);
+.ch-day-open .ch-time-range {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #3b82f6;
+  margin-top: 1px;
 }
 
-.row-actions { display: inline-flex; gap: 8px; }
-.btn { padding: 8px 12px; border-radius: 8px; border: 2px solid #e5e7eb; font-weight: 700; cursor: pointer; }
-.btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
-.btn-primary:hover { background: #1e40af; border-color: #1e40af; }
-.btn-secondary { background: #fff; color: #374151; }
-.btn-secondary:hover { background: #f3f4f6; }
-
-.table-container { padding: 0 var(--spacing-lg) var(--spacing-lg); }
-
-.accounts-table tr:hover {
-  background: var(--gray-50);
+.ch-day-closed {
+  display: inline-block;
+  color: #9ca3af;
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
-.loading-state {
+/* ── Buttons ─────────────────────────────────────────────── */
+.ch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.ch-btn:active {
+  transform: scale(0.97);
+}
+
+.ch-btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.ch-btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.ch-btn-secondary {
+  background: #f1f5f9;
+  color: #374151;
+  border: 1px solid #e2e8f0;
+}
+
+.ch-btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.ch-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+.ch-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.ch-empty i {
+  font-size: 2.2rem;
+  margin-bottom: 0.75rem;
+  display: block;
+  color: #d1d5db;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Edit Hours Modal
+   ══════════════════════════════════════════════════════════ */
+.ch-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xxl);
-  color: var(--text-secondary);
-  font-size: var(--font-size-base);
+  padding: 1rem;
+  animation: ch-fade-in 0.18s ease;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .hours-section {
-    padding: var(--spacing-lg);
-  }
-  
-  .hours-header {
-    font-size: var(--font-size-xl);
-  }
-  
-  .accounts-table th,
-  .accounts-table td {
-    padding: var(--spacing-sm);
-    font-size: var(--font-size-xs);
+.ch-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+  animation: ch-slide-up 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal header */
+.ch-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.ch-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ch-modal-title i {
+  color: #2563eb;
+  font-size: 1rem;
+}
+
+.ch-modal-close {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.ch-modal-close:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* Modal body */
+.ch-modal-body {
+  padding: 1.25rem 1.5rem;
+  flex: 1;
+}
+
+.ch-modal-hint {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0 0 1.25rem;
+  line-height: 1.55;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid #3b82f6;
+}
+
+/* Day rows in modal */
+.ch-day-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 20px 1fr 80px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ch-day-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ch-day-sep {
+  text-align: center;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.ch-time-input {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  font-size: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  color: #111827;
+  background: #fff;
+}
+
+.ch-time-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+.ch-clear-btn {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  color: #6b7280;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.ch-clear-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Contact input */
+.ch-contact-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  display: block;
+  margin-bottom: 6px;
+  margin-top: 1rem;
+}
+
+.ch-contact-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+  color: #111827;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ch-contact-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+/* Modal footer */
+.ch-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+  border-radius: 0 0 16px 16px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Animations
+   ══════════════════════════════════════════════════════════ */
+@keyframes ch-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ch-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   Responsive
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 1280px) {
+  .ch-page .content-header,
+  .ch-table-wrapper {
+    margin-left: 1.5rem;
+    margin-right: 1.5rem;
   }
 }
 
 @media (max-width: 768px) {
-  .hours-section {
-    padding: var(--spacing-md);
+  .ch-page .content-header,
+  .ch-table-wrapper {
+    margin-left: 1rem;
+    margin-right: 1rem;
   }
-  
-  .hours-header {
-    font-size: var(--font-size-lg);
+
+  .ch-day-row {
+    grid-template-columns: 90px 1fr 16px 1fr 60px;
   }
-  
-  .hours-description {
-    font-size: var(--font-size-sm);
-  }
-  
-  .accounts-table { font-size: var(--font-size-xs); }
-  
-  .accounts-table th, .accounts-table td { padding: 8px 10px; }
-  
-  /* Make table scrollable on mobile */
-  .table-container {
-    overflow-x: auto;
-  }
-  
-  .accounts-table { min-width: 820px; }
 }
 
 @media (max-width: 480px) {
-  .hours-section {
-    padding: var(--spacing-sm);
+  .ch-modal-body {
+    padding: 1rem;
   }
-  
-  .hours-header {
-    font-size: var(--font-size-base);
+
+  .ch-day-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
   }
-  
-  .hours-description {
-    font-size: var(--font-size-xs);
+
+  .ch-day-sep {
+    display: none;
   }
-  
-  .accounts-table {
-    border-radius: var(--border-radius-md);
+
+  .ch-modal-footer {
+    flex-direction: column-reverse;
   }
-  
-  .loading-state {
-    padding: var(--spacing-xl);
-    font-size: var(--font-size-sm);
-  }
-  
-  .accounts-table th,
-  .accounts-table td {
-    font-size: 0.7rem;
-    padding: 4px 6px;
+
+  .ch-modal-footer .ch-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
-/* Smooth Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ══════════════════════════════════════════════════════════
+   Header actions group
+   ══════════════════════════════════════════════════════════ */
+.ch-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+/* ══════════════════════════════════════════════════════════
+   Wide modal (Add Centers)
+   ══════════════════════════════════════════════════════════ */
+.ch-modal-wide {
+  max-width: 760px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .hours-section {
-    animation: fadeIn 0.5s ease-out;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Count badge in modal title */
+.ch-modal-count {
+  margin-left: 10px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Add Center — entry card list
+   ══════════════════════════════════════════════════════════ */
+.ch-add-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.ch-entry-card {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fafafa;
+  transition: border-color 0.15s;
+}
+
+.ch-entry-card:hover {
+  border-color: #bfdbfe;
+}
+
+.ch-entry-card--error {
+  border-color: #fca5a5 !important;
+  background: #fff5f5;
+}
+
+/* Card header row */
+.ch-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ch-entry-badge {
+  background: #2563eb;
+  color: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ch-entry-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #111827;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ch-entry-remove {
+  background: #fee2e2;
+  border: none;
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.ch-entry-remove:hover {
+  background: #fca5a5;
+}
+
+/* Inline error banner per card */
+.ch-entry-error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: #b91c1c;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Info fields row (name / address / contact) */
+.ch-entry-info-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ch-field--sm {
+  min-width: 160px;
+}
+
+.ch-field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ch-required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+/* Weekday hours section label */
+.ch-entry-days-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Add Another Center button
+   ══════════════════════════════════════════════════════════ */
+.ch-add-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f9ff;
+  border: 2px dashed #7dd3fc;
+  border-radius: 10px;
+  color: #0369a1;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  margin-top: 4px;
+}
+
+.ch-add-more-btn:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Empty state CTA link
+   ══════════════════════════════════════════════════════════ */
+.ch-link-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.ch-link-btn:hover {
+  color: #1d4ed8;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Responsive additions for Add modal
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .ch-entry-info-row {
+    grid-template-columns: 1fr;
   }
-  
-  .hours-section:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+
+  .ch-field--sm {
+    min-width: unset;
   }
-  
-  .accounts-table tr {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .accounts-table tr:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  .ch-header-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

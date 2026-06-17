@@ -386,135 +386,6 @@ const SuperAdminVaccinationSchedule = () => {
     }
   };
 
-  // Process vaccine update with stock deduction
-  const processVaccineUpdate = async () => {
-    const { day, scheduleItem, selectedVaccine, selectedVaccineBrand } = vaccineConfirmData;
-    
-    // Update vaccinationdates
-    const map = {
-      'Day 0': { dateField: 'd0Date', statusField: 'd0Status' },
-      'Day 3': { dateField: 'd3Date', statusField: 'd3Status' },
-      'Day 7': { dateField: 'd7Date', statusField: 'd7Status' },
-      'Day 14': { dateField: 'd14Date', statusField: 'd14Status' },
-      'Day 28': { dateField: 'd28Date', statusField: 'd28Status' }
-    };
-    const fields = map[day];
-    const payload = {};
-    if (fields && scheduleItem) {
-      if (scheduleItem.date) payload[fields.dateField] = new Date(scheduleItem.date).toISOString();
-      if (scheduleItem.status) payload[fields.statusField] = scheduleItem.status;
-    }
-    
-    // Update vaccinationdates
-    const putBases = [apiConfig.endpoints.vaccinationDates];
-    let updated = false;
-    for (const base of putBases) {
-      try {
-        const res = await apiFetch(`${base}?biteCaseId=${encodeURIComponent(scheduleModalData.biteCaseId || '')}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) { updated = true; break; }
-      } catch (_) {}
-    }
-    
-    if (!updated) {
-      throw new Error('Failed to update vaccination dates');
-    }
-
-    // Also update the bite case with the individual day status
-    try {
-      const biteCaseUpdatePayload = {};
-      if (fields && scheduleItem) {
-        if (scheduleItem.date) biteCaseUpdatePayload[fields.dateField] = new Date(scheduleItem.date).toISOString();
-        if (scheduleItem.status) biteCaseUpdatePayload[fields.statusField] = scheduleItem.status;
-      }
-      
-      console.log('🔍 UPDATING BITE CASE:', {
-        biteCaseId: scheduleModalData.biteCaseId,
-        payload: biteCaseUpdatePayload
-      });
-      
-      const biteCaseRes = await apiFetch(`/api/bitecases/${scheduleModalData.biteCaseId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(biteCaseUpdatePayload)
-      });
-      
-      if (biteCaseRes.ok) {
-        console.log('✅ BITE CASE UPDATED SUCCESSFULLY');
-        const updatedBiteCase = await biteCaseRes.json();
-        console.log('🔍 UPDATED BITE CASE DATA:', updatedBiteCase);
-      } else {
-        const errorText = await biteCaseRes.text();
-        console.warn('⚠️ Failed to update bite case:', errorText);
-        throw new Error(`Failed to update bite case: ${errorText}`);
-      }
-    } catch (error) {
-      console.error('❌ Error updating bite case:', error);
-    }
-
-    // Deduct from stock for selected vaccine
-    const stockUpdates = [];
-    if (selectedVaccine && selectedVaccineBrand) {
-        let quantity = 0;
-        
-      if (selectedVaccine.includes('ERIG')) {
-          // Get patient weight for ERIG calculation
-          const patientWeight = scheduleModalData?.patient?.weight || 70; // default 70kg
-          quantity = calculateERIGDosage(patientWeight);
-        } else {
-          // Get dosage based on vaccine and route
-        const dosage = getVaccineDosage(selectedVaccine, scheduleModalData?.route);
-          quantity = parseFloat(dosage.replace('ml', '')) || 1;
-        }
-        
-        stockUpdates.push({
-        vaccine: selectedVaccine,
-        brand: selectedVaccineBrand,
-          quantity: quantity,
-          operation: 'deduct'
-        });
-    }
-
-    // Update stock for each selected vaccine (center-scoped)
-    for (const update of stockUpdates) {
-      const inv = mapVaccineToInventoryEntry(update.vaccine);
-      const centerName = scheduleModalData?.centerName || scheduleModalData?.patient?.center || scheduleModalData?.patient?.centerName;
-      try {
-        const stockRes = await apiFetch('/api/stock/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            centerName,
-            itemName: inv.name,
-            brand: inv.brand,
-            type: inv.type,
-            quantity: update.quantity,
-            operation: update.operation,
-            reason: `Vaccination administration - ${day}`,
-            patientId: scheduleModalData?.patient?.patientId
-          })
-        });
-        
-        if (!stockRes.ok) {
-          console.warn(`Failed to update stock for ${update.vaccine}`);
-        }
-      } catch (err) {
-        console.warn(`Error updating stock for ${update.vaccine}:`, err);
-      }
-    }
-
-    showNotification('Vaccination updated and stock deducted successfully', 'success');
-    
-    // Force refresh the data to ensure UI reflects the database changes
-    setTimeout(() => {
-      console.log('🔍 FORCE REFRESHING AFTER BITE CASE UPDATE');
-      handleRefreshData();
-    }, 1000);
-  };
-  
   // Best-effort display name for a patient
   const getPatientDisplayName = (p) => {
     if (!p) return 'Unknown Patient';
@@ -1111,7 +982,8 @@ const SuperAdminVaccinationSchedule = () => {
         return;
       }
 
-      const { centerName } = scheduleModalData;
+      // Use the exact center name from the selected stock if available, otherwise fallback to patient's center
+      const centerName = selectedVaccines?.selectedStockInfo?.centerName || scheduleModalData?.centerName || scheduleModalData?.patient?.center || scheduleModalData?.patient?.centerName;
       
       // Determine which vaccines were selected
       const selectedVaccineList = [];
@@ -2289,16 +2161,11 @@ const SuperAdminVaccinationSchedule = () => {
         // Load vaccine stocks
         await loadVaccineStocks();
         
-        // Build API URLs with center filter for non-superadmin users
+        // Build API URLs
         let patientsUrl = `${apiConfig.endpoints.patients}?page=1&limit=1000`;
         let vaccinationUrl = apiConfig.endpoints.bitecases;
         
-        if (userCenter && userCenter !== 'all') {
-          patientsUrl += `&center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
-          vaccinationUrl += `?center=${encodeURIComponent(userCenter)}&barangay=${encodeURIComponent(userCenter)}`;
-        }
-        
-        // Fetch patients (use apiFetch with base URL and handle non-JSON responses)
+        // Fetch ALL patients (use apiFetch with base URL and handle non-JSON responses)
         const patientsRes = await apiFetch(patientsUrl);
         let patientsData = [];
         if (!patientsRes.ok) {
@@ -2312,7 +2179,7 @@ const SuperAdminVaccinationSchedule = () => {
           throw new Error('Patients API returned non-JSON');
         }
         
-        // Fetch bite cases which contain vaccination data
+        // Fetch ALL bite cases which contain vaccination data
         const vaccinationRes = await apiFetch(vaccinationUrl);
         const vaccinationData = await vaccinationRes.json();
         
@@ -2325,9 +2192,6 @@ const SuperAdminVaccinationSchedule = () => {
         } else if (Array.isArray(patientsData)) {
           patients = patientsData;
         }
-
-        // Scope patients to admin barangay on client side as well
-        patients = filterByAdminBarangay(patients, 'center');
         
         if (Array.isArray(vaccinationData)) {
           biteCases = vaccinationData;
@@ -2335,6 +2199,25 @@ const SuperAdminVaccinationSchedule = () => {
           biteCases = vaccinationData.data;
         } else if (vaccinationData && Array.isArray(vaccinationData.data)) {
           biteCases = vaccinationData.data;
+        }
+
+        // Scope patients and biteCases to admin barangay on client side
+        if (userCenter && userCenter !== 'all') {
+          const normCenter = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+          const normalizedUserCenter = normCenter(userCenter);
+          
+          patients = filterByAdminBarangay(patients, 'center');
+          
+          const filteredBiteCases = filterByCenter(biteCases, 'center');
+          
+          const existingIds = new Set(filteredBiteCases.map(c => c._id));
+          const transferredInCases = biteCases.filter(c => {
+            if (existingIds.has(c._id)) return false;
+            const transferDest = c.transferredTo || '';
+            return (c.transferred === true || c.transferred === 'true') && transferDest && normCenter(transferDest) === normalizedUserCenter;
+          });
+          
+          biteCases = [...filteredBiteCases, ...transferredInCases];
         }
 
         // Only include bite cases that already have an assigned schedule
@@ -2518,7 +2401,9 @@ const SuperAdminVaccinationSchedule = () => {
                 isManual: false,
                 createdAt: biteCase.createdAt || new Date().toISOString(),
                 updatedAt: biteCase.updatedAt,
-                treatmentStatus: biteCase.treatmentStatus
+                treatmentStatus: biteCase.treatmentStatus,
+                transferred: biteCase.transferred,
+                transferredTo: biteCase.transferredTo
               };
               tempEntries.push(entry);
               statuses.push(actualStatus);
@@ -2594,18 +2479,6 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Real-time vaccination data refresh - refresh every minute to keep "Today's Appointments" current
   useEffect(() => {
-    // Force initial refresh to ensure current data
-    const initialRefresh = async () => {
-      try {
-        console.log('🔄 Initial refresh for today\'s appointments');
-        await handleRefreshData();
-      } catch (error) {
-        console.error('Error in initial refresh:', error);
-      }
-    };
-    
-    initialRefresh();
-    
     const vaccinationRefreshInterval = setInterval(async () => {
       try {
         console.log('🔄 Auto-refreshing vaccination data for real-time updates');
@@ -2616,7 +2489,7 @@ const SuperAdminVaccinationSchedule = () => {
     }, 60000); // 1 minute
 
     return () => clearInterval(vaccinationRefreshInterval);
-  }, []);
+  }, [patients]);
 
   // Force refresh at midnight to update "Today's Appointments" when date changes
   useEffect(() => {
@@ -3444,16 +3317,11 @@ const SuperAdminVaccinationSchedule = () => {
       
       const userCenter = getUserCenter();
       
-      // Build API URL with center filter for non-superadmin users
+      // Fetch ALL bite cases which contain vaccination data
       let vaccinationUrl = apiConfig.endpoints.bitecases;
-      if (userCenter && userCenter !== 'all') {
-        vaccinationUrl += `?center=${encodeURIComponent(userCenter)}`;
-      }
-      
       // Add cache-busting parameter to ensure fresh data
       vaccinationUrl += (vaccinationUrl.includes('?') ? '&' : '?') + `_t=${Date.now()}`;
       
-      // Fetch bite cases which contain vaccination data
       const vaccinationRes = await apiFetch(vaccinationUrl);
       const vaccinationData = await vaccinationRes.json();
       
@@ -3466,6 +3334,23 @@ const SuperAdminVaccinationSchedule = () => {
         biteCases = vaccinationData.data;
       } else if (vaccinationData.data && Array.isArray(vaccinationData.data)) {
         biteCases = vaccinationData.data;
+      }
+      
+      // Scope biteCases to admin barangay on client side
+      if (userCenter && userCenter !== 'all') {
+        const normCenter = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+        const normalizedUserCenter = normCenter(userCenter);
+        
+        const filteredBiteCases = filterByCenter(biteCases, 'center');
+        
+        const existingIds = new Set(filteredBiteCases.map(c => c._id));
+        const transferredInCases = biteCases.filter(c => {
+          if (existingIds.has(c._id)) return false;
+          const transferDest = c.transferredTo || '';
+          return (c.transferred === true || c.transferred === 'true') && transferDest && normCenter(transferDest) === normalizedUserCenter;
+        });
+        
+        biteCases = [...filteredBiteCases, ...transferredInCases];
       }
       
       console.log('Fetched bite cases:', biteCases.length);
@@ -3587,7 +3472,9 @@ const SuperAdminVaccinationSchedule = () => {
               vaccineDose: doseCode,
               createdAt: biteCase.createdAt || new Date().toISOString(),
               updatedAt: biteCase.updatedAt,
-              treatmentStatus: biteCase.treatmentStatus
+              treatmentStatus: biteCase.treatmentStatus,
+              transferred: biteCase.transferred,
+              transferredTo: biteCase.transferredTo
             };
             tempEntries.push(entry);
             statuses.push(actualStatus);
@@ -4018,39 +3905,70 @@ const SuperAdminVaccinationSchedule = () => {
                 </div>
               ) : viewMode === 'card' ? (
                 <div className="patients-grid">
-                  {Object.entries(vaccinationsByPatient).map(([patientId, patientData]) => (
-                <div 
-                  key={patientId} 
-                  className="patient-card clickable-card"
-                  onClick={(e) => {
-                    console.log('🔍 Patient card clicked:', patientData?.patient?.patientId);
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openPatientScheduleModal(patientData);
-                  }}
-                >
-                      <div className="patient-header">
-                        <div className="patient-info">
-                          <h3>{getPatientDisplayName(patientData.patient)}</h3>
-                          <p className="patient-id">ID: {patientData.patient?.patientId || 'N/A'}</p>
-                          {(() => {
-                            const scheduleStatus = getScheduleStatus(patientData);
-                            return (
-                              <p className="schedule-status" style={{ color: scheduleStatus.color, fontWeight: 'bold' }}>
-                                Status: {scheduleStatus.status}
+                  {Object.entries(vaccinationsByPatient).map(([patientId, patientData]) => {
+                    const normCenter = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+                    const normalizedUserCenter = normCenter(userCenterForRole);
+                    
+                    // Check if patient has any referred case in their vaccinations
+                    const referredVaccination = patientData.vaccinations.find(v => {
+                      const wasTransferred = v.transferred === true || v.transferred === 'true';
+                      if (!wasTransferred) return false;
+                      return isSuperAdmin 
+                        ? true 
+                        : normCenter(v.transferredTo) === normalizedUserCenter;
+                    });
+                    const isReferred = !!referredVaccination;
+                    const transferredTo = referredVaccination ? referredVaccination.transferredTo : null;
+
+                    return (
+                      <div 
+                        key={patientId} 
+                        className={`patient-card clickable-card ${isReferred ? 'referred-card' : ''}`}
+                        style={isReferred ? { border: '2px solid #f97316', backgroundColor: '#fff8f1' } : {}}
+                        onClick={(e) => {
+                          console.log('🔍 Patient card clicked:', patientData?.patient?.patientId);
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openPatientScheduleModal(patientData);
+                        }}
+                      >
+                        <div className="patient-header">
+                          <div className="patient-info">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <h3>{getPatientDisplayName(patientData.patient)}</h3>
+                              {isReferred && (
+                                <span className="referred-badge" style={{ backgroundColor: '#f97316', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                  <i className="fa-solid fa-users" style={{ marginRight: '4px' }}></i>
+                                  Referred
+                                </span>
+                              )}
+                            </div>
+                            <p className="patient-id" style={{ margin: '4px 0' }}>Patient ID: {patientData.patient?.patientId || 'N/A'}</p>
+                            {patientData.patient?.barangay && (
+                              <p className="patient-barangay" style={isReferred ? { color: '#f97316', fontStyle: 'italic', fontSize: '0.85rem', margin: '4px 0' } : { fontSize: '0.85rem', margin: '4px 0', color: '#666' }}>
+                                Barangay: {patientData.patient.barangay}
+                                {isReferred && transferredTo && ` (Referred to ${transferredTo})`}
                               </p>
-                            );
-                          })()}
-                    </div>
-                        <div className="patient-status">
-                      <div className="click-hint">
-                        <i className="fa-solid fa-mouse-pointer"></i>
-                        <span>Click to view details</span>
-                    </div>
+                            )}
+                            {(() => {
+                              const scheduleStatus = getScheduleStatus(patientData);
+                              return (
+                                <p className="schedule-status" style={{ color: scheduleStatus.color, fontWeight: 'bold', margin: '4px 0' }}>
+                                  Status: {scheduleStatus.status}
+                                </p>
+                              );
+                            })()}
+                          </div>
+                          <div className="patient-status">
+                            <div className="click-hint">
+                              <i className="fa-solid fa-mouse-pointer"></i>
+                              <span>Click to view details</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  ))}
+                    );
+                  })}
             </div>
           ) : (
             <div className="calendar-view" style={{paddingTop: 0}}>
@@ -4173,20 +4091,50 @@ const SuperAdminVaccinationSchedule = () => {
                 <div className="schedule-modal-body">
                   {/* Patient Header */}
                   <div className="patient-header-card">
-                    <h3 className="patient-name">
-                      {getPatientDisplayName(scheduleModalData?.patient)}
-                    </h3>
-                    <p className="patient-id">
-                      ID: {scheduleModalData?.patient?.patientId || 'N/A'}
-                    </p>
-                    <div className="patient-location">
-                      {scheduleModalData?.patient?.barangay && (
-                        <span>📍 Barangay: {scheduleModalData.patient.barangay}</span>
-                      )}
-                      {scheduleModalData?.patient?.center && (
-                        <span>🏥 Center: {scheduleModalData.patient.center}</span>
-                      )}
-                    </div>
+                    {(() => {
+                      const normCenter = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+                      const normalizedUserCenter = normCenter(userCenterForRole);
+                      
+                      const referredVaccination = scheduleModalData?.vaccinations?.find?.(v => {
+                        const wasTransferred = v.transferred === true || v.transferred === 'true';
+                        if (!wasTransferred) return false;
+                        return isSuperAdmin 
+                          ? true 
+                          : normCenter(v.transferredTo) === normalizedUserCenter;
+                      });
+                      const isReferred = !!referredVaccination;
+                      const transferredTo = referredVaccination ? referredVaccination.transferredTo : null;
+
+                      return (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <h3 className="patient-name">
+                              {getPatientDisplayName(scheduleModalData?.patient)}
+                            </h3>
+                            {isReferred && (
+                              <span className="referred-badge" style={{ backgroundColor: '#f97316', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                <i className="fa-solid fa-users" style={{ marginRight: '4px' }}></i>
+                                Referred
+                              </span>
+                            )}
+                          </div>
+                          <p className="patient-id">
+                            ID: {scheduleModalData?.patient?.patientId || 'N/A'}
+                          </p>
+                          <div className="patient-location">
+                            {scheduleModalData?.patient?.barangay && (
+                              <span style={isReferred ? { color: '#f97316', fontStyle: 'italic', fontWeight: '500' } : {}}>
+                                📍 Barangay: {scheduleModalData.patient.barangay}
+                                {isReferred && transferredTo && ` (Referred to ${transferredTo})`}
+                              </span>
+                            )}
+                            {scheduleModalData?.patient?.center && !isReferred && (
+                              <span>🏥 Center: {scheduleModalData.patient.center}</span>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Vaccine Selection and Editing */}

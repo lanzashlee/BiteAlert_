@@ -373,123 +373,224 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
         </div>
       </section>
 
-      {/* Vaccination Schedule Section */}
+      {/* Vaccination Schedule Section - reads real day-by-day data from bite case */}
       <section style={{ marginBottom: '40px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#374151', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>
           Schedule Dates of Immunization
         </h2>
-        
-        {caseData.completedSchedules && caseData.completedSchedules.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ 
-              width: '100%', 
-              borderCollapse: 'collapse', 
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              overflow: 'hidden',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}>
-              <thead>
-                <tr style={{ backgroundColor: '#7D0C0C', color: 'white' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Date Taken</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Medicine Used</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Branch No.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* ERIG Row */}
-                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <td style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ 
-                      width: '8px', 
-                      height: '8px', 
-                      backgroundColor: '#10B981', 
-                      borderRadius: '50%',
-                      display: 'inline-block'
-                    }}></span>
-                    ERIG
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    {caseData.currentImmunization?.erig?.status === 'completed' 
-                      ? (caseData.currentImmunization?.erig?.medicineUsed || '-')
-                      : ''
-                    }
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    {caseData.currentImmunization?.erig?.status === 'completed' 
-                      ? (caseData.currentImmunization?.erig?.branchNo || '-')
-                      : ''
-                    }
-                  </td>
-                </tr>
-                
-                {/* Schedule Rows */}
-                {caseData.completedSchedules.map((schedule, index) => (
-                  <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ 
-                        width: '8px', 
-                        height: '8px', 
-                        backgroundColor: '#10B981', 
-                        borderRadius: '50%',
-                        display: 'inline-block'
-                      }}></span>
-                      {schedule.day}
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      {schedule.status === 'completed' ? (
-                        schedule.vaccinesUsed ? (
-                        <div>
-                          {schedule.vaccinesUsed.map((vaccine, vIndex) => (
-                            <div key={vIndex} style={{ marginBottom: '4px' }}>
-                              <strong>{vaccine.type || vaccine.brand || 'Anti-Rabies'}</strong>
-                              {vaccine.route && ` (${vaccine.route})`}
-                            </div>
-                          ))}
-                        </div>
-                        ) : (
-                          // Fallback to currentImmunization.vaccine data
-                          caseData.currentImmunization?.vaccine?.map((v, vIndex) => (
-                            <div key={vIndex} style={{ marginBottom: '4px' }}>
-                              <strong>{v === 'PCEC' ? 'VAXIRAB (PCEC)' : v === 'PVRV' ? 'SPEEDA (PVRV)' : 'VAXIRAB (BOOSTER)'}</strong>
-                            </div>
-                          )) || '-'
-                        )
-                      ) : ''}
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      {schedule.status === 'completed' ? (
-                        schedule.vaccinesUsed ? (
-                          <div>
-                            {schedule.vaccinesUsed.map((vaccine, vIndex) => (
-                              <div key={vIndex} style={{ marginBottom: '4px' }}>
-                                {vaccine.branchNo || vaccine.branchNumber || '-'}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          // Fallback to currentImmunization branch data
-                          caseData.currentImmunization?.branchNo || '-'
-                        )
-                      ) : ''}
-                    </td>
+        {(() => {
+          // Build rows from the direct day fields on the case document (matches vaccination schedule source of truth)
+          const dayDefs = [
+            { label: 'Day 0',  dateField: 'd0Date',  statusField: 'd0Status',  medicineField: 'd0Medicine',  branchField: 'd0BranchNo'  },
+            { label: 'Day 3',  dateField: 'd3Date',  statusField: 'd3Status',  medicineField: 'd3Medicine',  branchField: 'd3BranchNo'  },
+            { label: 'Day 7',  dateField: 'd7Date',  statusField: 'd7Status',  medicineField: 'd7Medicine',  branchField: 'd7BranchNo'  },
+            { label: 'Day 14', dateField: 'd14Date', statusField: 'd14Status', medicineField: 'd14Medicine', branchField: 'd14BranchNo' },
+            { label: 'Day 28', dateField: 'd28Date', statusField: 'd28Status', medicineField: 'd28Medicine', branchField: 'd28BranchNo' },
+          ];
+
+          // Also try completedSchedules from vaccination data lookup (merged by loadCaseHistoryForPatient)
+          const scheduleMap = {};
+          if (Array.isArray(caseData.completedSchedules)) {
+            caseData.completedSchedules.forEach(s => { scheduleMap[s.day] = s; });
+          }
+
+          // Helper: format a raw date value for display
+          const fmtDate = (raw) => {
+            if (!raw) return '';
+            try {
+              if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+              const d = new Date(raw);
+              if (isNaN(d.getTime())) return String(raw);
+              return d.toLocaleDateString();
+            } catch (_) { return String(raw); }
+          };
+
+          // Helper: status → dot colour
+          const dotColor = (status) => {
+            const s = String(status || '').toLowerCase();
+            if (s === 'completed') return '#10B981';
+            if (s === 'missed')    return '#EF4444';
+            if (s === 'scheduled') return '#3B82F6';
+            return '#9CA3AF';
+          };
+
+          // Helper: status → badge style
+          const badgeStyle = (status) => {
+            const s = String(status || '').toLowerCase();
+            const base = { fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '12px', display: 'inline-block' };
+            if (s === 'completed') return { ...base, background: '#D1FAE5', color: '#065F46' };
+            if (s === 'missed')    return { ...base, background: '#FEE2E2', color: '#991B1B' };
+            if (s === 'scheduled') return { ...base, background: '#DBEAFE', color: '#1E40AF' };
+            return { ...base, background: '#F3F4F6', color: '#6B7280' };
+          };
+
+          // Date utilities for consistent local date-only handling (matches Vaccination Schedule logic)
+          const toLocalYMD = (dateLike) => {
+            if (!dateLike) return '';
+            try {
+              if (typeof dateLike === 'string') {
+                const trimmed = dateLike.trim();
+                if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+                if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.substring(0, 10);
+              }
+              let val = dateLike;
+              if (typeof dateLike === 'object' && dateLike) {
+                if (dateLike.$date) {
+                  const inner = dateLike.$date;
+                  if (typeof inner === 'string' || typeof inner === 'number') {
+                    val = inner;
+                  } else if (typeof inner === 'object' && inner.$numberLong) {
+                    val = Number(inner.$numberLong);
+                  }
+                } else if (dateLike.$numberLong) {
+                  val = Number(dateLike.$numberLong);
+                }
+              }
+              const d = new Date(val);
+              if (isNaN(d.getTime())) return '';
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              return `${y}-${m}-${day}`;
+            } catch (_) {
+              return '';
+            }
+          };
+
+          const getTodayLocalStr = () => {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+          };
+
+          // Build the row data: prefer direct bite-case day fields, fall back to completedSchedules lookup
+          const rows = dayDefs.map(def => {
+            const directDate   = caseData[def.dateField];
+            const directStatus = caseData[def.statusField];
+            const directMed    = caseData[def.medicineField];
+            const directBranch = caseData[def.branchField];
+            const sched        = scheduleMap[def.label];
+
+            // Resolve actual date (scheduleDates array preferred, then per-day field)
+            let resolvedDate = '';
+            let rawDateVal = null;
+            if (directDate) {
+              resolvedDate = fmtDate(directDate);
+              rawDateVal = directDate;
+            } else if (sched?.date && sched.date !== 'Not scheduled') {
+              resolvedDate = sched.date;
+              rawDateVal = sched.date;
+            } else if (Array.isArray(caseData.scheduleDates)) {
+              const idx = ['Day 0','Day 3','Day 7','Day 14','Day 28'].indexOf(def.label);
+              if (idx >= 0 && caseData.scheduleDates[idx]) {
+                resolvedDate = fmtDate(caseData.scheduleDates[idx]);
+                rawDateVal = caseData.scheduleDates[idx];
+              }
+            }
+
+            // Resolve status
+            const resolvedStatus = directStatus || sched?.status || (resolvedDate ? 'scheduled' : '');
+
+            // Apply same "missed" computation as Vaccination Schedule page
+            let effectiveStatus = resolvedStatus ? resolvedStatus.toString().toLowerCase().trim() : '';
+            if (effectiveStatus !== 'completed' && effectiveStatus !== 'missed') {
+              const ymd = toLocalYMD(rawDateVal);
+              const todayStr = getTodayLocalStr();
+              if (ymd) {
+                if (ymd < todayStr) {
+                  effectiveStatus = 'missed';
+                } else {
+                  effectiveStatus = 'scheduled';
+                }
+              }
+            }
+
+            // Resolve medicine
+            let resolvedMed = directMed || '';
+            if (!resolvedMed && sched?.vaccinesUsed?.length > 0) {
+              resolvedMed = sched.vaccinesUsed.map(v => [v.type || v.brand, v.route ? `(${v.route})` : ''].filter(Boolean).join(' ')).join(', ');
+            }
+            if (!resolvedMed && caseData.currentImmunization?.vaccine?.length > 0) {
+              resolvedMed = caseData.currentImmunization.vaccine.map(v =>
+                v === 'PCEC' ? 'VAXIRAB (PCEC)' : v === 'PVRV' ? 'SPEEDA (PVRV)' : v
+              ).join(', ');
+            }
+
+            // Resolve branch
+            let resolvedBranch = directBranch || '';
+            if (!resolvedBranch && sched?.vaccinesUsed?.length > 0) {
+              resolvedBranch = sched.vaccinesUsed.map(v => v.branchNo || v.branchNumber || '').filter(Boolean).join(', ');
+            }
+            if (!resolvedBranch) resolvedBranch = sched?.branchNo || caseData.currentImmunization?.branchNo || '';
+
+            return { label: def.label, date: resolvedDate, status: effectiveStatus, medicine: resolvedMed, branch: resolvedBranch };
+          }).filter(r => r.date || r.status); // only show rows with some data
+
+          // ERIG from currentImmunization
+          const erigStatus   = caseData.currentImmunization?.erig?.status || '';
+          const erigMed      = caseData.currentImmunization?.erig?.medicineUsed || '';
+          const erigBranch   = caseData.currentImmunization?.erig?.branchNo || '';
+          const hasErig      = erigStatus || erigMed;
+
+          if (!hasErig && rows.length === 0) {
+            return (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: 0, fontSize: '14px' }}>No vaccination schedule data available for this case.</p>
+              </div>
+            );
+          }
+
+          return (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#7D0C0C', color: 'white' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Day / Type</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Date Taken</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Status</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Medicine Used</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Branch No.</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ 
-            padding: '20px', 
-            textAlign: 'center', 
-            color: '#6b7280', 
-            backgroundColor: '#f9fafb', 
-            borderRadius: '8px',
-            border: '1px solid #e5e7eb'
-          }}>
-            <p style={{ margin: 0, fontSize: '14px' }}>No vaccination schedule data available for this case.</p>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {/* ERIG row */}
+                  {hasErig && (
+                    <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '8px', height: '8px', backgroundColor: dotColor(erigStatus), borderRadius: '50%', display: 'inline-block', flexShrink: 0 }}></span>
+                        ERIG
+                      </td>
+                      <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>-</td>
+                      <td style={{ padding: '12px' }}>
+                        {erigStatus && <span style={badgeStyle(erigStatus)}>{erigStatus.charAt(0).toUpperCase() + erigStatus.slice(1)}</span>}
+                      </td>
+                      <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>{erigMed || '-'}</td>
+                      <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>{erigBranch || '-'}</td>
+                    </tr>
+                  )}
+                  {/* Day rows */}
+                  {rows.map((row, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: idx % 2 === 0 ? 'white' : '#FAFAFA' }}>
+                      <td style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '8px', height: '8px', backgroundColor: dotColor(row.status), borderRadius: '50%', display: 'inline-block', flexShrink: 0 }}></span>
+                        <strong style={{ fontSize: '13px' }}>{row.label}</strong>
+                      </td>
+                      <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>{row.date || '-'}</td>
+                      <td style={{ padding: '12px' }}>
+                        {row.status && <span style={badgeStyle(row.status)}>{row.status.charAt(0).toUpperCase() + row.status.slice(1)}</span>}
+                      </td>
+                      <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>{row.medicine || '-'}</td>
+                      <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>{row.branch || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
+
       </section>
     </div>
   );
@@ -510,8 +611,6 @@ const SuperAdminPatients = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [vaccinationDate, setVaccinationDate] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const [showPatientModal, setShowPatientModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -541,6 +640,41 @@ const SuperAdminPatients = () => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+
+  const isSelectedPatientReferred = useMemo(() => {
+    if (!selectedPatient) return false;
+    const selectedPatientId = selectedPatient._id || selectedPatient.patientId || selectedPatient.patientID;
+    const selectedRegNumber = selectedPatient.registrationNumber || selectedPatient.regNo;
+    const selectedPatientName = [selectedPatient.firstName, selectedPatient.middleName, selectedPatient.lastName].filter(Boolean).join(' ').toLowerCase();
+    
+    const currentCenter = getUserCenter();
+    const normC = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+    const normalizedCurrentCenter = normC(currentCenter);
+    
+    return biteCases.some(case_ => {
+      const casePatientId = case_.patientId || case_.patientID;
+      const caseRegNumber = case_.registrationNumber || case_.regNo;
+      const casePatientName = case_.patientName || [case_?.firstName, case_?.middleName, case_?.lastName]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      
+      const isMatch = (selectedPatientId && casePatientId && selectedPatientId === casePatientId) ||
+                      (selectedRegNumber && caseRegNumber && selectedRegNumber === caseRegNumber) ||
+                      (selectedPatientName && casePatientName && selectedPatientName === casePatientName);
+      
+      if (!isMatch) return false;
+      
+      const transferDest = case_.transferredTo || '';
+      const wasTransferred = case_.transferred === true || case_.transferred === 'true';
+      
+      if (currentCenter && currentCenter !== 'all') {
+        return wasTransferred && transferDest && normC(transferDest) === normalizedCurrentCenter;
+      }
+      
+      return wasTransferred && !!transferDest;
+    });
+  }, [selectedPatient, biteCases]);
   
   // Vaccination history states
   const [vaccinationHistory, setVaccinationHistory] = useState([]);
@@ -573,19 +707,10 @@ const SuperAdminPatients = () => {
   const [addPatientError, setAddPatientError] = useState('');
   const [nameDuplicateWarning, setNameDuplicateWarning] = useState('');
 
-  const params = useMemo(() => {
-    const usp = new URLSearchParams();
-    if (query) usp.set('q', query);
-    // vaccination day removed
-    if (barangay && barangay !== 'all') usp.set('barangay', barangay);
-    if (centerFilter && centerFilter !== 'all') usp.set('center', centerFilter);
-    if (sexFilter && sexFilter !== 'all') usp.set('sex', sexFilter);
-    if (dateFilter) usp.set('dateFilter', dateFilter);
-    if (vaccinationDate) usp.set('vaccinationDate', vaccinationDate);
-    usp.set('page', String(page));
-    usp.set('limit', String(PAGE_SIZE));
-    return usp.toString();
-  }, [query, status, barangay, centerFilter, dateFilter, vaccinationDate, page, sexFilter]);
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [query, sexFilter, barangay, dateFilter, centerFilter]);
 
   // Optimized data fetching with batching to reduce API calls
   useEffect(() => {
@@ -597,7 +722,7 @@ const SuperAdminPatients = () => {
         const [centersRes, biteCasesRes, patientsRes] = await Promise.allSettled([
           apiFetch(apiConfig.endpoints.centers, { signal: controller.signal }),
           apiFetch('/api/bitecases', { signal: controller.signal }),
-          apiFetch(`${apiConfig.endpoints.patients}?${params || 'page=1&limit=1000'}`, { signal: controller.signal })
+          apiFetch(`${apiConfig.endpoints.patients}?page=1&limit=1000`, { signal: controller.signal })
         ]);
 
         // Process centers
@@ -615,9 +740,24 @@ const SuperAdminPatients = () => {
         // Process bite cases
         if (biteCasesRes.status === 'fulfilled' && biteCasesRes.value.ok) {
           const data = await biteCasesRes.value.json();
-          const biteCases = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
-          const filteredBiteCases = filterByCenter(biteCases, 'center');
-          setBiteCases(filteredBiteCases);
+          const allBiteCases = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+          const filteredBiteCases = filterByCenter(allBiteCases, 'center');
+          
+          // Also include bite cases that were transferred TO the current admin's center
+          const userCenter = getUserCenter();
+          let mergedBiteCases = filteredBiteCases;
+          if (userCenter && userCenter !== 'all') {
+            const normCenter = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+            const normalizedUserCenter = normCenter(userCenter);
+            const existingIds = new Set(filteredBiteCases.map(c => c._id));
+            const transferredInCases = allBiteCases.filter(c => {
+              if (existingIds.has(c._id)) return false; // already included
+              const transferDest = c.transferredTo || '';
+              return (c.transferred === true || c.transferred === 'true') && transferDest && normCenter(transferDest) === normalizedUserCenter;
+            });
+            mergedBiteCases = [...filteredBiteCases, ...transferredInCases];
+          }
+          setBiteCases(mergedBiteCases);
         }
 
         // Process patients
@@ -653,14 +793,14 @@ const SuperAdminPatients = () => {
 
     fetchAllData();
     return () => controller.abort();
-  }, [params, centerFilter]);
+  }, [centerFilter]);
 
   // Removed duplicate bite cases fetching - now handled in batched API call above
 
   // Removed duplicate patients fetching - now handled in batched API call above
 
   // Optimized client-side filtering with memoization
-  const visiblePatients = useMemo(() => {
+  const filteredPatients = useMemo(() => {
     if (!patients || patients.length === 0) return [];
     
     const norm = (v) => String(v || '').toLowerCase();
@@ -722,18 +862,26 @@ const SuperAdminPatients = () => {
       return true;
     });
     
-    // Calculate pagination
-    const total = filtered.length;
-    const totalPagesCount = Math.ceil(total / PAGE_SIZE);
-    setTotalItems(total);
-    setTotalPages(totalPagesCount);
-    
-    // Apply pagination
-    const startIndex = (page - 1) * PAGE_SIZE;
+    return filtered;
+  }, [patients, query, sexFilter, barangay, dateFilter]);
+  
+  // Derived pagination
+  const totalItems = filteredPatients.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  
+  // Apply pagination
+  const visiblePatients = useMemo(() => {
+    const validPage = Math.max(1, Math.min(page, totalPages));
+    const startIndex = (validPage - 1) * PAGE_SIZE;
     const endIndex = startIndex + PAGE_SIZE;
-    
-    return filtered.slice(startIndex, endIndex);
-  }, [patients, query, sexFilter, barangay, dateFilter, page]);
+    return filteredPatients.slice(startIndex, endIndex);
+  }, [filteredPatients, page, totalPages]);
+
+  useEffect(() => {
+    if (page > totalPages && totalPages > 0) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   useEffect(() => {
     const first = (newPatientData.firstName || '').trim().toLowerCase();
@@ -1091,14 +1239,15 @@ const SuperAdminPatients = () => {
       
       const data = await res.json();
       console.log('API response data:', data);
-      const pid = patient._id || patient.patientId || patient.patientID || patient.id;
+      const pDbId = String(patient._id || '').trim();
+      const pCustId = String(patient.patientId || patient.patientID || '').trim();
       const reg = patient.registrationNumber || patient.regNo || '';
       const pname = [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(' ').trim().toLowerCase();
       const pfname = String(patient.firstName || '').trim().toLowerCase();
       const plname = String(patient.lastName || '').trim().toLowerCase();
       const list = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
       console.log('All bite cases:', list.length);
-      console.log('Patient ID:', pid, 'Registration:', reg, 'Name:', pname);
+      console.log('Patient IDs:', { pDbId, pCustId }, 'Registration:', reg, 'Name:', pname);
       const filtered = list.filter(c => {
         const cid = String(c.patientId || c.patientID || '').trim();
         const cname = String(c.patientName || '').trim().toLowerCase();
@@ -1107,12 +1256,6 @@ const SuperAdminPatients = () => {
         const clname = String(c.lastName || '').trim().toLowerCase();
         const cstatus = String(c.status || '').trim().toLowerCase();
         
-        // Only show completed and missed cases, exclude in_progress
-        if (cstatus && cstatus !== 'completed' && cstatus !== 'missed') {
-          console.log('Case filtered out due to status:', cstatus);
-          return false;
-        }
-        
         console.log('Comparing case:', {
           caseId: cid,
           caseName: cname,
@@ -1120,26 +1263,49 @@ const SuperAdminPatients = () => {
           caseFirstName: cfname,
           caseLastName: clname,
           caseStatus: cstatus,
-          patientId: pid,
+          patientDbId: pDbId,
+          patientCustomId: pCustId,
           patientName: pname,
           patientReg: reg,
           patientFirstName: pfname,
           patientLastName: plname
         });
         
-        // Try multiple matching strategies
-        if (pid && cid && cid === String(pid)) {
-          console.log('Match found by patient ID');
-          return true;
+        // 1. Match by Database ID or Custom Patient ID
+        if (cid) {
+          if (pDbId && cid === pDbId) {
+            console.log('Match found by patient Database ID (_id)');
+            return true;
+          }
+          if (pCustId && cid === pCustId) {
+            console.log('Match found by patient Custom ID (patientId)');
+            return true;
+          }
         }
+        
+        // 2. Match by registration number
         if (reg && creg && creg === reg) {
           console.log('Match found by registration number');
           return true;
         }
-        if (pfname && plname && cfname && clname && pfname === cfname && plname === clname) {
-          console.log('Match found by first and last name');
-          return true;
+        
+        // 3. Match by name parts
+        if (pfname && plname) {
+          if (cfname === pfname && clname === plname) {
+            console.log('Match found by exact first and last name fields');
+            return true;
+          }
+          if (cname && cname.includes(pfname) && cname.includes(plname)) {
+            console.log('Match found by patient first & last names contained in case patientName');
+            return true;
+          }
+          if (pname && cfname && clname && pname.includes(cfname) && pname.includes(clname)) {
+            console.log('Match found by case first & last names contained in patient full name');
+            return true;
+          }
         }
+        
+        // 4. Match by full name
         if (pname && cname) {
           if (cname === pname) {
             console.log('Match found by full name (exact)');
@@ -1151,45 +1317,14 @@ const SuperAdminPatients = () => {
           }
         }
         
-        // Additional fallback: try matching just first name if available
-        if (pfname && cfname && pfname === cfname) {
-          console.log('Match found by first name only');
-          return true;
-        }
-        
         return false;
       });
       console.log('Filtered cases:', filtered.length);
       console.log('Filtered cases data:', filtered);
       
       if (filtered.length === 0) {
-        console.log('No matching cases found, creating sample vaccination schedule');
-        // Create a sample case with vaccination schedule for demonstration
-        const sampleCase = {
-          _id: 'sample-case-' + Date.now(),
-          patientId: pid,
-          registrationNumber: reg || 'SAMPLE-001',
-          firstName: patient.firstName || 'Sample',
-          lastName: patient.lastName || 'Patient',
-          createdAt: new Date().toISOString(),
-          scheduleDates: [
-            new Date(Date.now() + 0 * 24 * 60 * 60 * 1000).toISOString(), // D0
-            new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // D3
-            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // D7
-            new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // D14
-            new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString()  // D28
-          ],
-          status: 'in_progress',
-          center: '001',
-          completedSchedules: [
-            { day: 'Day 0', date: new Date().toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
-            { day: 'Day 3', date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
-            { day: 'Day 7', date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
-            { day: 'Day 14', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
-            { day: 'Day 28', date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' }
-          ]
-        };
-        setCaseHistory([sampleCase]);
+        // No matching cases found - show empty state
+        setCaseHistory([]);
       } else {
         // Process each case to add completedSchedules from vaccination data
         const processedCases = await Promise.all(filtered.map(async (case_) => {
@@ -1295,34 +1430,7 @@ const SuperAdminPatients = () => {
     } catch (err) {
       console.error('Error loading case history:', err);
       setHistoryError(err.message || 'Failed to load case history');
-      
-      // Fallback: Create mock case history with vaccination schedule
-      console.log('Creating fallback case history with vaccination schedule');
-      const mockCaseHistory = [{
-        _id: 'mock-case-' + Date.now(),
-        patientId: patient._id || patient.patientId || patient.patientID || patient.id,
-        registrationNumber: patient.registrationNumber || patient.regNo || 'MOCK-001',
-        firstName: patient.firstName || '',
-        lastName: patient.lastName || '',
-        createdAt: new Date().toISOString(),
-        scheduleDates: [
-          new Date(Date.now() + 0 * 24 * 60 * 60 * 1000).toISOString(), // D0
-          new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // D3
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // D7
-          new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // D14
-          new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString()  // D28
-        ],
-        status: 'in_progress',
-        center: '001',
-        completedSchedules: [
-          { day: 'Day 0', date: new Date().toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
-          { day: 'Day 3', date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
-          { day: 'Day 7', date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
-          { day: 'Day 14', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' },
-          { day: 'Day 28', date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toLocaleDateString(), status: 'completed', vaccineType: 'Anti-Rabies', center: 'San Juan Health Center' }
-        ]
-      }];
-      setCaseHistory(mockCaseHistory);
+      setCaseHistory([]);
     } finally {
       setHistoryLoading(false);
     }
@@ -1355,7 +1463,8 @@ const SuperAdminPatients = () => {
     try {
       const res = await apiFetch(apiConfig.endpoints.bitecases);
       const data = await res.json();
-      const pid = selectedPatient._id || selectedPatient.patientId || selectedPatient.patientID || selectedPatient.id;
+      const pDbId = String(selectedPatient._id || '').trim();
+      const pCustId = String(selectedPatient.patientId || selectedPatient.patientID || '').trim();
       const reg = selectedPatient.registrationNumber || selectedPatient.regNo || '';
       const pname = [selectedPatient.firstName, selectedPatient.middleName, selectedPatient.lastName].filter(Boolean).join(' ').trim().toLowerCase();
       const pfname = String(selectedPatient.firstName || '').trim().toLowerCase();
@@ -1369,23 +1478,32 @@ const SuperAdminPatients = () => {
         const clname = String(c.lastName || '').trim().toLowerCase();
         const cstatus = String(c.status || '').trim().toLowerCase();
         
-        // Only show completed and missed cases, exclude in_progress
-        if (cstatus && cstatus !== 'completed' && cstatus !== 'missed') {
-          return false;
+        // 1. Match by Database ID or Custom Patient ID
+        if (cid) {
+          if (pDbId && cid === pDbId) return true;
+          if (pCustId && cid === pCustId) return true;
         }
         
-        if (pid && cid) return cid === String(pid);
-        if (reg && creg) return creg === reg;
-        if (pfname && plname && cfname && clname) return pfname === cfname && plname === clname;
-        if (pname && cname) {
-          // strict compare, then relaxed contains for legacy data
-          if (cname === pname) return true;
-          return cname.includes(pname) || pname.includes(cname);
+        // 2. Match by registration number
+        if (reg && creg && creg === reg) return true;
+        
+        // 3. Match by name parts
+        if (pfname && plname) {
+          if (cfname === pfname && clname === plname) return true;
+          if (cname && cname.includes(pfname) && cname.includes(plname)) return true;
+          if (pname && cfname && clname && pname.includes(cfname) && pname.includes(clname)) return true;
         }
+        
+        // 4. Match by full name
+        if (pname && cname) {
+          if (cname === pname) return true;
+          if (cname.includes(pname) || pname.includes(cname)) return true;
+        }
+        
         return false;
       });
-      // Debug info to help identify mismatches during development
-      try { console.debug('CaseHistory: pid', pid, 'name', pname, 'all cases', list.length, 'matched', filtered.length); } catch(_) {}
+       // Debug info to help identify mismatches during development
+      try { console.debug('CaseHistory: pDbId', pDbId, 'name', pname, 'all cases', list.length, 'matched', filtered.length); } catch(_) {}
       setCaseHistory(filtered.sort((a,b)=> new Date(b.createdAt||b.incidentDate||0)-new Date(a.createdAt||a.incidentDate||0)));
     } catch (err) {
       setHistoryError(err.message || 'Failed to load case history');
@@ -1402,11 +1520,14 @@ const SuperAdminPatients = () => {
     setVaccinationError('');
     
     try {
-      const patientId = patient._id || patient.patientId || patient.patientID || patient.id;
+      const patientDbId = String(patient._id || '').trim();
+      const patientCustomId = String(patient.patientId || patient.patientID || '').trim();
       const registrationNumber = patient.registrationNumber || patient.regNo || '';
       const patientName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+      const pfname = String(patient.firstName || '').trim().toLowerCase();
+      const plname = String(patient.lastName || '').trim().toLowerCase();
       
-      console.log('Loading vaccination history for patient:', patientId);
+      console.log('Loading vaccination history for patient:', { patientDbId, patientCustomId });
       console.log('Patient registration number:', registrationNumber);
       console.log('Patient name:', patientName);
       console.log('Full patient object:', patient);
@@ -1430,25 +1551,32 @@ const SuperAdminPatients = () => {
         if (Array.isArray(allData)) {
           console.log('Total vaccination dates found:', allData.length);
           
-          // Filter by patientId or registrationNumber
+          // Filter by patientId or registrationNumber or Name
           vaccinationDates = allData.filter(vaccinationDate => {
-            const vdPatientId = vaccinationDate.patientId || '';
-            const vdRegistrationNumber = vaccinationDate.registrationNumber || '';
+            const vdPatientId = String(vaccinationDate.patientId || '').trim();
+            const vdRegistrationNumber = String(vaccinationDate.registrationNumber || '').trim();
+            const vdPatientName = String(vaccinationDate.patientName || '').trim().toLowerCase();
             
             console.log('Checking vaccination date:', {
               vdPatientId,
               vdRegistrationNumber,
-              patientId,
-              registrationNumber,
-              patientIdMatch: patientId && vdPatientId && vdPatientId === patientId,
-              registrationMatch: registrationNumber && vdRegistrationNumber && vdRegistrationNumber === registrationNumber
+              vdPatientName,
+              patientDbId,
+              patientCustomId,
+              registrationNumber
             });
             
-            // Check if patientId matches
-            if (patientId && vdPatientId && vdPatientId === patientId) return true;
+            // 1. Check if patientId matches database ID or custom patient ID
+            if (patientDbId && vdPatientId && vdPatientId === patientDbId) return true;
+            if (patientCustomId && vdPatientId && vdPatientId === patientCustomId) return true;
             
-            // Check if registration number matches
+            // 2. Check if registration number matches
             if (registrationNumber && vdRegistrationNumber && vdRegistrationNumber === registrationNumber) return true;
+
+            // 3. Fallback name check
+            if (pfname && plname && vdPatientName) {
+              if (vdPatientName.includes(pfname) && vdPatientName.includes(plname)) return true;
+            }
             
             return false;
           });
@@ -1875,7 +2003,7 @@ const SuperAdminPatients = () => {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container superadmin-patients-page">
       <ResponsiveSidebar onSignOut={handleSignOut} />
       <main className="main-content">
         <div className="content-header">
@@ -2341,6 +2469,64 @@ const SuperAdminPatients = () => {
                       return false;
                     });
                     
+                    // Check if patient has referred/transferred bite cases
+                    const isReferred = (() => {
+                      const currentCenter = getUserCenter();
+                      const normC = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+                      const normalizedCurrentCenter = normC(currentCenter);
+                      
+                      return biteCases.some(case_ => {
+                        const patientId = p._id || p.patientId || p.patientID;
+                        const regNumber = p.registrationNumber || p.regNo;
+                        const patientName = [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ').toLowerCase();
+                        
+                        const casePatientId = case_.patientId || case_.patientID;
+                        const caseRegNumber = case_.registrationNumber || case_.regNo;
+                        const casePatientName = case_.patientName || [case_?.firstName, case_?.middleName, case_?.lastName]
+                          .filter(Boolean)
+                          .join(' ')
+                          .toLowerCase();
+                        
+                        const isMatch = (patientId && casePatientId && patientId === casePatientId) ||
+                                        (regNumber && caseRegNumber && regNumber === caseRegNumber) ||
+                                        (patientName && casePatientName && patientName === casePatientName);
+                        
+                        if (!isMatch) return false;
+                        
+                        // Check if the case was transferred TO the current center
+                        const transferDest = case_.transferredTo || '';
+                        const wasTransferred = case_.transferred === true || case_.transferred === 'true';
+                        
+                        if (currentCenter && currentCenter !== 'all') {
+                          // For admin: show "Referred" only if transferredTo matches THIS center
+                          return wasTransferred && transferDest && normC(transferDest) === normalizedCurrentCenter;
+                        }
+                        
+                        // For superadmin: show "Referred" for any transferred case
+                        return wasTransferred && !!transferDest;
+                      });
+                    })();
+                    
+                    // Get the transferredTo center name for referred patients
+                    let referredToCenter = '';
+                    if (isReferred) {
+                      const matchingCase = biteCases.find(case_ => {
+                        const patientId = p._id || p.patientId || p.patientID;
+                        const regNumber = p.registrationNumber || p.regNo;
+                        const patientNameLower = [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ').toLowerCase();
+                        const casePatientId = case_.patientId || case_.patientID;
+                        const caseRegNumber = case_.registrationNumber || case_.regNo;
+                        const casePatientName = case_.patientName || [case_?.firstName, case_?.middleName, case_?.lastName].filter(Boolean).join(' ').toLowerCase();
+                        const isMatch = (patientId && casePatientId && patientId === casePatientId) ||
+                                        (regNumber && caseRegNumber && regNumber === caseRegNumber) ||
+                                        (patientNameLower && casePatientName && patientNameLower === casePatientName);
+                        return isMatch && (case_.transferred === true || case_.transferred === 'true') && case_.transferredTo;
+                      });
+                      if (matchingCase) {
+                        referredToCenter = matchingCase.transferredTo;
+                      }
+                    }
+                    
                     // Apply search filter to include gender as well
                     const search = query.trim().toLowerCase();
                     const genderStr = String(p.gender || p.sex || '').toLowerCase();
@@ -2353,6 +2539,76 @@ const SuperAdminPatients = () => {
                         genderStr
                       ].filter(Boolean).some(v => String(v).toLowerCase().includes(search));
                       if (!matches) return null;
+                    }
+                    
+                    if (isReferred) {
+                      // Card-style rendering for referred patients
+                      return (
+                        <tr 
+                          key={p._id} 
+                          onClick={() => handlePatientClick(p)} 
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <td colSpan="7" style={{ padding: '8px 12px' }}>
+                            <div style={{
+                              border: '2px solid #F59E0B',
+                              borderRadius: '12px',
+                              padding: '16px 20px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '16px',
+                              backgroundColor: '#FFFBEB',
+                              transition: 'box-shadow 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.25)'}
+                            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+                            >
+                              {/* People Icon */}
+                              <div style={{
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '10px',
+                                backgroundColor: '#FEF3C7',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                              }}>
+                                <i className="fa fa-users" style={{ fontSize: '20px', color: '#F59E0B' }}></i>
+                              </div>
+
+                              {/* Patient Info */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#1F2937', marginBottom: '2px' }}>
+                                  {p.lastName || ''}{p.lastName && p.firstName ? ', ' : ''}{p.firstName || ''}
+                                </div>
+                                <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>
+                                  Patient ID: {p.patientId || 'N/A'}
+                                </div>
+                                <div style={{ fontSize: '13px', color: '#F59E0B', fontStyle: 'italic' }}>
+                                  Barangay: {p.barangay || 'N/A'}{referredToCenter ? ` (Referred to ${referredToCenter})` : ''}
+                                </div>
+                              </div>
+
+                              {/* Referred Badge */}
+                              <span style={{
+                                padding: '6px 18px',
+                                borderRadius: '20px',
+                                fontSize: '14px',
+                                fontWeight: '700',
+                                backgroundColor: '#F59E0B',
+                                color: 'white',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                flexShrink: 0,
+                                letterSpacing: '0.3px'
+                              }}>
+                                Referred
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
                     }
                     
                     return (
@@ -2442,10 +2698,16 @@ const SuperAdminPatients = () => {
                 <div>
                   <NewBiteCaseForm 
                     selectedPatient={selectedPatient}
-                    onSaved={() => {
-                      try { setShowPatientModal(false); } catch(e) {}
+                    onSaved={async () => {
+                      try {
+                        setShowCaseForm(false);
+                        setShowHistory(true);
+                        await loadCaseHistoryForPatient(selectedPatient);
+                      } catch(e) {
+                        console.error('Error refreshing case history after save:', e);
+                      }
                     }}
-                    onCancel={() => setShowPatientModal(false)}
+                    onCancel={() => setShowCaseForm(false)}
                   />
                 </div>
               ) : showHistory ? (
@@ -3084,8 +3346,22 @@ const SuperAdminPatients = () => {
                       <i className="fa fa-user"></i>
                     </div>
                     <div className="patient-profile-info">
-                      <h2 className="patient-name-large">
+                      <h2 className="patient-name-large" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         {[selectedPatient.firstName, selectedPatient.middleName, selectedPatient.lastName].filter(Boolean).join(' ')}
+                        {isSelectedPatientReferred && (
+                          <span className="referred-badge" style={{
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor: '#E0F2FE',
+                            color: '#0369A1',
+                            border: '1px solid #BAE6FD',
+                            display: 'inline-block'
+                          }}>
+                            Referred
+                          </span>
+                        )}
                       </h2>
                       <p className="patient-email">
                         {selectedPatient.email || 'No email provided'}

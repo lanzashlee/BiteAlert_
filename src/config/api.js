@@ -3,9 +3,12 @@
 // Use the backend URL from render.yaml configuration
 
 // Import caching utilities
-import { getCachedData, setCachedData } from '../utils/apiCache';
+import { getCachedData, setCachedData, clearCache } from '../utils/apiCache';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://bitealert-backend-9rv9.onrender.com';
+const isLocalhost = typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+const API_BASE_URL = isLocalhost
+  ? 'http://localhost:4000'
+  : (process.env.REACT_APP_API_URL || 'https://bitealert-backend-tfj9.onrender.com');
 
 // Debug: Log the API base URL to console
 console.log('API Base URL:', API_BASE_URL);
@@ -139,6 +142,16 @@ export const apiFetch = async (endpoint, options = {}) => {
         setCachedData(cacheKey, data);
       } catch (error) {
         console.warn('Failed to cache response:', error);
+      }
+    }
+
+    // Invalidate entire cache on successful write operations
+    if (response.ok && options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
+      console.log('Clearing API cache due to write operation:', options.method, url);
+      try {
+        clearCache();
+      } catch (error) {
+        console.warn('Failed to clear cache:', error);
       }
     }
     

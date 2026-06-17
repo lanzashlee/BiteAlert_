@@ -7,8 +7,7 @@ This guide will help you deploy your BiteAlert application on Render with separa
 1. A GitHub account with your code repository
 2. A Render account (free tier available)
 3. MongoDB Atlas database (or your preferred MongoDB hosting)
-4. Google API key for Gemini AI features
-5. Email service credentials (for notifications)
+4. Email service credentials (for notifications)
 
 ## Step 1: Prepare Your Repository
 
@@ -39,7 +38,6 @@ Make sure your repository is pushed to GitHub with all the changes from this gui
    NODE_ENV=production
    API_PORT=10000
    MONGODB_URI=your_mongodb_connection_string
-   GOOGLE_API_KEY=your_google_api_key
    EMAIL_USER=your_email_username
    EMAIL_PASS=your_email_password
    ```
@@ -101,7 +99,6 @@ If you want to update more components to use the centralized API configuration, 
 | `NODE_ENV` | Environment mode | Yes | `production` |
 | `API_PORT` | Port for backend service | Yes | `10000` |
 | `MONGODB_URI` | MongoDB connection string | Yes | `mongodb+srv://...` |
-| `GOOGLE_API_KEY` | Google Gemini API key | No* | `AIza...` |
 | `EMAIL_USER` | Email service username | No* | `your-email@domain.com` |
 | `EMAIL_PASS` | Email service password | No* | `your-password` |
 

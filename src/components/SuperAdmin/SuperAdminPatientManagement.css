@@ -1,10 +1,9 @@
-/* Import SuperAdmin StaffManagement styles */
-@import './SuperAdminStaffManagement.css';
+/* Import statements removed to avoid CSS leakage */
 @import '../GlobalResponsive.css';
 @import './ResponsiveSidebar.css';
 
 /* Dashboard Layout */
-.dashboard-container {
+.superadmin-patient-management-page .dashboard-container {
   position: relative;
   width: 100%;
   height: 100vh;
@@ -14,7 +13,7 @@
 }
 
 /* Main Content */
-.main-content {
+.superadmin-patient-management-page .main-content {
   padding: 1rem 1.5rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
@@ -37,7 +36,7 @@
 }
 
 /* Content Header */
-.content-header {
+.superadmin-patient-management-page .content-header {
   background: white;
   padding: 1rem 1.5rem;
   border-bottom: 2px solid #e2e8f0;
@@ -49,7 +48,7 @@
   align-items: center;
 }
 
-.content-header h2 {
+.superadmin-patient-management-page .content-header h2 {
   margin: 0;
   font-size: 1.8rem;
   color: #1f2937;
@@ -58,14 +57,14 @@
 }
 
 /* SuperAdmin Patient Management Specific Styles */
-.dashboard-container .action-buttons {
+.superadmin-patient-management-page .dashboard-container .superadmin-patient-management-page .action-buttons {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
   align-items: center;
 }
 
-.dashboard-container .action-buttons button {
+.superadmin-patient-management-page .dashboard-container .superadmin-patient-management-page .action-buttons button {
   min-width: 100px;
   padding: 0.75rem 1.25rem;
   border: none;
@@ -82,44 +81,44 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.dashboard-container .btn-activate {
+.superadmin-patient-management-page .dashboard-container .btn-activate {
   background: #3b82f6;
   color: white;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
-.dashboard-container .btn-activate:hover {
+.superadmin-patient-management-page .dashboard-container .btn-activate:hover {
   background: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
 }
 
-.dashboard-container .btn-deactivate {
+.superadmin-patient-management-page .dashboard-container .btn-deactivate {
   background: #f59e0b;
   color: white;
   box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
 }
 
-.dashboard-container .btn-deactivate:hover {
+.superadmin-patient-management-page .dashboard-container .btn-deactivate:hover {
   background: #d97706;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
 }
 
-.dashboard-container .btn-password {
+.superadmin-patient-management-page .dashboard-container .btn-password {
   background: #800000;
   color: white;
   box-shadow: 0 2px 4px rgba(128, 0, 0, 0.2);
 }
 
-.dashboard-container .btn-password:hover {
+.superadmin-patient-management-page .dashboard-container .btn-password:hover {
   background: #6b0000;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(128, 0, 0, 0.3);
 }
 
 /* Status Badge Styles */
-.status-badge {
+.superadmin-patient-management-page .status-badge {
   display: inline-flex;
   align-items: center;
   padding: 0.5rem 1rem;
@@ -131,26 +130,26 @@
   white-space: nowrap;
 }
 
-.status-badge.pending {
+.superadmin-patient-management-page .status-badge.pending {
   background: #fef3c7;
   color: #92400e;
   border: 1px solid #fbbf24;
 }
 
-.status-badge.active {
+.superadmin-patient-management-page .status-badge.active {
   background: #d1fae5;
   color: #065f46;
   border: 1px solid #10b981;
 }
 
-.status-badge.inactive {
+.superadmin-patient-management-page .status-badge.inactive {
   background: #fee2e2;
   color: #991b1b;
   border: 1px solid #ef4444;
 }
 
 /* Table Styles */
-.table-container {
+.superadmin-patient-management-page .table-container {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -250,7 +249,7 @@
   gap: 12px;
 }
 
-.filter-select {
+.superadmin-patient-management-page .filter-select {
   padding: 0.75rem 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -269,18 +268,18 @@
   .filter-controls { flex: 1 1 auto; }
 }
 
-.filter-select:hover {
+.superadmin-patient-management-page .filter-select:hover {
   border-color: #dc2626;
   background: #fefefe;
 }
 
-.filter-select:focus {
+.superadmin-patient-management-page .filter-select:focus {
   outline: none;
   border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
-.filter-select option {
+.superadmin-patient-management-page .filter-select option {
   padding: 0.5rem;
   background: #ffffff;
   color: #374151;
@@ -301,13 +300,13 @@
     padding: 0.5rem 0.75rem;
   }
   
-  .filter-select {
+  .superadmin-patient-management-page .filter-select {
     padding: 0.5rem 0.75rem;
   }
 }
 
 /* Pagination Styles */
-.pagination-container {
+.superadmin-patient-management-page .pagination-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -319,7 +318,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-.pagination-container button {
+.superadmin-patient-management-page .pagination-container button {
   padding: 0.75rem 1.5rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -333,34 +332,34 @@
   gap: 0.5rem;
 }
 
-.pagination-container button:hover:not(:disabled) {
+.superadmin-patient-management-page .pagination-container button:hover:not(:disabled) {
   background: #f8fafc;
   border-color: #dc2626;
   color: #dc2626;
 }
 
-.pagination-container button:disabled {
+.superadmin-patient-management-page .pagination-container button:disabled {
   background: #f9fafb;
   color: #9ca3af;
   cursor: not-allowed;
   border-color: #e5e7eb;
 }
 
-.pagination-container span {
+.superadmin-patient-management-page .pagination-container span {
   font-weight: 600;
   color: #374151;
   font-size: 0.95rem;
 }
 
 /* Modal button consistency */
-.dashboard-container .modal-buttons {
+.superadmin-patient-management-page .dashboard-container .modal-buttons {
   display: flex;
   gap: 1rem;
   justify-content: center;
   margin-top: 1.5rem;
 }
 
-.dashboard-container .modal-buttons button {
+.superadmin-patient-management-page .dashboard-container .modal-buttons button {
   min-width: 100px;
 }
 
@@ -550,25 +549,25 @@
   }
 }
 
-.dashboard-container .btn-confirm {
+.superadmin-patient-management-page .dashboard-container .btn-confirm {
   background: #28a745;
   color: white;
   box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
 }
 
-.dashboard-container .btn-confirm:hover {
+.superadmin-patient-management-page .dashboard-container .btn-confirm:hover {
   background: #218838;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
 }
 
-.dashboard-container .btn-cancel {
+.superadmin-patient-management-page .dashboard-container .btn-cancel {
   background: #6c757d;
   color: white;
   box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
 }
 
-.dashboard-container .btn-cancel:hover {
+.superadmin-patient-management-page .dashboard-container .btn-cancel:hover {
   background: #5a6268;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(108, 117, 125, 0.4);
@@ -576,24 +575,24 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .dashboard-container .action-buttons {
+  .superadmin-patient-management-page .dashboard-container .superadmin-patient-management-page .action-buttons {
     flex-direction: column;
     gap: 0.25rem;
   }
   
-  .dashboard-container .action-buttons button {
+  .superadmin-patient-management-page .dashboard-container .superadmin-patient-management-page .action-buttons button {
     min-width: 80px;
     width: 80px;
     height: 28px;
     font-size: 0.8rem;
   }
   
-  .dashboard-container .modal-buttons {
+  .superadmin-patient-management-page .dashboard-container .modal-buttons {
     flex-direction: column;
     gap: 0.75rem;
   }
   
-  .dashboard-container .modal-buttons button {
+  .superadmin-patient-management-page .dashboard-container .modal-buttons button {
     min-width: 120px;
     width: 120px;
   }

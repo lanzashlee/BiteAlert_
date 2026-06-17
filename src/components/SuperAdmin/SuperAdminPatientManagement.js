@@ -682,7 +682,10 @@ const SuperAdminPatientManagement = () => {
     }
   }, [patients]);
 
-
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, barangayFilter]);
 
   // Filtered patient data
 
@@ -935,7 +938,7 @@ const SuperAdminPatientManagement = () => {
 
   return (
 
-    <div className="dashboard-container">
+    <div className="dashboard-container superadmin-patient-management-page">
 
       <ResponsiveSidebar onSignOut={handleSignOut} />
 
@@ -951,65 +954,119 @@ const SuperAdminPatientManagement = () => {
 
           {/* Search and Filters */}
 
-          <div className="filters-container">
-
-            <div className="search-box">
-
-              <i className="fa fa-search" />
-
+          <div className="admin-dashboard-filters" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px',
+            marginBottom: '20px',
+            padding: '16px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ position: 'relative' }}>
               <input
-
                 type="text"
-
                 placeholder="Search by name, email, phone or patient ID..."
-
                 value={searchTerm}
-
                 onChange={(e) => setSearchTerm(e.target.value)}
-
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
+                }}
               />
-
+              {searchTerm && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  right: '-8px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}>
+                  <i className="fa fa-search"></i>
+                </div>
+              )}
             </div>
 
-            
-
-            <div className="filter-controls">
+            <div style={{ position: 'relative' }}>
               <select 
                 value={barangayFilter} 
                 onChange={(e) => setBarangayFilter(e.target.value)}
-                className={`filter-select ${barangayFilter ? 'filter-active' : ''}`}
-                aria-label="Filter by barangay"
-                title="Filter by barangay"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
+                }}
               >
                 <option value="">All Barangay</option>
                 {barangayOptions.map(b => (
                   <option key={b} value={b}>{b}</option>
                 ))}
               </select>
+            </div>
+
+            <div style={{ position: 'relative' }}>
               <select 
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className={`filter-select ${statusFilter ? 'filter-active' : ''}`}
-                aria-label="Filter by patient status"
-                title="Filter by status"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
+                }}
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
-              
-              {hasActiveFilters && (
+            </div>
+
+            {hasActiveFilters && (
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <button 
                   onClick={resetFilters}
-                  className="clear-filters-btn"
-                  title="Clear all filters"
+                  style={{
+                    padding: '12px 16px',
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
                 >
                   <i className="fa fa-times"></i> Clear Filters
                 </button>
-              )}
-            </div>
-
+              </div>
+            )}
           </div>
 
           {/* Filter Summary */}

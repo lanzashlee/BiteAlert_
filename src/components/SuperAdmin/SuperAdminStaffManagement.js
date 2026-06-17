@@ -630,6 +630,11 @@ const SuperAdminStaffManagement = () => {
     fetchCenters();
   }, [isSuperAdmin]);
 
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, roleFilter, statusFilter, centerFilter]);
+
   // Get unique roles for filter dropdown
   const uniqueRoles = useMemo(() => {
     const roles = [...new Set(staff.map(s => s.role).filter(Boolean))];
@@ -752,7 +757,7 @@ const SuperAdminStaffManagement = () => {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container superadmin-staff-management-page">
       <ResponsiveSidebar onSignOut={handleSignOut} />
       <main className="main-content">
         <div className="content-header" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
@@ -770,50 +775,110 @@ const SuperAdminStaffManagement = () => {
 
                 <div className="accounts-container">
           {/* Search and Filters */}
-          <div className="filters-container">
-            <div className="search-box">
-              <i className="fa fa-search" />
+          <div className="admin-dashboard-filters" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px',
+            marginBottom: '20px',
+            padding: '16px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ position: 'relative' }}>
               <input
                 type="text"
                 placeholder="Search by name, email, phone or role..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
+                }}
               />
+              {searchTerm && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  right: '-8px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}>
+                  <i className="fa fa-search"></i>
+                </div>
+              )}
             </div>
-            
-            <div className="filter-controls">
-              {isSuperAdmin && (
+
+            {isSuperAdmin && (
+              <div style={{ position: 'relative' }}>
                 <select 
                   value={centerFilter} 
                   onChange={(e) => setCenterFilter(e.target.value)}
-                  className="filter-select"
-                  aria-label="Filter by health center"
-                  title="Filter by center"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    backgroundColor: 'white',
+                    boxSizing: 'border-box'
+                  }}
                 >
                   <option value="">All Centers</option>
                   {centerOptions.map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
-              )}
-                             <select 
-                 value={roleFilter} 
-                 onChange={(e) => setRoleFilter(e.target.value)}
-                 className="filter-select"
-                 aria-label="Filter by staff role"
-                 title="Filter by role"
-               >
-                 <option value="">All Roles</option>
-                 {uniqueRoles.map(role => (
-                   <option key={role} value={role}>{role}</option>
-                 ))}
-               </select>
+              </div>
+            )}
+
+            <div style={{ position: 'relative' }}>
+              <select 
+                value={roleFilter} 
+                onChange={(e) => setRoleFilter(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <option value="">All Roles</option>
+                {uniqueRoles.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ position: 'relative' }}>
               <select 
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="filter-select"
-                aria-label="Filter by staff status"
-                title="Filter by status"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
+                }}
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
@@ -821,6 +886,36 @@ const SuperAdminStaffManagement = () => {
                 <option value="inactive">Inactive</option>
               </select>
             </div>
+
+            {(searchTerm.trim() || centerFilter || roleFilter || statusFilter) && (
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <button 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setCenterFilter('');
+                    setRoleFilter('');
+                    setStatusFilter('');
+                  }}
+                  style={{
+                    padding: '12px 16px',
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <i className="fa fa-times"></i> Clear Filters
+                </button>
+              </div>
+            )}
           </div>
 
           
