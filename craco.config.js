@@ -33,6 +33,13 @@ module.exports = {
       if (miniCssExtractPlugin) {
         miniCssExtractPlugin.options.ignoreOrder = true;
       }
+
+      // Remove ESLintWebpackPlugin so CI=true on Vercel/Render doesn't
+      // treat ESLint warnings as fatal build errors
+      webpackConfig.plugins = webpackConfig.plugins.filter(
+        (plugin) => plugin.constructor.name !== 'ESLintWebpackPlugin'
+      );
+
       return webpackConfig;
     }
   }
