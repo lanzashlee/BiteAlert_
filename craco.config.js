@@ -23,5 +23,17 @@ module.exports = {
     };
 
     return devServerConfig;
+  },
+  webpack: {
+    configure: (webpackConfig) => {
+      // Find MiniCssExtractPlugin and configure it to ignore CSS file order conflicts
+      const miniCssExtractPlugin = webpackConfig.plugins.find(
+        (plugin) => plugin.constructor.name === 'MiniCssExtractPlugin'
+      );
+      if (miniCssExtractPlugin) {
+        miniCssExtractPlugin.options.ignoreOrder = true;
+      }
+      return webpackConfig;
+    }
   }
 };

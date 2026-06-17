@@ -6,7 +6,7 @@ import './SuperAdminPrescriptiveAnalytics.css';
 import UnifiedSpinner from '../Common/UnifiedSpinner';
 import { getUserCenter, filterByCenter } from '../../utils/userContext';
 import { fullLogout } from '../../utils/auth';
-import { generatePrescriptions, classifySeverity } from '../../utils/prescriptionEngine';
+import { generatePrescriptions } from '../../utils/prescriptionEngine';
 
 const SuperAdminPrescriptiveAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -51,6 +51,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
   useEffect(() => {
     if (!centersLoaded) return;
     fetchAnalyticsData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange, selectedBarangay, centersLoaded]);
 
   const buildSummariesFromRiskAnalysis = (riskAnalysis = {}) =>
@@ -141,7 +142,6 @@ const SuperAdminPrescriptiveAnalytics = () => {
   };
 
   const clientSideFallbackFlow = async () => {
-    const userCenter = getUserCenter();
     const casesRes = await apiFetch(apiConfig.endpoints.bitecases);
     const raw = await casesRes.json();
     const allCases = Array.isArray(raw)
