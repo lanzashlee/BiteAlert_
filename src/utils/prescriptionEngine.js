@@ -582,7 +582,23 @@ const generatePrescriptions = (barangaySummaries = []) => {
   });
 };
 
-module.exports = {
+// Support both CommonJS (Node.js server) and ES Modules (React frontend builds)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    SEVERITY_TIERS,
+    SEVERITY_THRESHOLDS,
+    classifySeverity,
+    severityTierLabel,
+    computeTrendMetrics,
+    buildContext,
+    buildSituationAnalysis,
+    buildPrescription,
+    buildResourceNeeds,
+    generatePrescriptions
+  };
+}
+
+export {
   SEVERITY_TIERS,
   SEVERITY_THRESHOLDS,
   classifySeverity,
