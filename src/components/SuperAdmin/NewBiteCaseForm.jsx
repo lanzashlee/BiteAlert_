@@ -151,10 +151,27 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     management: '',
     vacVaxirab: false,
     routeIM: false,
-    localInfiltration: false
+    localInfiltration: false,
+    immActive: false,
+    immToxoid: false,
+    immTT1: '',
+    immTT2: '',
+    immTT3: '',
+    immPassive: false,
+    immSkinTest: false,
+    immSkinTimeTested: '',
+    immSkinTimeRead: '',
+    immSkinResult: '',
+    immSkinDose: '',
+    immSkinDateGiven: '',
+    immTig: false,
+    immTigDose: '',
+    immTigDateGiven: ''
   });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [hasActiveSchedules, setHasActiveSchedules] = useState(false);
+  const [checkingSchedules, setCheckingSchedules] = useState(false);
   const [step, setStep] = useState(0);
   const [centers, setCenters] = useState([]);
   const [toast, setToast] = useState(null);
@@ -258,6 +275,40 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     }));
 
     setPrefillDone(true);
+  }, [selectedPatient]);
+
+  // Check active schedules when selectedPatient changes
+  useEffect(() => {
+    if (!selectedPatient) {
+      setHasActiveSchedules(false);
+      return;
+    }
+    
+    const checkActiveSchedules = async () => {
+      setCheckingSchedules(true);
+      try {
+        const patientId = selectedPatient._id || selectedPatient.patientId || selectedPatient.patientID;
+        const res = await apiFetch(`/api/vaccinationdates?patientId=${encodeURIComponent(patientId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+          const hasActive = list.some(vd => 
+            vd.d0Status === 'scheduled' ||
+            vd.d3Status === 'scheduled' ||
+            vd.d7Status === 'scheduled' ||
+            vd.d14Status === 'scheduled' ||
+            vd.d28Status === 'scheduled'
+          );
+          setHasActiveSchedules(hasActive);
+        }
+      } catch (err) {
+        console.error('Error checking active schedules:', err);
+      } finally {
+        setCheckingSchedules(false);
+      }
+    };
+    
+    checkActiveSchedules();
   }, [selectedPatient]);
 
   // Initialize defaults once (registration number, dateRegistered, initial schedule)
@@ -471,6 +522,75 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       if (route === 'routeIM') updates.routeID = false;
     }
     setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Handle active/passive immunization toggles for conditional inputs
+  const handleActiveChange = (checked) => {
+    setForm(prev => {
+      const next = { ...prev, immActive: checked };
+      if (!checked) {
+        next.immToxoid = false;
+        next.immTT1 = '';
+        next.immTT2 = '';
+        next.immTT3 = '';
+      }
+      return next;
+    });
+  };
+
+  const handleToxoidChange = (checked) => {
+    setForm(prev => {
+      const next = { ...prev, immToxoid: checked };
+      if (!checked) {
+        next.immTT1 = '';
+        next.immTT2 = '';
+        next.immTT3 = '';
+      }
+      return next;
+    });
+  };
+
+  const handlePassiveChange = (checked) => {
+    setForm(prev => {
+      const next = { ...prev, immPassive: checked };
+      if (!checked) {
+        next.immSkinTest = false;
+        next.immSkinTimeTested = '';
+        next.immSkinTimeRead = '';
+        next.immSkinResult = '';
+        next.immSkinDose = '';
+        next.immSkinDateGiven = '';
+        next.immTig = false;
+        next.immTigDose = '';
+        next.immTigDateGiven = '';
+      }
+      return next;
+    });
+  };
+
+  const handleSkinTestChange = (checked) => {
+    setForm(prev => {
+      const next = { ...prev, immSkinTest: checked };
+      if (!checked) {
+        next.immSkinTimeTested = '';
+        next.immSkinTimeRead = '';
+        next.immSkinResult = '';
+        next.immSkinDose = '';
+        next.immSkinDateGiven = '';
+      }
+      return next;
+    });
+  };
+
+  const handleTigChange = (checked) => {
+    setForm(prev => {
+      const next = { ...prev, immTig: checked };
+      if (!checked) {
+        next.immTigDose = '';
+        next.immTigDateGiven = '';
+      }
+      return next;
+    });
   };
 
   // Handle HRIG infiltration type conditional logic
@@ -746,8 +866,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         ...(form.structured ? ['Structured'] : []),
         ...(form.unstructured ? ['Unstructured'] : []),
       ];
-      const hasSkinTest = !!(form.skinTimeTested || form.skinTimeRead || form.skinResult || form.skinDateGiven);
-      const hasHrig = !!(form.hrigDose || form.hrigDate || form.localInfiltration || currentSchedule.length);
+      const hasSkinTest = !!(form.immSkinTimeTested || form.immSkinTimeRead || form.immSkinResult || form.immSkinDateGiven);
+      const hasHrig = !!(form.immTigDose || form.immTigDateGiven);
 
       const payload = {
         // registration/meta
@@ -837,20 +957,21 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         },
 
         patientImmunization: {
-          dpt: patientDpt,
-          dptYearGiven: form.dptYear || '',
-          dptDosesGiven: form.dptDoses || '',
-          tt: [],
-          ttDates: [form.prevYearLastDose || form.prevDoseNo || ''].filter(Boolean),
-          skinTest: false,
-          skinTestTime: '',
-          skinTestReadTime: '',
-          skinTestResult: '',
-          skinTestDose: '',
-          skinTestDate: '',
-          tig: false,
-          tigDose: '',
-          tigDate: '',
+          active: !!form.immActive,
+          toxoid: !!form.immToxoid,
+          tt1: form.immTT1 || '',
+          tt2: form.immTT2 || '',
+          tt3: form.immTT3 || '',
+          passive: !!form.immPassive,
+          skinTest: !!form.immSkinTest,
+          skinTestTime: form.immSkinTimeTested || '',
+          skinTestReadTime: form.immSkinTimeRead || '',
+          skinTestResult: form.immSkinResult || '',
+          skinTestDose: form.immSkinDose || '',
+          skinTestDate: toDateOnly(form.immSkinDateGiven),
+          tig: !!form.immTig,
+          tigDose: form.immTigDose || '',
+          tigDate: toDateOnly(form.immTigDateGiven),
         },
 
         currentImmunization: {
@@ -1012,7 +1133,27 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             }
             await handleSubmit(e);
           }} className="bitecase-form space-y-6">
-            {/* Removed blocking banner to allow free typing */}
+            {hasActiveSchedules && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                background: '#fef2f2',
+                border: '2px solid #f87171',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                marginBottom: '20px',
+                fontSize: '0.9rem',
+                color: '#991b1b',
+                fontWeight: '600',
+              }}>
+                <i className="fa fa-triangle-exclamation" style={{ fontSize: '1.2rem', color: '#dc2626' }} />
+                <span>
+                  Cannot create a new case: This patient has active scheduled vaccination dates. 
+                  A new case can only be created if all scheduled dates are completed or missed.
+                </span>
+              </div>
+            )}
             {/* Step 0: Registration */}
             {step === 0 && (
               <section className="section">
@@ -1096,18 +1237,18 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">History of Bite</div>
               <div className="form-label">Type of Exposure</div>
-              <div className="choice-grid choice-grid-2">
-                <button type="button" className={`choice-pill ${form.nonBite ? 'active' : ''}`} onClick={() => toggleExposure('nonBite')}>NON-BITE</button>
-                <button type="button" className={`choice-pill ${form.bite ? 'active' : ''}`} onClick={() => toggleExposure('bite')}>BITE</button>
+              <div className="checkbox-row">
+                <Check name="nonBite" label="NON-BITE" onChange={() => toggleExposure('nonBite')} />
+                <Check name="bite" label="BITE" onChange={() => toggleExposure('bite')} />
               </div>
               {errors.exposure && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.exposure}</div>}
 
               {form.bite && (
                 <>
-                  <div className="form-label">Site of Bite</div>
-                  <div className="choice-grid choice-grid-2">
+                  <div className="form-label" style={{marginTop: '10px'}}>Site of Bite</div>
+                  <div className="checkbox-row" style={{ flexWrap: 'wrap' }}>
                     {siteKeys.map((lbl,i)=> (
-                      <button key={i} type="button" className={`choice-pill ${form[`site_${i}`] ? 'active' : ''}`} onClick={() => toggleSite(i)}>{lbl}</button>
+                      <Check key={i} name={`site_${i}`} label={lbl} onChange={() => toggleSite(i)} />
                     ))}
                   </div>
                   {errors.site && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.site}</div>}
@@ -1148,16 +1289,16 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">External Causes / Place of Occurrence</div>
               <div className="form-label">External causes</div>
-              <div className="choice-grid choice-grid-2">
-                <button type="button" className={`choice-pill ${form.externalCauseBiteSting ? 'active' : ''}`} onClick={() => toggleExternalCause('causeBiteSting', !form.externalCauseBiteSting)}>Bite / Sting</button>
-                <button type="button" className={`choice-pill ${form.externalCauseChemical ? 'active' : ''}`} onClick={() => toggleExternalCause('causeChemical', !form.externalCauseChemical)}>Chemical Substance</button>
+              <div className="checkbox-row">
+                <Check name="externalCauseBiteSting" label="Bite / Sting" onChange={(e) => toggleExternalCause('causeBiteSting', e.target.checked)} />
+                <Check name="externalCauseChemical" label="Chemical Substance" onChange={(e) => toggleExternalCause('causeChemical', e.target.checked)} />
               </div>
               {form.externalCauseBiteSting && <Input name="causeBiteStingDetail" label="Specify animal / insect" />}
               {form.externalCauseChemical && <Input name="causeChemicalDetail" label="Applied substance" />}
               <div className="form-label" style={{marginTop: '10px'}}>Place of Occurrence</div>
-              <div className="choice-grid choice-grid-2">
+              <div className="checkbox-row" style={{ flexWrap: 'wrap' }}>
                 {['Home','School','Road','Neighbor'].map((lbl,i)=> (
-                  <button key={i} type="button" className={`choice-pill ${form[`place_${i}`] ? 'active' : ''}`} onClick={() => togglePlace(i, !form[`place_${i}`])}>{lbl}</button>
+                  <Check key={i} name={`place_${i}`} label={lbl} onChange={(e) => togglePlace(i, e.target.checked)} />
                 ))}
               </div>
               <Input name="placeOthers" label="Others / Details" />
@@ -1166,8 +1307,10 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             {/* Disposition & Circumstance */}
             <section className="section">
               <div className="section-title">Disposition & Circumstance</div>
-              <Check name="treatedHome" label="Treated & Sent Home" onChange={(e) => toggleDisposition('treatedHome', e.target.checked)} />
-              <Check name="transferred" label="Transferred to another facility/hospital (specify)" onChange={(e) => toggleDisposition('transferred', e.target.checked)} />
+              <div className="checkbox-row" style={{ flexWrap: 'wrap' }}>
+                <Check name="treatedHome" label="Treated & Sent Home" onChange={(e) => toggleDisposition('treatedHome', e.target.checked)} />
+                <Check name="transferred" label="Transferred to another facility/hospital (specify)" onChange={(e) => toggleDisposition('transferred', e.target.checked)} />
+              </div>
               {form.transferred && (
                 <div className="w-full" style={{marginTop: '10px'}}>
                   <label className="form-label">Select Center/Hospital:</label>
@@ -1228,15 +1371,165 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             {/* Patient Immunization */}
             <section className="section">
               <div className="section-title">Patient Immunization</div>
-              <div className="form-label">DPT Immunization</div>
-              <Check name="dptComplete" label="Complete" onChange={(e) => toggleDPTSingle('dptComplete', e.target.checked)} />
-              <Input name="dptYear" label="Year Given (last dose)" disabled={!form.dptComplete} />
-              <Check name="dptIncomplete" label="Incomplete" onChange={(e) => toggleDPTSingle('dptIncomplete', e.target.checked)} />
-              <Input name="dptDoses" label="No. of Dose given" disabled={!form.dptIncomplete} />
-              <Check name="dptNone" label="None" onChange={(e) => toggleDPTSingle('dptNone', e.target.checked)} />
-              <div className="form-label" style={{marginTop: '10px'}}>Previous</div>
-              <Input name="prevDoseNo" label="No. of doses given" />
-              <Input name="prevYearLastDose" label="Year last dose given" />
+              
+              {/* Active Section */}
+              <div style={{ marginBottom: '20px' }}>
+                <Check 
+                  name="immActive" 
+                  label="Active" 
+                  onChange={(e) => handleActiveChange(e.target.checked)} 
+                />
+                <div style={{ 
+                  paddingLeft: '24px', 
+                  marginTop: '10px',
+                  opacity: form.immActive ? 1 : 0.5,
+                  pointerEvents: form.immActive ? 'auto' : 'none'
+                }}>
+                  <Check 
+                    name="immToxoid" 
+                    label="Toxoid" 
+                    onChange={(e) => handleToxoidChange(e.target.checked)}
+                  />
+                  <div style={{ 
+                    paddingLeft: '24px', 
+                    marginTop: '10px',
+                    opacity: (form.immActive && form.immToxoid) ? 1 : 0.5,
+                    pointerEvents: (form.immActive && form.immToxoid) ? 'auto' : 'none'
+                  }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Date:</div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '400px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '60px', fontSize: '0.85rem', color: '#4b5563' }}>TT1</span>
+                        <div style={{ flex: 1 }}>
+                          <Input name="immTT1" type="date" label="" />
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '60px', fontSize: '0.85rem', color: '#4b5563' }}>TT2</span>
+                        <div style={{ flex: 1 }}>
+                          <Input name="immTT2" type="date" label="" />
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '60px', fontSize: '0.85rem', color: '#4b5563' }}>TT3</span>
+                        <div style={{ flex: 1 }}>
+                          <Input name="immTT3" type="date" label="" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Passive Section */}
+              <div>
+                <Check 
+                  name="immPassive" 
+                  label="Passive" 
+                  onChange={(e) => handlePassiveChange(e.target.checked)} 
+                />
+                
+                <div style={{ 
+                  paddingLeft: '24px', 
+                  marginTop: '10px',
+                  opacity: form.immPassive ? 1 : 0.5,
+                  pointerEvents: form.immPassive ? 'auto' : 'none'
+                }}>
+                  
+                  {/* Skin Test Section */}
+                  <div style={{ marginBottom: '15px' }}>
+                    <Check 
+                      name="immSkinTest" 
+                      label="SKIN TEST" 
+                      onChange={(e) => handleSkinTestChange(e.target.checked)}
+                    />
+                    <div style={{ 
+                      paddingLeft: '24px', 
+                      marginTop: '10px',
+                      opacity: (form.immPassive && form.immSkinTest) ? 1 : 0.5,
+                      pointerEvents: (form.immPassive && form.immSkinTest) ? 'auto' : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      maxWidth: '400px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '120px', fontSize: '0.85rem', color: '#4b5563' }}>Time Tested</span>
+                        <div style={{ flex: 1 }}>
+                          <Input name="immSkinTimeTested" type="time" label="" />
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '120px', fontSize: '0.85rem', color: '#4b5563' }}>Time Read</span>
+                        <div style={{ flex: 1 }}>
+                          <Input name="immSkinTimeRead" type="time" label="" />
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '120px', fontSize: '0.85rem', color: '#4b5563' }}>Result</span>
+                        <div style={{ flex: 1 }}>
+                          <Input name="immSkinResult" label="" />
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '120px', fontSize: '0.85rem', color: '#4b5563' }}>Dose</span>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                          <Input name="immSkinDose" label="" />
+                          <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontSize: '0.85rem', pointerEvents: 'none' }}>"U"</span>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '120px', fontSize: '0.85rem', color: '#4b5563' }}>Date Given</span>
+                        <div style={{ flex: 1 }}>
+                          <Input name="immSkinDateGiven" type="date" label="" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TIG Section */}
+                  <div>
+                    <Check 
+                      name="immTig" 
+                      label="TIG" 
+                      onChange={(e) => handleTigChange(e.target.checked)}
+                    />
+                    <div style={{ 
+                      paddingLeft: '24px', 
+                      marginTop: '10px',
+                      opacity: (form.immPassive && form.immTig) ? 1 : 0.5,
+                      pointerEvents: (form.immPassive && form.immTig) ? 'auto' : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      maxWidth: '400px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '120px', fontSize: '0.85rem', color: '#4b5563' }}>Dose</span>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                          <Input name="immTigDose" label="" />
+                          <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontSize: '0.85rem', pointerEvents: 'none' }}>"U"</span>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ width: '120px', fontSize: '0.85rem', color: '#4b5563' }}>Date Given</span>
+                        <div style={{ flex: 1 }}>
+                          <Input name="immTigDateGiven" type="date" label="" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
             </section>
 
             {/* Current Anti-Rabies Immunization */}
@@ -1269,29 +1562,14 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               ))}
             </section>
 
-            {/* Passive / HRIG / TIG */}
-            <section className="section">
-              <div className="section-title">Passive</div>
-              <div className="form-label">SKIN TEST</div>
-              <Input name="skinTimeTested" label="Time Tested" />
-              <Input name="skinTimeRead" label="Time Read" />
-              <Input name="skinResult" label="Result" />
-              <Input name="skinDateGiven" type="date" label="Date Given" />
-              <div className="form-label" style={{marginTop: '10px'}}>HRIG</div>
-              <Input name="hrigDose" label="Dose" />
-              <Input name="hrigDate" type="date" label="Date Given" />
-              <div className="checkbox-row" style={{marginTop: '8px'}}>
-                <Check name="localInfiltration" label="Local Infiltration done" />
-                <Check name="structured" label="Structured" onChange={(e) => toggleHRIGInfiltration('structured', e.target.checked)} />
-                <Check name="unstructured" label="Unstructured" onChange={(e) => toggleHRIGInfiltration('unstructured', e.target.checked)} />
-                </div>
-            </section>
+
 
             {/* Management */}
             <section className="section">
               <div className="section-title">Management</div>
+              <div className="form-label">Washing of wound</div>
               <div className="checkbox-row">
-                <Check name="woundWashYes" label="Washing of wound: Yes" onChange={() => toggleRadio('woundWash', 'yes')} />
+                <Check name="woundWashYes" label="Yes" onChange={() => toggleRadio('woundWash', 'yes')} />
                 <Check name="woundWashNo" label="No" onChange={() => toggleRadio('woundWash', 'no')} />
               </div>
               {errors.washingWound && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.washingWound}</div>}
@@ -1326,12 +1604,12 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                     type="button"
                     className="btn btn-primary"
                     onClick={() => nextStep()}
-                    disabled={!isStepComplete(step)}
+                    disabled={!isStepComplete(step) || hasActiveSchedules}
                   >
                     Next <i className="fa fa-arrow-right" />
                   </button>
                 ) : (
-                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                  <button type="submit" className="btn btn-primary" disabled={saving || hasActiveSchedules}>
                     {saving ? (<><i className="fa fa-spinner fa-spin"></i> Saving...</>) : (<><i className="fa fa-save"></i> Save Case</>)}
                   </button>
                 )}

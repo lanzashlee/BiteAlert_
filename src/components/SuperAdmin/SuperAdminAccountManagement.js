@@ -518,30 +518,53 @@ const SuperAdminAccountManagement = () => {
                         </span>
                       </td>
                       <td>
-                        <div className="action-buttons">
-                          <button 
-                            className="btn-deactivate" 
-                            onClick={() => handleActivation(account.id, false)}
-                            style={{ display: account.isActive ? 'block' : 'none' }}
-                          >
-                            <i className="fa-solid fa-ban"></i> Deactivate
-                          </button>
-                          <button 
-                            className="btn-activate" 
-                            onClick={() => handleActivation(account.id, true)}
-                            style={{ display: !account.isActive ? 'block' : 'none' }}
-                          >
-                            <i className="fa-solid fa-check-circle"></i> Activate
-                          </button>
-                          <button 
-                            className="btn-password" 
-                            onClick={() => handlePasswordChange(account.id)}
-                            title="Change Password"
-                          >
-                            <i className="fa-solid fa-key"></i> Password
-                          </button>
-                        </div>
-                      </td>
+                         <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                           <button 
+                             type="button"
+                             onClick={() => handlePasswordChange(account.id || account.adminID)}
+                             style={{
+                               backgroundColor: '#2563eb',
+                               color: 'white',
+                               border: 'none',
+                               borderRadius: '12px',
+                               padding: '10px 20px',
+                               fontSize: '0.9rem',
+                               fontWeight: 'bold',
+                               display: 'flex',
+                               alignItems: 'center',
+                               justifyContent: 'center',
+                               gap: '8px',
+                               width: '150px',
+                               cursor: 'pointer',
+                               boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2)'
+                             }}
+                           >
+                             <i className="fa-solid fa-key"></i> Change Password
+                           </button>
+                           <button 
+                             type="button"
+                             onClick={() => handleActivation(account.id || account.adminID, !account.isActive)}
+                             style={{
+                               backgroundColor: account.isActive ? '#b91c1c' : '#15803d',
+                               color: 'white',
+                               border: 'none',
+                               borderRadius: '12px',
+                               padding: '10px 20px',
+                               fontSize: '0.9rem',
+                               fontWeight: 'bold',
+                               display: 'flex',
+                               alignItems: 'center',
+                               justifyContent: 'center',
+                               gap: '8px',
+                               width: '150px',
+                               cursor: 'pointer',
+                               boxShadow: account.isActive ? '0 4px 6px rgba(185, 28, 28, 0.2)' : '0 4px 6px rgba(21, 128, 61, 0.2)'
+                             }}
+                           >
+                             <i className={`fa-solid ${account.isActive ? 'fa-user-slash' : 'fa-user-check'}`}></i> {account.isActive ? 'Deactivate' : 'Activate'}
+                           </button>
+                         </div>
+                       </td>
                     </tr>
                   ))
                 )}

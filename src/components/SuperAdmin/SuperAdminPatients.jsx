@@ -629,6 +629,7 @@ const SuperAdminPatients = () => {
   const [caseHistory, setCaseHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
+  const [patientModalError, setPatientModalError] = useState('');
   const [biteCases, setBiteCases] = useState([]);
   const [biteCasesLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
@@ -1212,6 +1213,7 @@ const SuperAdminPatients = () => {
     setShowHistory(false);
     setShowCaseDetails(false);
     setSelectedCase(null);
+    setPatientModalError('');
     
     // Automatically load case history and vaccination history when opening patient modal
     await loadCaseHistoryForPatient(patient);
@@ -2694,6 +2696,20 @@ const SuperAdminPatients = () => {
               </button>
             </div>
             <div className="patient-modal-body">
+              {patientModalError && (
+                <div style={{
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  color: '#dc2626',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  marginBottom: '20px',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}>
+                  {patientModalError}
+                </div>
+              )}
               {showCaseForm ? (
                 <div>
                   <NewBiteCaseForm 
@@ -3430,7 +3446,19 @@ const SuperAdminPatients = () => {
                   <button 
                     type="button"
                     className="patient-modal-btn"
-                    onClick={() => setShowCaseForm(true)}
+                    onClick={() => {
+                      const hasActive = vaccinationHistory.some(vh => vh.status === 'scheduled');
+                      if (hasActive) {
+                        setPatientModalError('⚠️ Has active scheduled cases. All scheduled dates must be completed or missed first.');
+                        // Scroll modal body to top to see the error message
+                        const modalBody = document.querySelector('.patient-modal-body');
+                        if (modalBody) modalBody.scrollTop = 0;
+                      } else {
+                        setPatientModalError('');
+                        setShowCaseForm(true);
+                      }
+                    }}
+                    disabled={vaccinationLoading}
                   >
                     New Case
                   </button>
@@ -3440,7 +3468,7 @@ const SuperAdminPatients = () => {
                   <button 
                     type="button"
                     className="patient-modal-btn"
-                    onClick={() => { setShowHistory(true); loadCaseHistoryForPatient(selectedPatient); }}
+                    onClick={() => { setShowHistory(true); loadCaseHistoryForPatient(selectedPatient); setPatientModalError(''); }}
                   >
                     Case History
                   </button>
@@ -3454,6 +3482,7 @@ const SuperAdminPatients = () => {
                       setShowHistory(false); 
                       setShowCaseDetails(false);
                       setSelectedCase(null);
+                      setPatientModalError('');
                     }}
                   >
                     Back to Info

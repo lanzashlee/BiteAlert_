@@ -3707,6 +3707,32 @@ app.post('/api/bitecases', async (req, res) => {
             console.warn('No patientId provided, using patient name as fallback');
             payload.patientId = `${payload.firstName}_${payload.lastName}_${Date.now()}`;
         }
+
+        // Validate that patient does not have active scheduled cases
+        if (payload.patientId && !payload.patientId.includes('_')) {
+            try {
+                const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
+                const activeSchedules = await VaccinationDate.find({
+                    patientId: payload.patientId,
+                    $or: [
+                        { d0Status: 'scheduled' },
+                        { d3Status: 'scheduled' },
+                        { d7Status: 'scheduled' },
+                        { d14Status: 'scheduled' },
+                        { d28Status: 'scheduled' }
+                    ]
+                });
+                if (activeSchedules.length > 0) {
+                    console.error(`Validation failed: Patient ${payload.patientId} has active scheduled vaccination dates.`);
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Cannot create a new case for this patient because they have active scheduled cases. All scheduled dates must be completed or missed first.'
+                    });
+                }
+            } catch (schedErr) {
+                console.error('Error verifying active vaccination schedules:', schedErr);
+            }
+        }
         
         // Clean and validate data with better error handling
         // Normalize per-day dates and key fields

@@ -963,69 +963,58 @@ const SuperAdminStaffManagement = () => {
                           </span>
                         </td>
                         <td>
-                          <div className="action-buttons">
-                            {isPending ? (
-                              <>
-                                <button 
-                                  className="btn-approve" 
-                                  onClick={() => customConfirm(
-                                    'Are you sure you want to approve this staff account?',
-                                    { action: () => handleApprove(s._id) }
-                                  )}
-                                >
-                                  Approve
-                                </button>
-                                <button 
-                                  className="btn-reject" 
-                                  onClick={() => customConfirm(
-                                    'Are you sure you want to reject this staff account?',
-                                    { action: () => handleReject(s._id) }
-                                  )}
-                                >
-                                  Reject
-                                </button>
-                              </>
-                            ) : s.isApproved ? (
-                              <>
-                                <button
-                                  className="btn-deactivate"
-                                  onClick={() => customConfirm(
-                                    'Are you sure you want to deactivate this staff account?',
-                                    { action: () => handleDeactivate(s._id) }
-                                  )}
-                                >
-                                  Deactivate
-                                </button>
-                                <button
-                                  className="btn-password"
-                                  onClick={() => handlePasswordChange(s._id)}
-                                  title="Change Password"
-                                >
-                                  <i className="fa-solid fa-key"></i> Password
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  className="btn-activate"
-                                  onClick={() => customConfirm(
-                                    'Are you sure you want to activate this staff account?',
-                                    { action: () => handleActivate(s._id) }
-                                  )}
-                                >
-                                  Activate
-                                </button>
-                                <button
-                                  className="btn-password"
-                                  onClick={() => handlePasswordChange(s._id)}
-                                  title="Change Password"
-                                >
-                                  <i className="fa-solid fa-key"></i> Password
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
+                           <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                             <button 
+                               type="button"
+                               onClick={() => handlePasswordChange(s._id)}
+                               style={{
+                                 backgroundColor: '#2563eb',
+                                 color: 'white',
+                                 border: 'none',
+                                 borderRadius: '12px',
+                                 padding: '10px 20px',
+                                 fontSize: '0.9rem',
+                                 fontWeight: 'bold',
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 justifyContent: 'center',
+                                 gap: '8px',
+                                 width: '150px',
+                                 cursor: 'pointer',
+                                 boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2)'
+                               }}
+                             >
+                               <i className="fa-solid fa-key"></i> Change Password
+                             </button>
+                             <button 
+                               type="button"
+                               onClick={() => customConfirm(
+                                 s.isApproved
+                                   ? 'Are you sure you want to deactivate this staff account?'
+                                   : 'Are you sure you want to activate this staff account?',
+                                 { action: () => s.isApproved ? handleDeactivate(s._id) : handleActivate(s._id) }
+                               )}
+                               style={{
+                                 backgroundColor: s.isApproved ? '#b91c1c' : '#15803d',
+                                 color: 'white',
+                                 border: 'none',
+                                 borderRadius: '12px',
+                                 padding: '10px 20px',
+                                 fontSize: '0.9rem',
+                                 fontWeight: 'bold',
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 justifyContent: 'center',
+                                 gap: '8px',
+                                 width: '150px',
+                                 cursor: 'pointer',
+                                 boxShadow: s.isApproved ? '0 4px 6px rgba(185, 28, 28, 0.2)' : '0 4px 6px rgba(21, 128, 61, 0.2)'
+                               }}
+                             >
+                               <i className={`fa-solid ${s.isApproved ? 'fa-user-slash' : 'fa-user-check'}`}></i> {s.isApproved ? 'Deactivate' : 'Activate'}
+                             </button>
+                           </div>
+                         </td>
                       </tr>
                     );
                   })}
