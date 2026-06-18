@@ -11,7 +11,7 @@ import { generatePrescriptions } from '../../utils/prescriptionEngine';
 const SuperAdminPrescriptiveAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('month');
+  const [timeRange, setTimeRange] = useState('all');
   const [selectedBarangay, setSelectedBarangay] = useState('all');
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const [availableCenters, setAvailableCenters] = useState([]);
@@ -79,15 +79,21 @@ const SuperAdminPrescriptiveAnalytics = () => {
     try {
       const userCenter = getUserCenter();
       if (userCenter && userCenter !== 'all') {
-        const target = String(userCenter).toLowerCase();
+        const normScope = (v) => String(v || '')
+          .toLowerCase()
+          .replace(/\s*health\s*center$/i, '')
+          .replace(/\s*center$/i, '')
+          .replace(/-/g, ' ')
+          .trim();
+        const target = normScope(userCenter);
         const filteredRisk = Object.fromEntries(
-          Object.entries(data.riskAnalysis || {}).filter(([b]) => String(b).toLowerCase() === target)
+          Object.entries(data.riskAnalysis || {}).filter(([b]) => normScope(b) === target)
         );
         const filteredInterventions = (Array.isArray(data.interventionRecommendations) ? data.interventionRecommendations : [])
-          .filter(it => String(it.barangay || '').toLowerCase() === target);
+          .filter(it => normScope(it.barangay) === target);
         return {
           ...data,
-          cases: Array.isArray(data.cases) ? data.cases.filter(c => String(c.barangay || '').toLowerCase() === target) : [],
+          cases: Array.isArray(data.cases) ? data.cases.filter(c => normScope(c.barangay) === target) : [],
           riskAnalysis: filteredRisk,
           interventionRecommendations: filteredInterventions
         };
@@ -231,21 +237,31 @@ const SuperAdminPrescriptiveAnalytics = () => {
 
   const processAnalyticsData = (cases) => {
     const now = new Date();
-    const timeRangeMap = { week: 7, month: 30, quarter: 90, year: 365 };
+    const timeRangeMap = { week: 7, month: 30, quarter: 90, year: 365, all: Infinity };
     const daysBack = timeRangeMap[timeRange] || 30;
     const filteredCases = cases.filter(case_ => {
+      if (daysBack === Infinity) return true;
       const caseDate = new Date(case_.incidentDate);
       return (now - caseDate) <= (daysBack * 24 * 60 * 60 * 1000);
     });
 
+    // Normalizer for comparing barangay/center names
+    const normForCompare = (v) => String(v || '')
+      .toLowerCase()
+      .replace(/\s*health\s*center$/i, '')
+      .replace(/\s*center$/i, '')
+      .replace(/-/g, ' ')
+      .trim();
+
     const finalCases = (() => {
       const userCenter = getUserCenter();
       if (userCenter && userCenter !== 'all') {
-        return filteredCases.filter(case_ => String(case_.barangay || '').toLowerCase() === String(userCenter).toLowerCase());
+        const normTarget = normForCompare(userCenter);
+        return filteredCases.filter(case_ => normForCompare(case_.barangay) === normTarget);
       }
-      return selectedBarangay === 'all'
-        ? filteredCases
-        : filteredCases.filter(case_ => String(case_.barangay || '').toLowerCase().replace(/-/g, ' ').trim() === String(selectedBarangay).toLowerCase().replace(/-/g, ' ').trim());
+      if (selectedBarangay === 'all') return filteredCases;
+      const normTarget = normForCompare(selectedBarangay);
+      return filteredCases.filter(case_ => normForCompare(case_.barangay) === normTarget);
     })();
 
     const riskAnalysis = calculateRiskScores(finalCases);
@@ -260,6 +276,14 @@ const SuperAdminPrescriptiveAnalytics = () => {
   const calculateRiskScores = (cases) => {
     const barangayData = {};
     const centersToProcess = availableCenters.length > 0 ? availableCenters : ['All Centers'];
+
+    // Normalizer: strip "health center" / "center" suffix, lowercase, collapse whitespace/hyphens
+    const normName = (v) => String(v || '')
+      .toLowerCase()
+      .replace(/\s*health\s*center$/i, '')
+      .replace(/\s*center$/i, '')
+      .replace(/-/g, ' ')
+      .trim();
 
     centersToProcess.forEach(barangay => {
       barangayData[barangay] = {
@@ -279,35 +303,57 @@ const SuperAdminPrescriptiveAnalytics = () => {
       };
     });
 
-    cases.forEach(case_ => {
-      const barangay = case_.barangay;
-      if (barangayData[barangay]) {
-        barangayData[barangay].totalCases++;
+    // Build a lookup from normalized center name -> original key for fuzzy matching
+    const normToKey = {};
+    centersToProcess.forEach(key => {
+      normToKey[normName(key)] = key;
+    });
 
-        if (case_.severity === 'high') barangayData[barangay].severeCases++;
-        else if (case_.severity === 'medium') barangayData[barangay].moderateCases++;
-        else barangayData[barangay].mildCases++;
+    // Find the matching bucket key for a given case barangay value
+    const findBucketKey = (caseBarangay) => {
+      // 1. Exact match
+      if (barangayData[caseBarangay]) return caseBarangay;
+      // 2. Normalized match
+      const normCase = normName(caseBarangay);
+      if (normToKey[normCase]) return normToKey[normCase];
+      // 3. Substring / includes match (e.g. "Salapan" matches "Salapan Center")
+      for (const [normKey, originalKey] of Object.entries(normToKey)) {
+        if (normKey.includes(normCase) || normCase.includes(normKey)) {
+          return originalKey;
+        }
+      }
+      return null;
+    };
+
+    cases.forEach(case_ => {
+      const bucketKey = findBucketKey(case_.barangay);
+      if (bucketKey) {
+        barangayData[bucketKey].totalCases++;
+
+        if (case_.severity === 'high') barangayData[bucketKey].severeCases++;
+        else if (case_.severity === 'medium') barangayData[bucketKey].moderateCases++;
+        else barangayData[bucketKey].mildCases++;
 
         if (case_.exposureCategory === 'III' || case_.exposureType === '3') {
-          barangayData[barangay].category3Cases++;
+          barangayData[bucketKey].category3Cases++;
         } else if (case_.exposureCategory === 'II' || case_.exposureType === '2') {
-          barangayData[barangay].category2Cases++;
+          barangayData[bucketKey].category2Cases++;
         } else if (case_.exposureCategory === 'I' || case_.exposureType === '1') {
-          barangayData[barangay].category1Cases++;
+          barangayData[bucketKey].category1Cases++;
         }
 
         const caseDate = new Date(case_.incidentDate);
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         if (caseDate > weekAgo) {
-          barangayData[barangay].recentCases++;
+          barangayData[bucketKey].recentCases++;
         }
 
         const centerName = case_.center || case_.healthCenter || case_.centerName || case_.facility || null;
         if (centerName) {
-          if (!barangayData[barangay].centerCounts[centerName]) {
-            barangayData[barangay].centerCounts[centerName] = 0;
+          if (!barangayData[bucketKey].centerCounts[centerName]) {
+            barangayData[bucketKey].centerCounts[centerName] = 0;
           }
-          barangayData[barangay].centerCounts[centerName]++;
+          barangayData[bucketKey].centerCounts[centerName]++;
         }
       }
     });
@@ -450,6 +496,7 @@ const SuperAdminPrescriptiveAnalytics = () => {
                 <option value="month">Last Month</option>
                 <option value="quarter">Last Quarter</option>
                 <option value="year">Last Year</option>
+                <option value="all">All Time</option>
               </select>
             </div>
             <div className="filter-group">

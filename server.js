@@ -6015,9 +6015,9 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
         const Center = mongoose.connection.model('Center', new mongoose.Schema({}, { strict: false }), 'centers');
 
         const now = new Date();
-        const timeRangeMap = { week: 7, month: 30, quarter: 90, year: 365 };
+        const timeRangeMap = { week: 7, month: 30, quarter: 90, year: 365, all: Infinity };
         const daysBack = timeRangeMap[timeRange] || 30;
-        const windowStart = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
+        const windowStart = daysBack === Infinity ? new Date(0) : new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
 
         const rawCases = await BiteCase.find({}).lean();
 
