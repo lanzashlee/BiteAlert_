@@ -8,7 +8,7 @@ import { getCachedData, setCachedData, clearCache } from '../utils/apiCache';
 const isLocalhost = typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
 const API_BASE_URL = isLocalhost
   ? 'http://localhost:4000'
-  : (process.env.REACT_APP_API_URL || 'https://bitealert-backend-tfj9.onrender.com');
+  : (process.env.REACT_APP_API_URL || 'https://bitealert-backend-9rv9.onrender.com');
 
 // Debug: Log the API base URL to console
 console.log('API Base URL:', API_BASE_URL);

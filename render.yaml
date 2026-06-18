@@ -30,4 +30,4 @@ services:
         destination: /index.html
     envVars:
       - key: REACT_APP_API_URL
-        value: https://bitealert-backend-tfj9.onrender.com
+        value: https://bitealert-backend-9rv9.onrender.com
