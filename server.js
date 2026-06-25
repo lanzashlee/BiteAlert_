@@ -10,6 +10,9 @@ const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 const { generatePrescriptions, classifySeverity } = require('./src/utils/prescriptionEngine');
+const Patient = require('./models/Patient');
+const VaccinationDate = require('./models/VaccinationDate');
+
 
 // Initialize Express app
 const app = express();
@@ -34,7 +37,7 @@ if (process.env.MONGODB_DNS_SERVERS) {
 app.use((req, res, next) => {
     // Remove server information
     res.removeHeader('X-Powered-By');
-    
+
     // Security headers
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
@@ -42,15 +45,15 @@ app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=(), autoplay=(), encrypted-media=(), fullscreen=(self), picture-in-picture=()');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-    
+
     // Content Security Policy
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://bitealert-backend.onrender.com https://bitealert-backend-doga.onrender.com https://bitealert-backend-tfj9.onrender.com https://bitealert-backend-9rv9.onrender.com https://*.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests;");
-    
+
     // Cross-Origin headers
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-    
+
     next();
 });
 
@@ -76,16 +79,16 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 const corsOptions = {
-    origin: function(origin, callback) {
+    origin: function (origin, callback) {
         console.log('CORS request from origin:', origin);
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) {
             console.log('CORS allowing request with no origin');
             return callback(null, true);
         }
-    // Allow exact matches, any Vercel deployments (preview/prod), and localhost
-    const isAnyVercel = /https:\/\/.+\.vercel\.app$/i.test(origin || '');
-    if (allowedOrigins.includes(origin) || isAnyVercel) {
+        // Allow exact matches, any Vercel deployments (preview/prod), and localhost
+        const isAnyVercel = /https:\/\/.+\.vercel\.app$/i.test(origin || '');
+        if (allowedOrigins.includes(origin) || isAnyVercel) {
             console.log('CORS allowed for origin:', origin);
             return callback(null, true);
         }
@@ -113,63 +116,15 @@ app.use((req, res, next) => {
 });
 // Remove static file serving - frontend will be served separately
 
-const normCenterLabel = (v) => String(v || '')
-    .toLowerCase()
-    .replace(/\s*health\s*center$/i, '')
-    .replace(/\s*center$/i, '')
-    .replace(/-/g, ' ')
-    .trim();
+const {
+    normCenterLabel,
+    extractBarangayFromCenterRecord,
+    coerceCaseDate,
+    getCaseExposureMeta,
+    emptyBarangayRisk,
+    logAuditTrail
+} = require('./utils/helpers');
 
-const extractBarangayFromCenterRecord = (center = {}) => {
-    const raw = center.centerName || center.name || '';
-    const match = String(raw).match(/barangay health center\s*-\s*(.+)/i);
-    if (match) return match[1].trim();
-    return String(raw).replace(/barangay health center\s*/i, '').trim();
-};
-
-const coerceCaseDate = (c = {}) => {
-    const v = c.incidentDate || c.exposureDate || c.dateRegistered || c.arrivalDate || c.createdAt || c.updatedAt;
-    if (!v) return null;
-    if (typeof v === 'string') return new Date(v);
-    if (typeof v === 'number') return new Date(v);
-    if (v?.$date?.$numberLong) return new Date(Number(v.$date.$numberLong));
-    if (v?.$date) return new Date(v.$date);
-    return new Date(v);
-};
-
-const getCaseExposureMeta = (c = {}) => {
-    const mgmtCategory = Array.isArray(c.management?.category) ? c.management.category[0] : c.management?.category;
-    const raw = String(c.exposureCategory || mgmtCategory || c.category || '').toUpperCase();
-    if (raw.includes('III') || raw === '3' || raw.includes('CATEGORY 3')) {
-        return { exposureCategory: 'III', exposureType: '3', severity: 'high' };
-    }
-    if (raw.includes('II') || raw === '2' || raw.includes('CATEGORY 2')) {
-        return { exposureCategory: 'II', exposureType: '2', severity: 'medium' };
-    }
-    if (raw.includes('I') || raw === '1' || raw.includes('CATEGORY 1')) {
-        return { exposureCategory: 'I', exposureType: '1', severity: 'low' };
-    }
-    const exposureType = (c.exposureType || '').toString();
-    if (exposureType === '3') return { exposureCategory: 'III', exposureType: '3', severity: 'high' };
-    if (exposureType === '2') return { exposureCategory: 'II', exposureType: '2', severity: 'medium' };
-    return { exposureCategory: 'I', exposureType: '1', severity: c.severity || 'low' };
-};
-
-const emptyBarangayRisk = () => ({
-    totalCases: 0,
-    severeCases: 0,
-    moderateCases: 0,
-    mildCases: 0,
-    recentCases: 0,
-    category1Cases: 0,
-    category2Cases: 0,
-    category3Cases: 0,
-    riskScore: 0,
-    priority: 'low',
-    factors: [],
-    centerCounts: {},
-    topCenter: null
-});
 
 // MongoDB Configuration
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://lricamara6:Lanz0517@bitealert.febjlgm.mongodb.net/bitealert?retryWrites=true&w=majority";
@@ -218,19 +173,8 @@ const superAdminSchema = new mongoose.Schema({
     resetOTPExpires: Date
 });
 
-const auditLogSchema = new mongoose.Schema({
-    timestamp: { type: Date, default: Date.now },
-    role: { type: String, required: true },
-    firstName: { type: String, required: true },
-    middleName: { type: String },
-    lastName: { type: String, required: true },
-    action: { type: String, required: true },
-    adminID: String,
-    superAdminID: String,
-    patientID: String,
-    staffID: String,
-    center: { type: String, default: null } // barangay/center name for scoping
-});
+const AuditTrail = require('./models/AuditTrail');
+
 
 const animalBiteSchema = new mongoose.Schema({
     patientName: { type: String, required: true },
@@ -276,8 +220,8 @@ const Staff = mongoose.model('Staff', staffSchema, 'staffs');
 
 const Admin = mongoose.model('Admin', adminSchema);
 const SuperAdmin = mongoose.model('SuperAdmin', superAdminSchema);
-const AuditTrail = mongoose.model('AuditTrail', auditLogSchema, 'audittrail');
 const AnimalBite = mongoose.model('AnimalBite', animalBiteSchema);
+
 
 // Inventory Item Schema and Model
 const inventoryItemSchema = new mongoose.Schema({
@@ -309,6 +253,9 @@ const stockHistorySchema = new mongoose.Schema({
 });
 const StockHistory = mongoose.model('StockHistory', stockHistorySchema);
 
+const BiteCase = require('./models/BiteCase');
+
+
 // Default SuperAdmin Accounts
 const DEFAULT_SUPERADMINS = [
     {
@@ -322,30 +269,6 @@ const DEFAULT_SUPERADMINS = [
         password: "Admin123!",
         role: "superadmin",
         superAdminID: "SA001"
-    },
-    {
-        id: "681a4d793a6a72d951d31395",
-        firstName: "Bite",
-        middleName: "",
-        lastName: "Alert",
-        email: "bitealert1@gmail.com",
-        phoneNumber: "09123456788",
-        birthdate: new Date("1991-01-01"),
-        password: "Admin123!",
-        role: "superadmin",
-        superAdminID: "SA002"
-    },
-    {
-        id: "681a4d793a6a72d951d31396",
-        firstName: "Juan",
-        middleName: "",
-        lastName: "Dela Cruz",
-        email: "admin3@bitealert.com",
-        phoneNumber: "09123456787",
-        birthdate: new Date("1992-01-01"),
-        password: "Admin123!",
-        role: "superadmin",
-        superAdminID: "SA003"
     }
 ];
 
@@ -409,29 +332,10 @@ async function patchAdminAndSuperAdminIDs() {
 }
 
 // Function to log audit trail
-async function logAuditTrail(role, firstName, middleName, lastName, action, ids = {}, center = null) {
-    try {
-        const auditLog = new AuditTrail({
-            role,
-            firstName,
-            middleName,
-            lastName,
-            action,
-            adminID: ids.adminID || null,
-            superAdminID: ids.superAdminID || null,
-            patientID: ids.patientID || null,
-            staffID: ids.staffID || null,
-            center: center || ids.center || null
-        });
-        await auditLog.save();
-    } catch (error) {
-        console.error('Error logging audit trail:', error);
-    }
-}
-
 // Add WebSocket and HTTP server setup
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const { initWebSocket, broadcastUpdate } = require('./utils/websocket');
+initWebSocket(server);
 
 process.on('uncaughtException', (error) => {
     if (error && error.code === 'WS_ERR_INVALID_CLOSE_CODE') {
@@ -441,30 +345,6 @@ process.on('uncaughtException', (error) => {
     throw error;
 });
 
-// WebSocket connections store
-const clients = new Set();
-
-// WebSocket connection handling
-wss.on('connection', (ws) => {
-    clients.add(ws);
-
-    ws.on('error', (error) => {
-        console.warn('WebSocket client error:', error.message);
-    });
-
-    ws.on('close', () => {
-        clients.delete(ws);
-    });
-});
-
-// Broadcast updates to all connected clients
-function broadcastUpdate(data) {
-    clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
-        }
-    });
-}
 
 // Root route - API information
 app.get('/', (req, res) => {
@@ -488,8 +368,8 @@ app.post('/api/create-account', async (req, res) => {
 
         // Validate required fields
         if (!firstName || !lastName || !email || !phoneNumber || !birthdate || !password || !role) {
-            return res.status(400).json({ 
-                success: false, 
+            return res.status(400).json({
+                success: false,
                 message: 'All required fields must be filled out',
                 errors: {
                     firstName: !firstName ? 'First name is required' : undefined,
@@ -506,8 +386,8 @@ app.post('/api/create-account', async (req, res) => {
 
         // Validate center assignment for admin role
         if (role === 'admin' && !centerName) {
-            return res.status(400).json({ 
-                success: false, 
+            return res.status(400).json({
+                success: false,
                 message: 'Center assignment is required for admin accounts',
                 errors: {
                     centerName: 'Please select a center for this admin account'
@@ -518,8 +398,8 @@ app.post('/api/create-account', async (req, res) => {
         // Validate email format
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
-            return res.status(400).json({ 
-                success: false, 
+            return res.status(400).json({
+                success: false,
                 message: 'Please enter a valid email address',
                 errors: {
                     email: 'Please enter a valid email address'
@@ -530,10 +410,10 @@ app.post('/api/create-account', async (req, res) => {
         // Check if email already exists
         const existingAdmin = await Admin.findOne({ email: email.toLowerCase() });
         const existingSuperAdmin = await SuperAdmin.findOne({ email: email.toLowerCase() });
-        
+
         if (existingAdmin || existingSuperAdmin) {
-            return res.status(400).json({ 
-                success: false, 
+            return res.status(400).json({
+                success: false,
                 message: 'This email address is already registered',
                 errors: {
                     email: 'This email address is already registered'
@@ -544,8 +424,8 @@ app.post('/api/create-account', async (req, res) => {
         // Validate phone number format (Philippine format)
         const phoneRegex = /^(09|\+639)\d{9}$/;
         if (!phoneRegex.test(phoneNumber)) {
-            return res.status(400).json({ 
-                success: false, 
+            return res.status(400).json({
+                success: false,
                 message: 'Please enter a valid Philippine phone number (e.g., 09123456789 or +639123456789)',
                 errors: {
                     phoneNumber: 'Please enter a valid Philippine phone number (e.g., 09123456789 or +639123456789)'
@@ -623,8 +503,8 @@ app.post('/api/create-account', async (req, res) => {
             }
         });
 
-        return res.status(200).json({ 
-            success: true, 
+        return res.status(200).json({
+            success: true,
             message: 'Account created successfully',
             user: {
                 id: newAccount._id,
@@ -639,8 +519,8 @@ app.post('/api/create-account', async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating account:', error);
-        return res.status(500).json({ 
-            success: false, 
+        return res.status(500).json({
+            success: false,
             message: 'Failed to create account. Please try again.',
             error: error.message
         });
@@ -707,7 +587,7 @@ app.post('/login', async (req, res) => {
             ids,
             user.centerName || null
         );
-        
+
         console.log(`Login successful for ${email} (${userType})`);
 
         // Generate a simple token (in production, use JWT)
@@ -850,7 +730,7 @@ app.post('/api/audit-trail', async (req, res) => {
                     lName = parts[parts.length - 1];
                     mName = parts.slice(1, -1).join(' ');
                 }
-            } catch {}
+            } catch { }
         }
         fName = fName || 'Unknown';
         lName = lName || '';
@@ -885,7 +765,7 @@ app.post('/api/audit-trail', async (req, res) => {
 app.post('/api/logout', async (req, res) => {
     try {
         const { role, firstName, middleName, lastName, adminID, superAdminID, action } = req.body;
-        
+
         // Create the appropriate ID object based on role
         const ids = {};
         if (role === 'admin' && adminID) {
@@ -916,13 +796,13 @@ app.post('/api/logout', async (req, res) => {
 app.get('/api/admin-accounts', async (req, res) => {
     try {
         const { center } = req.query;
-        
+
         // Build filter for center-based access
         let adminFilter = { role: 'admin' };
         if (center) {
             adminFilter.centerName = { $regex: center, $options: 'i' };
         }
-        
+
         const [adminUsers, superAdmins] = await Promise.all([
             Admin.find(adminFilter)
                 .select('_id firstName middleName lastName email createdAt isActive adminID centerName')
@@ -931,7 +811,7 @@ app.get('/api/admin-accounts', async (req, res) => {
                 .select('_id firstName middleName lastName email createdAt superAdminID')
                 .lean()
         ]);
-        
+
         const allAccounts = [
             ...superAdmins.map(admin => ({
                 id: admin._id,
@@ -971,14 +851,14 @@ app.post('/api/update-account-status', async (req, res) => {
     try {
         const { accountId, isActive } = req.body;
         const isActiveBoolean = Boolean(isActive);
-        
+
         const user = await Admin.findByIdAndUpdate(
             accountId,
-            { 
+            {
                 $set: { isActive: isActiveBoolean },
                 $currentDate: { updatedAt: true }
             },
-            { 
+            {
                 new: true,
                 select: '_id firstName middleName lastName email role isActive'
             }
@@ -987,14 +867,14 @@ app.post('/api/update-account-status', async (req, res) => {
         if (!user) {
             const superAdmin = await SuperAdmin.findById(accountId);
             if (superAdmin) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
-                    message: 'SuperAdmin accounts cannot be deactivated' 
+                    message: 'SuperAdmin accounts cannot be deactivated'
                 });
             }
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Account not found' 
+                message: 'Account not found'
             });
         }
 
@@ -1025,8 +905,8 @@ app.post('/api/update-account-status', async (req, res) => {
                 superAdminID: user.superAdminID
             }
         });
-        
-        res.json({ 
+
+        res.json({
             success: true,
             message: 'Account status updated successfully',
             account: {
@@ -1042,10 +922,10 @@ app.post('/api/update-account-status', async (req, res) => {
         });
     } catch (error) {
         console.error('Error updating account status:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error updating account status', 
-            error: error.message 
+            message: 'Error updating account status',
+            error: error.message
         });
     }
 });
@@ -1055,11 +935,11 @@ app.get('/api/account-status/:email', async (req, res) => {
     try {
         const { email } = req.params;
         console.log(`Checking account status for email: ${email}`);
-        
+
         // First check in Admin collection
         let user = await Admin.findOne({ email });
         let account = null;
-        
+
         if (user) {
             account = {
                 id: user._id,
@@ -1090,7 +970,7 @@ app.get('/api/account-status/:email', async (req, res) => {
                 };
             }
         }
-        
+
         if (account) {
             res.json({ success: true, account });
         } else {
@@ -1113,7 +993,7 @@ app.get('/api/mongo-status', async (req, res) => {
          * 2 = connecting
          * 3 = disconnecting
          */
-        
+
         if (state === 1) {
             res.json({ connected: true, state: 'connected' });
         } else if (state === 2) {
@@ -1137,7 +1017,7 @@ app.get('/api/analytics', async (req, res) => {
         startDate.setDate(startDate.getDate() - days);
 
         // Fetch cases from bitecases collection
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+        const BiteCase = mongoose.connection.model('BiteCase');
         const cases = await BiteCase.find({
             createdAt: { $gte: startDate }
         }).lean();
@@ -1163,17 +1043,17 @@ app.get('/api/analytics', async (req, res) => {
             // Count by barangay
             const barangay = case_.barangay || case_.address || 'Unknown';
             analysis.casesByBarangay[barangay] = (analysis.casesByBarangay[barangay] || 0) + 1;
-            
+
             // Count by status
             const status = case_.status || 'pending';
             if (status in analysis.casesByStatus) {
                 analysis.casesByStatus[status]++;
             }
-            
+
             // Count by severity
-            const severity = case_.exposureCategory === 'I' ? 'low' : 
-                           case_.exposureCategory === 'II' ? 'medium' : 
-                           case_.exposureCategory === 'III' ? 'high' : 'low';
+            const severity = case_.exposureCategory === 'I' ? 'low' :
+                case_.exposureCategory === 'II' ? 'medium' :
+                    case_.exposureCategory === 'III' ? 'high' : 'low';
             if (severity in analysis.casesBySeverity) {
                 analysis.casesBySeverity[severity]++;
             }
@@ -1201,7 +1081,7 @@ app.get('/api/reports/cases', async (req, res) => {
             query.status = status;
         }
 
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+        const BiteCase = mongoose.connection.model('BiteCase');
         const cases = await BiteCase.find(query).sort({ createdAt: -1 });
 
         const response = {
@@ -1213,9 +1093,9 @@ app.get('/api/reports/cases', async (req, res) => {
                 age: c.age || '',
                 barangay: c.barangay || c.address || 'Unknown',
                 status: c.status || 'pending',
-                severity: c.exposureCategory === 'I' ? 'Mild' : 
-                         c.exposureCategory === 'II' ? 'Moderate' : 
-                         c.exposureCategory === 'III' ? 'Severe' : 'Unknown',
+                severity: c.exposureCategory === 'I' ? 'Mild' :
+                    c.exposureCategory === 'II' ? 'Moderate' :
+                        c.exposureCategory === 'III' ? 'Severe' : 'Unknown',
                 incidentDate: c.exposureDate || c.createdAt
             }))
         };
@@ -1230,7 +1110,7 @@ app.get('/api/reports/cases', async (req, res) => {
 app.get('/api/reports/staff', async (req, res) => {
     try {
         const { startDate, endDate, role } = req.query;
-        
+
         // Get staff members
         let staffQuery = {};
         if (role && role !== 'all') {
@@ -1281,7 +1161,7 @@ app.get('/api/profile/:userId', async (req, res) => {
         console.log('Profile API called for userId:', req.params.userId);
         const { userId } = req.params;
         let user = await Admin.findById(userId);
-        
+
         if (!user) {
             console.log('User not found in Admin collection, checking SuperAdmin...');
             user = await SuperAdmin.findById(userId);
@@ -1296,15 +1176,15 @@ app.get('/api/profile/:userId', async (req, res) => {
         res.json({
             success: true,
             data: {
-            firstName: user.firstName,
-            middleName: user.middleName,
-            lastName: user.lastName,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-            birthdate: user.birthdate,
-            role: user.role,
-            adminID: user.adminID,
-            superAdminID: user.superAdminID
+                firstName: user.firstName,
+                middleName: user.middleName,
+                lastName: user.lastName,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                birthdate: user.birthdate,
+                role: user.role,
+                adminID: user.adminID,
+                superAdminID: user.superAdminID
             }
         });
     } catch (error) {
@@ -1338,15 +1218,15 @@ app.put('/api/profile/:userId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-    // Update user fields only if provided
-    if (typeof firstName !== 'undefined') user.firstName = firstName;
-    if (typeof middleName !== 'undefined') user.middleName = middleName;
-    if (typeof lastName !== 'undefined') user.lastName = lastName;
-    if (typeof email !== 'undefined') user.email = email;
-    if (typeof phoneNumber !== 'undefined') user.phoneNumber = phoneNumber;
-    if (typeof birthdate !== 'undefined' && birthdate !== null && birthdate !== '') {
-      user.birthdate = new Date(birthdate);
-    }
+        // Update user fields only if provided
+        if (typeof firstName !== 'undefined') user.firstName = firstName;
+        if (typeof middleName !== 'undefined') user.middleName = middleName;
+        if (typeof lastName !== 'undefined') user.lastName = lastName;
+        if (typeof email !== 'undefined') user.email = email;
+        if (typeof phoneNumber !== 'undefined') user.phoneNumber = phoneNumber;
+        if (typeof birthdate !== 'undefined' && birthdate !== null && birthdate !== '') {
+            user.birthdate = new Date(birthdate);
+        }
 
         await user.save();
 
@@ -1365,7 +1245,7 @@ app.put('/api/profile/:userId', async (req, res) => {
         );
 
         res.json({
-      success: true,
+            success: true,
             message: 'Profile updated successfully',
             user: {
                 firstName: user.firstName,
@@ -1380,7 +1260,7 @@ app.put('/api/profile/:userId', async (req, res) => {
         });
     } catch (error) {
         console.error('Error updating profile:', error);
-    res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });
+        res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });
     }
 });
 
@@ -1437,37 +1317,37 @@ app.put('/api/profile/:userId/password', async (req, res) => {
 app.post('/api/check-email', async (req, res) => {
     try {
         const { email } = req.body;
-        
+
         if (!email) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Email is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required'
             });
         }
 
         // Enhanced email format validation
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid email format' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email format'
             });
         }
 
         // Check if email exists in both collections
         const existingAdmin = await Admin.findOne({ email: email.toLowerCase() });
         const existingSuperAdmin = await SuperAdmin.findOne({ email: email.toLowerCase() });
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             available: !existingAdmin && !existingSuperAdmin,
             message: existingAdmin || existingSuperAdmin ? 'Email is already registered' : 'Email is available'
         });
     } catch (error) {
         console.error('Error checking email:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error checking email availability' 
+        res.status(500).json({
+            success: false,
+            message: 'Error checking email availability'
         });
     }
 });
@@ -1476,43 +1356,43 @@ app.post('/api/check-email', async (req, res) => {
 app.post('/api/check-name', async (req, res) => {
     try {
         const { firstName, middleName, lastName } = req.body;
-        
+
         if (!firstName || !lastName) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'First name and last name are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'First name and last name are required'
             });
         }
 
         // Name format validation
         const nameRegex = /^[a-zA-Z\s'-]{2,50}$/;
         if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Names must contain only letters, spaces, hyphens, and apostrophes (2-50 characters)' 
+            return res.status(400).json({
+                success: false,
+                message: 'Names must contain only letters, spaces, hyphens, and apostrophes (2-50 characters)'
             });
         }
 
         // Check name combination in both collections
-        const existingAdmin = await Admin.findOne({ 
+        const existingAdmin = await Admin.findOne({
             firstName: firstName.toLowerCase(),
             lastName: lastName.toLowerCase()
         });
-        const existingSuperAdmin = await SuperAdmin.findOne({ 
+        const existingSuperAdmin = await SuperAdmin.findOne({
             firstName: firstName.toLowerCase(),
             lastName: lastName.toLowerCase()
         });
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             available: !existingAdmin && !existingSuperAdmin,
             message: existingAdmin || existingSuperAdmin ? 'Name combination is already registered' : 'Name is available'
         });
     } catch (error) {
         console.error('Error checking name:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error checking name availability' 
+        res.status(500).json({
+            success: false,
+            message: 'Error checking name availability'
         });
     }
 });
@@ -1521,37 +1401,37 @@ app.post('/api/check-name', async (req, res) => {
 app.post('/api/check-phone', async (req, res) => {
     try {
         const { phoneNumber } = req.body;
-        
+
         if (!phoneNumber) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Phone number is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Phone number is required'
             });
         }
 
         // Enhanced phone number format validation (Philippine format)
         const phoneRegex = /^(09|\+639)\d{9}$/;
         if (!phoneRegex.test(phoneNumber)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Please enter a valid Philippine phone number (e.g., 09123456789 or +639123456789)' 
+            return res.status(400).json({
+                success: false,
+                message: 'Please enter a valid Philippine phone number (e.g., 09123456789 or +639123456789)'
             });
         }
 
         // Check phone number in both collections
         const existingAdmin = await Admin.findOne({ phoneNumber });
         const existingSuperAdmin = await SuperAdmin.findOne({ phoneNumber });
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             available: !existingAdmin && !existingSuperAdmin,
             message: existingAdmin || existingSuperAdmin ? 'Phone number is already registered' : 'Phone number is available'
         });
     } catch (error) {
         console.error('Error checking phone number:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error checking phone number availability' 
+        res.status(500).json({
+            success: false,
+            message: 'Error checking phone number availability'
         });
     }
 });
@@ -1584,9 +1464,9 @@ app.get('/api/get-geographical-data', async (req, res) => {
         ];
 
         // Get all cases from MongoDB
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+        const BiteCase = mongoose.connection.model('BiteCase');
         const cases = await BiteCase.find({});
-        
+
         // Initialize counts for each barangay
         const barangayCounts = {};
         sanJuanBarangays.forEach(barangay => {
@@ -1598,10 +1478,10 @@ app.get('/api/get-geographical-data', async (req, res) => {
             // Check both barangay and address fields for matches
             const address = case_.address || '';
             const barangay = case_.barangay || '';
-            
+
             // Find matching barangay from the list
-            const matchingBarangay = sanJuanBarangays.find(b => 
-                address.toLowerCase().includes(b.toLowerCase()) || 
+            const matchingBarangay = sanJuanBarangays.find(b =>
+                address.toLowerCase().includes(b.toLowerCase()) ||
                 barangay.toLowerCase().includes(b.toLowerCase())
             );
 
@@ -1640,7 +1520,7 @@ app.get('/api/test-mongo', async (req, res) => {
         // Try to fetch a single document from each collection
         const [patient, biteCase, inventory, center] = await Promise.all([
             mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients').findOne(),
-            mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases').findOne(),
+            mongoose.connection.model('BiteCase').findOne(),
             mongoose.connection.model('InventoryItem', new mongoose.Schema({}, { strict: false }), 'inventoryitems').findOne(),
             mongoose.connection.model('Center', new mongoose.Schema({}, { strict: false }), 'centers').findOne()
         ]);
@@ -1697,13 +1577,13 @@ app.get('/api/prescriptive-demo', async (req, res) => {
 
             // Debug log
             console.log({
-              barangay: area.barangay,
-              caseDensity,
-              vaccinationCoverage,
-              strayPopulation,
-              responseTime,
-              historicalTrend,
-              riskScore
+                barangay: area.barangay,
+                caseDensity,
+                vaccinationCoverage,
+                strayPopulation,
+                responseTime,
+                historicalTrend,
+                riskScore
             });
 
             // Prescriptive recommendations
@@ -1796,7 +1676,7 @@ app.post('/api/prescriptions', async (req, res) => {
         }
 
         // Get comprehensive bite case data for AI analysis
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+        const BiteCase = mongoose.connection.model('BiteCase');
         const now = new Date();
         const timeRangeMap = { week: 7, month: 30, quarter: 90, year: 365 };
         const daysBack = timeRangeMap[timeRange] || 30;
@@ -1809,7 +1689,7 @@ app.post('/api/prescriptions', async (req, res) => {
 
         // Analyze case patterns by age groups, time patterns, and severity
         const caseAnalysis = analyzeCasePatterns(allCases, selectedBarangay);
-        
+
         let barangaySummaries = Object.entries(riskAnalysis).map(([barangay, d]) => ({
             barangay,
             totalCases: d.totalCases || 0,
@@ -1868,7 +1748,7 @@ app.post('/api/prescriptions', async (req, res) => {
                 }));
                 return res.json({ interventions: generatePrescriptions(barangaySummaries) });
             }
-        } catch (_) {}
+        } catch (_) { }
         return res.status(500).json({ error: 'Failed to generate prescriptions' });
     }
 });
@@ -1876,10 +1756,10 @@ app.post('/api/prescriptions', async (req, res) => {
 // Helper function to analyze case patterns
 function analyzeCasePatterns(cases, selectedBarangay) {
     const analysis = {};
-    
+
     // Filter cases by selected barangay if specified
-    const filteredCases = selectedBarangay === 'all' 
-        ? cases 
+    const filteredCases = selectedBarangay === 'all'
+        ? cases
         : cases.filter(c => c.barangay === selectedBarangay);
 
     // Group by barangay
@@ -1909,13 +1789,13 @@ function analyzeCasePatterns(cases, selectedBarangay) {
         const dailyPattern = {};
         const weeklyPattern = { 'Monday': 0, 'Tuesday': 0, 'Wednesday': 0, 'Thursday': 0, 'Friday': 0, 'Saturday': 0, 'Sunday': 0 };
         const monthlyPattern = {};
-        
+
         barangayCases.forEach(c => {
             const date = new Date(c.createdAt || c.incidentDate);
             const day = date.getDate();
             const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()];
             const month = date.getMonth() + 1;
-            
+
             dailyPattern[day] = (dailyPattern[day] || 0) + 1;
             weeklyPattern[dayOfWeek]++;
             monthlyPattern[month] = (monthlyPattern[month] || 0) + 1;
@@ -1927,7 +1807,7 @@ function analyzeCasePatterns(cases, selectedBarangay) {
         barangayCases.forEach(c => {
             const severity = c.severity || c.exposureCategory || 'low';
             const category = c.exposureCategory || c.category || 'I';
-            
+
             // WHO Category classification
             if (category === 'III' || category === '3' || category === 'Category III') {
                 exposureCategoryBreakdown.category3++;
@@ -1982,10 +1862,12 @@ app.post('/api/generate-vaccine-allocation', async (req, res) => {
         const groupFormat = granularity === 'daily' ? "%Y-%m-%d" : granularity === 'yearly' ? "%Y" : "%Y-%m";
         const cases = await AnimalBite.aggregate([
             { $match: { incidentDate: { $gte: start, $lte: end } } },
-            { $group: {
-                _id: { barangay: "$barangay", period: { $dateToString: { format: groupFormat, date: "$incidentDate" } } },
-                count: { $sum: 1 }
-            }}
+            {
+                $group: {
+                    _id: { barangay: "$barangay", period: { $dateToString: { format: groupFormat, date: "$incidentDate" } } },
+                    count: { $sum: 1 }
+                }
+            }
         ]);
         const barangayData = {};
         cases.forEach(c => {
@@ -2060,7 +1942,7 @@ app.post('/api/insert-sample-animalbites', async (req, res) => {
         const samples = [];
         for (let i = 0; i < 60; i++) {
             samples.push({
-                patientName: `Test Patient ${i+1}`,
+                patientName: `Test Patient ${i + 1}`,
                 age: 5 + (i % 60),
                 gender: i % 2 === 0 ? 'Male' : 'Female',
                 barangay: barangays[i % barangays.length],
@@ -2092,7 +1974,7 @@ app.get('/api/staffs', async (req, res) => {
             // Staff data uses centerName field, not center
             filter.centerName = center;
         }
-        
+
         const staffs = await Staff.find(filter);
         res.json({ success: true, staffs });
     } catch (error) {
@@ -2120,18 +2002,18 @@ app.post('/api/staffs', async (req, res) => {
 
         // Validate required fields
         if (!firstName || !lastName || !email || !role || !center || !password) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Missing required fields: firstName, lastName, email, role, center, password' 
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: firstName, lastName, email, role, center, password'
             });
         }
 
         // Check if email already exists
         const existingStaff = await Staff.findOne({ email });
         if (existingStaff) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Email already exists' 
+            return res.status(400).json({
+                success: false,
+                message: 'Email already exists'
             });
         }
 
@@ -2182,8 +2064,8 @@ app.post('/api/staffs', async (req, res) => {
             { staffId: savedStaff.staffId, email: savedStaff.email }
         );
 
-        res.status(201).json({ 
-            success: true, 
+        res.status(201).json({
+            success: true,
             message: 'Staff created successfully',
             staff: {
                 _id: savedStaff._id,
@@ -2429,23 +2311,23 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Send OTP endpoint
 app.post('/api/send-otp', async (req, res) => {
-  try {
-    const { email } = req.body;
-    let user = await Admin.findOne({ email }) || await SuperAdmin.findOne({ email });
-    if (!user) return res.json({ success: false, message: 'Email not found.' });
+    try {
+        const { email } = req.body;
+        let user = await Admin.findOne({ email }) || await SuperAdmin.findOne({ email });
+        if (!user) return res.json({ success: false, message: 'Email not found.' });
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.resetOTP = otp;
-    user.resetOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min expiry
-    await user.save();
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.resetOTP = otp;
+        user.resetOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min expiry
+        await user.save();
 
-    // Send OTP email using SendGrid
-    const msg = {
-      to: email,
-      from: process.env.SENDGRID_FROM_EMAIL,
-      subject: 'Your Bite Alert Password Reset OTP',
-      html: `
+        // Send OTP email using SendGrid
+        const msg = {
+            to: email,
+            from: process.env.SENDGRID_FROM_EMAIL,
+            subject: 'Your Bite Alert Password Reset OTP',
+            html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #800000;">Bite Alert Password Reset</h2>
           <p>Your OTP for password reset is:</p>
@@ -2456,338 +2338,338 @@ app.post('/api/send-otp', async (req, res) => {
           <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply.</p>
         </div>
       `
-    };
-    
-    await sgMail.send(msg);
+        };
 
-    res.json({ success: true, message: 'OTP sent to your email.' });
-  } catch (err) {
-    console.error('Error sending OTP:', err);
-    res.json({ success: false, message: 'Failed to send OTP.' });
-  }
+        await sgMail.send(msg);
+
+        res.json({ success: true, message: 'OTP sent to your email.' });
+    } catch (err) {
+        console.error('Error sending OTP:', err);
+        res.json({ success: false, message: 'Failed to send OTP.' });
+    }
 });
 
 // Reset password endpoint
 app.post('/api/reset-password', async (req, res) => {
-  try {
-    const { email, otp, newPassword } = req.body;
-    let user = await Admin.findOne({ email }) || await SuperAdmin.findOne({ email });
-    if (!user) return res.json({ success: false, message: 'Email not found.' });
+    try {
+        const { email, otp, newPassword } = req.body;
+        let user = await Admin.findOne({ email }) || await SuperAdmin.findOne({ email });
+        if (!user) return res.json({ success: false, message: 'Email not found.' });
 
-    if (!user.resetOTP || !user.resetOTPExpires || user.resetOTPExpires < new Date()) {
-      return res.json({ success: false, message: 'OTP expired or not found.' });
+        if (!user.resetOTP || !user.resetOTPExpires || user.resetOTPExpires < new Date()) {
+            return res.json({ success: false, message: 'OTP expired or not found.' });
+        }
+        if (user.resetOTP !== otp) {
+            return res.json({ success: false, message: 'Invalid OTP.' });
+        }
+
+        // Update password
+        user.password = await bcrypt.hash(newPassword, 10);
+        user.resetOTP = undefined;
+        user.resetOTPExpires = undefined;
+        await user.save();
+
+        res.json({ success: true, message: 'Password reset successful.' });
+    } catch (err) {
+        console.error(err);
+        res.json({ success: false, message: 'Failed to reset password.' });
     }
-    if (user.resetOTP !== otp) {
-      return res.json({ success: false, message: 'Invalid OTP.' });
-    }
-
-    // Update password
-    user.password = await bcrypt.hash(newPassword, 10);
-    user.resetOTP = undefined;
-    user.resetOTPExpires = undefined;
-    await user.save();
-
-    res.json({ success: true, message: 'Password reset successful.' });
-  } catch (err) {
-    console.error(err);
-    res.json({ success: false, message: 'Failed to reset password.' });
-  }
 });
 
 // Center Schema for vaccine tracking
 const centerSchema = new mongoose.Schema({
-  centerName: { type: String, required: true },
-  address: { type: String, required: true },
-  contactPerson: { type: String, required: true },
-  contactNumber: { type: String, required: true },
-  code: { type: String }, // Added to prevent duplicate key error on old code_1 index
-  isArchived: { type: Boolean, default: false },
-  lastUpdated: { type: Date, default: Date.now },
-  serviceHours: [
-    {
-      day: { type: String, required: true }, // e.g., 'Monday'
-      open: { type: String, required: true }, // e.g., '08:00'
-      close: { type: String, required: true } // e.g., '17:00'
-    }
-  ]
+    centerName: { type: String, required: true },
+    address: { type: String, required: true },
+    contactPerson: { type: String, required: true },
+    contactNumber: { type: String, required: true },
+    code: { type: String }, // Added to prevent duplicate key error on old code_1 index
+    isArchived: { type: Boolean, default: false },
+    lastUpdated: { type: Date, default: Date.now },
+    serviceHours: [
+        {
+            day: { type: String, required: true }, // e.g., 'Monday'
+            open: { type: String, required: true }, // e.g., '08:00'
+            close: { type: String, required: true } // e.g., '17:00'
+        }
+    ]
 });
 const Center = mongoose.model('Center', centerSchema);
 
 // --- MIGRATION SCRIPT: Run ONCE, then comment out ---
 async function migrateVaccineData() {
-  const centers = await Center.find({});
-  for (const center of centers) {
-    if (!center.vaccines || center.vaccines.length === 0) {
-      // Assume old field is center.vaccinesDistributed
-      center.vaccines = [
-        { type: 'Anti-Rabies', count: center.vaccinesDistributed || 0 }
-        // Add more types if you have them in your old data
-      ];
-      await center.save();
-      console.log(`Migrated center: ${center.centerName}`);
+    const centers = await Center.find({});
+    for (const center of centers) {
+        if (!center.vaccines || center.vaccines.length === 0) {
+            // Assume old field is center.vaccinesDistributed
+            center.vaccines = [
+                { type: 'Anti-Rabies', count: center.vaccinesDistributed || 0 }
+                // Add more types if you have them in your old data
+            ];
+            await center.save();
+            console.log(`Migrated center: ${center.centerName}`);
+        }
     }
-  }
 }
 // migrateVaccineData(); // Uncomment and run once, then comment out
 
 // API: Get all centers
 app.get('/api/centers', async (req, res) => {
-  try {
-    console.log('Fetching all centers...');
-    const centers = await Center.find({}).sort({ lastUpdated: -1 });
-    console.log(`Found ${centers.length} centers`);
-    
-    // Log hours data for each center
-    centers.forEach(center => {
-      console.log(`🔍 Center ${center.name || center.centerName}:`, {
-        hasHours: !!center.hours,
-        hours: center.hours
-      });
-    });
-    
-    res.json({ success: true, data: centers });
-  } catch (err) {
-    console.error('Error fetching centers:', err);
-    res.status(500).json({ success: false, message: 'Failed to fetch centers', error: err.message });
-  }
+    try {
+        console.log('Fetching all centers...');
+        const centers = await Center.find({}).sort({ lastUpdated: -1 });
+        console.log(`Found ${centers.length} centers`);
+
+        // Log hours data for each center
+        centers.forEach(center => {
+            console.log(`🔍 Center ${center.name || center.centerName}:`, {
+                hasHours: !!center.hours,
+                hours: center.hours
+            });
+        });
+
+        res.json({ success: true, data: centers });
+    } catch (err) {
+        console.error('Error fetching centers:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch centers', error: err.message });
+    }
 });
 
 // Add a new center
 app.post('/api/centers', async (req, res) => {
-  try {
-    console.log('Adding new center:', req.body);
-    const { centerName, address, contactPerson, contactNumber } = req.body;
-    
-    // Validate required fields
-    if (!centerName || !address || !contactPerson || !contactNumber) {
-      console.log('Missing required fields');
-      return res.status(400).json({ success: false, message: 'All fields are required.' });
-    }
+    try {
+        console.log('Adding new center:', req.body);
+        const { centerName, address, contactPerson, contactNumber } = req.body;
 
-    // Create new center
-    const center = new Center({
-      centerName,
-      address,
-      contactPerson,
-      contactNumber,
-      code: 'CTR-' + Date.now().toString() + '-' + Math.floor(Math.random() * 1000), // Generate unique code
-      lastUpdated: new Date()
-    });
+        // Validate required fields
+        if (!centerName || !address || !contactPerson || !contactNumber) {
+            console.log('Missing required fields');
+            return res.status(400).json({ success: false, message: 'All fields are required.' });
+        }
 
-    // Save to database
-    const savedCenter = await center.save();
-    console.log('Center saved successfully:', savedCenter);
-    
-    res.status(201).json({ success: true, data: savedCenter });
-  } catch (err) {
-    console.error('Error adding center:', err.name, err.code, err.message);
-    const fs = require('fs');
-    fs.appendFileSync('server_error.log', new Date().toISOString() + ' Error adding center: ' + err.message + '\n' + JSON.stringify(err) + '\n');
-    if (err.code === 11000) {
-      return res.status(500).json({ success: false, message: 'A center with this name already exists in the database (even if archived).', error: err.message });
+        // Create new center
+        const center = new Center({
+            centerName,
+            address,
+            contactPerson,
+            contactNumber,
+            code: 'CTR-' + Date.now().toString() + '-' + Math.floor(Math.random() * 1000), // Generate unique code
+            lastUpdated: new Date()
+        });
+
+        // Save to database
+        const savedCenter = await center.save();
+        console.log('Center saved successfully:', savedCenter);
+
+        res.status(201).json({ success: true, data: savedCenter });
+    } catch (err) {
+        console.error('Error adding center:', err.name, err.code, err.message);
+        const fs = require('fs');
+        fs.appendFileSync('server_error.log', new Date().toISOString() + ' Error adding center: ' + err.message + '\n' + JSON.stringify(err) + '\n');
+        if (err.code === 11000) {
+            return res.status(500).json({ success: false, message: 'A center with this name already exists in the database (even if archived).', error: err.message });
+        }
+        res.status(500).json({ success: false, message: 'Failed to add center', error: err.message });
     }
-    res.status(500).json({ success: false, message: 'Failed to add center', error: err.message });
-  }
 });
 
 // Update a center
 app.put('/api/centers/:id', async (req, res) => {
-  try {
-    console.log('Updating center:', req.params.id, req.body);
-    const { centerName, address, contactPerson, contactNumber } = req.body;
-    
-    // Validate required fields
-    if (!centerName || !address || !contactPerson || !contactNumber) {
-      console.log('Missing required fields');
-      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    try {
+        console.log('Updating center:', req.params.id, req.body);
+        const { centerName, address, contactPerson, contactNumber } = req.body;
+
+        // Validate required fields
+        if (!centerName || !address || !contactPerson || !contactNumber) {
+            console.log('Missing required fields');
+            return res.status(400).json({ success: false, message: 'All fields are required.' });
+        }
+
+        const center = await Center.findByIdAndUpdate(
+            req.params.id,
+            {
+                centerName,
+                address,
+                contactPerson,
+                contactNumber,
+                lastUpdated: new Date()
+            },
+            { new: true }
+        );
+
+        if (!center) {
+            console.log('Center not found:', req.params.id);
+            return res.status(404).json({ success: false, message: 'Center not found.' });
+        }
+
+        console.log('Center updated successfully:', center);
+        res.json({ success: true, data: center });
+    } catch (err) {
+        console.error('Error updating center:', err);
+        res.status(500).json({ success: false, message: 'Failed to update center', error: err.message });
     }
-
-    const center = await Center.findByIdAndUpdate(
-      req.params.id,
-      { 
-        centerName, 
-        address, 
-        contactPerson, 
-        contactNumber,
-        lastUpdated: new Date()
-      },
-      { new: true }
-    );
-
-    if (!center) {
-      console.log('Center not found:', req.params.id);
-      return res.status(404).json({ success: false, message: 'Center not found.' });
-    }
-
-    console.log('Center updated successfully:', center);
-    res.json({ success: true, data: center });
-  } catch (err) {
-    console.error('Error updating center:', err);
-    res.status(500).json({ success: false, message: 'Failed to update center', error: err.message });
-  }
 });
 
 // Delete a center
 app.delete('/api/centers/:id', async (req, res) => {
-  try {
-    console.log('Deleting center:', req.params.id);
-    const center = await Center.findByIdAndDelete(req.params.id);
-    
-    if (!center) {
-      console.log('Center not found:', req.params.id);
-      return res.status(404).json({ success: false, message: 'Center not found.' });
-    }
+    try {
+        console.log('Deleting center:', req.params.id);
+        const center = await Center.findByIdAndDelete(req.params.id);
 
-    console.log('Center deleted successfully:', center);
-    res.json({ success: true, message: 'Center deleted successfully' });
-  } catch (err) {
-    console.error('Error deleting center:', err);
-    res.status(500).json({ success: false, message: 'Failed to delete center', error: err.message });
-  }
+        if (!center) {
+            console.log('Center not found:', req.params.id);
+            return res.status(404).json({ success: false, message: 'Center not found.' });
+        }
+
+        console.log('Center deleted successfully:', center);
+        res.json({ success: true, message: 'Center deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting center:', err);
+        res.status(500).json({ success: false, message: 'Failed to delete center', error: err.message });
+    }
 });
 
 // Add archive/unarchive endpoint
 app.put('/api/centers/:id/archive', async (req, res) => {
-  try {
-    console.log('Updating center archive status:', req.params.id, req.body);
-    const { isArchived } = req.body;
-    
-    if (typeof isArchived !== 'boolean') {
-      return res.status(400).json({ success: false, message: 'isArchived must be a boolean value' });
+    try {
+        console.log('Updating center archive status:', req.params.id, req.body);
+        const { isArchived } = req.body;
+
+        if (typeof isArchived !== 'boolean') {
+            return res.status(400).json({ success: false, message: 'isArchived must be a boolean value' });
+        }
+
+        const center = await Center.findByIdAndUpdate(
+            req.params.id,
+            {
+                isArchived,
+                lastUpdated: new Date()
+            },
+            { new: true }
+        );
+
+        if (!center) {
+            console.log('Center not found:', req.params.id);
+            return res.status(404).json({ success: false, message: 'Center not found.' });
+        }
+
+        console.log('Center archive status updated successfully:', center);
+        res.json({ success: true, data: center });
+    } catch (err) {
+        console.error('Error updating center archive status:', err);
+        res.status(500).json({ success: false, message: 'Failed to update center archive status', error: err.message });
     }
-
-    const center = await Center.findByIdAndUpdate(
-      req.params.id,
-      { 
-        isArchived,
-        lastUpdated: new Date()
-      },
-      { new: true }
-    );
-
-    if (!center) {
-      console.log('Center not found:', req.params.id);
-      return res.status(404).json({ success: false, message: 'Center not found.' });
-    }
-
-    console.log('Center archive status updated successfully:', center);
-    res.json({ success: true, data: center });
-  } catch (err) {
-    console.error('Error updating center archive status:', err);
-    res.status(500).json({ success: false, message: 'Failed to update center archive status', error: err.message });
-  }
 });
 
 // Self-correcting migration to clean up duplicated center hours documents
 async function cleanDuplicateCenterHours() {
-  try {
-    console.log('[CenterHours Migration] Scanning for duplicate center hours documents...');
-    const docs = await CenterHours.find();
-    const groups = {};
-    
-    // Group documents by normalized name
-    docs.forEach(doc => {
-      const nameKey = String(doc.centerName || doc.name || '').toLowerCase().trim();
-      if (!nameKey) return;
-      if (!groups[nameKey]) groups[nameKey] = [];
-      groups[nameKey].push(doc);
-    });
-    
-    // Process each group with duplicates
-    for (const nameKey in groups) {
-      const group = groups[nameKey];
-      if (group.length > 1) {
-        console.log(`[CenterHours Migration] Found ${group.length} duplicates for "${nameKey}". Merging...`);
-        
-        // Find the best document to keep (prefer centerId, then centerName, then document with hours, then latest updatedAt)
-        let bestDoc = group[0];
-        for (let i = 1; i < group.length; i++) {
-          const doc = group[i];
-          const hasHours = doc.hours && Object.keys(doc.hours).length > 0;
-          const bestHasHours = bestDoc.hours && Object.keys(bestDoc.hours).length > 0;
-          
-          if (doc.centerId && !bestDoc.centerId) {
-            bestDoc = doc;
-          } else if (!doc.centerId && bestDoc.centerId) {
-            // keep bestDoc
-          } else if (hasHours && !bestHasHours) {
-            bestDoc = doc;
-          } else if (!hasHours && bestHasHours) {
-            // keep bestDoc
-          } else if (doc.updatedAt && (!bestDoc.updatedAt || doc.updatedAt > bestDoc.updatedAt)) {
-            bestDoc = doc;
-          }
+    try {
+        console.log('[CenterHours Migration] Scanning for duplicate center hours documents...');
+        const docs = await CenterHours.find();
+        const groups = {};
+
+        // Group documents by normalized name
+        docs.forEach(doc => {
+            const nameKey = String(doc.centerName || doc.name || '').toLowerCase().trim();
+            if (!nameKey) return;
+            if (!groups[nameKey]) groups[nameKey] = [];
+            groups[nameKey].push(doc);
+        });
+
+        // Process each group with duplicates
+        for (const nameKey in groups) {
+            const group = groups[nameKey];
+            if (group.length > 1) {
+                console.log(`[CenterHours Migration] Found ${group.length} duplicates for "${nameKey}". Merging...`);
+
+                // Find the best document to keep (prefer centerId, then centerName, then document with hours, then latest updatedAt)
+                let bestDoc = group[0];
+                for (let i = 1; i < group.length; i++) {
+                    const doc = group[i];
+                    const hasHours = doc.hours && Object.keys(doc.hours).length > 0;
+                    const bestHasHours = bestDoc.hours && Object.keys(bestDoc.hours).length > 0;
+
+                    if (doc.centerId && !bestDoc.centerId) {
+                        bestDoc = doc;
+                    } else if (!doc.centerId && bestDoc.centerId) {
+                        // keep bestDoc
+                    } else if (hasHours && !bestHasHours) {
+                        bestDoc = doc;
+                    } else if (!hasHours && bestHasHours) {
+                        // keep bestDoc
+                    } else if (doc.updatedAt && (!bestDoc.updatedAt || doc.updatedAt > bestDoc.updatedAt)) {
+                        bestDoc = doc;
+                    }
+                }
+
+                // Merge information from other documents into bestDoc
+                let mergedHours = { ...(bestDoc.hours || {}) };
+                let mergedContact = bestDoc.contactNumber || '';
+                let mergedAddress = bestDoc.address || '';
+                let mergedCenterId = bestDoc.centerId || '';
+                let mergedCenterName = bestDoc.centerName || bestDoc.name || '';
+
+                for (const doc of group) {
+                    if (doc._id.toString() === bestDoc._id.toString()) continue;
+
+                    // Merge hours (if any day is defined in other doc but not bestDoc)
+                    if (doc.hours) {
+                        Object.keys(doc.hours).forEach(day => {
+                            if (!mergedHours[day] && doc.hours[day]) {
+                                mergedHours[day] = doc.hours[day];
+                            }
+                        });
+                    }
+                    if (!mergedContact && doc.contactNumber) mergedContact = doc.contactNumber;
+                    if (!mergedAddress && doc.address) mergedAddress = doc.address;
+                    if (!mergedCenterId && doc.centerId) mergedCenterId = doc.centerId;
+                    if (!mergedCenterName && (doc.centerName || doc.name)) {
+                        mergedCenterName = doc.centerName || doc.name;
+                    }
+                }
+
+                // Update the best document
+                bestDoc.hours = mergedHours;
+                bestDoc.contactNumber = mergedContact;
+                bestDoc.address = mergedAddress;
+                bestDoc.centerId = mergedCenterId;
+                bestDoc.centerName = mergedCenterName;
+                bestDoc.name = mergedCenterName;
+                bestDoc.updatedAt = new Date();
+                await bestDoc.save();
+
+                // Delete the other duplicate documents
+                for (const doc of group) {
+                    if (doc._id.toString() === bestDoc._id.toString()) continue;
+                    await CenterHours.deleteOne({ _id: doc._id });
+                    console.log(`[CenterHours Migration] Deleted duplicate document ID: ${doc._id}`);
+                }
+            }
         }
-        
-        // Merge information from other documents into bestDoc
-        let mergedHours = { ...(bestDoc.hours || {}) };
-        let mergedContact = bestDoc.contactNumber || '';
-        let mergedAddress = bestDoc.address || '';
-        let mergedCenterId = bestDoc.centerId || '';
-        let mergedCenterName = bestDoc.centerName || bestDoc.name || '';
-        
-        for (const doc of group) {
-          if (doc._id.toString() === bestDoc._id.toString()) continue;
-          
-          // Merge hours (if any day is defined in other doc but not bestDoc)
-          if (doc.hours) {
-            Object.keys(doc.hours).forEach(day => {
-              if (!mergedHours[day] && doc.hours[day]) {
-                mergedHours[day] = doc.hours[day];
-              }
-            });
-          }
-          if (!mergedContact && doc.contactNumber) mergedContact = doc.contactNumber;
-          if (!mergedAddress && doc.address) mergedAddress = doc.address;
-          if (!mergedCenterId && doc.centerId) mergedCenterId = doc.centerId;
-          if (!mergedCenterName && (doc.centerName || doc.name)) {
-            mergedCenterName = doc.centerName || doc.name;
-          }
-        }
-        
-        // Update the best document
-        bestDoc.hours = mergedHours;
-        bestDoc.contactNumber = mergedContact;
-        bestDoc.address = mergedAddress;
-        bestDoc.centerId = mergedCenterId;
-        bestDoc.centerName = mergedCenterName;
-        bestDoc.name = mergedCenterName;
-        bestDoc.updatedAt = new Date();
-        await bestDoc.save();
-        
-        // Delete the other duplicate documents
-        for (const doc of group) {
-          if (doc._id.toString() === bestDoc._id.toString()) continue;
-          await CenterHours.deleteOne({ _id: doc._id });
-          console.log(`[CenterHours Migration] Deleted duplicate document ID: ${doc._id}`);
-        }
-      }
+        console.log('[CenterHours Migration] Scan and merge completed.');
+    } catch (err) {
+        console.error('[CenterHours Migration] Error cleaning duplicates:', err);
     }
-    console.log('[CenterHours Migration] Scan and merge completed.');
-  } catch (err) {
-    console.error('[CenterHours Migration] Error cleaning duplicates:', err);
-  }
 }
 
 // Connect to MongoDB with retry logic
 const connectWithRetry = async (retryCount = 0, maxRetries = 3) => {
     try {
         console.log(`Attempting to connect to MongoDB... (attempt ${retryCount + 1})`);
-        
+
         // Set a timeout for the connection attempt
         const connectionPromise = mongoose.connect(MONGODB_URI, MONGODB_OPTIONS);
         const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Connection timeout')), 25000);
         });
-        
+
         await Promise.race([connectionPromise, timeoutPromise]);
         console.log('Connected to MongoDB Atlas');
-        
+
         // Create initial super admin after successful connection
         await createInitialSuperAdmins();
         await patchAdminAndSuperAdminIDs();
         await cleanDuplicateCenterHours();
-        
+
         // Start the server only after successful database connection
         server.listen(PORT, () => {
             console.log(`Server running on port ${PORT} with WebSocket support`);
@@ -2795,10 +2677,10 @@ const connectWithRetry = async (retryCount = 0, maxRetries = 3) => {
         });
     } catch (err) {
         console.error('MongoDB connection error:', err.message);
-        
+
         if (retryCount < maxRetries) {
             const delay = Math.min(5000 * (retryCount + 1), 15000); // Progressive delay, max 15s
-            console.log(`Retrying connection in ${delay/1000} seconds... (${retryCount + 1}/${maxRetries})`);
+            console.log(`Retrying connection in ${delay / 1000} seconds... (${retryCount + 1}/${maxRetries})`);
             setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), delay);
         } else {
             console.error('Max retry attempts reached. Starting server without database connection.');
@@ -2846,274 +2728,278 @@ process.on('uncaughtException', (err) => {
 
 // API: Get case count per center (AnimalBite + bitecases)
 app.get('/api/cases-per-center', async (req, res) => {
-  try {
-    const centers = await Center.find({});
-    // For each center, count cases in both collections
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const results = await Promise.all(centers.map(async center => {
-      // Match by centerName (adjust if you use centerId in AnimalBite/bitecases)
-      const animalBiteCount = await AnimalBite.countDocuments({ barangay: center.centerName });
-      const biteCaseCount = await BiteCase.countDocuments({ barangay: center.centerName });
-      return {
-        centerName: center.centerName,
-        caseCount: animalBiteCount + biteCaseCount
-      };
-    }));
-    res.json({ success: true, data: results });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch cases per center', error: err.message });
-  }
+    try {
+        const centers = await Center.find({});
+        // For each center, count cases in both collections
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const results = await Promise.all(centers.map(async center => {
+            // Match by centerName (adjust if you use centerId in AnimalBite/bitecases)
+            const animalBiteCount = await AnimalBite.countDocuments({ barangay: center.centerName });
+            const biteCaseCount = await BiteCase.countDocuments({ barangay: center.centerName });
+            return {
+                centerName: center.centerName,
+                caseCount: animalBiteCount + biteCaseCount
+            };
+        }));
+        res.json({ success: true, data: results });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch cases per center', error: err.message });
+    }
 });
 
 // API: Get case count per center (bitecases only, match centerName in address)
 app.get('/api/cases-per-center', async (req, res) => {
-  try {
-    const centers = await Center.find({});
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const results = await Promise.all(centers.map(async center => {
-      // Use a case-insensitive regex to match centerName in address
-      const biteCaseCount = await BiteCase.countDocuments({
-        address: { $regex: center.centerName, $options: 'i' }
-      });
-      return {
-        centerName: center.centerName,
-        caseCount: biteCaseCount
-      };
-    }));
-    res.json({ success: true, data: results });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch cases per center', error: err.message });
-  }
+    try {
+        const centers = await Center.find({});
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const results = await Promise.all(centers.map(async center => {
+            // Use a case-insensitive regex to match centerName in address
+            const biteCaseCount = await BiteCase.countDocuments({
+                address: { $regex: center.centerName, $options: 'i' }
+            });
+            return {
+                centerName: center.centerName,
+                caseCount: biteCaseCount
+            };
+        }));
+        res.json({ success: true, data: results });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch cases per center', error: err.message });
+    }
 });
 
 // API: Dashboard summary counts (patients, inventory, active cases from patients, centers, no date filter)
 app.get('/api/dashboard-summary', async (req, res) => {
-  try {
-    const { center } = req.query;
-    
-    // Build filters for center-based access
-    let patientFilter = {};
-    let bitecaseFilter = { status: { $in: ['pending', 'in_progress'] } };
-    let staffFilter = {};
-    
-    if (center) {
-      patientFilter.center = center;
-      // Filter bite cases by center name in address field (case-insensitive)
-      bitecaseFilter.address = { $regex: center, $options: 'i' };
-      staffFilter.centerName = center;
+    try {
+        const { center } = req.query;
+
+        // Build filters for center-based access
+        let patientFilter = {};
+        let bitecaseFilter = { status: { $in: ['pending', 'in_progress'] } };
+        let staffFilter = {};
+
+        if (center) {
+            patientFilter.center = center;
+            // Filter bite cases by center name in address field (case-insensitive)
+            bitecaseFilter.address = { $regex: center, $options: 'i' };
+            staffFilter.centerName = center;
+        }
+
+        // Total Patients: count from 'patients' collection
+        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
+        const totalPatients = await Patient.countDocuments(patientFilter);
+
+        // Vaccine Stocks: sum quantity from 'vaccinestocks' collection (handled separately in frontend)
+        const vaccineStocks = 0; // Will be calculated in frontend with center filtering
+
+        // Active Cases: count from 'bitecases' collection where status is 'pending' or 'in_progress'
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const activeCases = await BiteCase.countDocuments(bitecaseFilter);
+
+        // Health Centers: count from 'centers' collection
+        const Center = mongoose.connection.model('Center', new mongoose.Schema({}, { strict: false }), 'centers');
+        const healthCenters = center ? 1 : await Center.countDocuments(); // Center-based admins see only 1 center
+
+        // Admins: count from 'admins' collection
+        const Admin = mongoose.connection.model('Admin', new mongoose.Schema({}, { strict: false }), 'admins');
+        const adminCount = center ? 1 : await Admin.countDocuments(); // Center-based admins see only themselves
+
+        // Staff: count from 'staffs' collection (handled separately in frontend for center filtering)
+        const staffCount = 0; // Will be calculated in frontend with center filtering
+
+        res.json({
+            success: true,
+            data: {
+                totalPatients,
+                vaccineStocks,
+                activeCases,
+                healthCenters,
+                adminCount,
+                staffCount
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch dashboard summary', error: err.message });
     }
-
-    // Total Patients: count from 'patients' collection
-    const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-    const totalPatients = await Patient.countDocuments(patientFilter);
-
-    // Vaccine Stocks: sum quantity from 'vaccinestocks' collection (handled separately in frontend)
-    const vaccineStocks = 0; // Will be calculated in frontend with center filtering
-
-    // Active Cases: count from 'bitecases' collection where status is 'pending' or 'in_progress'
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const activeCases = await BiteCase.countDocuments(bitecaseFilter);
-
-    // Health Centers: count from 'centers' collection
-    const Center = mongoose.connection.model('Center', new mongoose.Schema({}, { strict: false }), 'centers');
-    const healthCenters = center ? 1 : await Center.countDocuments(); // Center-based admins see only 1 center
-
-    // Admins: count from 'admins' collection
-    const Admin = mongoose.connection.model('Admin', new mongoose.Schema({}, { strict: false }), 'admins');
-    const adminCount = center ? 1 : await Admin.countDocuments(); // Center-based admins see only themselves
-
-    // Staff: count from 'staffs' collection (handled separately in frontend for center filtering)
-    const staffCount = 0; // Will be calculated in frontend with center filtering
-
-    res.json({
-      success: true,
-      data: {
-        totalPatients,
-        vaccineStocks,
-        activeCases,
-        healthCenters,
-        adminCount,
-        staffCount
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch dashboard summary', error: err.message });
-  }
 });
 
 // API: Get case count per barangay by searching address in bitecases (with date filter)
 app.get('/api/cases-per-center', async (req, res) => {
-  try {
-    const filter = req.query.filter || 'month';
-    let dateFrom = new Date();
-    switch (filter) {
-      case 'today':
-        dateFrom.setHours(0,0,0,0);
-        break;
-      case 'week':
-        dateFrom.setDate(dateFrom.getDate() - 7);
-        break;
-      case 'month':
-        dateFrom.setDate(1);
-        break;
-      case 'year':
-        dateFrom = new Date(dateFrom.getFullYear(), 0, 1);
-        break;
+    try {
+        const filter = req.query.filter || 'month';
+        let dateFrom = new Date();
+        switch (filter) {
+            case 'today':
+                dateFrom.setHours(0, 0, 0, 0);
+                break;
+            case 'week':
+                dateFrom.setDate(dateFrom.getDate() - 7);
+                break;
+            case 'month':
+                dateFrom.setDate(1);
+                break;
+            case 'year':
+                dateFrom = new Date(dateFrom.getFullYear(), 0, 1);
+                break;
+        }
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const results = await Promise.all(barangays.map(async barangay => {
+            const count = await BiteCase.countDocuments({
+                address: { $regex: barangay, $options: 'i' },
+                createdAt: { $gte: dateFrom }
+            });
+            return {
+                centerName: barangay,
+                caseCount: count
+            };
+        }));
+        res.json({ success: true, data: results });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch cases per center', error: err.message });
     }
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const results = await Promise.all(barangays.map(async barangay => {
-      const count = await BiteCase.countDocuments({
-        address: { $regex: barangay, $options: 'i' },
-        createdAt: { $gte: dateFrom }
-      });
-      return {
-        centerName: barangay,
-        caseCount: count
-      };
-    }));
-    res.json({ success: true, data: results });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch cases per center', error: err.message });
-  }
 });
 
 // API: Cases per barangay (uses bitecases.barangay field directly)
 app.get('/api/cases-per-barangay', async (req, res) => {
-  try {
-    const { center } = req.query; // optional filter; if provided, only that barangay
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+    try {
+        const { center } = req.query; // optional filter; if provided, only that barangay
+        const BiteCase = mongoose.connection.model('BiteCase');
 
-    const match = {};
-    if (center && center !== 'all') {
-      // Normalize common variants like "Batis" vs "Balong-Bato Center" etc. Use case-insensitive contains
-      match.$or = [
-        { barangay: { $regex: center, $options: 'i' } },
-        { addressBarangay: { $regex: center, $options: 'i' } },
-        { patientBarangay: { $regex: center, $options: 'i' } },
-        { locationBarangay: { $regex: center, $options: 'i' } },
-        { barangayName: { $regex: center, $options: 'i' } }
-      ];
-    }
-
-    const pipeline = [
-      Object.keys(match).length ? { $match: match } : null,
-      {
-        $group: {
-          _id: {
-            $toUpper: {
-              $ifNull: [
-                '$barangay',
-                { $ifNull: [ '$addressBarangay',
-                  { $ifNull: [ '$patientBarangay',
-                    { $ifNull: [ '$locationBarangay', '$barangayName' ] }
-                  ] }
-                ] }
-              ]
-            }
-          },
-          count: { $sum: 1 }
+        const match = {};
+        if (center && center !== 'all') {
+            // Normalize common variants like "Batis" vs "Balong-Bato Center" etc. Use case-insensitive contains
+            match.$or = [
+                { barangay: { $regex: center, $options: 'i' } },
+                { addressBarangay: { $regex: center, $options: 'i' } },
+                { patientBarangay: { $regex: center, $options: 'i' } },
+                { locationBarangay: { $regex: center, $options: 'i' } },
+                { barangayName: { $regex: center, $options: 'i' } }
+            ];
         }
-      },
-      { $project: { _id: 0, barangay: '$_id', count: 1 } },
-      { $sort: { barangay: 1 } }
-    ].filter(Boolean);
 
-    const grouped = await BiteCase.aggregate(pipeline);
-    res.json({ success: true, data: grouped });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch cases per barangay', error: err.message });
-  }
+        const pipeline = [
+            Object.keys(match).length ? { $match: match } : null,
+            {
+                $group: {
+                    _id: {
+                        $toUpper: {
+                            $ifNull: [
+                                '$barangay',
+                                {
+                                    $ifNull: ['$addressBarangay',
+                                        {
+                                            $ifNull: ['$patientBarangay',
+                                                { $ifNull: ['$locationBarangay', '$barangayName'] }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            { $project: { _id: 0, barangay: '$_id', count: 1 } },
+            { $sort: { barangay: 1 } }
+        ].filter(Boolean);
+
+        const grouped = await BiteCase.aggregate(pipeline);
+        res.json({ success: true, data: grouped });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch cases per barangay', error: err.message });
+    }
 });
 
 // List of all barangays in San Juan (add/remove as needed)
 const barangays = [
-  "Addition Hills", "Balong-Bato", "Batisan", "Corazon de Jesus", "Ermitaño",
-  "Greenhills", "Halo-Halo", "Isabelita", "Kabayanan", "Little Baguio",
-  "Maytunas", "Onse", "Pasadeña", "Pedro Cruz", "Progreso", "Rivera",
-  "Salapan", "San Perfecto", "Santa Lucia", "Tibagan", "West Crame"
+    "Addition Hills", "Balong-Bato", "Batisan", "Corazon de Jesus", "Ermitaño",
+    "Greenhills", "Halo-Halo", "Isabelita", "Kabayanan", "Little Baguio",
+    "Maytunas", "Onse", "Pasadeña", "Pedro Cruz", "Progreso", "Rivera",
+    "Salapan", "San Perfecto", "Santa Lucia", "Tibagan", "West Crame"
 ];
 
 // Helper function for vaccine stock prescription
 function prescribeVaccineStock(caseCount, basePerCase = 2, bufferPercent = 0.2, minStock = 50) {
-  const base = caseCount * basePerCase;
-  const buffer = Math.ceil(base * bufferPercent);
-  return Math.max(minStock, base + buffer);
+    const base = caseCount * basePerCase;
+    const buffer = Math.ceil(base * bufferPercent);
+    return Math.max(minStock, base + buffer);
 }
 
 // API: Prescribe and allocate vaccine stocks for each barangay (detailed by severity and vaccine type)
 app.get('/api/prescribe-vaccine-distribution', async (req, res) => {
-  try {
-    const barangays = [
-      "Addition Hills", "Balong-Bato", "Batisan", "Corazon de Jesus", "Ermitaño",
-      "Greenhills", "Halo-Halo", "Isabelita", "Kabayanan", "Little Baguio",
-      "Maytunas", "Onse", "Pasadeña", "Pedro Cruz", "Progreso", "Rivera",
-      "Salapan", "San Perfecto", "Santa Lucia", "Tibagan", "West Crame"
-    ];
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const InventoryItem = mongoose.connection.model('InventoryItem', new mongoose.Schema({}, { strict: false }), 'inventoryitems');
+    try {
+        const barangays = [
+            "Addition Hills", "Balong-Bato", "Batisan", "Corazon de Jesus", "Ermitaño",
+            "Greenhills", "Halo-Halo", "Isabelita", "Kabayanan", "Little Baguio",
+            "Maytunas", "Onse", "Pasadeña", "Pedro Cruz", "Progreso", "Rivera",
+            "Salapan", "San Perfecto", "Santa Lucia", "Tibagan", "West Crame"
+        ];
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const InventoryItem = mongoose.connection.model('InventoryItem', new mongoose.Schema({}, { strict: false }), 'inventoryitems');
 
-    // Get available stock for Anti-Rabies vaccine
-    const vaccineStock = await InventoryItem.aggregate([
-      { $match: { type: 'Vaccine', name: /anti[- ]?rabies/i } },
-      { $group: { _id: null, total: { $sum: '$quantity' } } }
-    ]);
-    const availableAntiRabies = vaccineStock[0]?.total || 0;
+        // Get available stock for Anti-Rabies vaccine
+        const vaccineStock = await InventoryItem.aggregate([
+            { $match: { type: 'Vaccine', name: /anti[- ]?rabies/i } },
+            { $group: { _id: null, total: { $sum: '$quantity' } } }
+        ]);
+        const availableAntiRabies = vaccineStock[0]?.total || 0;
 
-    // For each barangay, count cases by severity
-    const prescriptions = [];
-    for (const barangay of barangays) {
-      const cases = await BiteCase.find({ address: { $regex: barangay, $options: 'i' } });
-      const severe = cases.filter(c => c.severity === 'high').length;
-      const moderate = cases.filter(c => c.severity === 'medium').length;
-      const mild = cases.filter(c => c.severity === 'low').length;
-      const totalCases = cases.length;
-      // Recommend: 3 per severe, 2 per moderate, 1 per mild, +20% buffer
-      let recommended = Math.ceil((severe * 3 + moderate * 2 + mild * 1) * 1.2);
-      if (totalCases > 0) recommended = Math.max(recommended, 10); // Minimum for active barangays
-      const note = (availableAntiRabies < recommended) ? 'Stock insufficient!' : '';
-      prescriptions.push({
-        barangay,
-        vaccineType: 'Anti-Rabies',
-        totalCases,
-        severeCases: severe,
-        moderateCases: moderate,
-        mildCases: mild,
-        recommended,
-        available: availableAntiRabies,
-        note
-      });
+        // For each barangay, count cases by severity
+        const prescriptions = [];
+        for (const barangay of barangays) {
+            const cases = await BiteCase.find({ address: { $regex: barangay, $options: 'i' } });
+            const severe = cases.filter(c => c.severity === 'high').length;
+            const moderate = cases.filter(c => c.severity === 'medium').length;
+            const mild = cases.filter(c => c.severity === 'low').length;
+            const totalCases = cases.length;
+            // Recommend: 3 per severe, 2 per moderate, 1 per mild, +20% buffer
+            let recommended = Math.ceil((severe * 3 + moderate * 2 + mild * 1) * 1.2);
+            if (totalCases > 0) recommended = Math.max(recommended, 10); // Minimum for active barangays
+            const note = (availableAntiRabies < recommended) ? 'Stock insufficient!' : '';
+            prescriptions.push({
+                barangay,
+                vaccineType: 'Anti-Rabies',
+                totalCases,
+                severeCases: severe,
+                moderateCases: moderate,
+                mildCases: mild,
+                recommended,
+                available: availableAntiRabies,
+                note
+            });
+        }
+        res.json({ success: true, prescriptions });
+    } catch (err) {
+        console.error('Error in prescribe-vaccine-distribution:', err);
+        res.status(500).json({ success: false, message: 'Failed to prescribe vaccine distribution', error: err.message });
     }
-    res.json({ success: true, prescriptions });
-  } catch (err) {
-    console.error('Error in prescribe-vaccine-distribution:', err);
-    res.status(500).json({ success: false, message: 'Failed to prescribe vaccine distribution', error: err.message });
-  }
 });
 
 // API: Rabies Exposure Registry Report
 app.get('/api/reports/rabies-registry', async (req, res) => {
-  try {
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const bitecases = await BiteCase.find({}).sort({ createdAt: 1 });
-    const report = bitecases.map((p, idx) => ({
-        registrationNo: p.registrationNumber || '',
-        registrationDate: p.dateRegistered || (p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''),
-      name: p.lastName && p.firstName ? `${p.lastName}, ${p.firstName}${p.middleName ? ' ' + p.middleName : ''}`.trim() : (p.patientName || ''),
-        contactNo: p.contactNo || '',
-        address: p.address || '',
-        age: p.age || '',
-      sex: p.sex || p.gender || '',
-        exposureDate: p.exposureDate || '',
-      animalType: p.animalType || p.exposureSource || '',
-      biteType: p.biteType || p.exposureType || '',
-      biteSite: p.biteSite || '',
-      status: p.status || '',
-      createdAt: p.createdAt || '',
-    }));
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate rabies registry report', error: err.message });
-  }
+    try {
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const bitecases = await BiteCase.find({}).sort({ createdAt: 1 });
+        const report = bitecases.map((p, idx) => ({
+            registrationNo: p.registrationNumber || '',
+            registrationDate: p.dateRegistered || (p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''),
+            name: p.lastName && p.firstName ? `${p.lastName}, ${p.firstName}${p.middleName ? ' ' + p.middleName : ''}`.trim() : (p.patientName || ''),
+            contactNo: p.contactNo || '',
+            address: p.address || '',
+            age: p.age || '',
+            sex: p.sex || p.gender || '',
+            exposureDate: p.exposureDate || '',
+            animalType: p.animalType || p.exposureSource || '',
+            biteType: p.biteType || p.exposureType || '',
+            biteSite: p.biteSite || '',
+            status: p.status || '',
+            createdAt: p.createdAt || '',
+        }));
+        res.json({ success: true, data: report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate rabies registry report', error: err.message });
+    }
 });
 
 // API: Insert sample center data
@@ -3194,612 +3080,13 @@ app.post('/api/insert-sample-centers', async (req, res) => {
 
 // API Endpoints for Prescriptive Analytics
 // Explicit CORS handling for bitecases endpoints
-app.options('/api/bitecases', cors(corsOptions));
-app.options('/api/bitecases/find', cors(corsOptions));
+const patientsRouter = require('./routes/patients');
+const bitecasesRouter = require('./routes/bitecases');
+const vaccinationScheduleRouter = require('./routes/vaccinationSchedule');
 
-app.get('/api/bitecases', async (req, res) => {
-    // Set CORS headers explicitly
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
-    try {
-        console.log('🔍 GET /api/bitecases called with query:', req.query);
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        
-        const { center, patientId, registrationNumber, name, firstName, lastName, today } = req.query;
-
-        const filter = {};
-
-        // Optional center filtering (role-based use on frontend)
-        if (center) {
-            filter.center = { $regex: center, $options: 'i' };
-        }
-
-        // Patient-based filtering for history modal
-        const orConditions = [];
-        if (patientId) {
-            try {
-                const maybeId = String(patientId).trim();
-                if (mongoose.Types.ObjectId.isValid(maybeId)) {
-                    orConditions.push({ patientId: new mongoose.Types.ObjectId(maybeId) });
-                }
-                // Also try plain string matches for legacy fields
-                orConditions.push({ patientId: maybeId });
-                orConditions.push({ patientID: maybeId });
-            } catch (_) {
-                // ignore
-            }
-        }
-        if (registrationNumber) {
-            const reg = String(registrationNumber).trim();
-            orConditions.push({ registrationNumber: reg });
-        }
-        if (name) {
-            const n = String(name).trim();
-            orConditions.push({ patientName: { $regex: n, $options: 'i' } });
-        }
-        if (firstName && lastName) {
-            const f = String(firstName).trim();
-            const l = String(lastName).trim();
-            orConditions.push({ firstName: { $regex: `^${f}$`, $options: 'i' }, lastName: { $regex: `^${l}$`, $options: 'i' } });
-        }
-
-        if (orConditions.length > 0) {
-            filter.$or = orConditions;
-        }
-
-        // Add today's date filtering if requested
-        if (today === 'true') {
-            const today = new Date();
-            const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-            
-            console.log('🔍 BACKEND: Filtering for today\'s appointments:', todayString);
-            
-            // Filter bite cases that have vaccination dates for today
-            const todayFilter = {
-                $or: [
-                    { d0Date: { $regex: `^${todayString}` } },
-                    { d3Date: { $regex: `^${todayString}` } },
-                    { d7Date: { $regex: `^${todayString}` } },
-                    { d14Date: { $regex: `^${todayString}` } },
-                    { d28Date: { $regex: `^${todayString}` } },
-                    // Also check scheduleDates array
-                    { 'scheduleDates': { $elemMatch: { $regex: `^${todayString}` } } }
-                ]
-            };
-            
-            // Combine with existing filter
-            if (Object.keys(filter).length > 0) {
-                filter.$and = [filter, todayFilter];
-            } else {
-                Object.assign(filter, todayFilter);
-            }
-            
-            console.log('🔍 BACKEND: Today filter applied:', JSON.stringify(filter, null, 2));
-        }
-
-        const cases = await BiteCase.find(filter).sort({ createdAt: -1, incidentDate: -1 });
-        console.log('🔍 Found bite cases:', cases.length, 'with filter:', filter);
-        res.json(cases);
-    } catch (error) {
-        console.error('Error fetching bite cases:', error);
-        // Ensure CORS headers are set even on error
-        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.status(500).json({ error: 'Failed to fetch bite cases' });
-    }
-});
-
-// --- Vaccination Dates Endpoints (for vaccination schedule modal) ---
-// Collection name: vaccinationdates
-app.get('/api/vaccinationdates', async (req, res) => {
-    try {
-        console.log('🔍 GET /api/vaccinationdates called with query:', req.query);
-        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        const { patientId, biteCaseId, center, registrationNumber, name } = req.query;
-        
-        let filter = {};
-        if (patientId) filter.patientId = patientId;
-        if (biteCaseId) filter.biteCaseId = biteCaseId;
-        if (registrationNumber) filter.registrationNumber = registrationNumber;
-        
-        // If center filtering is requested, we need to join with bite cases
-        if (center) {
-            // First, find bite cases that match the center
-            const biteCaseFilter = { center: { $regex: center, $options: 'i' } };
-            const matchingBiteCases = await BiteCase.find(biteCaseFilter, { _id: 1 });
-            const biteCaseIds = matchingBiteCases.map(bc => bc._id);
-            
-            // Filter vaccination dates by these bite case IDs
-            filter.biteCaseId = { $in: biteCaseIds };
-        }
-        
-        const list = await VaccinationDate.find(filter).sort({ updatedAt: -1, createdAt: -1 });
-        console.log('🔍 Found vaccination dates:', list.length, 'with filter:', filter);
-        res.json(list);
-    } catch (err) {
-        console.error('Error fetching vaccinationdates:', err);
-        res.status(500).json({ success: false, message: 'Failed to fetch vaccination dates' });
-    }
-});
-
-// Fetch a single vaccinationdates document by id
-app.get('/api/vaccinationdates/:id', async (req, res) => {
-    try {
-        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        const item = await VaccinationDate.findById(req.params.id);
-        if (!item) return res.status(404).json({ success: false, message: 'Not found' });
-        res.json(item);
-    } catch (err) {
-        console.error('Error fetching vaccinationdates by id:', err);
-        res.status(500).json({ success: false, message: 'Failed to fetch vaccination date' });
-    }
-});
-
-// Create new vaccinationdates record
-app.post('/api/vaccinationdates', async (req, res) => {
-    try {
-        console.log('🔍 POST /api/vaccinationdates called with:', req.body);
-        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        const newRecord = new VaccinationDate(req.body);
-        const result = await newRecord.save();
-        console.log('🔍 Created vaccination date record:', result);
-        res.json({ success: true, data: result });
-    } catch (err) {
-        console.error('Error creating vaccinationdates:', err);
-        res.status(500).json({ success: false, message: 'Failed to create vaccination date' });
-    }
-});
-
-// Update vaccinationdates by biteCaseId (or id fallback)
-app.put('/api/vaccinationdates', async (req, res) => {
-    try {
-        const { biteCaseId } = req.query;
-        const update = req.body || {};
-        if (!biteCaseId) return res.status(400).json({ success: false, message: 'biteCaseId is required' });
-        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        const result = await VaccinationDate.findOneAndUpdate({ biteCaseId }, { $set: update }, { new: true });
-        if (!result) return res.status(404).json({ success: false, message: 'Not found' });
-        res.json({ success: true, data: result });
-    } catch (err) {
-        console.error('Error updating vaccinationdates (by biteCaseId):', err);
-        res.status(500).json({ success: false, message: 'Failed to update vaccination date' });
-    }
-});
-
-app.put('/api/vaccinationdates/:id', async (req, res) => {
-    try {
-        console.log('🔍 PUT /api/vaccinationdates/:id called with:', { id: req.params.id, body: req.body });
-        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        const result = await VaccinationDate.findByIdAndUpdate(req.params.id, { $set: { ...req.body, updatedAt: new Date() } }, { new: true });
-        if (!result) return res.status(404).json({ success: false, message: 'Not found' });
-        console.log('🔍 Updated vaccination date result:', result);
-        res.json({ success: true, data: result });
-    } catch (err) {
-        console.error('Error updating vaccinationdates by id:', err);
-        res.status(500).json({ success: false, message: 'Failed to update vaccination date' });
-    }
-});
-
-// Reschedule helper: update a base day and cascade downstream (server-side authority)
-app.post('/api/vaccinationdates/:id/reschedule', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { dayLabel, newDate } = req.body || {};
-        if (!dayLabel || !newDate) {
-            return res.status(400).json({ success: false, message: 'dayLabel and newDate are required' });
-        }
-        const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
-        const addDays = [0,3,7,14,28];
-        const dateMap = { 'Day 0': 'd0Date', 'Day 3': 'd3Date', 'Day 7': 'd7Date', 'Day 14': 'd14Date', 'Day 28': 'd28Date' };
-        const statusMap = { 'Day 0': 'd0Status', 'Day 3': 'd3Status', 'Day 7': 'd7Status', 'Day 14': 'd14Status', 'Day 28': 'd28Status' };
-        const idxBase = labels.indexOf(dayLabel);
-        if (idxBase < 0) return res.status(400).json({ success: false, message: 'Invalid dayLabel' });
-
-        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        const doc = await VaccinationDate.findById(id);
-        if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
-
-        const base = new Date(newDate);
-        if (isNaN(base.getTime())) return res.status(400).json({ success: false, message: 'Invalid newDate' });
-
-        const update = {};
-        update[dateMap[dayLabel]] = base;
-        if (doc[statusMap[dayLabel]] !== 'completed') update[statusMap[dayLabel]] = 'scheduled';
-        for (let i = idxBase + 1; i < labels.length; i++) {
-            const d = new Date(base);
-            d.setDate(d.getDate() + (addDays[i] - addDays[idxBase]));
-            update[dateMap[labels[i]]] = d;
-            if (doc[statusMap[labels[i]]] !== 'completed') update[statusMap[labels[i]]] = 'scheduled';
-        }
-
-        const result = await VaccinationDate.findByIdAndUpdate(id, { $set: { ...update, updatedAt: new Date() } }, { new: true });
-        return res.json({ success: true, data: result });
-    } catch (err) {
-        console.error('Error in reschedule endpoint:', err);
-        res.status(500).json({ success: false, message: 'Failed to reschedule' });
-    }
-});
-
-// API endpoint for updating vaccination status (used by vaccination scheduler)
-app.put('/api/vaccinations/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updateData = req.body || {};
-        
-        console.log('Updating vaccination:', { id, updateData });
-        
-        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        
-        // Find the vaccination record
-        const vaccination = await VaccinationDate.findById(id);
-        if (!vaccination) {
-            return res.status(404).json({ success: false, message: 'Vaccination record not found' });
-        }
-        
-        // Update the vaccination record
-        const updatedVaccination = await VaccinationDate.findByIdAndUpdate(
-            id, 
-            { 
-                $set: {
-                    ...updateData,
-                    updatedAt: new Date()
-                }
-            }, 
-            { new: true }
-        );
-        
-        // If this is a completion update, also update the corresponding bite case
-        if (updateData.status === 'completed' && updateData.vaccinesUsed) {
-            console.log('🔍 VACCINATION COMPLETION DETECTED:', {
-                vaccinationId: id,
-                patientId: vaccination.patientId,
-                registrationNumber: vaccination.registrationNumber,
-                vaccinationDay: updateData.vaccinationDay
-            });
-            
-            try {
-                const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-                
-                // Find the associated bite case
-                const biteCase = await BiteCase.findOne({ 
-                    patientId: vaccination.patientId,
-                    registrationNumber: vaccination.registrationNumber 
-                });
-                
-                console.log('🔍 FOUND BITE CASE:', {
-                    biteCaseId: biteCase?._id,
-                    patientId: biteCase?.patientId,
-                    registrationNumber: biteCase?.registrationNumber
-                });
-                
-                if (biteCase) {
-                    // Update the bite case with vaccination completion info
-                    const biteCaseUpdate = {
-                        lastVaccinationDate: updateData.completedDate,
-                        lastVaccinationDay: updateData.vaccinationDay,
-                        vaccinesUsed: updateData.vaccinesUsed,
-                        updatedAt: new Date()
-                    };
-                    
-                    // Update specific day status in bite case
-                    const dayField = updateData.vaccinationDay?.replace('Day ', 'd') + 'Status';
-                    if (dayField) {
-                        biteCaseUpdate[dayField] = 'completed';
-                        console.log('🔍 UPDATING BITE CASE STATUS FIELD:', {
-                            vaccinationDay: updateData.vaccinationDay,
-                            dayField: dayField,
-                            status: 'completed',
-                            biteCaseId: biteCase._id
-                        });
-                    }
-                    
-                    await BiteCase.findByIdAndUpdate(biteCase._id, { $set: biteCaseUpdate });
-                    console.log('🔍 BITE CASE UPDATE RESULT:', {
-                        biteCaseId: biteCase._id,
-                        updateData: biteCaseUpdate,
-                        dayField: dayField,
-                        statusValue: biteCaseUpdate[dayField]
-                    });
-                    
-                    // Check if all vaccinations are completed to move to case history
-                    const allVaccinations = await VaccinationDate.find({ 
-                        patientId: vaccination.patientId,
-                        registrationNumber: vaccination.registrationNumber 
-                    });
-                    
-                    const allCompleted = allVaccinations.every(v => v.status === 'completed' || v.status === 'missed');
-                    
-                    if (allCompleted) {
-                        // Move patient to case history
-                        const caseHistoryUpdate = {
-                            status: 'completed',
-                            completedDate: new Date().toISOString(),
-                            completedSchedules: allVaccinations.map(v => ({
-                                day: v.vaccinationDay,
-                                date: v.completedDate || v.scheduledDate,
-                                status: v.status,
-                                vaccinesUsed: v.vaccinesUsed
-                            })),
-                            updatedAt: new Date()
-                        };
-                        
-                        await BiteCase.findByIdAndUpdate(biteCase._id, { $set: caseHistoryUpdate });
-                        console.log('Patient moved to case history:', biteCase._id);
-                    }
-                }
-            } catch (biteCaseError) {
-                console.error('Error updating bite case:', biteCaseError);
-                // Don't fail the vaccination update if bite case update fails
-            }
-        }
-        
-        res.json({ 
-            success: true, 
-            data: updatedVaccination,
-            message: 'Vaccination status updated successfully' 
-        });
-        
-    } catch (err) {
-        console.error('Error updating vaccination:', err);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to update vaccination status', 
-            error: err.message 
-        });
-    }
-});
-
-// Upsert diagnosis/management for a bitecase document
-app.put('/api/bitecases/:id/diagnosis', async (req, res) => {
-    try {
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        const { id } = req.params;
-        const body = req.body || {};
-        if (body.followUpDate) body.followUpDate = new Date(body.followUpDate);
-        if (Array.isArray(body.followUps)) {
-            body.followUps = body.followUps.map(f => ({ ...f, date: f.date ? new Date(f.date) : null }));
-        }
-        const update = { $set: { ...body, updatedAt: new Date() } };
-        const doc = await BiteCase.findByIdAndUpdate(id, update, { new: true });
-        if (!doc) return res.status(404).json({ success: false, message: 'Bite case not found' });
-        return res.json({ success: true, data: doc });
-    } catch (error) {
-        console.error('Error updating diagnosis:', error);
-        return res.status(500).json({ success: false, message: 'Failed to update diagnosis' });
-    }
-});
-
-// Generic update for bitecase (supports per-day date/status and cascade)
-app.put('/api/bitecases/:id', async (req, res) => {
-    try {
-        console.log('🔍 PUT /api/bitecases/:id called with:', { id: req.params.id, body: req.body });
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        const { id } = req.params;
-        const body = req.body || {};
-
-        // Normalize incoming date strings to Date objects
-        const fields = ['d0Date','d3Date','d7Date','d14Date','d28Date'];
-        fields.forEach(k => { if (body[k]) body[k] = new Date(body[k]); });
-
-        // Load existing doc to respect completed doses and avoid changing earlier doses
-        const existing = await BiteCase.findById(id);
-        if (!existing) return res.status(404).json({ success: false, message: 'Bite case not found' });
-
-        // If a per-day date is updated, cascade future days from that base, skipping completed ones
-        const addDays = { d0Date:0, d3Date:3, d7Date:7, d14Date:14, d28Date:28 };
-        const statusMap = { d0Date:'d0Status', d3Date:'d3Status', d7Date:'d7Status', d14Date:'d14Status', d28Date:'d28Status' };
-        const keysProvided = fields.filter(k => body[k]);
-        if (keysProvided.length > 0) {
-            // choose the most downstream key provided to avoid double-cascade
-            keysProvided.sort((a,b) => addDays[b]-addDays[a]);
-            const baseKey = keysProvided[0];
-            const baseDate = new Date(body[baseKey]);
-            const labels = ['d0Date','d3Date','d7Date','d14Date','d28Date'];
-            const idxBase = labels.indexOf(baseKey);
-            for (let i = idxBase+1; i < labels.length; i++) {
-                const statusKey = statusMap[labels[i]];
-                const existingStatus = existing[statusKey];
-                if (String(existingStatus).toLowerCase() === 'completed') {
-                    continue; // do not modify completed downstream dates
-                }
-                const diff = addDays[labels[i]] - addDays[baseKey];
-                const d = new Date(baseDate);
-                d.setDate(d.getDate() + diff);
-                body[labels[i]] = d;
-                if (!body[statusKey]) body[statusKey] = 'scheduled';
-            }
-            // Ensure base status becomes scheduled unless explicitly set completed
-            const baseStatusKey = statusMap[baseKey];
-            if (!body[baseStatusKey]) body[baseStatusKey] = 'scheduled';
-        }
-
-        const update = { $set: { ...body, updatedAt: new Date() } };
-        console.log('🔍 Updating bite case with:', update);
-        const doc = await BiteCase.findByIdAndUpdate(id, update, { new: true });
-        if (!doc) return res.status(404).json({ success: false, message: 'Bite case not found' });
-        console.log('🔍 Updated bite case result:', doc);
-        
-        // Check if all vaccinations are completed and update status accordingly
-        const statusFields = ['d0Status', 'd3Status', 'd7Status', 'd14Status', 'd28Status'];
-        const allCompleted = statusFields.every(field => 
-          doc[field] === 'completed' || doc[field] === 'missed'
-        );
-        
-        if (allCompleted && doc.status !== 'completed') {
-          // Move to case history
-          await BiteCase.findByIdAndUpdate(id, { 
-            $set: { 
-              status: 'completed',
-              completedAt: new Date(),
-              completedSchedules: statusFields.map(field => ({
-                day: field.replace('Status', ''),
-                date: doc[field.replace('Status', 'Date')],
-                status: doc[field],
-                vaccinesUsed: body.vaccinesUsed || []
-              }))
-            }
-          });
-          console.log('✅ Patient moved to case history - all vaccinations completed');
-        }
-        
-        return res.json({ success: true, data: doc });
-    } catch (error) {
-        console.error('Error updating bitecase:', error);
-        return res.status(500).json({ success: false, message: 'Failed to update bitecase' });
-    }
-});
-
-// Fetch single bitecase by patientId or registrationNumber
-app.get('/api/bitecases/find', async (req, res) => {
-    // Set CORS headers explicitly
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
-    try {
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        const { patientId, registrationNumber } = req.query;
-        if (!patientId && !registrationNumber) return res.status(400).json({ success: false, message: 'Provide patientId or registrationNumber' });
-        const query = patientId ? { patientId } : { registrationNumber };
-        const doc = await BiteCase.findOne(query).sort({ createdAt: -1 });
-        if (!doc) return res.status(404).json({ success: false, message: 'Record not found' });
-        return res.json({ success: true, data: doc });
-    } catch (error) {
-        console.error('Error fetching bitecase by key:', error);
-        // Ensure CORS headers are set even on error
-        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        return res.status(500).json({ success: false, message: 'Failed to fetch bitecase' });
-    }
-});
-
-// Create a new bitecase (minimal create from Diagnosis module)
-app.post('/api/bitecases', async (req, res) => {
-    try {
-        console.log('Creating bite case with payload:', req.body);
-        
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        const payload = req.body || {};
-        
-        // Validate required fields (more lenient validation)
-        const requiredFields = ['firstName', 'lastName', 'center'];
-        const missingFields = requiredFields.filter(field => !payload[field] || payload[field].toString().trim() === '');
-        
-        if (missingFields.length > 0) {
-            console.error('Missing required fields:', missingFields);
-            return res.status(400).json({ 
-                success: false, 
-                message: `Missing required fields: ${missingFields.join(', ')}` 
-            });
-        }
-        
-        // Ensure patientId exists (use patient ID from payload or generate one)
-        if (!payload.patientId) {
-            console.warn('No patientId provided, using patient name as fallback');
-            payload.patientId = `${payload.firstName}_${payload.lastName}_${Date.now()}`;
-        }
-
-        // Validate that patient does not have active scheduled cases
-        if (payload.patientId && !payload.patientId.includes('_')) {
-            try {
-                const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-                const activeSchedules = await VaccinationDate.find({
-                    patientId: payload.patientId,
-                    $or: [
-                        { d0Status: 'scheduled' },
-                        { d3Status: 'scheduled' },
-                        { d7Status: 'scheduled' },
-                        { d14Status: 'scheduled' },
-                        { d28Status: 'scheduled' }
-                    ]
-                });
-                if (activeSchedules.length > 0) {
-                    console.error(`Validation failed: Patient ${payload.patientId} has active scheduled vaccination dates.`);
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Cannot create a new case for this patient because they have active scheduled cases. All scheduled dates must be completed or missed first.'
-                    });
-                }
-            } catch (schedErr) {
-                console.error('Error verifying active vaccination schedules:', schedErr);
-            }
-        }
-        
-        // Clean and validate data with better error handling
-        // Normalize per-day dates and key fields
-        const toDate = (v) => {
-            try { const d = new Date(v); return isNaN(d.getTime()) ? null : d; } catch { return null; }
-        };
-        const dayFields = ['d0Date','d3Date','d7Date','d14Date','d28Date'];
-        const normalizedDays = {};
-        dayFields.forEach(k => { if (payload[k]) normalizedDays[k] = toDate(payload[k]); });
-
-        const cleanPayload = {
-            ...payload,
-            // Ensure dates are properly formatted
-            arrivalDate: payload.arrivalDate || null,
-            arrivalDateTime: payload.arrivalDate ? toDate(payload.arrivalDate) : null,
-            dateRegistered: payload.dateRegistered ? toDate(payload.dateRegistered) : new Date(),
-            birthdate: payload.birthdate ? toDate(payload.birthdate) : null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Ensure arrays are properly formatted
-            typeOfExposure: Array.isArray(payload.typeOfExposure) ? payload.typeOfExposure : [],
-            siteOfBite: Array.isArray(payload.siteOfBite) ? payload.siteOfBite : [],
-            natureOfInjury: Array.isArray(payload.natureOfInjury) ? payload.natureOfInjury : [],
-            externalCause: Array.isArray(payload.externalCause) ? payload.externalCause : [],
-            placeOfOccurrence: Array.isArray(payload.placeOfOccurrence) ? payload.placeOfOccurrence : [],
-            scheduleDates: Array.isArray(payload.scheduleDates) ? payload.scheduleDates.map(toDate).filter(Boolean) : [],
-            // Ensure required fields have default values
-            status: payload.status || 'in_progress',
-            registrationNumber: payload.registrationNumber || '',
-            philhealthNo: payload.philhealthNo || '',
-            // Ensure numeric fields are properly formatted
-            age: payload.age ? parseInt(payload.age) : null,
-            weight: payload.weight ? parseFloat(payload.weight) : null,
-            // Attach normalized per-day fields if provided
-            ...normalizedDays,
-            d0Status: payload.d0Status || (payload.d0Date ? 'scheduled' : undefined),
-            d3Status: payload.d3Status || (payload.d3Date ? 'scheduled' : undefined),
-            d7Status: payload.d7Status || (payload.d7Date ? 'scheduled' : undefined),
-            d14Status: payload.d14Status || (payload.d14Date ? 'scheduled' : undefined),
-            d28Status: payload.d28Status || (payload.d28Date ? 'scheduled' : undefined)
-        };
-        
-        console.log('Creating bite case with clean payload:', cleanPayload);
-        
-        try {
-            const doc = new BiteCase(cleanPayload);
-            const savedDoc = await doc.save();
-            
-            console.log('Bite case created successfully:', savedDoc._id);
-            return res.status(201).json({ success: true, data: savedDoc });
-        } catch (saveError) {
-            console.error('Error saving bite case:', saveError);
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Failed to save bite case to database',
-                error: saveError.message 
-            });
-        }
-    } catch (error) {
-        console.error('Error creating bitecase:', error);
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Failed to create bitecase',
-            error: error.message 
-        });
-    }
-});
+app.use(patientsRouter);
+app.use(bitecasesRouter);
+app.use(vaccinationScheduleRouter);
 
 app.get('/api/inventory', async (req, res) => {
     try {
@@ -3845,14 +3132,14 @@ app.post('/api/migrate-staff-names', async (req, res) => {
 app.get('/api/cases-per-barangay', async (req, res) => {
     try {
         const { center } = req.query;
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        
+        const BiteCase = mongoose.connection.model('BiteCase');
+
         let filter = {};
         if (center) {
             // Filter by center name in address field (case-insensitive)
             filter.address = { $regex: center, $options: 'i' };
         }
-        
+
         const cases = await BiteCase.find(filter);
         const counts = {};
         cases.forEach(c => {
@@ -3935,7 +3222,7 @@ app.get('/api/vaccine-stock-trends', async (req, res) => {
             const allStocks = await VaccineStock.find(stockFilter);
             console.log('🔍 VACCINE STOCK TRENDS: Found centers:', allStocks.length);
             console.log('🔍 VACCINE STOCK TRENDS: Sample center structure:', allStocks[0]);
-            
+
             // Calculate total from nested structure
             let currentTotal = 0;
             allStocks.forEach(center => {
@@ -3961,7 +3248,7 @@ app.get('/api/vaccine-stock-trends', async (req, res) => {
                     });
                 }
             });
-            
+
             console.log('🔍 VACCINE STOCK TRENDS: Current total calculated:', currentTotal);
             data[data.length - 1] = currentTotal;
         }
@@ -3975,14 +3262,14 @@ app.get('/api/vaccine-stock-trends', async (req, res) => {
 app.get('/api/severity-distribution', async (req, res) => {
     try {
         const { center } = req.query;
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        
+        const BiteCase = mongoose.connection.model('BiteCase');
+
         let filter = {};
         if (center) {
             // Filter by center name in address field (case-insensitive)
             filter.address = { $regex: center, $options: 'i' };
         }
-        
+
         const cases = await BiteCase.find(filter);
         // Support both new (I, II, III) and old (A, B, C) values
         const severityMap = { I: 'Mild', II: 'Moderate', III: 'Severe', A: 'Mild', B: 'Moderate', C: 'Severe' };
@@ -4000,73 +3287,73 @@ app.get('/api/severity-distribution', async (req, res) => {
 // Animal Bite Exposure Report API
 app.get('/api/reports/animal-bite-exposure', async (req, res) => {
     try {
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        
+        const BiteCase = mongoose.connection.model('BiteCase');
+
         // Build filter for center-based access
         let filter = {};
         const { center } = req.query;
         if (center) {
             filter.center = { $regex: center, $options: 'i' };
         }
-        
+
         const cases = await BiteCase.find(filter).sort({ createdAt: 1 });
 
-    const report = cases.map((c, idx) => {
-      // Patient Name: FirstName MiddleName LastName (skip missing parts)
-      let name = [c.firstName, c.middleName, c.lastName].filter(Boolean).join(' ');
-      if (!name && c.patientName) {
-        name = c.patientName;
-      }
+        const report = cases.map((c, idx) => {
+            // Patient Name: FirstName MiddleName LastName (skip missing parts)
+            let name = [c.firstName, c.middleName, c.lastName].filter(Boolean).join(' ');
+            if (!name && c.patientName) {
+                name = c.patientName;
+            }
 
-      // Address logic
-      let addressParts = [
-        c.houseNo,
-        c.street,
-        c.barangay,
-        c.subdivision,
-        c.city,
-        c.province,
-        c.zipCode
-      ];
-      let address = addressParts.filter(Boolean).join(', ');
+            // Address logic
+            let addressParts = [
+                c.houseNo,
+                c.street,
+                c.barangay,
+                c.subdivision,
+                c.city,
+                c.province,
+                c.zipCode
+            ];
+            let address = addressParts.filter(Boolean).join(', ');
 
-      // Bite Site logic
-      let biteSite = c.biteSite || c.exposurePlace || '';
+            // Bite Site logic
+            let biteSite = c.biteSite || c.exposurePlace || '';
 
-      return {
-        caseNo: c.caseNo || c.registrationNumber || '',
-        date: c.dateRegistered || (c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''),
-        name,
-        age: c.age || '',
-        sex: c.sex || c.gender || '',
-        address,
-        animalType: c.animalType || c.exposureSource || '',
-        biteSite,
-        status: c.status || '',
-        exposureDate: c.exposureDate || '',
-        createdAt: c.createdAt || '',
-      };
-    });
+            return {
+                caseNo: c.caseNo || c.registrationNumber || '',
+                date: c.dateRegistered || (c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''),
+                name,
+                age: c.age || '',
+                sex: c.sex || c.gender || '',
+                address,
+                animalType: c.animalType || c.exposureSource || '',
+                biteSite,
+                status: c.status || '',
+                exposureDate: c.exposureDate || '',
+                createdAt: c.createdAt || '',
+            };
+        });
 
-    res.json({ success: true, data: report });
-  } catch (err) {
-    console.error('Error in /api/reports/animal-bite-exposure:', err);
-    res.status(500).json({ success: false, message: 'Failed to generate animal bite exposure report', error: err.message });
+        res.json({ success: true, data: report });
+    } catch (err) {
+        console.error('Error in /api/reports/animal-bite-exposure:', err);
+        res.status(500).json({ success: false, message: 'Failed to generate animal bite exposure report', error: err.message });
     }
 });
 
 // Rabies Utilization Report API
 app.get('/api/reports/rabies-utilization', async (req, res) => {
     try {
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        
+        const BiteCase = mongoose.connection.model('BiteCase');
+
         // Build filter for center-based access
         let filter = {};
         const { center } = req.query;
         if (center) {
             filter.center = { $regex: center, $options: 'i' };
         }
-        
+
         const bitecases = await BiteCase.find(filter);
         const report = bitecases.map(p => {
             // Extract vaccine information from currentImmunization.doseMedicines
@@ -4077,13 +3364,13 @@ app.get('/api/reports/rabies-utilization', async (req, res) => {
                     .map(med => med.medicineUsed);
                 vaccineUsed = medicines.join(', ');
             }
-            
+
             return {
-            dateRegistered: p.dateRegistered,
-            center: p.center || '',
-            firstName: p.firstName || '',
-            middleName: p.middleName || '',
-            lastName: p.lastName || '',
+                dateRegistered: p.dateRegistered,
+                center: p.center || '',
+                firstName: p.firstName || '',
+                middleName: p.middleName || '',
+                lastName: p.lastName || '',
                 brandName: vaccineUsed, // Use the extracted vaccine information
                 genericName: vaccineUsed // Use the same for both fields
             };
@@ -4094,841 +3381,493 @@ app.get('/api/reports/rabies-utilization', async (req, res) => {
     }
 });
 
-// --- PATIENT REGISTRATION ENDPOINT (EXAMPLE) ---
-// If you have a patient registration endpoint, add audit logging like this:
-app.post('/api/patients', async (req, res) => {
-    try {
-        console.log('Creating patient with payload:', req.body);
-        
-        const { 
-            firstName, 
-            middleName, 
-            lastName, 
-            email, 
-            phone, 
-            birthdate, 
-            sex, 
-            password, 
-            houseNo, 
-            street, 
-            barangay, 
-            subdivision, 
-            city, 
-            province, 
-            zipCode, 
-            birthPlace, 
-            religion, 
-            occupation, 
-            nationality, 
-            civilStatus,
-            role = 'Patient',
-            isVerified = true,
-            ...rest 
-        } = req.body;
-        
-        // Validate required fields
-        const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'sex', 'password'];
-        const missingFields = requiredFields.filter(field => !req.body[field] || req.body[field].toString().trim() === '');
-        
-        if (missingFields.length > 0) {
-            console.error('Missing required fields:', missingFields);
-            return res.status(400).json({ 
-                success: false, 
-                message: `Missing required fields: ${missingFields.join(', ')}` 
-            });
-        }
-        
-        // Check if email already exists
-        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-        const existingPatient = await Patient.findOne({ email: email.toLowerCase() });
-        
-        if (existingPatient) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'This email address is already registered' 
-            });
-        }
-        
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Generate patient ID as PAT-<initials><year><4-digit sequence>
-        const yearNow = new Date().getFullYear();
-        const initials = [firstName, middleName, lastName]
-          .filter(Boolean)
-          .map(v => String(v).trim()[0] || '')
-          .join('')
-          .toUpperCase() || 'PTN';
-        let patientId = '';
-        try {
-          const seqPrefix = `PAT-${initials}${yearNow}`;
-          const countSamePrefix = await Patient.countDocuments({ patientId: { $regex: `^${seqPrefix}` } });
-          const nextSeq = String(countSamePrefix + 1).padStart(4, '0');
-          patientId = `${seqPrefix}${nextSeq}`;
-        } catch (_) {
-          patientId = `PAT-${initials}${yearNow}${String(Date.now()).slice(-4)}`;
-        }
-        
-        // Create new patient
-        const newPatient = new Patient({
-            firstName,
-            middleName,
-            lastName,
-            email: email.toLowerCase(),
-            phone,
-            birthdate: birthdate ? new Date(birthdate) : null,
-            sex,
-            password: hashedPassword,
-            houseNo,
-            street,
-            barangay,
-            subdivision,
-            city: city || 'San Juan City',
-            province: province || 'Metro Manila',
-            zipCode: zipCode || '1500',
-            birthPlace,
-            religion,
-            occupation,
-            nationality: nationality || 'Filipino',
-            civilStatus,
-            role,
-            isVerified,
-            patientId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            status: 'active',
-            ...rest
-        });
-        
-        await newPatient.save();
-        
-        console.log('Patient created successfully:', newPatient._id);
-        
-        // Log audit trail for patient registration
-        try {
-        await logAuditTrail(
-            'patient',
-            newPatient.firstName,
-            newPatient.middleName,
-            newPatient.lastName,
-            'Registered',
-            { patientID: newPatient.patientId },
-            newPatient.center || newPatient.centerName || newPatient.barangay || null
-        );
-        } catch (auditError) {
-            console.warn('Audit logging failed:', auditError.message);
-        }
-        
-        res.status(201).json({ 
-            success: true, 
-            message: 'Patient created successfully',
-            patient: {
-                _id: newPatient._id,
-                patientId: newPatient.patientId,
-                firstName: newPatient.firstName,
-                lastName: newPatient.lastName,
-                email: newPatient.email,
-                phone: newPatient.phone,
-                sex: newPatient.sex,
-                createdAt: newPatient.createdAt
-            }
-        });
-    } catch (error) {
-        console.error('Error creating patient:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to create patient: ' + error.message 
-        });
-    }
-});
 
-// --- PATIENT LIST & FETCH ENDPOINTS ---
-app.get('/api/patients', async (req, res) => {
-    try {
-        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-        const { q, status, vaccinationDay, barangay, dateFilter, vaccinationDate, page = 1, limit = 20, sort = '-createdAt', center } = req.query;
 
-        const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
-        const pageSize = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-
-        let filter = {};
-        
-        // Handle center filtering for role-based access
-        if (center) {
-            filter.center = center;
-        }
-        
-        // Handle vaccination day filtering
-        if (vaccinationDay) {
-            // First, find bite cases that have the specified vaccination day
-            const biteCaseFilter = {};
-            
-            // Map vaccination day to the corresponding date field
-            const vaccinationDateFields = {
-                'day0': ['day0Date', 'day0_date', 'd0Date'],
-                'day3': ['day3Date', 'day3_date', 'd3Date'],
-                'day7': ['day7Date', 'day7_date', 'd7Date'],
-                'day14': ['day14Date', 'day14_date', 'd14Date'],
-                'day28': ['day28Date', 'day28_date', 'd28Date']
-            };
-            
-            const dateFields = vaccinationDateFields[vaccinationDay] || [];
-            if (dateFields.length > 0) {
-                if (vaccinationDate) {
-                    // If specific vaccination date is provided, filter by that date
-                    const selectedDate = new Date(vaccinationDate);
-                    const startOfDay = new Date(selectedDate);
-                    startOfDay.setHours(0, 0, 0, 0);
-                    const endOfDay = new Date(selectedDate);
-                    endOfDay.setHours(23, 59, 59, 999);
-                    
-                    biteCaseFilter.$or = dateFields.map(field => ({
-                        [field]: {
-                            $gte: startOfDay,
-                            $lte: endOfDay
-                        }
-                    }));
-                } else {
-                    // If no specific date, just check if the vaccination day exists
-                    biteCaseFilter.$or = dateFields.map(field => ({ [field]: { $exists: true, $ne: null } }));
-                }
-            }
-            
-            // Find bite cases with the specified vaccination day
-            const biteCases = await BiteCase.find(biteCaseFilter);
-            
-            // Extract patient IDs from bite cases
-            const patientIds = biteCases.map(case_ => {
-                // Try to match by patient ID, registration number, or name
-                return case_.patientId || case_.patientID || case_._id;
-            }).filter(Boolean);
-            
-            if (patientIds.length > 0) {
-                filter._id = { $in: patientIds };
-            } else {
-                // If no bite cases found, return empty result
-                return res.json({
-                    success: true,
-                    data: [],
-                    page: pageNumber,
-                    limit: pageSize,
-                    total: 0,
-                    totalPages: 0
-                });
-            }
-        }
-        
-        // Handle other filters
-        if (status && status !== 'all') {
-            filter.status = status;
-        }
-        
-        if (barangay) {
-            filter.barangay = { $regex: barangay, $options: 'i' };
-        }
-        
-        if (dateFilter) {
-            const selectedDate = new Date(dateFilter);
-            const startOfDay = new Date(selectedDate);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(selectedDate);
-            endOfDay.setHours(23, 59, 59, 999);
-            
-            filter.createdAt = {
-                $gte: startOfDay,
-                $lte: endOfDay
-            };
-        }
-        
-        if (q && q.trim()) {
-            const term = q.trim();
-            filter.$or = [
-                { firstName: { $regex: term, $options: 'i' } },
-                { middleName: { $regex: term, $options: 'i' } },
-                { lastName: { $regex: term, $options: 'i' } },
-                { contactNumber: { $regex: term, $options: 'i' } },
-                { address: { $regex: term, $options: 'i' } }
-            ];
-        }
-
-        const total = await Patient.countDocuments(filter);
-        const patients = await Patient.find(filter)
-            .sort(sort)
-            .skip((pageNumber - 1) * pageSize)
-            .limit(pageSize);
-
-        // Calculate age from birthdate for each patient
-        const patientsWithAge = patients.map(patient => {
-            let age = '';
-            if (patient.birthdate) {
-                const birthDate = new Date(patient.birthdate);
-                const today = new Date();
-                let calculatedAge = today.getFullYear() - birthDate.getFullYear();
-                const monthDiff = today.getMonth() - birthDate.getMonth();
-                
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                    calculatedAge--;
-                }
-                
-                age = calculatedAge.toString();
-            }
-            
-            return {
-                ...patient.toObject(),
-                age: age
-            };
-        });
-
-        res.json({
-            success: true,
-            data: patientsWithAge,
-            page: pageNumber,
-            limit: pageSize,
-            total,
-            totalPages: Math.ceil(total / pageSize)
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.get('/api/patients/:id', async (req, res) => {
-    try {
-        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-        const patient = await Patient.findById(req.params.id);
-        if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
-        res.json({ success: true, patient });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// --- PATIENT UPDATE ENDPOINT (EXAMPLE) ---
-app.put('/api/patients/:id', async (req, res) => {
-    try {
-        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-        const patient = await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
-        // Log audit trail for patient update
-        await logAuditTrail(
-            'patient',
-            patient.firstName,
-            patient.middleName,
-            patient.lastName,
-            'Updated profile',
-            { patientID: patient.patientId }
-        );
-        res.json({ success: true, patient });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// --- PATIENT STATUS CHANGE (DEACTIVATE/ACTIVATE) ---
-app.post('/api/patients/:id/status', async (req, res) => {
-    try {
-        const { status } = req.body; // e.g., 'active', 'inactive', 'deceased'
-        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-        const patient = await Patient.findByIdAndUpdate(req.params.id, { status }, { new: true });
-        if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
-        // Log audit trail for status change
-        await logAuditTrail(
-            'patient',
-            patient.firstName,
-            patient.middleName,
-            patient.lastName,
-            `Status changed to ${status}`,
-            { patientID: patient.patientId }
-        );
-        res.json({ success: true, patient });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
 
 // --- VaccineStocks Schema and API ---
 const vaccineStockSchema = new mongoose.Schema({
-  center: String,
-  vaccineName: String,
-  quantity: Number,
-  expiryDate: Date,
-  batchNumber: String,
-  minThreshold: Number,
-  status: String,
-  lastUpdated: { type: Date, default: Date.now }
+    center: String,
+    vaccineName: String,
+    quantity: Number,
+    expiryDate: Date,
+    batchNumber: String,
+    minThreshold: Number,
+    status: String,
+    lastUpdated: { type: Date, default: Date.now }
 }, { collection: 'vaccinestocks' });
 
 const VaccineStock = mongoose.model('VaccineStock', vaccineStockSchema);
 
 // API: Get all vaccine stocks
 app.get('/api/vaccinestocks', async (req, res) => {
-  try {
-    const { center } = req.query;
-    
-    // Use flexible schema to match the actual nested vaccinestocks structure
-    const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
-    
-    // Build filter for center-based access
-    let filter = {};
-    if (center) {
-      // Handle different center name formats
-      filter.$or = [
-        { centerName: center },
-        { centerName: center + ' Center' },
-        { centerName: center.replace(' Center', '') }
-      ];
-    }
-    
-    const docs = await VaccineStockDoc.find(filter);
-    
-    // Transform nested structure to flat structure for frontend
-    const stocks = [];
-    docs.forEach(doc => {
-      if (doc.vaccines && Array.isArray(doc.vaccines)) {
-        doc.vaccines.forEach(vaccine => {
-          if (vaccine.stockEntries && Array.isArray(vaccine.stockEntries)) {
-            vaccine.stockEntries.forEach(entry => {
-              // Handle MongoDB number types properly
-              let stockQuantity = entry.stock;
-              if (typeof stockQuantity === 'object') {
-                if (stockQuantity.$numberInt !== undefined) {
-                  stockQuantity = parseInt(stockQuantity.$numberInt);
-                } else if (stockQuantity.$numberDouble !== undefined) {
-                  stockQuantity = parseFloat(stockQuantity.$numberDouble);
-                } else {
-                  stockQuantity = 0;
-                }
-              } else {
-                stockQuantity = Number(stockQuantity) || 0;
-              }
-              
-              stocks.push({
-                _id: entry._id,
-                center: doc.centerName,
-                centerName: doc.centerName,
-                vaccineName: vaccine.name,
-                vaccineType: vaccine.type, // Fixed: type not brand
-                brand: vaccine.brand,     // Fixed: brand not type
-                category: vaccine.type,
-                batchNumber: entry.branchNo,
-                branchNo: entry.branchNo,
-                quantity: stockQuantity,
-                stock: stockQuantity,
-                expiryDate: entry.expirationDate,
-                expirationDate: entry.expirationDate,
-                status: stockQuantity <= 0 ? 'out' : stockQuantity <= 10 ? 'low' : 'active',
-                lastUpdated: new Date()
-              });
-            });
-          }
+    try {
+        const { center } = req.query;
+
+        // Use flexible schema to match the actual nested vaccinestocks structure
+        const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
+
+        // Build filter for center-based access
+        let filter = {};
+        if (center) {
+            // Handle different center name formats
+            filter.$or = [
+                { centerName: center },
+                { centerName: center + ' Center' },
+                { centerName: center.replace(' Center', '') }
+            ];
+        }
+
+        const docs = await VaccineStockDoc.find(filter);
+
+        // Transform nested structure to flat structure for frontend
+        const stocks = [];
+        docs.forEach(doc => {
+            if (doc.vaccines && Array.isArray(doc.vaccines)) {
+                doc.vaccines.forEach(vaccine => {
+                    if (vaccine.stockEntries && Array.isArray(vaccine.stockEntries)) {
+                        vaccine.stockEntries.forEach(entry => {
+                            // Handle MongoDB number types properly
+                            let stockQuantity = entry.stock;
+                            if (typeof stockQuantity === 'object') {
+                                if (stockQuantity.$numberInt !== undefined) {
+                                    stockQuantity = parseInt(stockQuantity.$numberInt);
+                                } else if (stockQuantity.$numberDouble !== undefined) {
+                                    stockQuantity = parseFloat(stockQuantity.$numberDouble);
+                                } else {
+                                    stockQuantity = 0;
+                                }
+                            } else {
+                                stockQuantity = Number(stockQuantity) || 0;
+                            }
+
+                            stocks.push({
+                                _id: entry._id,
+                                center: doc.centerName,
+                                centerName: doc.centerName,
+                                vaccineName: vaccine.name,
+                                vaccineType: vaccine.type, // Fixed: type not brand
+                                brand: vaccine.brand,     // Fixed: brand not type
+                                category: vaccine.type,
+                                batchNumber: entry.branchNo,
+                                branchNo: entry.branchNo,
+                                quantity: stockQuantity,
+                                stock: stockQuantity,
+                                expiryDate: entry.expirationDate,
+                                expirationDate: entry.expirationDate,
+                                status: stockQuantity <= 0 ? 'out' : stockQuantity <= 10 ? 'low' : 'active',
+                                lastUpdated: new Date()
+                            });
+                        });
+                    }
+                });
+            }
         });
-      }
-    });
-    
-    // Sort by last updated
-    stocks.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
-    
-    res.json({ success: true, data: stocks });
-  } catch (err) {
-    console.error('Error fetching vaccine stocks:', err);
-    res.status(500).json({ success: false, message: 'Failed to fetch vaccine stocks', error: err.message });
+
+        // Sort by last updated
+        stocks.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
+
+        res.json({ success: true, data: stocks });
+    } catch (err) {
+        console.error('Error fetching vaccine stocks:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch vaccine stocks', error: err.message });
     }
 });
 
 // API: Add new vaccine stock
 app.post('/api/vaccinestocks', async (req, res) => {
-  try {
-    const { center, centerName, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand } = req.body;
-    
-    console.log('📦 Adding vaccine stock:', { center, centerName, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand });
-    
-    const centerToUse = center || centerName;
-    if (!centerToUse || !vaccineName || quantity === undefined) {
-      return res.status(400).json({ success: false, message: 'Center, vaccine name, and quantity are required' });
-    }
+    try {
+        const { center, centerName, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand } = req.body;
 
-    // Use flexible schema that matches your nested vaccinestocks structure
-    const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
+        console.log('📦 Adding vaccine stock:', { center, centerName, vaccineName, quantity, expiryDate, batchNumber, vaccineType, brand });
 
-    // Find or create the center document
-    let doc = await VaccineStockDoc.findOne({ $or: [
-      { centerName: centerToUse },
-      { centerName: centerToUse + ' Center' },
-      { centerName: centerToUse + ' Health Center' }
-    ]});
-    
-    if (!doc) {
-      console.log('🏥 Creating new center document for:', centerToUse);
-      doc = new VaccineStockDoc({ centerName: centerToUse, vaccines: [] });
-    }
-
-    if (!Array.isArray(doc.vaccines)) doc.vaccines = [];
-    
-    // Find existing vaccine or create new one
-    let vac = doc.vaccines.find(v => (v.name || '').toLowerCase() === String(vaccineName).toLowerCase());
-    if (!vac) {
-      console.log('💉 Creating new vaccine entry for:', vaccineName);
-      vac = { 
-        name: vaccineName, 
-        type: vaccineType || '', 
-        brand: brand || '', 
-        stockEntries: [] 
-      };
-      doc.vaccines.push(vac);
-    } else {
-      // Update metadata if provided
-      if (vaccineType && !vac.type) vac.type = vaccineType;
-      if (brand && !vac.brand) vac.brand = brand;
-      if (!Array.isArray(vac.stockEntries)) vac.stockEntries = [];
-    }
-
-    const qty = Number.parseFloat(quantity);
-    const batch = String(batchNumber || '').trim();
-    const expStr = expiryDate ? String(expiryDate) : '';
-
-    // Validate quantity
-    if (isNaN(qty) || qty < 0) {
-      return res.status(400).json({ success: false, message: 'Invalid quantity. Must be a positive number.' });
-    }
-
-    let action = 'created';
-    // Find existing entry with same branch number (batch number)
-    const match = vac.stockEntries.find(en => String(en.branchNo || '').trim().toLowerCase() === batch.toLowerCase());
-    
-    if (match) {
-      // Handle MongoDB number types properly
-      let current = match.stock;
-      if (typeof current === 'object') {
-        if (current.$numberInt !== undefined) {
-          current = parseInt(current.$numberInt);
-        } else if (current.$numberDouble !== undefined) {
-          current = parseFloat(current.$numberDouble);
-        } else {
-          current = 0;
+        const centerToUse = center || centerName;
+        if (!centerToUse || !vaccineName || quantity === undefined) {
+            return res.status(400).json({ success: false, message: 'Center, vaccine name, and quantity are required' });
         }
-      } else {
-        current = Number(current) || 0;
-      }
-      
-      match.stock = current + qty;
-      
-      // Update expiry date to the latest one if provided
-      if (expStr && expStr.trim()) {
-        match.expirationDate = expStr;
-      }
-      
-      action = 'merged';
-      console.log('🔄 Merged with existing branch:', batch, 'New total:', match.stock, 'Updated expiry:', match.expirationDate);
-    } else {
-      vac.stockEntries.push({ 
-        branchNo: batch, 
-        stock: qty, 
-        expirationDate: expStr 
-      });
-      action = 'created';
-      console.log('✨ Created new branch:', batch, 'Quantity:', qty);
-    }
 
-    // Mark the document as modified to ensure MongoDB saves the changes
-    doc.markModified('vaccines');
-    await doc.save();
-    
-    // Calculate total stock for this vaccine
-    const totalStock = vac.stockEntries.reduce((sum, entry) => {
-      let stock = entry.stock;
-      if (typeof stock === 'object') {
-        if (stock.$numberInt !== undefined) {
-          stock = parseInt(stock.$numberInt);
-        } else if (stock.$numberDouble !== undefined) {
-          stock = parseFloat(stock.$numberDouble);
-        } else {
-          stock = 0;
+        // Use flexible schema that matches your nested vaccinestocks structure
+        const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
+
+        // Find or create the center document
+        let doc = await VaccineStockDoc.findOne({
+            $or: [
+                { centerName: centerToUse },
+                { centerName: centerToUse + ' Center' },
+                { centerName: centerToUse + ' Health Center' }
+            ]
+        });
+
+        if (!doc) {
+            console.log('🏥 Creating new center document for:', centerToUse);
+            doc = new VaccineStockDoc({ centerName: centerToUse, vaccines: [] });
         }
-      } else {
-        stock = Number(stock) || 0;
-      }
-      return sum + stock;
-    }, 0);
-    
-    console.log('✅ Stock update successful:', action);
-    res.json({ 
-      success: true, 
-      action, 
-      message: action === 'merged' ? 'Added to existing batch' : 'New batch created',
-      data: {
-        center: doc.centerName,
-        vaccine: vaccineName,
-        batch: batch,
-        quantity: qty,
-        totalStock: totalStock
-      }
-    });
-  } catch (err) {
-    console.error('❌ Error adding vaccine stock:', err);
-    res.status(500).json({ success: false, message: 'Failed to add vaccine stock', error: err.message });
-  }
+
+        if (!Array.isArray(doc.vaccines)) doc.vaccines = [];
+
+        // Find existing vaccine or create new one
+        let vac = doc.vaccines.find(v => (v.name || '').toLowerCase() === String(vaccineName).toLowerCase());
+        if (!vac) {
+            console.log('💉 Creating new vaccine entry for:', vaccineName);
+            vac = {
+                name: vaccineName,
+                type: vaccineType || '',
+                brand: brand || '',
+                stockEntries: []
+            };
+            doc.vaccines.push(vac);
+        } else {
+            // Update metadata if provided
+            if (vaccineType && !vac.type) vac.type = vaccineType;
+            if (brand && !vac.brand) vac.brand = brand;
+            if (!Array.isArray(vac.stockEntries)) vac.stockEntries = [];
+        }
+
+        const qty = Number.parseFloat(quantity);
+        const batch = String(batchNumber || '').trim();
+        const expStr = expiryDate ? String(expiryDate) : '';
+
+        // Validate quantity
+        if (isNaN(qty) || qty < 0) {
+            return res.status(400).json({ success: false, message: 'Invalid quantity. Must be a positive number.' });
+        }
+
+        let action = 'created';
+        // Find existing entry with same branch number (batch number)
+        const match = vac.stockEntries.find(en => String(en.branchNo || '').trim().toLowerCase() === batch.toLowerCase());
+
+        if (match) {
+            // Handle MongoDB number types properly
+            let current = match.stock;
+            if (typeof current === 'object') {
+                if (current.$numberInt !== undefined) {
+                    current = parseInt(current.$numberInt);
+                } else if (current.$numberDouble !== undefined) {
+                    current = parseFloat(current.$numberDouble);
+                } else {
+                    current = 0;
+                }
+            } else {
+                current = Number(current) || 0;
+            }
+
+            match.stock = current + qty;
+
+            // Update expiry date to the latest one if provided
+            if (expStr && expStr.trim()) {
+                match.expirationDate = expStr;
+            }
+
+            action = 'merged';
+            console.log('🔄 Merged with existing branch:', batch, 'New total:', match.stock, 'Updated expiry:', match.expirationDate);
+        } else {
+            vac.stockEntries.push({
+                branchNo: batch,
+                stock: qty,
+                expirationDate: expStr
+            });
+            action = 'created';
+            console.log('✨ Created new branch:', batch, 'Quantity:', qty);
+        }
+
+        // Mark the document as modified to ensure MongoDB saves the changes
+        doc.markModified('vaccines');
+        await doc.save();
+
+        // Calculate total stock for this vaccine
+        const totalStock = vac.stockEntries.reduce((sum, entry) => {
+            let stock = entry.stock;
+            if (typeof stock === 'object') {
+                if (stock.$numberInt !== undefined) {
+                    stock = parseInt(stock.$numberInt);
+                } else if (stock.$numberDouble !== undefined) {
+                    stock = parseFloat(stock.$numberDouble);
+                } else {
+                    stock = 0;
+                }
+            } else {
+                stock = Number(stock) || 0;
+            }
+            return sum + stock;
+        }, 0);
+
+        console.log('✅ Stock update successful:', action);
+        res.json({
+            success: true,
+            action,
+            message: action === 'merged' ? 'Added to existing batch' : 'New batch created',
+            data: {
+                center: doc.centerName,
+                vaccine: vaccineName,
+                batch: batch,
+                quantity: qty,
+                totalStock: totalStock
+            }
+        });
+    } catch (err) {
+        console.error('❌ Error adding vaccine stock:', err);
+        res.status(500).json({ success: false, message: 'Failed to add vaccine stock', error: err.message });
+    }
 });
 
 // API: Deduct vaccine stock (for vaccination completion)
 app.post('/api/stock/update', async (req, res) => {
-  try {
-    const { centerName, itemName, quantity, operation, branchNo, brand, type } = req.body || {};
+    try {
+        const { centerName, itemName, quantity, operation, branchNo, brand, type } = req.body || {};
 
-    console.log('🔍 Stock deduction request:', { centerName, itemName, quantity, operation, branchNo, brand, type });
+        console.log('🔍 Stock deduction request:', { centerName, itemName, quantity, operation, branchNo, brand, type });
 
-    if (!centerName || !itemName || quantity === undefined || operation !== 'deduct') {
-      return res.status(400).json({ success: false, message: 'Missing required fields for stock deduction' });
+        if (!centerName || !itemName || quantity === undefined || operation !== 'deduct') {
+            return res.status(400).json({ success: false, message: 'Missing required fields for stock deduction' });
+        }
+
+        // Use flexible schema that matches your nested vaccinestocks structure
+        const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
+
+        // First, list available centers for debugging
+        const allCenters = await VaccineStockDoc.find({}, { centerName: 1, _id: 0 });
+        console.log('🔍 Available centers in vaccinestocks:', allCenters.map(c => c.centerName));
+
+        // Find the center document with flexible matching
+        const centerVariations = [
+            centerName,
+            centerName + ' Center',
+            centerName + ' Health Center',
+            centerName + ' Barangay Center'
+        ];
+
+        let doc = await VaccineStockDoc.findOne({
+            $or: centerVariations.map(name => ({ centerName: { $regex: new RegExp(name, 'i') } }))
+        });
+
+        if (!doc) {
+            console.log('🔍 Center not found, trying exact match for:', centerName);
+            console.log('🔍 Available centers:', allCenters.map(c => c.centerName));
+            return res.status(404).json({
+                success: false,
+                message: `Center not found: ${centerName}. Available centers: ${allCenters.map(c => c.centerName).join(', ')}`
+            });
+        }
+
+        // Find the vaccine in the center's vaccines array (match by name and optionally brand/type)
+        const lowerItem = String(itemName).toLowerCase();
+        const lowerBrand = brand ? String(brand).toLowerCase() : null;
+        const lowerType = type ? String(type).toLowerCase() : null;
+
+        const vaccine = (doc.vaccines || []).find(v => {
+            const nameOk = String(v.name || v.vaccineName || '').toLowerCase().includes(lowerItem) ||
+                String(v.brand || '').toLowerCase().includes(lowerItem) ||
+                String(v.type || '').toLowerCase().includes(lowerItem);
+            const brandOk = lowerBrand ? String(v.brand || '').toLowerCase().includes(lowerBrand) : true;
+            const typeOk = lowerType ? String(v.type || '').toLowerCase().includes(lowerType) : true;
+            return nameOk && brandOk && typeOk;
+        });
+
+        if (!vaccine) {
+            return res.status(404).json({ success: false, message: `Vaccine ${itemName} not found in ${centerName}` });
+        }
+
+        if (!Array.isArray(vaccine.stockEntries) || vaccine.stockEntries.length === 0) {
+            return res.status(400).json({ success: false, message: `No stock entries for ${itemName} in ${centerName}` });
+        }
+
+        // Choose the stock entry: prefer the requested branchNo, else FIFO by soonest expiration, else first with stock
+        let entryToUse = null;
+        if (branchNo) {
+            const wanted = String(branchNo).trim().toLowerCase();
+            entryToUse = vaccine.stockEntries.find(e => String(e.branchNo || '').trim().toLowerCase() === wanted);
+        }
+        if (!entryToUse) {
+            // FIFO by expiration date
+            const sorted = [...vaccine.stockEntries].sort((a, b) => (new Date(a.expirationDate).getTime() || 0) - (new Date(b.expirationDate).getTime() || 0));
+            entryToUse = sorted.find(e => (Number(e.stock) || 0) > 0) || vaccine.stockEntries.find(e => (Number(e.stock) || 0) > 0);
+        }
+
+        if (!entryToUse) {
+            return res.status(400).json({ success: false, message: `No stock available for ${itemName} in ${centerName}` });
+        }
+
+        // Deduct the quantity (support decimals)
+        const qty = Number.parseFloat(quantity);
+        const currentStock = Number(entryToUse.stock) || 0;
+        const newStock = Number(Math.max(0, currentStock - qty).toFixed(2));
+        entryToUse.stock = newStock;
+
+        // Persist
+        doc.markModified('vaccines');
+        await doc.save();
+
+        console.log(`✅ Stock deducted: ${qty} ${itemName} from ${centerName} (branch ${entryToUse.branchNo}). Remaining: ${newStock}`);
+
+        return res.json({
+            success: true,
+            message: `Successfully deducted ${qty} ${itemName} from ${centerName}`,
+            remainingStock: newStock,
+            branchNo: entryToUse.branchNo
+        });
+
+    } catch (err) {
+        console.error('❌ Error deducting vaccine stock:', err);
+        res.status(500).json({ success: false, message: 'Failed to deduct vaccine stock', error: err.message });
     }
-
-    // Use flexible schema that matches your nested vaccinestocks structure
-    const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
-
-    // First, list available centers for debugging
-    const allCenters = await VaccineStockDoc.find({}, { centerName: 1, _id: 0 });
-    console.log('🔍 Available centers in vaccinestocks:', allCenters.map(c => c.centerName));
-
-    // Find the center document with flexible matching
-    const centerVariations = [
-      centerName,
-      centerName + ' Center',
-      centerName + ' Health Center',
-      centerName + ' Barangay Center'
-    ];
-
-    let doc = await VaccineStockDoc.findOne({
-      $or: centerVariations.map(name => ({ centerName: { $regex: new RegExp(name, 'i') } }))
-    });
-
-    if (!doc) {
-      console.log('🔍 Center not found, trying exact match for:', centerName);
-      console.log('🔍 Available centers:', allCenters.map(c => c.centerName));
-      return res.status(404).json({
-        success: false,
-        message: `Center not found: ${centerName}. Available centers: ${allCenters.map(c => c.centerName).join(', ')}`
-      });
-    }
-
-    // Find the vaccine in the center's vaccines array (match by name and optionally brand/type)
-    const lowerItem = String(itemName).toLowerCase();
-    const lowerBrand = brand ? String(brand).toLowerCase() : null;
-    const lowerType = type ? String(type).toLowerCase() : null;
-
-    const vaccine = (doc.vaccines || []).find(v => {
-      const nameOk = String(v.name || v.vaccineName || '').toLowerCase().includes(lowerItem) ||
-                     String(v.brand || '').toLowerCase().includes(lowerItem) ||
-                     String(v.type || '').toLowerCase().includes(lowerItem);
-      const brandOk = lowerBrand ? String(v.brand || '').toLowerCase().includes(lowerBrand) : true;
-      const typeOk = lowerType ? String(v.type || '').toLowerCase().includes(lowerType) : true;
-      return nameOk && brandOk && typeOk;
-    });
-
-    if (!vaccine) {
-      return res.status(404).json({ success: false, message: `Vaccine ${itemName} not found in ${centerName}` });
-    }
-
-    if (!Array.isArray(vaccine.stockEntries) || vaccine.stockEntries.length === 0) {
-      return res.status(400).json({ success: false, message: `No stock entries for ${itemName} in ${centerName}` });
-    }
-
-    // Choose the stock entry: prefer the requested branchNo, else FIFO by soonest expiration, else first with stock
-    let entryToUse = null;
-    if (branchNo) {
-      const wanted = String(branchNo).trim().toLowerCase();
-      entryToUse = vaccine.stockEntries.find(e => String(e.branchNo || '').trim().toLowerCase() === wanted);
-    }
-    if (!entryToUse) {
-      // FIFO by expiration date
-      const sorted = [...vaccine.stockEntries].sort((a, b) => (new Date(a.expirationDate).getTime() || 0) - (new Date(b.expirationDate).getTime() || 0));
-      entryToUse = sorted.find(e => (Number(e.stock) || 0) > 0) || vaccine.stockEntries.find(e => (Number(e.stock) || 0) > 0);
-    }
-
-    if (!entryToUse) {
-      return res.status(400).json({ success: false, message: `No stock available for ${itemName} in ${centerName}` });
-    }
-
-    // Deduct the quantity (support decimals)
-    const qty = Number.parseFloat(quantity);
-    const currentStock = Number(entryToUse.stock) || 0;
-    const newStock = Number(Math.max(0, currentStock - qty).toFixed(2));
-    entryToUse.stock = newStock;
-
-    // Persist
-    doc.markModified('vaccines');
-    await doc.save();
-
-    console.log(`✅ Stock deducted: ${qty} ${itemName} from ${centerName} (branch ${entryToUse.branchNo}). Remaining: ${newStock}`);
-
-    return res.json({
-      success: true,
-      message: `Successfully deducted ${qty} ${itemName} from ${centerName}`,
-      remainingStock: newStock,
-      branchNo: entryToUse.branchNo
-    });
-
-  } catch (err) {
-    console.error('❌ Error deducting vaccine stock:', err);
-    res.status(500).json({ success: false, message: 'Failed to deduct vaccine stock', error: err.message });
-  }
 });
 
 // API: Update vaccine stock
 app.put('/api/vaccinestocks/:id', async (req, res) => {
-  try {
-    const { center, vaccineName, quantity, expiryDate, batchNumber, minThreshold } = req.body;
-    
-    const stock = await VaccineStock.findById(req.params.id);
-    if (!stock) {
-      return res.status(404).json({ success: false, message: 'Vaccine stock not found' });
-    }
+    try {
+        const { center, vaccineName, quantity, expiryDate, batchNumber, minThreshold } = req.body;
 
-    // Update fields
-    if (center) stock.center = center;
-    if (vaccineName) stock.vaccineName = vaccineName;
-    if (quantity !== undefined) {
-      stock.quantity = parseInt(quantity);
-      // Update status based on new quantity
-      const threshold = minThreshold || stock.minThreshold || 10;
-      stock.status = stock.quantity <= 0 ? 'out' : stock.quantity <= threshold ? 'low' : 'active';
-    }
-    if (expiryDate) stock.expiryDate = new Date(expiryDate);
-    if (batchNumber !== undefined) stock.batchNumber = batchNumber;
-    if (minThreshold !== undefined) stock.minThreshold = parseInt(minThreshold);
-    
-    stock.lastUpdated = new Date();
-    await stock.save();
+        const stock = await VaccineStock.findById(req.params.id);
+        if (!stock) {
+            return res.status(404).json({ success: false, message: 'Vaccine stock not found' });
+        }
 
-    res.json({ success: true, data: stock, message: 'Vaccine stock updated successfully' });
-  } catch (err) {
-    console.error('Error updating vaccine stock:', err);
-    res.status(500).json({ success: false, message: 'Failed to update vaccine stock', error: err.message });
-  }
+        // Update fields
+        if (center) stock.center = center;
+        if (vaccineName) stock.vaccineName = vaccineName;
+        if (quantity !== undefined) {
+            stock.quantity = parseInt(quantity);
+            // Update status based on new quantity
+            const threshold = minThreshold || stock.minThreshold || 10;
+            stock.status = stock.quantity <= 0 ? 'out' : stock.quantity <= threshold ? 'low' : 'active';
+        }
+        if (expiryDate) stock.expiryDate = new Date(expiryDate);
+        if (batchNumber !== undefined) stock.batchNumber = batchNumber;
+        if (minThreshold !== undefined) stock.minThreshold = parseInt(minThreshold);
+
+        stock.lastUpdated = new Date();
+        await stock.save();
+
+        res.json({ success: true, data: stock, message: 'Vaccine stock updated successfully' });
+    } catch (err) {
+        console.error('Error updating vaccine stock:', err);
+        res.status(500).json({ success: false, message: 'Failed to update vaccine stock', error: err.message });
+    }
 });
 
 // API: Delete vaccine stock
 app.delete('/api/vaccinestocks/:id', async (req, res) => {
-  try {
-    const stock = await VaccineStock.findByIdAndDelete(req.params.id);
-    if (!stock) {
-      return res.status(404).json({ success: false, message: 'Vaccine stock not found' });
+    try {
+        const stock = await VaccineStock.findByIdAndDelete(req.params.id);
+        if (!stock) {
+            return res.status(404).json({ success: false, message: 'Vaccine stock not found' });
+        }
+        res.json({ success: true, message: 'Vaccine stock deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting vaccine stock:', err);
+        res.status(500).json({ success: false, message: 'Failed to delete vaccine stock', error: err.message });
     }
-    res.json({ success: true, message: 'Vaccine stock deleted successfully' });
-  } catch (err) {
-    console.error('Error deleting vaccine stock:', err);
-    res.status(500).json({ success: false, message: 'Failed to delete vaccine stock', error: err.message });
-  }
 });
 
 // Center-scoped FIFO stock update for nested vaccinestocks structure
 // Expected body: { centerName, itemName, brand, type, quantity, operation, reason, patientId }
 app.post('/api/stock/update', async (req, res) => {
-  try {
-    const { centerName, itemName, brand, type, quantity, operation, patientId } = req.body || {};
+    try {
+        const { centerName, itemName, brand, type, quantity, operation, patientId } = req.body || {};
 
-    console.log('🔄 Stock update request:', { centerName, itemName, brand, type, quantity, operation, patientId });
+        console.log('🔄 Stock update request:', { centerName, itemName, brand, type, quantity, operation, patientId });
 
-    if (!centerName || !itemName || !operation || quantity === undefined) {
-      return res.status(400).json({ success: false, message: 'centerName, itemName, operation, quantity are required' });
+        if (!centerName || !itemName || !operation || quantity === undefined) {
+            return res.status(400).json({ success: false, message: 'centerName, itemName, operation, quantity are required' });
+        }
+
+        // Use flexible schema to match your nested vaccinestocks documents
+        const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
+
+        const doc = await VaccineStockDoc.findOne({ $or: [{ centerName }, { center: centerName }] });
+        if (!doc) {
+            console.log('❌ Center not found:', centerName);
+            return res.status(404).json({ success: false, message: `Center not found: ${centerName}` });
+        }
+
+        if (!Array.isArray(doc.vaccines)) {
+            return res.status(400).json({ success: false, message: 'Invalid vaccinestocks structure: vaccines array missing' });
+        }
+
+        // Find vaccine entry by name and brand/type if provided
+        let vi = doc.vaccines.findIndex(v => {
+            const nameMatch = (v.name || v.vaccineName || '').toLowerCase() === String(itemName).toLowerCase();
+            const brandMatch = brand ? String(v.brand || '').toLowerCase() === String(brand).toLowerCase() : true;
+            const typeMatch = type ? String(v.type || '').toLowerCase() === String(type).toLowerCase() : true;
+            return nameMatch && brandMatch && typeMatch;
+        });
+
+        if (vi === -1) {
+            console.log('❌ Vaccine not found:', itemName, 'for center:', centerName);
+            return res.status(404).json({ success: false, message: `Vaccine ${itemName} (${brand || ''}) not found for center ${centerName}` });
+        }
+
+        const vaccineEntry = doc.vaccines[vi];
+        if (!Array.isArray(vaccineEntry.stockEntries)) {
+            vaccineEntry.stockEntries = [];
+        }
+
+        let qty = parseFloat(quantity);
+        if (isNaN(qty) || qty <= 0) {
+            return res.status(400).json({ success: false, message: 'quantity must be a positive number' });
+        }
+
+        if (operation === 'deduct') {
+            console.log('📉 Deducting stock:', qty, 'from', itemName);
+
+            // FIFO by earliest expirationDate
+            vaccineEntry.stockEntries.sort((a, b) => {
+                const da = new Date(a.expirationDate).getTime() || 0;
+                const db = new Date(b.expirationDate).getTime() || 0;
+                return da - db;
+            });
+
+            let remainingToDeduct = qty;
+            for (const entry of vaccineEntry.stockEntries) {
+                const available = parseFloat(entry.stock) || 0;
+                if (available <= 0) continue;
+                const take = Math.min(available, remainingToDeduct);
+                entry.stock = Number((available - take).toFixed(2));
+                remainingToDeduct = Number((remainingToDeduct - take).toFixed(2));
+                console.log(`📦 Batch ${entry.branchNo}: ${available} → ${entry.stock} (took ${take})`);
+                if (remainingToDeduct <= 0) break;
+            }
+
+            if (remainingToDeduct > 0) {
+                console.log('❌ Insufficient stock. Remaining to deduct:', remainingToDeduct);
+                return res.status(409).json({ success: false, message: 'Insufficient stock to deduct requested quantity' });
+            }
+        } else if (operation === 'add') {
+            console.log('📈 Adding stock:', qty, 'to', itemName);
+
+            // Add back to the latest (or create a generic bucket)
+            const nowBucket = vaccineEntry.stockEntries && vaccineEntry.stockEntries[0] ? vaccineEntry.stockEntries[0] : null;
+            if (nowBucket) {
+                const current = parseFloat(nowBucket.stock) || 0;
+                nowBucket.stock = Number((current + qty).toFixed(2));
+                console.log(`📦 Updated batch ${nowBucket.branchNo}: ${current} → ${nowBucket.stock}`);
+            } else {
+                vaccineEntry.stockEntries = [{ expirationDate: null, branchNo: '000', stock: Number(qty.toFixed(2)) }];
+                console.log('📦 Created new batch with stock:', qty);
+            }
+        } else {
+            return res.status(400).json({ success: false, message: `Unsupported operation: ${operation}` });
+        }
+
+        // Persist changes
+        doc.markModified('vaccines');
+        await doc.save();
+
+        console.log('✅ Stock update successful');
+        return res.json({
+            success: true,
+            message: 'Stock updated',
+            data: {
+                center: doc.centerName,
+                vaccine: itemName,
+                operation: operation,
+                quantity: qty,
+                totalStock: vaccineEntry.stockEntries.reduce((sum, entry) => sum + (Number(entry.stock) || 0), 0)
+            }
+        });
+    } catch (err) {
+        console.error('❌ Error updating stock (center-scoped):', err);
+        return res.status(500).json({ success: false, message: 'Failed to update stock', error: err.message });
     }
-
-    // Use flexible schema to match your nested vaccinestocks documents
-    const VaccineStockDoc = mongoose.connection.model('VaccineStockDoc', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
-
-    const doc = await VaccineStockDoc.findOne({ $or: [ { centerName }, { center: centerName } ] });
-    if (!doc) {
-      console.log('❌ Center not found:', centerName);
-      return res.status(404).json({ success: false, message: `Center not found: ${centerName}` });
-    }
-
-    if (!Array.isArray(doc.vaccines)) {
-      return res.status(400).json({ success: false, message: 'Invalid vaccinestocks structure: vaccines array missing' });
-    }
-
-    // Find vaccine entry by name and brand/type if provided
-    let vi = doc.vaccines.findIndex(v => {
-      const nameMatch = (v.name || v.vaccineName || '').toLowerCase() === String(itemName).toLowerCase();
-      const brandMatch = brand ? String(v.brand || '').toLowerCase() === String(brand).toLowerCase() : true;
-      const typeMatch = type ? String(v.type || '').toLowerCase() === String(type).toLowerCase() : true;
-      return nameMatch && brandMatch && typeMatch;
-    });
-
-    if (vi === -1) {
-      console.log('❌ Vaccine not found:', itemName, 'for center:', centerName);
-      return res.status(404).json({ success: false, message: `Vaccine ${itemName} (${brand || ''}) not found for center ${centerName}` });
-    }
-
-    const vaccineEntry = doc.vaccines[vi];
-    if (!Array.isArray(vaccineEntry.stockEntries)) {
-      vaccineEntry.stockEntries = [];
-    }
-
-    let qty = parseFloat(quantity);
-    if (isNaN(qty) || qty <= 0) {
-      return res.status(400).json({ success: false, message: 'quantity must be a positive number' });
-    }
-
-    if (operation === 'deduct') {
-      console.log('📉 Deducting stock:', qty, 'from', itemName);
-      
-      // FIFO by earliest expirationDate
-      vaccineEntry.stockEntries.sort((a, b) => {
-        const da = new Date(a.expirationDate).getTime() || 0;
-        const db = new Date(b.expirationDate).getTime() || 0;
-        return da - db;
-      });
-
-      let remainingToDeduct = qty;
-      for (const entry of vaccineEntry.stockEntries) {
-        const available = parseFloat(entry.stock) || 0;
-        if (available <= 0) continue;
-        const take = Math.min(available, remainingToDeduct);
-        entry.stock = Number((available - take).toFixed(2));
-        remainingToDeduct = Number((remainingToDeduct - take).toFixed(2));
-        console.log(`📦 Batch ${entry.branchNo}: ${available} → ${entry.stock} (took ${take})`);
-        if (remainingToDeduct <= 0) break;
-      }
-
-      if (remainingToDeduct > 0) {
-        console.log('❌ Insufficient stock. Remaining to deduct:', remainingToDeduct);
-        return res.status(409).json({ success: false, message: 'Insufficient stock to deduct requested quantity' });
-      }
-    } else if (operation === 'add') {
-      console.log('📈 Adding stock:', qty, 'to', itemName);
-      
-      // Add back to the latest (or create a generic bucket)
-      const nowBucket = vaccineEntry.stockEntries && vaccineEntry.stockEntries[0] ? vaccineEntry.stockEntries[0] : null;
-      if (nowBucket) {
-        const current = parseFloat(nowBucket.stock) || 0;
-        nowBucket.stock = Number((current + qty).toFixed(2));
-        console.log(`📦 Updated batch ${nowBucket.branchNo}: ${current} → ${nowBucket.stock}`);
-      } else {
-        vaccineEntry.stockEntries = [ { expirationDate: null, branchNo: '000', stock: Number(qty.toFixed(2)) } ];
-        console.log('📦 Created new batch with stock:', qty);
-      }
-    } else {
-      return res.status(400).json({ success: false, message: `Unsupported operation: ${operation}` });
-    }
-
-    // Persist changes
-    doc.markModified('vaccines');
-    await doc.save();
-
-    console.log('✅ Stock update successful');
-    return res.json({ 
-      success: true, 
-      message: 'Stock updated', 
-      data: {
-        center: doc.centerName,
-        vaccine: itemName,
-        operation: operation,
-        quantity: qty,
-        totalStock: vaccineEntry.stockEntries.reduce((sum, entry) => sum + (Number(entry.stock) || 0), 0)
-      }
-    });
-  } catch (err) {
-    console.error('❌ Error updating stock (center-scoped):', err);
-    return res.status(500).json({ success: false, message: 'Failed to update stock', error: err.message });
-  }
 });
 
 // Helper to generate next adminID or superAdminID
@@ -4963,743 +3902,743 @@ function getAuditUserId(user) {
 
 // Get service hours for a center
 app.get('/api/centers/:id/service-hours', async (req, res) => {
-  try {
-    const center = await Center.findById(req.params.id);
-    if (!center) return res.status(404).json({ success: false, message: 'Center not found' });
-    res.json({ success: true, serviceHours: center.serviceHours || [] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch service hours', error: err.message });
-  }
+    try {
+        const center = await Center.findById(req.params.id);
+        if (!center) return res.status(404).json({ success: false, message: 'Center not found' });
+        res.json({ success: true, serviceHours: center.serviceHours || [] });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch service hours', error: err.message });
+    }
 });
 
 // Update service hours for a center
 app.put('/api/centers/:id/service-hours', async (req, res) => {
-  try {
-    const { serviceHours } = req.body;
-    if (!Array.isArray(serviceHours)) return res.status(400).json({ success: false, message: 'Invalid service hours format' });
-    const center = await Center.findByIdAndUpdate(
-      req.params.id,
-      { serviceHours, lastUpdated: new Date() },
-      { new: true }
-    );
-    if (!center) return res.status(404).json({ success: false, message: 'Center not found' });
-    res.json({ success: true, serviceHours: center.serviceHours });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to update service hours', error: err.message });
-  }
+    try {
+        const { serviceHours } = req.body;
+        if (!Array.isArray(serviceHours)) return res.status(400).json({ success: false, message: 'Invalid service hours format' });
+        const center = await Center.findByIdAndUpdate(
+            req.params.id,
+            { serviceHours, lastUpdated: new Date() },
+            { new: true }
+        );
+        if (!center) return res.status(404).json({ success: false, message: 'Center not found' });
+        res.json({ success: true, serviceHours: center.serviceHours });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to update service hours', error: err.message });
+    }
 });
 
 // Update center hours (for the hours object structure)
 app.put('/api/centers/:id/hours', async (req, res) => {
-  try {
-    console.log('Updating center hours:', req.params.id, req.body);
-    const { hours, contactNumber } = req.body;
-    
-    // Validate that hours object is provided
-    if (!hours || typeof hours !== 'object') {
-      return res.status(400).json({ success: false, message: 'Hours object is required.' });
+    try {
+        console.log('Updating center hours:', req.params.id, req.body);
+        const { hours, contactNumber } = req.body;
+
+        // Validate that hours object is provided
+        if (!hours || typeof hours !== 'object') {
+            return res.status(400).json({ success: false, message: 'Hours object is required.' });
+        }
+
+        // Build update object
+        const updateData = {
+            hours,
+            lastUpdated: new Date()
+        };
+
+        // Include contactNumber if provided
+        if (contactNumber !== undefined) {
+            updateData.contactNumber = contactNumber;
+        }
+
+        const center = await Center.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true }
+        );
+
+        if (!center) {
+            console.log('Center not found:', req.params.id);
+            return res.status(404).json({ success: false, message: 'Center not found.' });
+        }
+
+        console.log('Center hours updated successfully:', center);
+        console.log('Updated center hours field:', JSON.stringify(center.hours));
+        res.json({ success: true, data: center });
+    } catch (err) {
+        console.error('Error updating center hours:', err);
+        res.status(500).json({ success: false, message: 'Failed to update center hours', error: err.message });
     }
-
-    // Build update object
-    const updateData = { 
-      hours,
-      lastUpdated: new Date()
-    };
-    
-    // Include contactNumber if provided
-    if (contactNumber !== undefined) {
-      updateData.contactNumber = contactNumber;
-    }
-
-    const center = await Center.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
-
-    if (!center) {
-      console.log('Center not found:', req.params.id);
-      return res.status(404).json({ success: false, message: 'Center not found.' });
-    }
-
-    console.log('Center hours updated successfully:', center);
-    console.log('Updated center hours field:', JSON.stringify(center.hours));
-    res.json({ success: true, data: center });
-  } catch (err) {
-    console.error('Error updating center hours:', err);
-    res.status(500).json({ success: false, message: 'Failed to update center hours', error: err.message });
-  }
 });
 
 // API: Custom Demographic Report
 app.get('/api/reports/demographic', async (req, res) => {
-  try {
-    const { sex = 'all', ageGroup = 'all', center } = req.query;
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    let filter = {};
-    
-    // Add center filtering if provided
-    if (center) {
-      filter.center = { $regex: center, $options: 'i' };
+    try {
+        const { sex = 'all', ageGroup = 'all', center } = req.query;
+        const BiteCase = mongoose.connection.model('BiteCase');
+        let filter = {};
+
+        // Add center filtering if provided
+        if (center) {
+            filter.center = { $regex: center, $options: 'i' };
+        }
+        if (sex && sex !== 'all') {
+            filter.$or = [
+                { sex: sex },
+                { gender: sex },
+                { sex: sex.charAt(0) },
+                { gender: sex.charAt(0) }
+            ];
+        }
+        if (ageGroup && ageGroup !== 'all') {
+            let ageCond = {};
+            if (ageGroup === '0-5') ageCond = { $gte: 0, $lte: 5 };
+            else if (ageGroup === '6-12') ageCond = { $gte: 6, $lte: 12 };
+            else if (ageGroup === '13-18') ageCond = { $gte: 13, $lte: 18 };
+            else if (ageGroup === '19-35') ageCond = { $gte: 19, $lte: 35 };
+            else if (ageGroup === '36-60') ageCond = { $gte: 36, $lte: 60 };
+            else if (ageGroup === '61+') ageCond = { $gte: 61 };
+            if (Object.keys(ageCond).length > 0) filter.age = ageCond;
+        }
+        const cases = await BiteCase.find(filter).sort({ createdAt: 1 });
+        const report = cases.map((p, idx) => ({
+            registrationNo: p.registrationNumber || '',
+            registrationDate: p.dateRegistered || (p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''),
+            name: p.lastName && p.firstName ? `${p.lastName}, ${p.firstName}${p.middleName ? ' ' + p.middleName : ''}`.trim() : (p.patientName || ''),
+            sex: p.sex || p.gender || '',
+            age: p.age || '',
+            exposureDate: p.exposureDate || '',
+            animalType: p.animalType || p.exposureSource || '',
+            biteType: p.biteType || p.exposureType || '',
+            biteSite: p.biteSite || '',
+            barangay: p.barangay || '',
+            address: p.address || (() => {
+                const parts = [p.houseNo, p.street, p.barangay, p.city, p.province].filter(Boolean);
+                return parts.join(', ') || '';
+            })(),
+            contactNo: p.contactNo || '',
+            status: p.status || '',
+            createdAt: p.createdAt || '',
+        }));
+        res.json({ success: true, data: report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate demographic report', error: err.message });
     }
-    if (sex && sex !== 'all') {
-      filter.$or = [
-        { sex: sex },
-        { gender: sex },
-        { sex: sex.charAt(0) },
-        { gender: sex.charAt(0) }
-      ];
-    }
-    if (ageGroup && ageGroup !== 'all') {
-      let ageCond = {};
-      if (ageGroup === '0-5') ageCond = { $gte: 0, $lte: 5 };
-      else if (ageGroup === '6-12') ageCond = { $gte: 6, $lte: 12 };
-      else if (ageGroup === '13-18') ageCond = { $gte: 13, $lte: 18 };
-      else if (ageGroup === '19-35') ageCond = { $gte: 19, $lte: 35 };
-      else if (ageGroup === '36-60') ageCond = { $gte: 36, $lte: 60 };
-      else if (ageGroup === '61+') ageCond = { $gte: 61 };
-      if (Object.keys(ageCond).length > 0) filter.age = ageCond;
-    }
-    const cases = await BiteCase.find(filter).sort({ createdAt: 1 });
-    const report = cases.map((p, idx) => ({
-      registrationNo: p.registrationNumber || '',
-      registrationDate: p.dateRegistered || (p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''),
-      name: p.lastName && p.firstName ? `${p.lastName}, ${p.firstName}${p.middleName ? ' ' + p.middleName : ''}`.trim() : (p.patientName || ''),
-      sex: p.sex || p.gender || '',
-      age: p.age || '',
-      exposureDate: p.exposureDate || '',
-      animalType: p.animalType || p.exposureSource || '',
-      biteType: p.biteType || p.exposureType || '',
-      biteSite: p.biteSite || '',
-      barangay: p.barangay || '',
-      address: p.address || (() => {
-        const parts = [p.houseNo, p.street, p.barangay, p.city, p.province].filter(Boolean);
-        return parts.join(', ') || '';
-      })(),
-      contactNo: p.contactNo || '',
-      status: p.status || '',
-      createdAt: p.createdAt || '',
-    }));
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate demographic report', error: err.message });
-  }
 });
 
 // --- Centralized Report Generator API Endpoints ---
 
 // General Report
 app.get('/api/reports/general', async (req, res) => {
-  try {
-    const { startDate, endDate, center, barangay, sex, status, search } = req.query;
-    let query = {};
+    try {
+        const { startDate, endDate, center, barangay, sex, status, search } = req.query;
+        let query = {};
 
-    // Date range filter
-    if (startDate && endDate) {
-      query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+        // Date range filter
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        // Center filter
+        if (center && center !== 'all') {
+            query.center = center;
+        }
+
+        // Barangay filter
+        if (barangay && barangay !== 'all') {
+            query.barangay = barangay;
+        }
+
+        // Sex filter
+        if (sex && sex !== 'all') {
+            query.sex = sex;
+        }
+
+        // Status filter
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+
+        // Search filter
+        if (search) {
+            query.$or = [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName: { $regex: search, $options: 'i' } },
+                { patientName: { $regex: search, $options: 'i' } },
+                { barangay: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const cases = await BiteCase.find(query).sort({ createdAt: -1 });
+
+        const report = cases.map((c, idx) => ({
+            registrationNo: c.registrationNumber || '',
+            registrationDate: c.dateRegistered || (c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''),
+            name: c.lastName && c.firstName ? `${c.lastName}, ${c.firstName}${c.middleName ? ' ' + c.middleName : ''}`.trim() : (c.patientName || ''),
+            sex: c.sex || c.gender || '',
+            age: c.age || '',
+            address: c.address || '',
+            contactNo: c.contactNo || '',
+            barangay: c.barangay || '',
+            animalType: c.animalType || c.exposureSource || '',
+            biteType: c.biteType || c.exposureType || '',
+            biteSite: c.biteSite || '',
+            exposureDate: c.exposureDate || '',
+            status: c.status || '',
+            createdAt: c.createdAt || ''
+        }));
+
+        res.json({ success: true, data: report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate general report', error: err.message });
     }
-
-    // Center filter
-    if (center && center !== 'all') {
-      query.center = center;
-    }
-
-    // Barangay filter
-    if (barangay && barangay !== 'all') {
-      query.barangay = barangay;
-    }
-
-    // Sex filter
-    if (sex && sex !== 'all') {
-      query.sex = sex;
-    }
-
-    // Status filter
-    if (status && status !== 'all') {
-      query.status = status;
-    }
-
-    // Search filter
-    if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { patientName: { $regex: search, $options: 'i' } },
-        { barangay: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const cases = await BiteCase.find(query).sort({ createdAt: -1 });
-    
-    const report = cases.map((c, idx) => ({
-      registrationNo: c.registrationNumber || '',
-      registrationDate: c.dateRegistered || (c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''),
-      name: c.lastName && c.firstName ? `${c.lastName}, ${c.firstName}${c.middleName ? ' ' + c.middleName : ''}`.trim() : (c.patientName || ''),
-      sex: c.sex || c.gender || '',
-      age: c.age || '',
-      address: c.address || '',
-      contactNo: c.contactNo || '',
-      barangay: c.barangay || '',
-      animalType: c.animalType || c.exposureSource || '',
-      biteType: c.biteType || c.exposureType || '',
-      biteSite: c.biteSite || '',
-      exposureDate: c.exposureDate || '',
-      status: c.status || '',
-      createdAt: c.createdAt || ''
-    }));
-
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate general report', error: err.message });
-  }
 });
 
 // Patients Report
 app.get('/api/reports/patients', async (req, res) => {
-  try {
-    const { startDate, endDate, sex, ageGroup, barangay, status, search } = req.query;
-    let query = {};
+    try {
+        const { startDate, endDate, sex, ageGroup, barangay, status, search } = req.query;
+        let query = {};
 
-    // Date range filter
-    if (startDate && endDate) {
-      query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+        // Date range filter
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        // Sex filter
+        if (sex && sex !== 'all') {
+            query.sex = sex;
+        }
+
+        // Age group filter
+        if (ageGroup && ageGroup !== 'all') {
+            const ageRanges = {
+                '0-12': { $gte: 0, $lte: 12 },
+                '13-17': { $gte: 13, $lte: 17 },
+                '18-30': { $gte: 18, $lte: 30 },
+                '31-50': { $gte: 31, $lte: 50 },
+                '51-65': { $gte: 51, $lte: 65 },
+                '65+': { $gte: 65 }
+            };
+            if (ageRanges[ageGroup]) {
+                query.age = ageRanges[ageGroup];
+            }
+        }
+
+        // Barangay filter
+        if (barangay && barangay !== 'all') {
+            query.barangay = barangay;
+        }
+
+        // Status filter
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+
+        // Search filter
+        if (search) {
+            query.$or = [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName: { $regex: search, $options: 'i' } },
+                { patientName: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
+        const patients = await Patient.find(query).sort({ createdAt: -1 });
+
+        const report = patients.map(p => ({
+            patientId: p.patientId || '',
+            name: p.lastName && p.firstName ? `${p.lastName}, ${p.firstName}${p.middleName ? ' ' + p.middleName : ''}`.trim() : '',
+            sex: p.sex || '',
+            age: p.age || '',
+            birthdate: p.birthdate || '',
+            phone: p.phone || '',
+            email: p.email || '',
+            barangay: p.barangay || '',
+            address: p.address || '',
+            registrationDate: p.createdAt || '',
+            status: p.status || 'active'
+        }));
+
+        res.json({ success: true, data: report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate patients report', error: err.message });
     }
-
-    // Sex filter
-    if (sex && sex !== 'all') {
-      query.sex = sex;
-    }
-
-    // Age group filter
-    if (ageGroup && ageGroup !== 'all') {
-      const ageRanges = {
-        '0-12': { $gte: 0, $lte: 12 },
-        '13-17': { $gte: 13, $lte: 17 },
-        '18-30': { $gte: 18, $lte: 30 },
-        '31-50': { $gte: 31, $lte: 50 },
-        '51-65': { $gte: 51, $lte: 65 },
-        '65+': { $gte: 65 }
-      };
-      if (ageRanges[ageGroup]) {
-        query.age = ageRanges[ageGroup];
-      }
-    }
-
-    // Barangay filter
-    if (barangay && barangay !== 'all') {
-      query.barangay = barangay;
-    }
-
-    // Status filter
-    if (status && status !== 'all') {
-      query.status = status;
-    }
-
-    // Search filter
-    if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { patientName: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-    const patients = await Patient.find(query).sort({ createdAt: -1 });
-    
-    const report = patients.map(p => ({
-      patientId: p.patientId || '',
-      name: p.lastName && p.firstName ? `${p.lastName}, ${p.firstName}${p.middleName ? ' ' + p.middleName : ''}`.trim() : '',
-      sex: p.sex || '',
-      age: p.age || '',
-      birthdate: p.birthdate || '',
-      phone: p.phone || '',
-      email: p.email || '',
-      barangay: p.barangay || '',
-      address: p.address || '',
-      registrationDate: p.createdAt || '',
-      status: p.status || 'active'
-    }));
-
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate patients report', error: err.message });
-  }
 });
 
 // Vaccination Report
 app.get('/api/reports/vaccination', async (req, res) => {
-  try {
-    const { startDate, endDate, day, center, status, search } = req.query;
-    let query = {};
+    try {
+        const { startDate, endDate, day, center, status, search } = req.query;
+        let query = {};
 
-    // Date range filter
-    if (startDate && endDate) {
-      query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+        // Date range filter
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        // Day filter
+        if (day && day !== 'all') {
+            query.day = day;
+        }
+
+        // Center filter
+        if (center && center !== 'all') {
+            query.center = center;
+        }
+
+        // Status filter
+        if (status && status !== 'all') {
+            query.treatmentStatus = status;
+        }
+
+        // Search filter
+        if (search) {
+            query.$or = [
+                { patientName: { $regex: search, $options: 'i' } },
+                { registrationNumber: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
+        const vaccinations = await VaccinationDate.find(query).sort({ createdAt: -1 });
+
+        const report = vaccinations.map(v => ({
+            registrationNumber: v.registrationNumber || '',
+            patientName: v.patientName || '',
+            d0Date: v.d0Date || '',
+            d3Date: v.d3Date || '',
+            d7Date: v.d7Date || '',
+            d14Date: v.d14Date || '',
+            d28Date: v.d28Date || '',
+            treatmentStatus: v.treatmentStatus || '',
+            exposureCategory: v.exposureCategory || '',
+            lastTreatmentDate: v.lastTreatmentDate || '',
+            center: v.center || ''
+        }));
+
+        res.json({ success: true, data: report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate vaccination report', error: err.message });
     }
-
-    // Day filter
-    if (day && day !== 'all') {
-      query.day = day;
-    }
-
-    // Center filter
-    if (center && center !== 'all') {
-      query.center = center;
-    }
-
-    // Status filter
-    if (status && status !== 'all') {
-      query.treatmentStatus = status;
-    }
-
-    // Search filter
-    if (search) {
-      query.$or = [
-        { patientName: { $regex: search, $options: 'i' } },
-        { registrationNumber: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-    const vaccinations = await VaccinationDate.find(query).sort({ createdAt: -1 });
-    
-    const report = vaccinations.map(v => ({
-      registrationNumber: v.registrationNumber || '',
-      patientName: v.patientName || '',
-      d0Date: v.d0Date || '',
-      d3Date: v.d3Date || '',
-      d7Date: v.d7Date || '',
-      d14Date: v.d14Date || '',
-      d28Date: v.d28Date || '',
-      treatmentStatus: v.treatmentStatus || '',
-      exposureCategory: v.exposureCategory || '',
-      lastTreatmentDate: v.lastTreatmentDate || '',
-      center: v.center || ''
-    }));
-
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate vaccination report', error: err.message });
-  }
 });
 
 // Staff Report
 app.get('/api/reports/staff', async (req, res) => {
-  try {
-    const { startDate, endDate, center, search } = req.query;
-    let query = {};
+    try {
+        const { startDate, endDate, center, search } = req.query;
+        let query = {};
 
-    // Date range filter
-    if (startDate && endDate) {
-      query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+        // Date range filter
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        // Center filter
+        if (center && center !== 'all') {
+            query.center = center;
+        }
+
+        // Search filter
+        if (search) {
+            query.$or = [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const Staff = mongoose.connection.model('Staff', new mongoose.Schema({}, { strict: false }), 'staff');
+        const staff = await Staff.find(query).sort({ createdAt: -1 });
+
+        const report = staff.map(s => ({
+            staffId: s.staffId || '',
+            name: s.lastName && s.firstName ? `${s.lastName}, ${s.firstName}${s.middleName ? ' ' + s.middleName : ''}`.trim() : '',
+            email: s.email || '',
+            phone: s.phone || '',
+            position: s.position || '',
+            center: s.center || '',
+            officeAddress: s.officeAddress || '',
+            registrationDate: s.createdAt || '',
+            status: s.status || 'active'
+        }));
+
+        res.json({ success: true, data: report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate staff report', error: err.message });
     }
-
-    // Center filter
-    if (center && center !== 'all') {
-      query.center = center;
-    }
-
-    // Search filter
-    if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const Staff = mongoose.connection.model('Staff', new mongoose.Schema({}, { strict: false }), 'staff');
-    const staff = await Staff.find(query).sort({ createdAt: -1 });
-    
-    const report = staff.map(s => ({
-      staffId: s.staffId || '',
-      name: s.lastName && s.firstName ? `${s.lastName}, ${s.firstName}${s.middleName ? ' ' + s.middleName : ''}`.trim() : '',
-      email: s.email || '',
-      phone: s.phone || '',
-      position: s.position || '',
-      center: s.center || '',
-      officeAddress: s.officeAddress || '',
-      registrationDate: s.createdAt || '',
-      status: s.status || 'active'
-    }));
-
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate staff report', error: err.message });
-  }
 });
 
 // Barangay Report
 app.get('/api/reports/barangay', async (req, res) => {
-  try {
-    const { startDate, endDate, riskLevel, search } = req.query;
-    let query = {};
+    try {
+        const { startDate, endDate, riskLevel, search } = req.query;
+        let query = {};
 
-    // Date range filter
-    if (startDate && endDate) {
-      query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+        // Date range filter
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        // Risk level filter
+        if (riskLevel && riskLevel !== 'all') {
+            query.riskLevel = riskLevel;
+        }
+
+        // Search filter
+        if (search) {
+            query.barangay = { $regex: search, $options: 'i' };
+        }
+
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const cases = await BiteCase.find(query).sort({ barangay: 1 });
+
+        // Group by barangay
+        const barangayStats = {};
+        cases.forEach(c => {
+            const barangay = c.barangay || 'Unknown';
+            if (!barangayStats[barangay]) {
+                barangayStats[barangay] = {
+                    barangay: barangay,
+                    totalCases: 0,
+                    pendingCases: 0,
+                    completedCases: 0,
+                    riskLevel: 'Low'
+                };
+            }
+            barangayStats[barangay].totalCases++;
+            if (c.status === 'pending') barangayStats[barangay].pendingCases++;
+            if (c.status === 'completed') barangayStats[barangay].completedCases++;
+        });
+
+        const report = Object.values(barangayStats);
+
+        res.json({ success: true, data: report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate barangay report', error: err.message });
     }
-
-    // Risk level filter
-    if (riskLevel && riskLevel !== 'all') {
-      query.riskLevel = riskLevel;
-    }
-
-    // Search filter
-    if (search) {
-      query.barangay = { $regex: search, $options: 'i' };
-    }
-
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const cases = await BiteCase.find(query).sort({ barangay: 1 });
-    
-    // Group by barangay
-    const barangayStats = {};
-    cases.forEach(c => {
-      const barangay = c.barangay || 'Unknown';
-      if (!barangayStats[barangay]) {
-        barangayStats[barangay] = {
-          barangay: barangay,
-          totalCases: 0,
-          pendingCases: 0,
-          completedCases: 0,
-          riskLevel: 'Low'
-        };
-      }
-      barangayStats[barangay].totalCases++;
-      if (c.status === 'pending') barangayStats[barangay].pendingCases++;
-      if (c.status === 'completed') barangayStats[barangay].completedCases++;
-    });
-
-    const report = Object.values(barangayStats);
-
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate barangay report', error: err.message });
-  }
 });
 
 // Demographics Report
 app.get('/api/reports/demographics', async (req, res) => {
-  try {
-    const { startDate, endDate, sex, ageGroup, barangay, search } = req.query;
-    let query = {};
+    try {
+        const { startDate, endDate, sex, ageGroup, barangay, search } = req.query;
+        let query = {};
 
-    // Date range filter
-    if (startDate && endDate) {
-      query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+        // Date range filter
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        // Sex filter
+        if (sex && sex !== 'all') {
+            query.sex = sex;
+        }
+
+        // Age group filter
+        if (ageGroup && ageGroup !== 'all') {
+            const ageRanges = {
+                '0-12': { $gte: 0, $lte: 12 },
+                '13-17': { $gte: 13, $lte: 17 },
+                '18-30': { $gte: 18, $lte: 30 },
+                '31-50': { $gte: 31, $lte: 50 },
+                '51-65': { $gte: 51, $lte: 65 },
+                '65+': { $gte: 65 }
+            };
+            if (ageRanges[ageGroup]) {
+                query.age = ageRanges[ageGroup];
+            }
+        }
+
+        // Barangay filter
+        if (barangay && barangay !== 'all') {
+            query.barangay = barangay;
+        }
+
+        // Search filter
+        if (search) {
+            query.$or = [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName: { $regex: search, $options: 'i' } },
+                { barangay: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const BiteCase = mongoose.connection.model('BiteCase');
+        const cases = await BiteCase.find(query);
+
+        // Generate demographics statistics
+        const demographics = {
+            totalCases: cases.length,
+            bySex: {},
+            byAgeGroup: {},
+            byBarangay: {},
+            byStatus: {}
+        };
+
+        cases.forEach(c => {
+            // By sex
+            const sex = c.sex || 'Unknown';
+            demographics.bySex[sex] = (demographics.bySex[sex] || 0) + 1;
+
+            // By age group
+            const age = parseInt(c.age) || 0;
+            let ageGroup = 'Unknown';
+            if (age >= 0 && age <= 12) ageGroup = '0-12';
+            else if (age >= 13 && age <= 17) ageGroup = '13-17';
+            else if (age >= 18 && age <= 30) ageGroup = '18-30';
+            else if (age >= 31 && age <= 50) ageGroup = '31-50';
+            else if (age >= 51 && age <= 65) ageGroup = '51-65';
+            else if (age > 65) ageGroup = '65+';
+
+            demographics.byAgeGroup[ageGroup] = (demographics.byAgeGroup[ageGroup] || 0) + 1;
+
+            // By barangay
+            const barangay = c.barangay || 'Unknown';
+            demographics.byBarangay[barangay] = (demographics.byBarangay[barangay] || 0) + 1;
+
+            // By status
+            const status = c.status || 'Unknown';
+            demographics.byStatus[status] = (demographics.byStatus[status] || 0) + 1;
+        });
+
+        res.json({ success: true, data: demographics });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate demographics report', error: err.message });
     }
-
-    // Sex filter
-    if (sex && sex !== 'all') {
-      query.sex = sex;
-    }
-
-    // Age group filter
-    if (ageGroup && ageGroup !== 'all') {
-      const ageRanges = {
-        '0-12': { $gte: 0, $lte: 12 },
-        '13-17': { $gte: 13, $lte: 17 },
-        '18-30': { $gte: 18, $lte: 30 },
-        '31-50': { $gte: 31, $lte: 50 },
-        '51-65': { $gte: 51, $lte: 65 },
-        '65+': { $gte: 65 }
-      };
-      if (ageRanges[ageGroup]) {
-        query.age = ageRanges[ageGroup];
-      }
-    }
-
-    // Barangay filter
-    if (barangay && barangay !== 'all') {
-      query.barangay = barangay;
-    }
-
-    // Search filter
-    if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { barangay: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
-    const cases = await BiteCase.find(query);
-    
-    // Generate demographics statistics
-    const demographics = {
-      totalCases: cases.length,
-      bySex: {},
-      byAgeGroup: {},
-      byBarangay: {},
-      byStatus: {}
-    };
-
-    cases.forEach(c => {
-      // By sex
-      const sex = c.sex || 'Unknown';
-      demographics.bySex[sex] = (demographics.bySex[sex] || 0) + 1;
-
-      // By age group
-      const age = parseInt(c.age) || 0;
-      let ageGroup = 'Unknown';
-      if (age >= 0 && age <= 12) ageGroup = '0-12';
-      else if (age >= 13 && age <= 17) ageGroup = '13-17';
-      else if (age >= 18 && age <= 30) ageGroup = '18-30';
-      else if (age >= 31 && age <= 50) ageGroup = '31-50';
-      else if (age >= 51 && age <= 65) ageGroup = '51-65';
-      else if (age > 65) ageGroup = '65+';
-      
-      demographics.byAgeGroup[ageGroup] = (demographics.byAgeGroup[ageGroup] || 0) + 1;
-
-      // By barangay
-      const barangay = c.barangay || 'Unknown';
-      demographics.byBarangay[barangay] = (demographics.byBarangay[barangay] || 0) + 1;
-
-      // By status
-      const status = c.status || 'Unknown';
-      demographics.byStatus[status] = (demographics.byStatus[status] || 0) + 1;
-    });
-
-    res.json({ success: true, data: demographics });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate demographics report', error: err.message });
-  }
 });
 
 // Vaccine Utilization Report
 app.get('/api/reports/utilization', async (req, res) => {
-  try {
-    const { startDate, endDate, center, vaccineType, search } = req.query;
-    let query = {};
+    try {
+        const { startDate, endDate, center, vaccineType, search } = req.query;
+        let query = {};
 
-    // Date range filter
-    if (startDate && endDate) {
-      query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+        // Date range filter
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        // Center filter
+        if (center && center !== 'all') {
+            query.center = center;
+        }
+
+        // Vaccine type filter
+        if (vaccineType && vaccineType !== 'all') {
+            query.vaccineType = vaccineType;
+        }
+
+        // Search filter
+        if (search) {
+            query.$or = [
+                { vaccineName: { $regex: search, $options: 'i' } },
+                { center: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const VaccineStock = mongoose.connection.model('VaccineStock', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
+        const stocks = await VaccineStock.find(query).sort({ createdAt: -1 });
+
+        const report = stocks.map(s => ({
+            center: s.centerName || '',
+            vaccineName: s.vaccineName || '',
+            vaccineType: s.vaccineType || '',
+            brand: s.brand || '',
+            quantity: s.quantity || 0,
+            expiryDate: s.expiryDate || '',
+            batchNumber: s.batchNumber || '',
+            minThreshold: s.minThreshold || 0,
+            status: s.quantity > s.minThreshold ? 'In Stock' : 'Low Stock',
+            lastUpdated: s.updatedAt || s.createdAt || ''
+        }));
+
+        res.json({ success: true, data: report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to generate utilization report', error: err.message });
     }
-
-    // Center filter
-    if (center && center !== 'all') {
-      query.center = center;
-    }
-
-    // Vaccine type filter
-    if (vaccineType && vaccineType !== 'all') {
-      query.vaccineType = vaccineType;
-    }
-
-    // Search filter
-    if (search) {
-      query.$or = [
-        { vaccineName: { $regex: search, $options: 'i' } },
-        { center: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const VaccineStock = mongoose.connection.model('VaccineStock', new mongoose.Schema({}, { strict: false }), 'vaccinestocks');
-    const stocks = await VaccineStock.find(query).sort({ createdAt: -1 });
-    
-    const report = stocks.map(s => ({
-      center: s.centerName || '',
-      vaccineName: s.vaccineName || '',
-      vaccineType: s.vaccineType || '',
-      brand: s.brand || '',
-      quantity: s.quantity || 0,
-      expiryDate: s.expiryDate || '',
-      batchNumber: s.batchNumber || '',
-      minThreshold: s.minThreshold || 0,
-      status: s.quantity > s.minThreshold ? 'In Stock' : 'Low Stock',
-      lastUpdated: s.updatedAt || s.createdAt || ''
-    }));
-
-    res.json({ success: true, data: report });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to generate utilization report', error: err.message });
-  }
 });
 
 // --- Center Hours Model and API ---
 // Widen schema to support both legacy (weekday/sat/sun) and new (Mon-Fri + contact) shapes
 const centerHoursSchema = new mongoose.Schema({
-  // legacy fields
-  name: { type: String },
-  location: { type: String, default: '' },
-  address: { type: String, default: '' },
-  hours: { type: mongoose.Schema.Types.Mixed },
-  // new fields
-  centerId: { type: String },
-  centerName: { type: String },
-  contactNumber: { type: String, default: '' },
-  updatedAt: { type: Date },
+    // legacy fields
+    name: { type: String },
+    location: { type: String, default: '' },
+    address: { type: String, default: '' },
+    hours: { type: mongoose.Schema.Types.Mixed },
+    // new fields
+    centerId: { type: String },
+    centerName: { type: String },
+    contactNumber: { type: String, default: '' },
+    updatedAt: { type: Date },
 }, { collection: 'center_hours' });
 
 const CenterHours = mongoose.models.CenterHours || mongoose.model('CenterHours', centerHoursSchema);
 
 // GET all center hours
 app.get('/api/center-hours', async (req, res) => {
-  try {
-    const centers = await CenterHours.find();
-    res.json(centers);
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch center hours', error: err.message });
-  }
+    try {
+        const centers = await CenterHours.find();
+        res.json(centers);
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch center hours', error: err.message });
+    }
 });
 
 // Mirror route using underscore to match new client
 app.get('/api/center_hours', async (req, res) => {
-  try {
-    const { existingOnly } = req.query;
-    // If not filtering, return all
-    if (!existingOnly || String(existingOnly).toLowerCase() !== 'true') {
-    const centers = await CenterHours.find();
-      return res.json({ success: true, data: centers });
-    }
-    // Filter to centers that exist in Center collection (by id or name)
-    const centerDocs = await Center.find({}, { _id: 1, centerName: 1 });
-    const validIds = new Set(centerDocs.map(c => String(c._id)));
-    const validNames = new Set(centerDocs.map(c => (c.centerName || '').toLowerCase()));
+    try {
+        const { existingOnly } = req.query;
+        // If not filtering, return all
+        if (!existingOnly || String(existingOnly).toLowerCase() !== 'true') {
+            const centers = await CenterHours.find();
+            return res.json({ success: true, data: centers });
+        }
+        // Filter to centers that exist in Center collection (by id or name)
+        const centerDocs = await Center.find({}, { _id: 1, centerName: 1 });
+        const validIds = new Set(centerDocs.map(c => String(c._id)));
+        const validNames = new Set(centerDocs.map(c => (c.centerName || '').toLowerCase()));
 
-    const hours = await CenterHours.find();
-    const filtered = hours.filter(h => {
-      const idMatch = h.centerId && validIds.has(String(h.centerId));
-      const nameMatch = h.centerName && validNames.has(String(h.centerName).toLowerCase());
-      return idMatch || nameMatch;
-    });
-    return res.json({ success: true, data: filtered });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch center_hours', error: err.message });
-  }
+        const hours = await CenterHours.find();
+        const filtered = hours.filter(h => {
+            const idMatch = h.centerId && validIds.has(String(h.centerId));
+            const nameMatch = h.centerName && validNames.has(String(h.centerName).toLowerCase());
+            return idMatch || nameMatch;
+        });
+        return res.json({ success: true, data: filtered });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch center_hours', error: err.message });
+    }
 });
 
 // POST update center hours
 app.post('/api/center-hours/update', async (req, res) => {
-  try {
-    const { name, location, hours } = req.body;
-    const updated = await CenterHours.findOneAndUpdate(
-      { name },
-      { location, hours },
-      { new: true, upsert: true }
-    );
-    res.json({ success: true, center: updated });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to update center hours', error: err.message });
-  }
+    try {
+        const { name, location, hours } = req.body;
+        const updated = await CenterHours.findOneAndUpdate(
+            { name },
+            { location, hours },
+            { new: true, upsert: true }
+        );
+        res.json({ success: true, center: updated });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to update center hours', error: err.message });
+    }
 });
 
 // New save endpoints (underscore)
 app.put('/api/center_hours/:centerId', async (req, res) => {
-  try {
-    const { centerId } = req.params;
-    const { centerName, name, hours, contactNumber, address } = req.body;
-    if (!centerId) return res.status(400).json({ success: false, message: 'centerId is required' });
-    
-    let existing = await CenterHours.findOne({ centerId });
-    const finalName = centerName || name;
-    
-    if (existing) {
-      if (hours !== undefined) existing.hours = hours;
-      if (contactNumber !== undefined) existing.contactNumber = contactNumber;
-      if (finalName) {
-        existing.centerName = finalName;
-        existing.name = finalName;
-      }
-      if (address !== undefined) existing.address = address;
-      existing.updatedAt = new Date();
-      await existing.save();
-      res.json({ success: true, data: existing });
-    } else {
-      const newDoc = new CenterHours({
-        centerId,
-        centerName: finalName,
-        name: finalName,
-        hours,
-        contactNumber: contactNumber || '',
-        address: address || '',
-        updatedAt: new Date()
-      });
-      await newDoc.save();
-      res.json({ success: true, data: newDoc });
+    try {
+        const { centerId } = req.params;
+        const { centerName, name, hours, contactNumber, address } = req.body;
+        if (!centerId) return res.status(400).json({ success: false, message: 'centerId is required' });
+
+        let existing = await CenterHours.findOne({ centerId });
+        const finalName = centerName || name;
+
+        if (existing) {
+            if (hours !== undefined) existing.hours = hours;
+            if (contactNumber !== undefined) existing.contactNumber = contactNumber;
+            if (finalName) {
+                existing.centerName = finalName;
+                existing.name = finalName;
+            }
+            if (address !== undefined) existing.address = address;
+            existing.updatedAt = new Date();
+            await existing.save();
+            res.json({ success: true, data: existing });
+        } else {
+            const newDoc = new CenterHours({
+                centerId,
+                centerName: finalName,
+                name: finalName,
+                hours,
+                contactNumber: contactNumber || '',
+                address: address || '',
+                updatedAt: new Date()
+            });
+            await newDoc.save();
+            res.json({ success: true, data: newDoc });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to save center_hours', error: err.message });
     }
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to save center_hours', error: err.message });
-  }
 });
 
 app.post('/api/center_hours', async (req, res) => {
-  try {
-    const { centerId, centerName, hours, contactNumber, address, name } = req.body;
-    const finalName = centerName || name;
-    
-    let existing = null;
-    if (centerId) {
-      existing = await CenterHours.findOne({ centerId });
-    } else {
-      if (finalName) {
-        existing = await CenterHours.findOne({
-          $or: [
-            { centerId: finalName },
-            { centerName: finalName },
-            { name: finalName }
-          ]
-        });
-      }
-    }
+    try {
+        const { centerId, centerName, hours, contactNumber, address, name } = req.body;
+        const finalName = centerName || name;
 
-    if (existing) {
-      if (hours !== undefined) existing.hours = hours;
-      if (contactNumber !== undefined) existing.contactNumber = contactNumber;
-      if (finalName) {
-        existing.centerName = finalName;
-        existing.name = finalName;
-      }
-      if (centerId) existing.centerId = centerId;
-      if (address !== undefined) existing.address = address;
-      existing.updatedAt = new Date();
-      await existing.save();
-      res.json({ success: true, data: existing });
-    } else {
-      if (!centerId && !finalName) {
-        return res.status(400).json({ success: false, message: 'centerId or centerName/name is required' });
-      }
-      const newDoc = new CenterHours({
-        centerId: centerId || undefined,
-        centerName: finalName,
-        name: finalName,
-        hours,
-        contactNumber: contactNumber || '',
-        address: address || '',
-        updatedAt: new Date()
-      });
-      await newDoc.save();
-      res.json({ success: true, data: newDoc });
+        let existing = null;
+        if (centerId) {
+            existing = await CenterHours.findOne({ centerId });
+        } else {
+            if (finalName) {
+                existing = await CenterHours.findOne({
+                    $or: [
+                        { centerId: finalName },
+                        { centerName: finalName },
+                        { name: finalName }
+                    ]
+                });
+            }
+        }
+
+        if (existing) {
+            if (hours !== undefined) existing.hours = hours;
+            if (contactNumber !== undefined) existing.contactNumber = contactNumber;
+            if (finalName) {
+                existing.centerName = finalName;
+                existing.name = finalName;
+            }
+            if (centerId) existing.centerId = centerId;
+            if (address !== undefined) existing.address = address;
+            existing.updatedAt = new Date();
+            await existing.save();
+            res.json({ success: true, data: existing });
+        } else {
+            if (!centerId && !finalName) {
+                return res.status(400).json({ success: false, message: 'centerId or centerName/name is required' });
+            }
+            const newDoc = new CenterHours({
+                centerId: centerId || undefined,
+                centerName: finalName,
+                name: finalName,
+                hours,
+                contactNumber: contactNumber || '',
+                address: address || '',
+                updatedAt: new Date()
+            });
+            await newDoc.save();
+            res.json({ success: true, data: newDoc });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to save center_hours', error: err.message });
     }
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to save center_hours', error: err.message });
-  }
 });
 
 // Real-time full name uniqueness check endpoint
@@ -5715,7 +4654,7 @@ app.get('/api/check-name-exists', async (req, res) => {
         firstName: { $regex: `^${trimmedFirst}$`, $options: 'i' },
         lastName: { $regex: `^${trimmedLast}$`, $options: 'i' },
         $or: [
-            { $or: [ { middleName: { $exists: false } }, { middleName: '' } ] },
+            { $or: [{ middleName: { $exists: false } }, { middleName: '' }] },
             { middleName: { $regex: `^${trimmedMiddle}$`, $options: 'i' } }
         ]
     };
@@ -5725,8 +4664,8 @@ app.get('/api/check-name-exists', async (req, res) => {
 
 // Health check endpoint for Render
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
+    res.status(200).json({
+        status: 'OK',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
@@ -5738,26 +4677,26 @@ app.get('/api/health', (req, res) => {
 app.get('/api/db-test', async (req, res) => {
     try {
         if (mongoose.connection.readyState !== 1) {
-            return res.status(500).json({ 
-                success: false, 
+            return res.status(500).json({
+                success: false,
                 message: 'Database not connected',
-                state: mongoose.connection.readyState 
+                state: mongoose.connection.readyState
             });
         }
-        
+
         // Try to fetch a simple count
         const Admin = mongoose.connection.model('Admin', adminSchema);
         const count = await Admin.countDocuments();
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             message: 'Database connected successfully',
             adminCount: count,
             state: mongoose.connection.readyState
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Database error: ' + error.message,
             state: mongoose.connection.readyState
         });
@@ -5826,7 +4765,7 @@ app.get('/api/notifications/stream', async (req, res) => {
 app.get('/api/profile-picture', async (req, res) => {
     try {
         // Return default profile picture info
-        res.json({ 
+        res.json({
             hasProfilePicture: false,
             profilePictureUrl: null
         });
@@ -5845,86 +4784,8 @@ app.post('/api/ai-test', (req, res) => {
     });
 });
 
-// Missing endpoints that frontend is calling
 
-// Get vaccinations endpoint
-app.get('/api/vaccinations', async (req, res) => {
-    try {
-        const { patientId } = req.query;
-        console.log('Vaccinations request for patientId:', patientId);
-        
-        if (!patientId) {
-            return res.status(400).json({ error: 'Patient ID is required' });
-        }
 
-        // Try to get existing model first, or create if it doesn't exist
-        let VaccinationDate;
-        try {
-            VaccinationDate = mongoose.model('VaccinationDate');
-        } catch (error) {
-            // Model doesn't exist, create it
-            console.log('Creating VaccinationDate model...');
-            VaccinationDate = mongoose.model('VaccinationDate', new mongoose.Schema({
-                patientId: { type: String, required: true },
-                vaccinationDay: { type: String, required: true },
-                scheduledDate: { type: Date, required: true },
-                completedDate: { type: Date },
-                status: { type: String, enum: ['scheduled', 'completed', 'missed'], default: 'scheduled' },
-                vaccineType: { type: String, default: 'Anti-Rabies' },
-                notes: { type: String },
-                center: { type: String },
-                createdAt: { type: Date, default: Date.now },
-                updatedAt: { type: Date, default: Date.now }
-            }, { collection: 'vaccinationdates' }));
-        }
-
-        const vaccinations = await VaccinationDate.find({ patientId }).sort({ scheduledDate: 1 });
-        console.log('Found vaccinations:', vaccinations.length);
-        res.json(vaccinations);
-    } catch (error) {
-        console.error('Error fetching vaccinations:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Get patient password endpoint
-app.get('/api/get-patient-password/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        
-        // Create Patient model dynamically
-        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-        const patient = await Patient.findById(id).select('password');
-        
-        if (!patient) {
-            return res.status(404).json({ error: 'Patient not found' });
-        }
-        res.json({ success: true, password: patient.password });
-    } catch (error) {
-        console.error('Error getting patient password:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Change patient password endpoint
-app.post('/api/change-patient-password', async (req, res) => {
-    try {
-        const { patientId, newPassword } = req.body;
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
-        // Create Patient model dynamically
-        const Patient = mongoose.connection.model('Patient', new mongoose.Schema({}, { strict: false }), 'patients');
-        const patient = await Patient.findByIdAndUpdate(patientId, { password: hashedPassword });
-        
-        if (!patient) {
-            return res.status(404).json({ error: 'Patient not found' });
-        }
-        res.json({ success: true, message: 'Password updated successfully' });
-    } catch (error) {
-        console.error('Error changing patient password:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
 // Get admin password endpoint
 app.get('/api/get-admin-password/:id', async (req, res) => {
@@ -5944,11 +4805,11 @@ app.get('/api/get-admin-password/:id', async (req, res) => {
 app.get('/api/get-staff-password/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // Create Staff model dynamically
         const Staff = mongoose.connection.model('Staff', new mongoose.Schema({}, { strict: false }), 'staffs');
         const staff = await Staff.findById(id).select('password');
-        
+
         if (!staff) {
             return res.status(404).json({ error: 'Staff not found' });
         }
@@ -5964,19 +4825,19 @@ app.post('/api/change-admin-password', async (req, res) => {
     try {
         const { adminId, newPassword } = req.body;
         console.log('Password change request for adminId:', adminId);
-        
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
+
         // Try to find admin by _id first, then by adminID
         let admin = await Admin.findByIdAndUpdate(adminId, { password: hashedPassword });
         console.log('Found admin by _id:', !!admin);
-        
+
         if (!admin) {
             // Try finding by adminID field
             admin = await Admin.findOneAndUpdate({ adminID: adminId }, { password: hashedPassword });
             console.log('Found admin by adminID:', !!admin);
         }
-        
+
         if (!admin) {
             console.log('Admin not found with ID:', adminId);
             return res.status(404).json({ error: 'Admin not found' });
@@ -5993,27 +4854,27 @@ app.post('/api/change-staff-password', async (req, res) => {
     try {
         const { staffId, newPassword } = req.body;
         console.log('Password change request for staffId:', staffId);
-        
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
+
         // Create Staff model dynamically
         const Staff = mongoose.connection.model('Staff', new mongoose.Schema({}, { strict: false }), 'staffs');
-        
+
         // Try to find staff by _id first, then by staffID
         let staff = await Staff.findByIdAndUpdate(staffId, { password: hashedPassword });
         console.log('Found staff by _id:', !!staff);
-        
+
         if (!staff) {
             // Try finding by staffID field
             staff = await Staff.findOneAndUpdate({ staffID: staffId }, { password: hashedPassword });
             console.log('Found staff by staffID:', !!staff);
         }
-        
+
         if (!staff) {
             console.log('Staff not found with ID:', staffId);
             return res.status(404).json({ error: 'Staff not found' });
         }
-        
+
         res.json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
         console.error('Staff password change error:', error);
@@ -6021,23 +4882,15 @@ app.post('/api/change-staff-password', async (req, res) => {
     }
 });
 
-// Vaccination data endpoint
-app.get('/api/vaccination-data', async (req, res) => {
-    try {
-        const VaccinationDate = mongoose.connection.model('VaccinationDate', new mongoose.Schema({}, { strict: false }), 'vaccinationdates');
-        const vaccinations = await VaccinationDate.find({}).populate('patientId', 'firstName lastName');
-        res.json({ success: true, data: vaccinations });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+
+
 
 // Server-side Prescriptive Analytics: compute risk + generate interventions
 app.post('/api/prescriptive-analytics', async (req, res) => {
     try {
         const { timeRange = 'month', selectedBarangay = 'all' } = req.body || {};
 
-        const BiteCase = mongoose.connection.model('BiteCase', new mongoose.Schema({}, { strict: false }), 'bitecases');
+        const BiteCase = mongoose.connection.model('BiteCase');
         const Center = mongoose.connection.model('Center', new mongoose.Schema({}, { strict: false }), 'centers');
 
         const now = new Date();
@@ -6061,7 +4914,7 @@ app.post('/api/prescriptive-analytics', async (req, res) => {
                     if (token) knownBarangayTokens.add(token);
                 });
             });
-        } catch (_) {}
+        } catch (_) { }
 
         const inferBarangayFromText = (text, extraTokens = []) => {
             if (!text) return null;

@@ -14,9 +14,9 @@ const PAGE_SIZE = 50;
 // Case Details Form Component for Read-Only Display - Exact Form Format
 const CaseDetailsForm = memo(({ case: caseData }) => {
   return (
-    <div style={{ 
-      background: 'white', 
-      borderRadius: '12px', 
+    <div style={{
+      background: 'white',
+      borderRadius: '12px',
       padding: '20px',
       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       maxHeight: '800px',
@@ -381,9 +381,9 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
         {(() => {
           // Build rows from the direct day fields on the case document (matches vaccination schedule source of truth)
           const dayDefs = [
-            { label: 'Day 0',  dateField: 'd0Date',  statusField: 'd0Status',  medicineField: 'd0Medicine',  branchField: 'd0BranchNo'  },
-            { label: 'Day 3',  dateField: 'd3Date',  statusField: 'd3Status',  medicineField: 'd3Medicine',  branchField: 'd3BranchNo'  },
-            { label: 'Day 7',  dateField: 'd7Date',  statusField: 'd7Status',  medicineField: 'd7Medicine',  branchField: 'd7BranchNo'  },
+            { label: 'Day 0', dateField: 'd0Date', statusField: 'd0Status', medicineField: 'd0Medicine', branchField: 'd0BranchNo' },
+            { label: 'Day 3', dateField: 'd3Date', statusField: 'd3Status', medicineField: 'd3Medicine', branchField: 'd3BranchNo' },
+            { label: 'Day 7', dateField: 'd7Date', statusField: 'd7Status', medicineField: 'd7Medicine', branchField: 'd7BranchNo' },
             { label: 'Day 14', dateField: 'd14Date', statusField: 'd14Status', medicineField: 'd14Medicine', branchField: 'd14BranchNo' },
             { label: 'Day 28', dateField: 'd28Date', statusField: 'd28Status', medicineField: 'd28Medicine', branchField: 'd28BranchNo' },
           ];
@@ -409,7 +409,7 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
           const dotColor = (status) => {
             const s = String(status || '').toLowerCase();
             if (s === 'completed') return '#10B981';
-            if (s === 'missed')    return '#EF4444';
+            if (s === 'missed') return '#EF4444';
             if (s === 'scheduled') return '#3B82F6';
             return '#9CA3AF';
           };
@@ -419,7 +419,7 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
             const s = String(status || '').toLowerCase();
             const base = { fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '12px', display: 'inline-block' };
             if (s === 'completed') return { ...base, background: '#D1FAE5', color: '#065F46' };
-            if (s === 'missed')    return { ...base, background: '#FEE2E2', color: '#991B1B' };
+            if (s === 'missed') return { ...base, background: '#FEE2E2', color: '#991B1B' };
             if (s === 'scheduled') return { ...base, background: '#DBEAFE', color: '#1E40AF' };
             return { ...base, background: '#F3F4F6', color: '#6B7280' };
           };
@@ -467,11 +467,11 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
 
           // Build the row data: prefer direct bite-case day fields, fall back to completedSchedules lookup
           const rows = dayDefs.map(def => {
-            const directDate   = caseData[def.dateField];
+            const directDate = caseData[def.dateField];
             const directStatus = caseData[def.statusField];
-            const directMed    = caseData[def.medicineField];
+            const directMed = caseData[def.medicineField];
             const directBranch = caseData[def.branchField];
-            const sched        = scheduleMap[def.label];
+            const sched = scheduleMap[def.label];
 
             // Resolve actual date (scheduleDates array preferred, then per-day field)
             let resolvedDate = '';
@@ -483,7 +483,7 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
               resolvedDate = sched.date;
               rawDateVal = sched.date;
             } else if (Array.isArray(caseData.scheduleDates)) {
-              const idx = ['Day 0','Day 3','Day 7','Day 14','Day 28'].indexOf(def.label);
+              const idx = ['Day 0', 'Day 3', 'Day 7', 'Day 14', 'Day 28'].indexOf(def.label);
               if (idx >= 0 && caseData.scheduleDates[idx]) {
                 resolvedDate = fmtDate(caseData.scheduleDates[idx]);
                 rawDateVal = caseData.scheduleDates[idx];
@@ -507,32 +507,32 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
               }
             }
 
-            // Resolve medicine
-            let resolvedMed = directMed || '';
-            if (!resolvedMed && sched?.vaccinesUsed?.length > 0) {
-              resolvedMed = sched.vaccinesUsed.map(v => [v.type || v.brand, v.route ? `(${v.route})` : ''].filter(Boolean).join(' ')).join(', ');
-            }
-            if (!resolvedMed && caseData.currentImmunization?.vaccine?.length > 0) {
-              resolvedMed = caseData.currentImmunization.vaccine.map(v =>
-                v === 'PCEC' ? 'VAXIRAB (PCEC)' : v === 'PVRV' ? 'SPEEDA (PVRV)' : v
-              ).join(', ');
-            }
+            // Resolve medicine — only show if explicitly assigned for this specific day
+            // (completed or a missed record with a vaccine actually recorded)
+            let resolvedMed = '';
+            let resolvedBranch = '';
 
-            // Resolve branch
-            let resolvedBranch = directBranch || '';
-            if (!resolvedBranch && sched?.vaccinesUsed?.length > 0) {
-              resolvedBranch = sched.vaccinesUsed.map(v => v.branchNo || v.branchNumber || '').filter(Boolean).join(', ');
+            if (effectiveStatus === 'completed' || (effectiveStatus === 'missed' && (directMed || sched?.vaccinesUsed?.length > 0))) {
+              resolvedMed = directMed || '';
+              if (!resolvedMed && sched?.vaccinesUsed?.length > 0) {
+                resolvedMed = sched.vaccinesUsed.map(v => [v.type || v.brand, v.route ? `(${v.route})` : ''].filter(Boolean).join(' ')).join(', ');
+              }
+
+              resolvedBranch = directBranch || '';
+              if (!resolvedBranch && sched?.vaccinesUsed?.length > 0) {
+                resolvedBranch = sched.vaccinesUsed.map(v => v.branchNo || v.branchNumber || '').filter(Boolean).join(', ');
+              }
+              if (!resolvedBranch) resolvedBranch = sched?.branchNo || '';
             }
-            if (!resolvedBranch) resolvedBranch = sched?.branchNo || caseData.currentImmunization?.branchNo || '';
 
             return { label: def.label, date: resolvedDate, status: effectiveStatus, medicine: resolvedMed, branch: resolvedBranch };
           }).filter(r => r.date || r.status); // only show rows with some data
 
           // ERIG from currentImmunization
-          const erigStatus   = caseData.currentImmunization?.erig?.status || '';
-          const erigMed      = caseData.currentImmunization?.erig?.medicineUsed || '';
-          const erigBranch   = caseData.currentImmunization?.erig?.branchNo || '';
-          const hasErig      = erigStatus || erigMed;
+          const erigStatus = caseData.currentImmunization?.erig?.status || '';
+          const erigMed = caseData.currentImmunization?.erig?.medicineUsed || '';
+          const erigBranch = caseData.currentImmunization?.erig?.branchNo || '';
+          const hasErig = erigStatus || erigMed;
 
           if (!hasErig && rows.length === 0) {
             return (
@@ -581,7 +581,7 @@ const CaseDetailsForm = memo(({ case: caseData }) => {
                       <td style={{ padding: '12px' }}>
                         {row.status && <span style={badgeStyle(row.status)}>{row.status.charAt(0).toUpperCase() + row.status.slice(1)}</span>}
                       </td>
-                      <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>{row.medicine || '-'}</td>
+                      <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>{row.medicine || 'Not Assigned'}</td>
                       <td style={{ padding: '12px', color: '#374151', fontSize: '13px' }}>{row.branch || '-'}</td>
                     </tr>
                   ))}
@@ -614,7 +614,7 @@ const SuperAdminPatients = () => {
   const [showSignoutModal, setShowSignoutModal] = useState(false);
   const [showPatientModal, setShowPatientModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
-  
+
   // Patient management states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -647,11 +647,11 @@ const SuperAdminPatients = () => {
     const selectedPatientId = selectedPatient._id || selectedPatient.patientId || selectedPatient.patientID;
     const selectedRegNumber = selectedPatient.registrationNumber || selectedPatient.regNo;
     const selectedPatientName = [selectedPatient.firstName, selectedPatient.middleName, selectedPatient.lastName].filter(Boolean).join(' ').toLowerCase();
-    
+
     const currentCenter = getUserCenter();
-    const normC = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+    const normC = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i, '').replace(/\s*center$/i, '').replace(/-/g, ' ').trim();
     const normalizedCurrentCenter = normC(currentCenter);
-    
+
     return biteCases.some(case_ => {
       const casePatientId = case_.patientId || case_.patientID;
       const caseRegNumber = case_.registrationNumber || case_.regNo;
@@ -659,24 +659,24 @@ const SuperAdminPatients = () => {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      
+
       const isMatch = (selectedPatientId && casePatientId && selectedPatientId === casePatientId) ||
-                      (selectedRegNumber && caseRegNumber && selectedRegNumber === caseRegNumber) ||
-                      (selectedPatientName && casePatientName && selectedPatientName === casePatientName);
-      
+        (selectedRegNumber && caseRegNumber && selectedRegNumber === caseRegNumber) ||
+        (selectedPatientName && casePatientName && selectedPatientName === casePatientName);
+
       if (!isMatch) return false;
-      
+
       const transferDest = case_.transferredTo || '';
       const wasTransferred = case_.transferred === true || case_.transferred === 'true';
-      
+
       if (currentCenter && currentCenter !== 'all') {
         return wasTransferred && transferDest && normC(transferDest) === normalizedCurrentCenter;
       }
-      
+
       return wasTransferred && !!transferDest;
     });
   }, [selectedPatient, biteCases]);
-  
+
   // Vaccination history states
   const [vaccinationHistory, setVaccinationHistory] = useState([]);
   const [vaccinationLoading, setVaccinationLoading] = useState(false);
@@ -716,7 +716,7 @@ const SuperAdminPatients = () => {
   // Optimized data fetching with batching to reduce API calls
   useEffect(() => {
     const controller = new AbortController();
-    
+
     const fetchAllData = async () => {
       try {
         // Batch API calls to reduce network overhead
@@ -734,7 +734,7 @@ const SuperAdminPatients = () => {
             .filter(c => !c.isArchived)
             .map(c => String(c.centerName || c.name || '').trim())
             .filter(Boolean)))
-            .sort((a,b)=>a.localeCompare(b));
+            .sort((a, b) => a.localeCompare(b));
           setCenterOptions(names);
         }
 
@@ -743,12 +743,12 @@ const SuperAdminPatients = () => {
           const data = await biteCasesRes.value.json();
           const allBiteCases = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
           const filteredBiteCases = filterByCenter(allBiteCases, 'center');
-          
+
           // Also include bite cases that were transferred TO the current admin's center
           const userCenter = getUserCenter();
           let mergedBiteCases = filteredBiteCases;
           if (userCenter && userCenter !== 'all') {
-            const normCenter = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+            const normCenter = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i, '').replace(/\s*center$/i, '').replace(/-/g, ' ').trim();
             const normalizedUserCenter = normCenter(userCenter);
             const existingIds = new Set(filteredBiteCases.map(c => c._id));
             const transferredInCases = allBiteCases.filter(c => {
@@ -764,23 +764,23 @@ const SuperAdminPatients = () => {
         // Process patients
         if (patientsRes.status === 'fulfilled' && patientsRes.value.ok) {
           const data = await patientsRes.value.json();
-          const allPatients = Array.isArray(data) 
-            ? data 
+          const allPatients = Array.isArray(data)
+            ? data
             : (data.data || data.patients || data.items || data.rows || []);
-          
+
           const userCenter = getUserCenter();
           const filteredPatients = filterByCenter(allPatients, 'center');
-          
+
           const norm = (v) => String(v || '')
             .toLowerCase()
-            .replace(/\s*health\s*center$/i,'')
-            .replace(/\s*center$/i,'')
-            .replace(/-/g,' ')
+            .replace(/\s*health\s*center$/i, '')
+            .replace(/\s*center$/i, '')
+            .replace(/-/g, ' ')
             .trim();
-          const byCenter = (centerFilter && centerFilter !== 'all') 
+          const byCenter = (centerFilter && centerFilter !== 'all')
             ? filteredPatients.filter(p => norm(p.center || p.centerName) === norm(centerFilter))
             : filteredPatients;
-          
+
           setPatients(byCenter);
           setError('');
         }
@@ -803,38 +803,38 @@ const SuperAdminPatients = () => {
   // Optimized client-side filtering with memoization
   const filteredPatients = useMemo(() => {
     if (!patients || patients.length === 0) return [];
-    
+
     const norm = (v) => String(v || '').toLowerCase();
     const userCenter = getUserCenter();
     // Removed debug logging for better performance
-    
+
     // If no user center, show all patients (for superadmin)
-    
+
     // Removed debug logging for better performance
-    
+
     const filtered = patients.filter(p => {
       // Center-based filtering for admin users - match barangay to center name
       if (userCenter && userCenter !== 'all') {
         const patientBarangay = p.barangay || p.addressBarangay || p.patientBarangay || p.locationBarangay || p.barangayName || '';
-        
+
         // Check if patient's barangay matches the user's center name
         const normalizedBarangay = patientBarangay.toLowerCase().trim();
         const normalizedCenter = userCenter.toLowerCase().trim();
-        
+
         // Enhanced matching - handle center name variations
         const barangayMatch = normalizedBarangay === normalizedCenter ||
-                             normalizedBarangay.includes(normalizedCenter) ||
-                             normalizedCenter.includes(normalizedBarangay) ||
-                             // Handle "Balong-Bato" vs "Balong-Bato Center" variations
-                             normalizedBarangay.replace(/\s*center$/i, '') === normalizedCenter ||
-                             normalizedCenter.includes(normalizedBarangay.replace(/\s*center$/i, ''));
-        
+          normalizedBarangay.includes(normalizedCenter) ||
+          normalizedCenter.includes(normalizedBarangay) ||
+          // Handle "Balong-Bato" vs "Balong-Bato Center" variations
+          normalizedBarangay.replace(/\s*center$/i, '') === normalizedCenter ||
+          normalizedCenter.includes(normalizedBarangay.replace(/\s*center$/i, ''));
+
         if (!barangayMatch) {
           return false;
         }
         // Patient matches center filter
       }
-      
+
       // text search across name, contact, address
       if (query) {
         const hay = [
@@ -853,23 +853,23 @@ const SuperAdminPatients = () => {
         const d = p.createdAt || p.registrationDate || p.dateRegistered;
         if (d) {
           const only = new Date(d);
-          const [yyyy,mm,dd] = new Date(dateFilter).toISOString().slice(0,10).split('-');
+          const [yyyy, mm, dd] = new Date(dateFilter).toISOString().slice(0, 10).split('-');
           const pick = `${yyyy}-${mm}-${dd}`;
-          if (only.toISOString().slice(0,10) !== pick) return false;
+          if (only.toISOString().slice(0, 10) !== pick) return false;
         } else {
           return false;
         }
       }
       return true;
     });
-    
+
     return filtered;
   }, [patients, query, sexFilter, barangay, dateFilter]);
-  
+
   // Derived pagination
   const totalItems = filteredPatients.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-  
+
   // Apply pagination
   const visiblePatients = useMemo(() => {
     const validPage = Math.max(1, Math.min(page, totalPages));
@@ -909,14 +909,14 @@ const SuperAdminPatients = () => {
   // Helper function to check if patient has active cases
   const getPatientCaseCount = (patient) => {
     if (!biteCases.length) return 0;
-    
+
     const patientId = patient._id || patient.patientId || patient.patientID;
     const regNumber = patient.registrationNumber || patient.regNo;
     const patientName = [patient?.firstName, patient?.middleName, patient?.lastName]
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
-    
+
     return biteCases.filter(case_ => {
       const casePatientId = case_.patientId || case_.patientID;
       const caseRegNumber = case_.registrationNumber || case_.regNo;
@@ -924,11 +924,11 @@ const SuperAdminPatients = () => {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      
+
       if (patientId && casePatientId && patientId === casePatientId) return true;
       if (regNumber && caseRegNumber && regNumber === caseRegNumber) return true;
       if (patientName && casePatientName && patientName === casePatientName) return true;
-      
+
       return false;
     }).length;
   };
@@ -936,17 +936,17 @@ const SuperAdminPatients = () => {
   // Helper function to check if patient has recent cases (within last 30 days)
   const hasRecentCases = (patient) => {
     if (!biteCases.length) return false;
-    
+
     const patientId = patient._id || patient.patientId || patient.patientID;
     const regNumber = patient.registrationNumber || patient.regNo;
     const patientName = [patient?.firstName, patient?.middleName, patient?.lastName]
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
-    
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     return biteCases.some(case_ => {
       const casePatientId = case_.patientId || case_.patientID;
       const caseRegNumber = case_.registrationNumber || case_.regNo;
@@ -954,15 +954,15 @@ const SuperAdminPatients = () => {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      
+
       const matchesPatient = (
         (patientId && casePatientId && patientId === casePatientId) ||
         (regNumber && caseRegNumber && regNumber === caseRegNumber) ||
         (patientName && casePatientName && patientName === casePatientName)
       );
-      
+
       if (!matchesPatient) return false;
-      
+
       // Check if case is recent
       const caseDate = new Date(case_.dateRegistered || case_.createdAt || case_.registrationDate);
       return caseDate >= thirtyDaysAgo;
@@ -974,18 +974,18 @@ const SuperAdminPatients = () => {
     return [...patients].sort((a, b) => {
       const aHasCases = getPatientCaseCount(a) > 0;
       const bHasCases = getPatientCaseCount(b) > 0;
-      
+
       // Patients with cases come first
       if (aHasCases && !bHasCases) return -1;
       if (!aHasCases && bHasCases) return 1;
-      
+
       // If both have cases or both don't have cases, sort by case count (descending)
       if (aHasCases && bHasCases) {
         const aCount = getPatientCaseCount(a);
         const bCount = getPatientCaseCount(b);
         if (aCount !== bCount) return bCount - aCount;
       }
-      
+
       // Finally sort alphabetically by name
       const aName = [a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ');
       const bName = [b.firstName, b.middleName, b.lastName].filter(Boolean).join(' ');
@@ -996,7 +996,7 @@ const SuperAdminPatients = () => {
   // Helper function to find date registered for a patient
   const getPatientDateRegistered = (patient) => {
     if (!biteCases.length) return null;
-    
+
     // Try to find bite case by patient ID, registration number, or name
     const patientId = patient._id || patient.patientId || patient.patientID;
     const regNumber = patient.registrationNumber || patient.regNo;
@@ -1004,7 +1004,7 @@ const SuperAdminPatients = () => {
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
-    
+
     const matchingCase = biteCases.find(case_ => {
       const casePatientId = case_.patientId || case_.patientID;
       const caseRegNumber = case_.registrationNumber || case_.regNo;
@@ -1012,19 +1012,19 @@ const SuperAdminPatients = () => {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      
+
       if (patientId && casePatientId && patientId === casePatientId) return true;
       if (regNumber && caseRegNumber && regNumber === caseRegNumber) return true;
       if (patientName && casePatientName && patientName === casePatientName) return true;
-      
+
       return false;
     });
-    
+
     if (matchingCase) {
       // Try multiple possible date fields and formats
       const dateFields = [
         'dateRegistered',
-        'date_registered', 
+        'date_registered',
         'registeredDate',
         'registrationDate',
         'createdAt',
@@ -1032,23 +1032,23 @@ const SuperAdminPatients = () => {
         'incidentDate',
         'exposureDate'
       ];
-      
+
       for (const field of dateFields) {
         if (matchingCase[field]) {
           try {
             // Handle different date formats
             let dateValue = matchingCase[field];
-            
+
             // If it's an object with $date (MongoDB format)
             if (dateValue && typeof dateValue === 'object' && dateValue.$date) {
               dateValue = dateValue.$date;
             }
-            
+
             // If it's an object with $numberLong (MongoDB timestamp)
             if (dateValue && typeof dateValue === 'object' && dateValue.$numberLong) {
               dateValue = parseInt(dateValue.$numberLong);
             }
-            
+
             // Convert to date and format (e.g., September 18, 2025, 6:35 PM)
             const date = new Date(dateValue);
             if (!isNaN(date.getTime())) {
@@ -1062,7 +1062,7 @@ const SuperAdminPatients = () => {
           }
         }
       }
-      
+
       // If no valid date found, return the raw value of the first available date field
       for (const field of dateFields) {
         if (matchingCase[field]) {
@@ -1101,7 +1101,7 @@ const SuperAdminPatients = () => {
           const opts = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
           return d.toLocaleString(undefined, opts);
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Final fallback: show patient's created timestamp if available
@@ -1121,7 +1121,7 @@ const SuperAdminPatients = () => {
           return d.toLocaleString(undefined, opts);
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     return 'No case found';
   };
@@ -1129,7 +1129,7 @@ const SuperAdminPatients = () => {
   // Helper function to get the last completed vaccination day for a patient
   const getLastCompletedVaccinationDay = (patient) => {
     if (!biteCases.length) return null;
-    
+
     // Try to find bite case by patient ID, registration number, or name
     const patientId = patient._id || patient.patientId || patient.patientID;
     const regNumber = patient.registrationNumber || patient.regNo;
@@ -1137,7 +1137,7 @@ const SuperAdminPatients = () => {
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
-    
+
     const matchingCase = biteCases.find(case_ => {
       const casePatientId = case_.patientId || case_.patientID;
       const caseRegNumber = case_.registrationNumber || case_.regNo;
@@ -1145,14 +1145,14 @@ const SuperAdminPatients = () => {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      
+
       if (patientId && casePatientId && patientId === casePatientId) return true;
       if (regNumber && caseRegNumber && regNumber === caseRegNumber) return true;
       if (patientName && casePatientName && patientName === casePatientName) return true;
-      
+
       return false;
     });
-    
+
     if (matchingCase) {
       // Check vaccination schedule dates in reverse order (Day 28 to Day 0)
       const vaccinationDates = [
@@ -1162,28 +1162,28 @@ const SuperAdminPatients = () => {
         { day: 'Day 3', date: matchingCase.day3Date || matchingCase.day3_date || matchingCase.d3Date },
         { day: 'Day 0', date: matchingCase.day0Date || matchingCase.day0_date || matchingCase.d0Date }
       ];
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       // Find the last completed vaccination (most recent one that has a date)
       for (const vaccination of vaccinationDates) {
         if (vaccination.date) {
           try {
             let dateValue = vaccination.date;
-            
+
             // Handle different date formats
             if (dateValue && typeof dateValue === 'object' && dateValue.$date) {
               dateValue = dateValue.$date;
             }
-            
+
             if (dateValue && typeof dateValue === 'object' && dateValue.$numberLong) {
               dateValue = parseInt(dateValue.$numberLong);
             }
-            
+
             const vaccinationDate = new Date(dateValue);
             vaccinationDate.setHours(0, 0, 0, 0);
-            
+
             // If we found a vaccination date, return the day
             return vaccination.day;
           } catch (error) {
@@ -1191,10 +1191,10 @@ const SuperAdminPatients = () => {
           }
         }
       }
-      
+
       return 'No vaccination';
     }
-    
+
     return 'No case found';
   };
 
@@ -1214,7 +1214,7 @@ const SuperAdminPatients = () => {
     setShowCaseDetails(false);
     setSelectedCase(null);
     setPatientModalError('');
-    
+
     // Automatically load case history and vaccination history when opening patient modal
     await loadCaseHistoryForPatient(patient);
     await loadVaccinationHistoryFromSchedule(patient);
@@ -1234,11 +1234,11 @@ const SuperAdminPatients = () => {
       const res = await apiFetch(apiConfig.endpoints.bitecases);
       console.log('API response status:', res.status);
       console.log('API response ok:', res.ok);
-      
+
       if (!res.ok) {
         throw new Error(`API request failed with status ${res.status}`);
       }
-      
+
       const data = await res.json();
       console.log('API response data:', data);
       const pDbId = String(patient._id || '').trim();
@@ -1257,7 +1257,7 @@ const SuperAdminPatients = () => {
         const cfname = String(c.firstName || '').trim().toLowerCase();
         const clname = String(c.lastName || '').trim().toLowerCase();
         const cstatus = String(c.status || '').trim().toLowerCase();
-        
+
         console.log('Comparing case:', {
           caseId: cid,
           caseName: cname,
@@ -1272,7 +1272,7 @@ const SuperAdminPatients = () => {
           patientFirstName: pfname,
           patientLastName: plname
         });
-        
+
         // 1. Match by Database ID or Custom Patient ID
         if (cid) {
           if (pDbId && cid === pDbId) {
@@ -1284,13 +1284,13 @@ const SuperAdminPatients = () => {
             return true;
           }
         }
-        
+
         // 2. Match by registration number
         if (reg && creg && creg === reg) {
           console.log('Match found by registration number');
           return true;
         }
-        
+
         // 3. Match by name parts
         if (pfname && plname) {
           if (cfname === pfname && clname === plname) {
@@ -1306,7 +1306,7 @@ const SuperAdminPatients = () => {
             return true;
           }
         }
-        
+
         // 4. Match by full name
         if (pname && cname) {
           if (cname === pname) {
@@ -1318,12 +1318,12 @@ const SuperAdminPatients = () => {
             return true;
           }
         }
-        
+
         return false;
       });
       console.log('Filtered cases:', filtered.length);
       console.log('Filtered cases data:', filtered);
-      
+
       if (filtered.length === 0) {
         // No matching cases found - show empty state
         setCaseHistory([]);
@@ -1336,31 +1336,31 @@ const SuperAdminPatients = () => {
             if (vaccinationRes.ok) {
               const vaccinationData = await vaccinationRes.json();
               const vaccinationDates = Array.isArray(vaccinationData) ? vaccinationData : (Array.isArray(vaccinationData?.data) ? vaccinationData.data : []);
-              
+
               // Find matching vaccination dates for this case
-              const matchingVaccinationDates = vaccinationDates.filter(vd => 
-                vd.patientId === case_.patientId || 
+              const matchingVaccinationDates = vaccinationDates.filter(vd =>
+                vd.patientId === case_.patientId ||
                 vd.patientId === case_.patientID ||
                 vd.registrationNumber === case_.registrationNumber ||
                 vd.biteCaseId === case_._id
               );
-              
+
               if (matchingVaccinationDates.length > 0) {
                 // Sort vaccination dates by creation date (newest first) to prioritize latest data
-                const sortedVaccinationDates = matchingVaccinationDates.sort((a, b) => 
+                const sortedVaccinationDates = matchingVaccinationDates.sort((a, b) =>
                   new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0)
                 );
-                
+
                 // Build completedSchedules from vaccination data
                 const completedSchedules = [];
                 const scheduleMap = new Map(); // Use Map to deduplicate by day
-                
+
                 console.log('🔍 PROCESSING VACCINATION DATES:', {
                   totalRecords: matchingVaccinationDates.length,
                   sortedRecords: sortedVaccinationDates.length,
                   patientId: case_.patientId || case_.patientID
                 });
-                
+
                 sortedVaccinationDates.forEach((vd, index) => {
                   console.log(`🔍 PROCESSING VACCINATION RECORD ${index + 1}:`, {
                     recordId: vd._id,
@@ -1371,7 +1371,7 @@ const SuperAdminPatients = () => {
                     d14Status: vd.d14Status,
                     d28Status: vd.d28Status
                   });
-                  
+
                   const scheduleData = [
                     { day: 'Day 0', date: vd.d0Date, status: vd.d0Status },
                     { day: 'Day 3', date: vd.d3Date, status: vd.d3Status },
@@ -1379,7 +1379,7 @@ const SuperAdminPatients = () => {
                     { day: 'Day 14', date: vd.d14Date, status: vd.d14Status },
                     { day: 'Day 28', date: vd.d28Date, status: vd.d28Status }
                   ];
-                  
+
                   scheduleData.forEach(schedule => {
                     if (schedule.date || schedule.status) {
                       const record = {
@@ -1392,7 +1392,7 @@ const SuperAdminPatients = () => {
                         biteCaseId: vd.biteCaseId,
                         createdAt: vd.createdAt
                       };
-                      
+
                       // Only add records that have been completed, missed, or scheduled
                       if (record.status === 'completed' || record.status === 'missed' || record.status === 'scheduled') {
                         // Use day as key to prevent duplicates - prioritize newer records
@@ -1406,15 +1406,15 @@ const SuperAdminPatients = () => {
                     }
                   });
                 });
-                
+
                 // Convert Map values to array and sort by day order
                 const scheduleArray = Array.from(scheduleMap.values());
                 const dayOrder = ['Day 0', 'Day 3', 'Day 7', 'Day 14', 'Day 28'];
                 scheduleArray.sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
-                
+
                 console.log('🔍 FINAL COMPLETED SCHEDULES:', scheduleArray);
                 completedSchedules.push(...scheduleArray);
-                
+
                 // Add completedSchedules to the case
                 return { ...case_, completedSchedules };
               }
@@ -1422,12 +1422,12 @@ const SuperAdminPatients = () => {
           } catch (error) {
             console.warn('Error loading vaccination data for case:', error);
           }
-          
+
           // Return case without vaccination data if loading fails
           return case_;
         }));
-        
-        setCaseHistory(processedCases.sort((a,b)=> new Date(b.createdAt||b.incidentDate||0)-new Date(a.createdAt||a.incidentDate||0)));
+
+        setCaseHistory(processedCases.sort((a, b) => new Date(b.createdAt || b.incidentDate || 0) - new Date(a.createdAt || a.incidentDate || 0)));
       }
     } catch (err) {
       console.error('Error loading case history:', err);
@@ -1479,34 +1479,34 @@ const SuperAdminPatients = () => {
         const cfname = String(c.firstName || '').trim().toLowerCase();
         const clname = String(c.lastName || '').trim().toLowerCase();
         const cstatus = String(c.status || '').trim().toLowerCase();
-        
+
         // 1. Match by Database ID or Custom Patient ID
         if (cid) {
           if (pDbId && cid === pDbId) return true;
           if (pCustId && cid === pCustId) return true;
         }
-        
+
         // 2. Match by registration number
         if (reg && creg && creg === reg) return true;
-        
+
         // 3. Match by name parts
         if (pfname && plname) {
           if (cfname === pfname && clname === plname) return true;
           if (cname && cname.includes(pfname) && cname.includes(plname)) return true;
           if (pname && cfname && clname && pname.includes(cfname) && pname.includes(clname)) return true;
         }
-        
+
         // 4. Match by full name
         if (pname && cname) {
           if (cname === pname) return true;
           if (cname.includes(pname) || pname.includes(cname)) return true;
         }
-        
+
         return false;
       });
-       // Debug info to help identify mismatches during development
-      try { console.debug('CaseHistory: pDbId', pDbId, 'name', pname, 'all cases', list.length, 'matched', filtered.length); } catch(_) {}
-      setCaseHistory(filtered.sort((a,b)=> new Date(b.createdAt||b.incidentDate||0)-new Date(a.createdAt||a.incidentDate||0)));
+      // Debug info to help identify mismatches during development
+      try { console.debug('CaseHistory: pDbId', pDbId, 'name', pname, 'all cases', list.length, 'matched', filtered.length); } catch (_) { }
+      setCaseHistory(filtered.sort((a, b) => new Date(b.createdAt || b.incidentDate || 0) - new Date(a.createdAt || a.incidentDate || 0)));
     } catch (err) {
       setHistoryError(err.message || 'Failed to load case history');
     } finally {
@@ -1517,10 +1517,10 @@ const SuperAdminPatients = () => {
   // Load vaccination history from vaccination schedule
   const loadVaccinationHistoryFromSchedule = async (patient) => {
     if (!patient) return;
-    
+
     setVaccinationLoading(true);
     setVaccinationError('');
-    
+
     try {
       const patientDbId = String(patient._id || '').trim();
       const patientCustomId = String(patient.patientId || patient.patientID || '').trim();
@@ -1528,37 +1528,37 @@ const SuperAdminPatients = () => {
       const patientName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
       const pfname = String(patient.firstName || '').trim().toLowerCase();
       const plname = String(patient.lastName || '').trim().toLowerCase();
-      
+
       console.log('Loading vaccination history for patient:', { patientDbId, patientCustomId });
       console.log('Patient registration number:', registrationNumber);
       console.log('Patient name:', patientName);
       console.log('Full patient object:', patient);
-      
+
       // Get vaccination data from vaccination dates (direct approach)
       let vaccinationDates = [];
-      
+
       try {
         console.log('Fetching vaccination dates directly');
         const response = await apiFetch(apiConfig.endpoints.vaccinationDates);
         console.log('Vaccination dates response status:', response.status);
         console.log('Vaccination dates response ok:', response.ok);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch vaccination dates: ${response.status}`);
         }
-        
+
         const allData = await response.json();
         console.log('All vaccination dates data:', allData);
-        
+
         if (Array.isArray(allData)) {
           console.log('Total vaccination dates found:', allData.length);
-          
+
           // Filter by patientId or registrationNumber or Name
           vaccinationDates = allData.filter(vaccinationDate => {
             const vdPatientId = String(vaccinationDate.patientId || '').trim();
             const vdRegistrationNumber = String(vaccinationDate.registrationNumber || '').trim();
             const vdPatientName = String(vaccinationDate.patientName || '').trim().toLowerCase();
-            
+
             console.log('Checking vaccination date:', {
               vdPatientId,
               vdRegistrationNumber,
@@ -1567,11 +1567,11 @@ const SuperAdminPatients = () => {
               patientCustomId,
               registrationNumber
             });
-            
+
             // 1. Check if patientId matches database ID or custom patient ID
             if (patientDbId && vdPatientId && vdPatientId === patientDbId) return true;
             if (patientCustomId && vdPatientId && vdPatientId === patientCustomId) return true;
-            
+
             // 2. Check if registration number matches
             if (registrationNumber && vdRegistrationNumber && vdRegistrationNumber === registrationNumber) return true;
 
@@ -1579,10 +1579,10 @@ const SuperAdminPatients = () => {
             if (pfname && plname && vdPatientName) {
               if (vdPatientName.includes(pfname) && vdPatientName.includes(plname)) return true;
             }
-            
+
             return false;
           });
-          
+
           console.log('Filtered vaccination dates for patient:', vaccinationDates);
         }
       } catch (error) {
@@ -1590,9 +1590,9 @@ const SuperAdminPatients = () => {
         setVaccinationError('Failed to load vaccination data');
         return;
       }
-      
+
       console.log('Final vaccination dates data:', vaccinationDates);
-      
+
       // Also try fetching all vaccination dates to see if there's any data
       try {
         const allResponse = await apiFetch(apiConfig.endpoints.vaccinationDates);
@@ -1601,14 +1601,14 @@ const SuperAdminPatients = () => {
       } catch (error) {
         console.log('Error fetching all vaccination dates:', error);
       }
-      
+
       if (Array.isArray(vaccinationDates) && vaccinationDates.length > 0) {
         // Process vaccination dates to create vaccination history records
         const historyRecords = [];
-        
+
         vaccinationDates.forEach(vaccinationDate => {
           console.log('Processing vaccination date for vaccination data:', vaccinationDate);
-          
+
           // Extract vaccination data from vaccination date
           const scheduleData = [
             { day: 'Day 0', date: vaccinationDate.d0Date, status: vaccinationDate.d0Status },
@@ -1617,7 +1617,7 @@ const SuperAdminPatients = () => {
             { day: 'Day 14', date: vaccinationDate.d14Date, status: vaccinationDate.d14Status },
             { day: 'Day 28', date: vaccinationDate.d28Date, status: vaccinationDate.d28Status }
           ];
-          
+
           scheduleData.forEach(schedule => {
             if (schedule.date || schedule.status) {
               const record = {
@@ -1631,7 +1631,7 @@ const SuperAdminPatients = () => {
                 biteCaseId: vaccinationDate.biteCaseId,
                 createdAt: vaccinationDate.createdAt
               };
-              
+
               // Only add records that have been completed, missed, or scheduled
               if (record.status === 'completed' || record.status === 'missed' || record.status === 'scheduled') {
                 historyRecords.push(record);
@@ -1639,7 +1639,7 @@ const SuperAdminPatients = () => {
             }
           });
         });
-        
+
         // Sort by date (most recent first)
         historyRecords.sort((a, b) => {
           if (a.date === 'Not scheduled' && b.date === 'Not scheduled') return 0;
@@ -1647,7 +1647,7 @@ const SuperAdminPatients = () => {
           if (b.date === 'Not scheduled') return -1;
           return new Date(b.date) - new Date(a.date);
         });
-        
+
         setVaccinationHistory(historyRecords);
         console.log('Processed vaccination history from vaccination dates:', historyRecords);
       } else {
@@ -1670,7 +1670,7 @@ const SuperAdminPatients = () => {
   // Handle toggle account status
   const handleToggleAccountStatus = async (patient) => {
     if (!patient || actionLoading) return;
-    
+
     setActionLoading(true);
     try {
       const newStatus = patient.status === 'Active' ? 'Inactive' : 'Active';
@@ -1685,14 +1685,14 @@ const SuperAdminPatients = () => {
       if (response.ok) {
         // Update the patient status in the modal
         setSelectedPatient({ ...patient, status: newStatus });
-        
+
         // Update the patients list
-        setPatients(prevPatients => 
-          prevPatients.map(p => 
+        setPatients(prevPatients =>
+          prevPatients.map(p =>
             p._id === patient._id ? { ...p, status: newStatus } : p
           )
         );
-        
+
         // Show success message
         alert(`Patient account ${newStatus.toLowerCase()}d successfully`);
       } else {
@@ -1709,7 +1709,7 @@ const SuperAdminPatients = () => {
   // Handle password change
   const handlePasswordChange = async (patient) => {
     if (!patient) return;
-    
+
     setSelectedPatient(patient);
     setNewPassword('');
     setConfirmPassword('');
@@ -1722,7 +1722,7 @@ const SuperAdminPatients = () => {
   // Handle new password change (progressive disclosure)
   const handleNewPasswordChange = async (value) => {
     setNewPassword(value);
-    
+
     if (value.length > 0 && !showAdminInfo) {
       setShowAdminInfo(true);
       // Fetch current password for display
@@ -1752,18 +1752,18 @@ const SuperAdminPatients = () => {
   // Confirm password change
   const confirmPasswordChange = async () => {
     if (!selectedPatient) return;
-    
+
     const validationError = validatePassword(newPassword);
     if (validationError) {
       setPasswordError(validationError);
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       setPasswordError('Passwords do not match');
       return;
     }
-    
+
     setActionLoading(true);
     try {
       const response = await apiFetch(`${apiConfig.endpoints.changePatientPassword}`, {
@@ -1829,11 +1829,11 @@ const SuperAdminPatients = () => {
       phone: newPatientData.phone,
       password: newPatientData.password
     };
-    
+
     const missingFields = Object.entries(requiredFields)
       .filter(([key, value]) => !value || value.trim() === '')
       .map(([key]) => key);
-    
+
     if (missingFields.length > 0) {
       setAddPatientError(`Missing required fields: ${missingFields.join(', ')}`);
       setAddPatientLoading(false);
@@ -1969,7 +1969,7 @@ const SuperAdminPatients = () => {
   const handlePhoneChange = (value) => {
     // Remove all non-digit characters
     let cleanValue = value.replace(/\D/g, '');
-    
+
     // If it starts with 63, keep it as is
     if (cleanValue.startsWith('63')) {
       cleanValue = '+' + cleanValue;
@@ -1982,7 +1982,7 @@ const SuperAdminPatients = () => {
     else if (cleanValue.length > 0) {
       cleanValue = '+63' + cleanValue;
     }
-    
+
     // Limit to 13 characters (+63 + 10 digits)
     if (cleanValue.length <= 13) {
       setNewPatientData(prev => ({
@@ -2088,12 +2088,12 @@ const SuperAdminPatients = () => {
               </div>
             )}
           </div>
-          
+
           {/* Center filter removed as requested */}
-          
+
           {/* Vaccination day filter removed */}
           <div style={{ position: 'relative' }}>
-            <select 
+            <select
               value={sexFilter}
               onChange={(e) => setSexFilter(e.target.value)}
               style={{
@@ -2129,10 +2129,10 @@ const SuperAdminPatients = () => {
               </div>
             )}
           </div>
-          
+
           <div style={{ position: 'relative' }}>
-            <select 
-              value={barangay} 
+            <select
+              value={barangay}
               onChange={(e) => setBarangay(e.target.value)}
               style={{
                 width: '100%',
@@ -2184,7 +2184,7 @@ const SuperAdminPatients = () => {
               </div>
             )}
           </div>
-          
+
           <div style={{ position: 'relative' }}>
             <input
               type="date"
@@ -2220,7 +2220,7 @@ const SuperAdminPatients = () => {
               </div>
             )}
           </div>
-          
+
           {/* Vaccination date picker removed */}
         </div>
 
@@ -2450,65 +2450,65 @@ const SuperAdminPatients = () => {
                       p.province,
                       p.zipCode
                     ].filter(Boolean).join(', ') || p.address || 'N/A';
-                    
+
                     // Check if patient has existing bite cases
                     const hasExistingCases = biteCases.some(case_ => {
                       const patientId = p._id || p.patientId || p.patientID;
                       const regNumber = p.registrationNumber || p.regNo;
                       const patientName = [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ').toLowerCase();
-                      
+
                       const casePatientId = case_.patientId || case_.patientID;
                       const caseRegNumber = case_.registrationNumber || case_.regNo;
                       const casePatientName = case_.patientName || [case_?.firstName, case_?.middleName, case_?.lastName]
                         .filter(Boolean)
                         .join(' ')
                         .toLowerCase();
-                      
+
                       if (patientId && casePatientId && patientId === casePatientId) return true;
                       if (regNumber && caseRegNumber && regNumber === caseRegNumber) return true;
                       if (patientName && casePatientName && patientName === casePatientName) return true;
-                      
+
                       return false;
                     });
-                    
+
                     // Check if patient has referred/transferred bite cases
                     const isReferred = (() => {
                       const currentCenter = getUserCenter();
-                      const normC = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i,'').replace(/\s*center$/i,'').replace(/-/g,' ').trim();
+                      const normC = (v) => String(v || '').toLowerCase().replace(/\s*health\s*center$/i, '').replace(/\s*center$/i, '').replace(/-/g, ' ').trim();
                       const normalizedCurrentCenter = normC(currentCenter);
-                      
+
                       return biteCases.some(case_ => {
                         const patientId = p._id || p.patientId || p.patientID;
                         const regNumber = p.registrationNumber || p.regNo;
                         const patientName = [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ').toLowerCase();
-                        
+
                         const casePatientId = case_.patientId || case_.patientID;
                         const caseRegNumber = case_.registrationNumber || case_.regNo;
                         const casePatientName = case_.patientName || [case_?.firstName, case_?.middleName, case_?.lastName]
                           .filter(Boolean)
                           .join(' ')
                           .toLowerCase();
-                        
+
                         const isMatch = (patientId && casePatientId && patientId === casePatientId) ||
-                                        (regNumber && caseRegNumber && regNumber === caseRegNumber) ||
-                                        (patientName && casePatientName && patientName === casePatientName);
-                        
+                          (regNumber && caseRegNumber && regNumber === caseRegNumber) ||
+                          (patientName && casePatientName && patientName === casePatientName);
+
                         if (!isMatch) return false;
-                        
+
                         // Check if the case was transferred TO the current center
                         const transferDest = case_.transferredTo || '';
                         const wasTransferred = case_.transferred === true || case_.transferred === 'true';
-                        
+
                         if (currentCenter && currentCenter !== 'all') {
                           // For admin: show "Referred" only if transferredTo matches THIS center
                           return wasTransferred && transferDest && normC(transferDest) === normalizedCurrentCenter;
                         }
-                        
+
                         // For superadmin: show "Referred" for any transferred case
                         return wasTransferred && !!transferDest;
                       });
                     })();
-                    
+
                     // Get the transferredTo center name for referred patients
                     let referredToCenter = '';
                     if (isReferred) {
@@ -2520,15 +2520,15 @@ const SuperAdminPatients = () => {
                         const caseRegNumber = case_.registrationNumber || case_.regNo;
                         const casePatientName = case_.patientName || [case_?.firstName, case_?.middleName, case_?.lastName].filter(Boolean).join(' ').toLowerCase();
                         const isMatch = (patientId && casePatientId && patientId === casePatientId) ||
-                                        (regNumber && caseRegNumber && regNumber === caseRegNumber) ||
-                                        (patientNameLower && casePatientName && patientNameLower === casePatientName);
+                          (regNumber && caseRegNumber && regNumber === caseRegNumber) ||
+                          (patientNameLower && casePatientName && patientNameLower === casePatientName);
                         return isMatch && (case_.transferred === true || case_.transferred === 'true') && case_.transferredTo;
                       });
                       if (matchingCase) {
                         referredToCenter = matchingCase.transferredTo;
                       }
                     }
-                    
+
                     // Apply search filter to include gender as well
                     const search = query.trim().toLowerCase();
                     const genderStr = String(p.gender || p.sex || '').toLowerCase();
@@ -2542,13 +2542,13 @@ const SuperAdminPatients = () => {
                       ].filter(Boolean).some(v => String(v).toLowerCase().includes(search));
                       if (!matches) return null;
                     }
-                    
+
                     if (isReferred) {
                       // Card-style rendering for referred patients
                       return (
-                        <tr 
-                          key={p._id} 
-                          onClick={() => handlePatientClick(p)} 
+                        <tr
+                          key={p._id}
+                          onClick={() => handlePatientClick(p)}
                           style={{ cursor: 'pointer' }}
                         >
                           <td colSpan="7" style={{ padding: '8px 12px' }}>
@@ -2562,8 +2562,8 @@ const SuperAdminPatients = () => {
                               backgroundColor: '#FFFBEB',
                               transition: 'box-shadow 0.2s ease',
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.25)'}
-                            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+                              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.25)'}
+                              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
                             >
                               {/* People Icon */}
                               <div style={{
@@ -2612,18 +2612,18 @@ const SuperAdminPatients = () => {
                         </tr>
                       );
                     }
-                    
+
                     return (
-                      <tr 
-                        key={p._id} 
-                        onClick={() => handlePatientClick(p)} 
+                      <tr
+                        key={p._id}
+                        onClick={() => handlePatientClick(p)}
                         style={{ cursor: 'pointer' }}
                       >
                         <td>
-                            <span className="patient-id">{p.patientId || 'N/A'}</span>
+                          <span className="patient-id">{p.patientId || 'N/A'}</span>
                         </td>
                         <td>
-                            <span className="patient-name">{name}</span>
+                          <span className="patient-name">{name}</span>
                         </td>
                         <td>
                           {String(p.gender || p.sex || '').toUpperCase() || 'N/A'}
@@ -2666,15 +2666,15 @@ const SuperAdminPatients = () => {
         )}
 
         <div className="pagination-container">
-          <button 
-            disabled={page <= 1} 
+          <button
+            disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
             <i className="fa fa-chevron-left"></i> Prev
           </button>
           <span>Page {page} of {totalPages} ({totalItems} total)</span>
-          <button 
-            disabled={page >= totalPages} 
+          <button
+            disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           >
             Next <i className="fa fa-chevron-right"></i>
@@ -2688,8 +2688,8 @@ const SuperAdminPatients = () => {
           <div className={`patient-modal ${showCaseForm ? 'fullscreen-bitecase' : ''}`}>
             <div className="patient-modal-header">
               <h4 className="patient-modal-title">{showCaseForm ? 'Create New Bite Case' : 'Patient Information'}</h4>
-              <button 
-                onClick={() => setShowPatientModal(false)} 
+              <button
+                onClick={() => setShowPatientModal(false)}
                 className="patient-modal-close"
               >
                 ✕
@@ -2712,14 +2712,14 @@ const SuperAdminPatients = () => {
               )}
               {showCaseForm ? (
                 <div>
-                  <NewBiteCaseForm 
+                  <NewBiteCaseForm
                     selectedPatient={selectedPatient}
                     onSaved={async () => {
                       try {
                         setShowCaseForm(false);
                         setShowHistory(true);
                         await loadCaseHistoryForPatient(selectedPatient);
-                      } catch(e) {
+                      } catch (e) {
                         console.error('Error refreshing case history after save:', e);
                       }
                     }}
@@ -2734,11 +2734,11 @@ const SuperAdminPatients = () => {
                     {historyError && <div className="error-state">{historyError}</div>}
                     {!historyLoading && !historyError && (
                       caseHistory.length === 0 ? (
-                        <div className="empty-state" style={{ padding:'1rem 0' }}>
+                        <div className="empty-state" style={{ padding: '1rem 0' }}>
                           <small>No previous cases found for this patient.</small>
                         </div>
                       ) : (
-                        <div className="table-responsive" style={{ boxShadow:'none', borderRadius:12 }}>
+                        <div className="table-responsive" style={{ boxShadow: 'none', borderRadius: 12 }}>
                           <table className="table">
                             <thead>
                               <tr>
@@ -2752,7 +2752,7 @@ const SuperAdminPatients = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {caseHistory.map((c)=> {
+                              {caseHistory.map((c) => {
                                 const isExpanded = expandedCases.has(c._id);
                                 return (
                                   <React.Fragment key={c._id}>
@@ -2765,18 +2765,18 @@ const SuperAdminPatients = () => {
                                       </td>
                                       <td>{c.registrationNumber || '-'}</td>
                                       <td>
-                                        {c.typeOfExposure && c.typeOfExposure.includes('BITE') ? 'Bite' : 
-                                         c.typeOfExposure && c.typeOfExposure.includes('NON-BITE') ? 'Non-Bite' : '-'}
+                                        {c.typeOfExposure && c.typeOfExposure.includes('BITE') ? 'Bite' :
+                                          c.typeOfExposure && c.typeOfExposure.includes('NON-BITE') ? 'Non-Bite' : '-'}
                                       </td>
                                       <td>
-                                        {c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'Dog' : 
-                                         c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'Cat' : 
-                                         c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Others') ? (c.animalProfile.othersSpecify || 'Other') : '-'}
+                                        {c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Dog') ? 'Dog' :
+                                          c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Cat') ? 'Cat' :
+                                            c.animalProfile && c.animalProfile.species && c.animalProfile.species.includes('Others') ? (c.animalProfile.othersSpecify || 'Other') : '-'}
                                       </td>
                                       <td>
-                                        {c.management && c.management.category && c.management.category.includes('Category 1') ? 'Category 1' : 
-                                         c.management && c.management.category && c.management.category.includes('Category 2') ? 'Category 2' : 
-                                         c.management && c.management.category && c.management.category.includes('Category 3') ? 'Category 3' : '-'}
+                                        {c.management && c.management.category && c.management.category.includes('Category 1') ? 'Category 1' :
+                                          c.management && c.management.category && c.management.category.includes('Category 2') ? 'Category 2' :
+                                            c.management && c.management.category && c.management.category.includes('Category 3') ? 'Category 3' : '-'}
                                       </td>
                                       <td>{c.diagnosis || '-'}</td>
                                       <td>
@@ -2785,15 +2785,15 @@ const SuperAdminPatients = () => {
                                         </span>
                                       </td>
                                     </tr>
-                                     {isExpanded && (
-                                       <tr className="expandable-row">
-                                         <td colSpan="7" style={{ padding: '0', backgroundColor: '#f8fafc' }}>
-                                           <div className="case-details-container">
-                                             <CaseDetailsForm case={c} />
-                                           </div>
-                                         </td>
-                                       </tr>
-                                     )}
+                                    {isExpanded && (
+                                      <tr className="expandable-row">
+                                        <td colSpan="7" style={{ padding: '0', backgroundColor: '#f8fafc' }}>
+                                          <div className="case-details-container">
+                                            <CaseDetailsForm case={c} />
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )}
                                   </React.Fragment>
                                 );
                               })}
@@ -2817,14 +2817,14 @@ const SuperAdminPatients = () => {
                         <p><strong>Category:</strong> {selectedCase.management && selectedCase.management.category && selectedCase.management.category.includes('Category 1') ? 'Category 1' : selectedCase.management && selectedCase.management.category && selectedCase.management.category.includes('Category 2') ? 'Category 2' : selectedCase.management && selectedCase.management.category && selectedCase.management.category.includes('Category 3') ? 'Category 3' : 'N/A'}</p>
                         <p><strong>Status:</strong> {selectedCase.status || 'Active'}</p>
                       </div>
-                      
+
                       <div className="detail-section">
                         <h6>Animal Information</h6>
                         <p><strong>Animal Type:</strong> {selectedCase.animalProfile && selectedCase.animalProfile.species && selectedCase.animalProfile.species.includes('Dog') ? 'Dog' : selectedCase.animalProfile && selectedCase.animalProfile.species && selectedCase.animalProfile.species.includes('Cat') ? 'Cat' : selectedCase.animalProfile && selectedCase.animalProfile.species && selectedCase.animalProfile.species.includes('Others') ? (selectedCase.animalProfile.othersSpecify || 'Other') : 'N/A'}</p>
                         <p><strong>Animal Status:</strong> {selectedCase.animalProfile && selectedCase.animalProfile.clinicalStatus && selectedCase.animalProfile.clinicalStatus.includes('Healthy') ? 'Healthy' : selectedCase.animalProfile && selectedCase.animalProfile.clinicalStatus && selectedCase.animalProfile.clinicalStatus.includes('Sick') ? 'Sick' : selectedCase.animalProfile && selectedCase.animalProfile.clinicalStatus && selectedCase.animalProfile.clinicalStatus.includes('Died') ? 'Died' : selectedCase.animalProfile && selectedCase.animalProfile.clinicalStatus && selectedCase.animalProfile.clinicalStatus.includes('Killed') ? 'Killed' : 'Unknown'}</p>
                         <p><strong>Brain Exam:</strong> {selectedCase.animalProfile && selectedCase.animalProfile.brainExam && selectedCase.animalProfile.brainExam.includes('Done') ? 'Done' : selectedCase.animalProfile && selectedCase.animalProfile.brainExam && selectedCase.animalProfile.brainExam.includes('Not Done') ? 'Not Done' : 'Unknown'}</p>
                       </div>
-                      
+
                       <div className="detail-section">
                         <h6>Medical Information</h6>
                         <p><strong>Diagnosis:</strong> {selectedCase.diagnosis || 'N/A'}</p>
@@ -2832,7 +2832,7 @@ const SuperAdminPatients = () => {
                         <p><strong>Allergies:</strong> {selectedCase.allergyHistory || 'None'}</p>
                         <p><strong>Medications:</strong> {selectedCase.maintenanceMedications || 'None'}</p>
                       </div>
-                      
+
                       <div className="detail-section">
                         <h6>Immunization</h6>
                         <p><strong>DPT:</strong> {selectedCase.patientImmunization && selectedCase.patientImmunization.dpt && selectedCase.patientImmunization.dpt.includes('Complete') ? 'Complete' : selectedCase.patientImmunization && selectedCase.patientImmunization.dpt && selectedCase.patientImmunization.dpt.includes('Incomplete') ? 'Incomplete' : 'None'}</p>
@@ -2849,601 +2849,285 @@ const SuperAdminPatients = () => {
                     <h5 style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '1.2rem', fontWeight: 'bold', color: '#374151' }}>
                       SCHEDULE DATES OF IMMUNIZATION
                     </h5>
-                    
-                    <div className="table-responsive" style={{ 
-                      border: '2px solid #dc2626', 
+
+                    <div className="table-responsive" style={{
+                      border: '2px solid #dc2626',
                       borderRadius: '8px',
                       overflow: 'hidden',
                       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                     }}>
                       <table className="table" style={{ margin: 0, borderCollapse: 'collapse' }}>
-                        <thead style={{ 
-                          background: '#dc2626', 
+                        <thead style={{
+                          background: '#dc2626',
                           color: 'white',
                           textAlign: 'center'
                         }}>
                           <tr>
-                            <th style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '600',
-                              border: '1px solid #b91c1c'
-                            }}>
-                              Immunization Day/Type
-                            </th>
-                            <th style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '600',
-                              border: '1px solid #b91c1c'
-                            }}>
-                              Date Taken
-                            </th>
-                            <th style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '600',
-                              border: '1px solid #b91c1c'
-                            }}>
-                              Medicine Used
-                            </th>
-                            <th style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '600',
-                              border: '1px solid #b91c1c'
-                            }}>
-                              Branch No.
-                            </th>
+                            <th style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: '600', border: '1px solid #b91c1c' }}>Day / Type</th>
+                            <th style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: '600', border: '1px solid #b91c1c' }}>Date Taken</th>
+                            <th style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: '600', border: '1px solid #b91c1c' }}>Status</th>
+                            <th style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: '600', border: '1px solid #b91c1c' }}>Medicine Used</th>
+                            <th style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: '600', border: '1px solid #b91c1c' }}>Branch No.</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {/* ERIG Row */}
-                          <tr style={{ backgroundColor: '#fef2f2' }}>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '500',
-                              color: '#dc2626',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              ERIG
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                if (currentCase?.currentImmunization?.erig?.dateTaken) {
-                                  return new Date(currentCase.currentImmunization.erig.dateTaken).toLocaleDateString('en-US', { 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                  });
+                          {(() => {
+                            const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
+                            if (!currentCase) return (
+                              <tr>
+                                <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>No case data available.</td>
+                              </tr>
+                            );
+
+                            const scheduleMap = {};
+                            if (Array.isArray(currentCase.completedSchedules)) {
+                              currentCase.completedSchedules.forEach(s => {
+                                if (s && s.day) scheduleMap[s.day] = s;
+                              });
+                            }
+
+                            const dotColor = (status) => {
+                              const s = String(status || '').toLowerCase();
+                              if (s === 'completed') return '#10B981';
+                              if (s === 'missed') return '#EF4444';
+                              if (s === 'scheduled') return '#3B82F6';
+                              return '#9CA3AF';
+                            };
+                            
+                            const badgeStyle = (status) => {
+                              const s = String(status || '').toLowerCase();
+                              const base = { fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '12px', display: 'inline-block' };
+                              if (s === 'completed') return { ...base, background: '#D1FAE5', color: '#065F46' };
+                              if (s === 'missed') return { ...base, background: '#FEE2E2', color: '#991B1B' };
+                              if (s === 'scheduled') return { ...base, background: '#DBEAFE', color: '#1E40AF' };
+                              return { ...base, background: '#F3F4F6', color: '#6B7280' };
+                            };
+
+                            const fmtDate = (val) => {
+                              if (!val) return '';
+                              try {
+                                const d = new Date(val);
+                                return isNaN(d.getTime()) ? val : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                              } catch { return val; }
+                            };
+
+                            const dayDefs = [
+                              { label: 'Day 0', dateField: 'd0Date', statusField: 'd0Status', medicineField: 'd0Medicine', branchField: 'd0BranchNo' },
+                              { label: 'Day 3', dateField: 'd3Date', statusField: 'd3Status', medicineField: 'd3Medicine', branchField: 'd3BranchNo' },
+                              { label: 'Day 7', dateField: 'd7Date', statusField: 'd7Status', medicineField: 'd7Medicine', branchField: 'd7BranchNo' },
+                              { label: 'Day 14', dateField: 'd14Date', statusField: 'd14Status', medicineField: 'd14Medicine', branchField: 'd14BranchNo' },
+                              { label: 'Day 28', dateField: 'd28Date', statusField: 'd28Status', medicineField: 'd28Medicine', branchField: 'd28BranchNo' },
+                            ];
+
+                            const rows = dayDefs.map((def, idx) => {
+                              const directDate = currentCase[def.dateField];
+                              const directStatus = currentCase[def.statusField];
+                              const directMed = currentCase[def.medicineField];
+                              const directBranch = currentCase[def.branchField];
+                              const sched = scheduleMap[def.label];
+
+                              let resolvedDate = '';
+                              if (directDate) {
+                                resolvedDate = fmtDate(directDate);
+                              } else if (sched && sched.date) {
+                                resolvedDate = fmtDate(sched.date);
+                              } else if (Array.isArray(currentCase.scheduleDates)) {
+                                if (currentCase.scheduleDates[idx]) {
+                                  resolvedDate = fmtDate(currentCase.scheduleDates[idx]);
                                 }
-                                return '-';
-                              })()}
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                // Try multiple possible fields for medicine used
-                                return currentCase?.erigMedicine || 
-                                       currentCase?.erigMedicineUsed || 
-                                       currentCase?.medicineUsed || 
-                                       currentCase?.brandName || 
-                                       currentCase?.genericName || 
-                                       currentCase?.currentImmunization?.erig?.medicineUsed || 
-                                       '-';
-                              })()}
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                return currentCase?.currentImmunization?.erig?.branchNo || currentCase?.center || currentCase?.centerName || '-';
-                              })()}
-                            </td>
-                          </tr>
-                          
-                          {/* D0 Row */}
-                          <tr style={{ backgroundColor: '#f0fdf4' }}>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '500',
-                              color: '#dc2626',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px'
-                            }}>
-                              <span style={{
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#10b981',
-                                borderRadius: '50%',
-                                display: 'inline-block'
-                              }}></span>
-                              D0
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[0] 
-                                ? new Date(caseHistory[0].scheduleDates[0]).toLocaleDateString('en-US', { 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                  })
-                                : 'September 14, 2025'
                               }
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                // Try multiple possible fields for D0 medicine used
-                                const d0Medicine = currentCase?.d0Medicine || 
-                                                 currentCase?.d0MedicineUsed || 
-                                                 currentCase?.day0Medicine || 
-                                                 currentCase?.day0MedicineUsed ||
-                                                 currentCase?.completedSchedules?.[0]?.vaccinesUsed?.[0]?.brand ||
-                                                 currentCase?.completedSchedules?.[0]?.vaccinesUsed?.[0]?.type ||
-                                                 currentCase?.completedSchedules?.[0]?.vaccinesUsed?.[0]?.name;
-                                
-                                if (d0Medicine) return d0Medicine;
-                                
-                                // Fallback to currentImmunization data
-                                if (currentCase?.currentImmunization?.vaccine) {
-                                  const t = currentCase.currentImmunization.vaccine[0];
-                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
-                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
-                                }
-                                
-                                return currentCase?.brandName || currentCase?.genericName || '-';
-                              })()}
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                return currentCase?.center || currentCase?.centerName || '001';
-                              })()}
-                            </td>
-                          </tr>
-                          
-                          {/* D3 Row */}
-                          <tr style={{ backgroundColor: '#f0fdf4' }}>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '500',
-                              color: '#dc2626',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px'
-                            }}>
-                              <span style={{
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#10b981',
-                                borderRadius: '50%',
-                                display: 'inline-block'
-                              }}></span>
-                              D3
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[1] 
-                                ? new Date(caseHistory[0].scheduleDates[1]).toLocaleDateString('en-US', { 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                  })
-                                : 'September 17, 2025'
+
+                              let effectiveStatus = 'scheduled';
+                              if (directStatus) {
+                                effectiveStatus = directStatus.toLowerCase();
+                              } else if (sched && sched.status) {
+                                effectiveStatus = sched.status.toLowerCase();
+                              } else if (resolvedDate) {
+                                const d = new Date(resolvedDate);
+                                d.setHours(0,0,0,0);
+                                const ymd = isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                const today = new Date();
+                                today.setHours(0,0,0,0);
+                                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                                if (ymd && ymd < todayStr) effectiveStatus = 'missed';
                               }
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                // Try multiple possible fields for D3 medicine used
-                                const d3Medicine = currentCase?.d3Medicine || 
-                                                 currentCase?.d3MedicineUsed || 
-                                                 currentCase?.day3Medicine || 
-                                                 currentCase?.day3MedicineUsed ||
-                                                 currentCase?.completedSchedules?.[1]?.vaccinesUsed?.[0]?.brand ||
-                                                 currentCase?.completedSchedules?.[1]?.vaccinesUsed?.[0]?.type ||
-                                                 currentCase?.completedSchedules?.[1]?.vaccinesUsed?.[0]?.name;
-                                
-                                if (d3Medicine) return d3Medicine;
-                                
-                                // Fallback to currentImmunization data
-                                if (currentCase?.currentImmunization?.vaccine) {
-                                  const t = currentCase.currentImmunization.vaccine[0];
-                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
-                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
+
+                              let resolvedMed = '';
+                              let resolvedBranch = '';
+
+                              if (effectiveStatus === 'completed' || (effectiveStatus === 'missed' && (directMed || (sched?.vaccinesUsed?.length > 0)))) {
+                                resolvedMed = directMed || '';
+                                if (!resolvedMed && sched?.vaccinesUsed?.length > 0) {
+                                  resolvedMed = sched.vaccinesUsed.map(v => [v.type || v.brand, v.route ? `(${v.route})` : ''].filter(Boolean).join(' ')).join(', ');
                                 }
-                                
-                                return currentCase?.brandName || currentCase?.genericName || '-';
-                              })()}
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                return currentCase?.center || currentCase?.centerName || '001';
-                              })()}
-                            </td>
-                          </tr>
-                          
-                          {/* D7 Row */}
-                          <tr style={{ backgroundColor: '#f0fdf4' }}>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '500',
-                              color: '#dc2626',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px'
-                            }}>
-                              <span style={{
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#10b981',
-                                borderRadius: '50%',
-                                display: 'inline-block'
-                              }}></span>
-                              D7
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[2] 
-                                ? new Date(caseHistory[0].scheduleDates[2]).toLocaleDateString('en-US', { 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                  })
-                                : 'September 21, 2025'
+                                resolvedBranch = directBranch || '';
+                                if (!resolvedBranch && sched?.vaccinesUsed?.length > 0) {
+                                  resolvedBranch = sched.vaccinesUsed.map(v => v.branchNo || v.branchNumber || '').filter(Boolean).join(', ');
+                                }
+                                if (!resolvedBranch) resolvedBranch = sched?.branchNo || '';
                               }
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                const v = currentCase?.completedSchedules?.[2]?.vaccinesUsed;
-                                if (Array.isArray(v) && v.length) {
-                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
-                                }
-                                if (currentCase?.currentImmunization?.vaccine) {
-                                  const t = currentCase.currentImmunization.vaccine[0];
-                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
-                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
-                                }
-                                return currentCase?.brandName || currentCase?.genericName || '-';
-                              })()}
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                return currentCase?.center || currentCase?.centerName || '001';
-                              })()}
-                            </td>
-                          </tr>
-                          
-                          {/* D14 Row */}
-                          <tr style={{ backgroundColor: '#f0fdf4' }}>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '500',
-                              color: '#dc2626',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px'
-                            }}>
-                              <span style={{
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#10b981',
-                                borderRadius: '50%',
-                                display: 'inline-block'
-                              }}></span>
-                              D14
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[3] 
-                                ? new Date(caseHistory[0].scheduleDates[3]).toLocaleDateString('en-US', { 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                  })
-                                : 'September 28, 2025'
-                              }
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                const v = currentCase?.completedSchedules?.[3]?.vaccinesUsed;
-                                if (Array.isArray(v) && v.length) {
-                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
-                                }
-                                if (currentCase?.currentImmunization?.vaccine) {
-                                  const t = currentCase.currentImmunization.vaccine[0];
-                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
-                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
-                                }
-                                return currentCase?.brandName || currentCase?.genericName || '-';
-                              })()}
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                return currentCase?.center || currentCase?.centerName || '001';
-                              })()}
-                            </td>
-                          </tr>
-                          
-                          {/* D28 Row */}
-                          <tr style={{ backgroundColor: '#f0fdf4' }}>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              fontWeight: '500',
-                              color: '#dc2626',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px'
-                            }}>
-                              <span style={{
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#10b981',
-                                borderRadius: '50%',
-                                display: 'inline-block'
-                              }}></span>
-                              D28
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {caseHistory.length > 0 && caseHistory[0].scheduleDates && caseHistory[0].scheduleDates[4] 
-                                ? new Date(caseHistory[0].scheduleDates[4]).toLocaleDateString('en-US', { 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                  })
-                                : 'October 12, 2025'
-                              }
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                const v = currentCase?.completedSchedules?.[4]?.vaccinesUsed;
-                                if (Array.isArray(v) && v.length) {
-                                  return v.map(x => x.brand || x.type || x.name || 'Anti-Rabies').join(', ');
-                                }
-                                if (currentCase?.currentImmunization?.vaccine) {
-                                  const t = currentCase.currentImmunization.vaccine[0];
-                                  if (t === 'PCEC') return 'VAXIRAB (PCEC)';
-                                  if (t === 'PVRV') return 'SPEEDA (PVRV)';
-                                }
-                                return currentCase?.brandName || currentCase?.genericName || '-';
-                              })()}
-                            </td>
-                            <td style={{ 
-                              padding: '12px 16px', 
-                              fontSize: '0.9rem', 
-                              color: '#374151',
-                              border: '1px solid #dc2626',
-                              textAlign: 'center'
-                            }}>
-                              {(() => {
-                                const currentCase = caseHistory.length > 0 ? caseHistory[0] : null;
-                                return currentCase?.center || currentCase?.centerName || '001';
-                              })()}
-                            </td>
-                          </tr>
+
+                              return {
+                                label: def.label.replace('Day ', 'D'),
+                                date: resolvedDate,
+                                status: effectiveStatus,
+                                medicine: resolvedMed || 'Not Assigned',
+                                branch: resolvedBranch || '-'
+                              };
+                            });
+
+                            const erigStatus = currentCase.currentImmunization?.erig?.status || '';
+                            const erigMed = currentCase.currentImmunization?.erig?.medicineUsed || '';
+                            const erigBranch = currentCase.currentImmunization?.erig?.branchNo || '';
+                            const erigDate = currentCase.currentImmunization?.erig?.dateTaken || '';
+
+                            let erigDisplayMed = 'Not Assigned';
+                            let erigDisplayBranch = '-';
+                            if (erigStatus.toLowerCase() === 'completed' || erigMed) {
+                              erigDisplayMed = erigMed || 'Not Assigned';
+                              erigDisplayBranch = erigBranch || '-';
+                            }
+
+                            return (
+                              <>
+                                {/* ERIG Row */}
+                                <tr style={{ backgroundColor: '#fef2f2' }}>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: '500', color: '#dc2626', border: '1px solid #dc2626', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ width: '8px', height: '8px', backgroundColor: dotColor(erigStatus || (erigDate ? 'completed' : '')), borderRadius: '50%', display: 'inline-block' }}></span>
+                                    ERIG
+                                  </td>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.9rem', color: '#374151', border: '1px solid #dc2626', textAlign: 'center' }}>
+                                    {fmtDate(erigDate) || '-'}
+                                  </td>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.9rem', border: '1px solid #dc2626', textAlign: 'center' }}>
+                                    {erigStatus ? <span style={badgeStyle(erigStatus)}>{erigStatus.charAt(0).toUpperCase() + erigStatus.slice(1)}</span> : (erigDate ? <span style={badgeStyle('completed')}>Completed</span> : '-')}
+                                  </td>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.9rem', color: '#374151', border: '1px solid #dc2626', textAlign: 'center' }}>
+                                    {erigDisplayMed}
+                                  </td>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.9rem', color: '#374151', border: '1px solid #dc2626', textAlign: 'center' }}>
+                                    {erigDisplayBranch}
+                                  </td>
+                                </tr>
+                                {/* Day Rows */}
+                                {rows.map((row, i) => (
+                                  <tr key={i} style={{ backgroundColor: i % 2 !== 0 ? '#f0fdf4' : '#ffffff' }}>
+                                    <td style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: '500', color: '#dc2626', border: '1px solid #dc2626', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ width: '8px', height: '8px', backgroundColor: dotColor(row.status), borderRadius: '50%', display: 'inline-block' }}></span>
+                                      {row.label}
+                                    </td>
+                                    <td style={{ padding: '12px 16px', fontSize: '0.9rem', color: '#374151', border: '1px solid #dc2626', textAlign: 'center' }}>
+                                      {row.date || '-'}
+                                    </td>
+                                    <td style={{ padding: '12px 16px', fontSize: '0.9rem', border: '1px solid #dc2626', textAlign: 'center' }}>
+                                      {row.status && <span style={badgeStyle(row.status)}>{row.status.charAt(0).toUpperCase() + row.status.slice(1)}</span>}
+                                    </td>
+                                    <td style={{ padding: '12px 16px', fontSize: '0.9rem', color: '#374151', border: '1px solid #dc2626', textAlign: 'center' }}>
+                                      {row.medicine}
+                                    </td>
+                                    <td style={{ padding: '12px 16px', fontSize: '0.9rem', color: '#374151', border: '1px solid #dc2626', textAlign: 'center' }}>
+                                      {row.branch}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </>
+                            );
+                          })()}
                         </tbody>
                       </table>
                     </div>
                   </div>
                 </div>
               ) : (
-              <div className="patient-info-container">
-                <div className="patient-profile-section">
-                  <div className="patient-profile-left">
-                    <div className="patient-avatar-large">
-                      <i className="fa fa-user"></i>
+                <div className="patient-info-container">
+                  <div className="patient-profile-section">
+                    <div className="patient-profile-left">
+                      <div className="patient-avatar-large">
+                        <i className="fa fa-user"></i>
+                      </div>
+                      <div className="patient-profile-info">
+                        <h2 className="patient-name-large" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          {[selectedPatient.firstName, selectedPatient.middleName, selectedPatient.lastName].filter(Boolean).join(' ')}
+                          {isSelectedPatientReferred && (
+                            <span className="referred-badge" style={{
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              backgroundColor: '#E0F2FE',
+                              color: '#0369A1',
+                              border: '1px solid #BAE6FD',
+                              display: 'inline-block'
+                            }}>
+                              Referred
+                            </span>
+                          )}
+                        </h2>
+                        <p className="patient-email">
+                          {selectedPatient.email || 'No email provided'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="patient-profile-info">
-                      <h2 className="patient-name-large" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        {[selectedPatient.firstName, selectedPatient.middleName, selectedPatient.lastName].filter(Boolean).join(' ')}
-                        {isSelectedPatientReferred && (
-                          <span className="referred-badge" style={{
-                            padding: '2px 8px',
-                            borderRadius: '12px',
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            backgroundColor: '#E0F2FE',
-                            color: '#0369A1',
-                            border: '1px solid #BAE6FD',
-                            display: 'inline-block'
-                          }}>
-                            Referred
+
+                    <div className="patient-profile-right">
+                      <div className="patient-details-grid">
+                        <div className="detail-row">
+                          <span className="detail-label">Patient ID</span>
+                          <span className="detail-value">{selectedPatient.patientId || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Gender</span>
+                          <span className="detail-value">{selectedPatient.gender || selectedPatient.sex || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Age</span>
+                          <span className="detail-value">
+                            {selectedPatient.birthdate ?
+                              Math.floor((new Date() - new Date(selectedPatient.birthdate)) / (365.25 * 24 * 60 * 60 * 1000)) + ' years' :
+                              'N/A'
+                            }
                           </span>
-                        )}
-                      </h2>
-                      <p className="patient-email">
-                        {selectedPatient.email || 'No email provided'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="patient-profile-right">
-                    <div className="patient-details-grid">
-                      <div className="detail-row">
-                        <span className="detail-label">Patient ID</span>
-                        <span className="detail-value">{selectedPatient.patientId || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Gender</span>
-                        <span className="detail-value">{selectedPatient.gender || selectedPatient.sex || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Age</span>
-                        <span className="detail-value">
-                          {selectedPatient.birthdate ? 
-                            Math.floor((new Date() - new Date(selectedPatient.birthdate)) / (365.25 * 24 * 60 * 60 * 1000)) + ' years' : 
-                            'N/A'
-                          }
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Status</span>
-                        <span className={`status-badge ${(selectedPatient.status?.toLowerCase() || 'active')}`}>
-                          {selectedPatient.status || 'Active'}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Phone</span>
-                        <span className="detail-value">{selectedPatient.phone || selectedPatient.contactNumber || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Barangay</span>
-                        <span className="detail-value">{selectedPatient.barangay || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Date Registered</span>
-                        <span className="detail-value">
-                          {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'N/A'}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Verification</span>
-                        <span className={`verification-badge ${selectedPatient.isVerified === 'true' ? 'verified' : 'pending'}`}>
-                          {selectedPatient.isVerified === 'true' ? 'Verified' : 'Pending'}
-                        </span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Status</span>
+                          <span className={`status-badge ${(selectedPatient.status?.toLowerCase() || 'active')}`}>
+                            {selectedPatient.status || 'Active'}
+                          </span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Phone</span>
+                          <span className="detail-value">{selectedPatient.phone || selectedPatient.contactNumber || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Barangay</span>
+                          <span className="detail-value">{selectedPatient.barangay || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Date Registered</span>
+                          <span className="detail-value">
+                            {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Verification</span>
+                          <span className={`verification-badge ${selectedPatient.isVerified === 'true' ? 'verified' : 'pending'}`}>
+                            {selectedPatient.isVerified === 'true' ? 'Verified' : 'Pending'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
+
+
+
+
                 </div>
-
-
-
-
-              </div>
               )}
             </div>
-            <div className="patient-modal-footer" style={{ justifyContent:'space-between' }}>
+            <div className="patient-modal-footer" style={{ justifyContent: 'space-between' }}>
               <div>
                 {!showCaseForm && !showHistory && !showCaseDetails && (
-                  <button 
+                  <button
                     type="button"
                     className="patient-modal-btn"
                     onClick={() => {
@@ -3465,7 +3149,7 @@ const SuperAdminPatients = () => {
                 )}
                 {/* Edit Patient button removed per request */}
                 {!showCaseForm && !showHistory && !showCaseDetails && (
-                  <button 
+                  <button
                     type="button"
                     className="patient-modal-btn"
                     onClick={() => { setShowHistory(true); loadCaseHistoryForPatient(selectedPatient); setPatientModalError(''); }}
@@ -3474,12 +3158,12 @@ const SuperAdminPatients = () => {
                   </button>
                 )}
                 {(showCaseForm || showHistory || showCaseDetails) && (
-                  <button 
+                  <button
                     type="button"
                     className="patient-modal-btn"
-                    onClick={() => { 
-                      setShowCaseForm(false); 
-                      setShowHistory(false); 
+                    onClick={() => {
+                      setShowCaseForm(false);
+                      setShowHistory(false);
                       setShowCaseDetails(false);
                       setSelectedCase(null);
                       setPatientModalError('');
@@ -3489,10 +3173,10 @@ const SuperAdminPatients = () => {
                   </button>
                 )}
                 {showCaseDetails && (
-                  <button 
+                  <button
                     type="button"
                     className="patient-modal-btn"
-                    onClick={() => { 
+                    onClick={() => {
                       setShowCaseDetails(false);
                       setSelectedCase(null);
                     }}
@@ -3501,8 +3185,8 @@ const SuperAdminPatients = () => {
                   </button>
                 )}
               </div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPatientModal(false)}
                 className="patient-modal-btn"
               >
@@ -3569,10 +3253,10 @@ const SuperAdminPatients = () => {
                 {/* Current Password Display */}
                 <div className="current-password-display">
                   <label>Current Password:</label>
-                  <input 
-                    type="text" 
-                    value={currentPassword} 
-                    readOnly 
+                  <input
+                    type="text"
+                    value={currentPassword}
+                    readOnly
                     className="password-display"
                   />
                 </div>
@@ -3629,8 +3313,8 @@ const SuperAdminPatients = () => {
           <div className="patient-modal" style={{ maxWidth: '800px' }}>
             <div className="patient-modal-header">
               <h4 className="patient-modal-title">Add New Patient</h4>
-              <button 
-                onClick={() => setShowAddPatientModal(false)} 
+              <button
+                onClick={() => setShowAddPatientModal(false)}
                 className="patient-modal-close"
               >
                 ✕
@@ -3800,11 +3484,11 @@ const SuperAdminPatients = () => {
                         type="email"
                         required
                         placeholder="example@email.com"
-                        style={{ 
-                          width: '100%', 
-                          padding: '12px', 
-                          border: '1px solid #d1d5db', 
-                          borderRadius: '8px', 
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
                           fontSize: '14px',
                           backgroundColor: newPatientData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newPatientData.email) ? '#fef2f2' : '#ffffff'
                         }}
@@ -3825,11 +3509,11 @@ const SuperAdminPatients = () => {
                         type="tel"
                         required
                         placeholder="+639123456789"
-                        style={{ 
-                          width: '100%', 
-                          padding: '12px', 
-                          border: '1px solid #d1d5db', 
-                          borderRadius: '8px', 
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
                           fontSize: '14px',
                           backgroundColor: newPatientData.phone && newPatientData.phone.length !== 13 ? '#fef2f2' : '#ffffff'
                         }}

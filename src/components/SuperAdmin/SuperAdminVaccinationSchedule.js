@@ -142,7 +142,7 @@ const SuperAdminVaccinationSchedule = () => {
     });
 
     if (futureVaccinations.length > 0) {
-      return { status: 'Scheduled', color: '#007bff' };
+      return { status: 'Pending', color: '#007bff' };
     }
 
     // Check if all vaccinations are completed
@@ -434,7 +434,7 @@ const SuperAdminVaccinationSchedule = () => {
         return {
           day: label,
           date: biteCase.scheduleDates[idx],
-          status: individualStatus || 'scheduled'
+          status: individualStatus || 'pending'
         };
       });
       return days
@@ -443,7 +443,7 @@ const SuperAdminVaccinationSchedule = () => {
         .map(d => ({
           label: d.day,
           date: toLocalDateOnlyString(d.date),
-          status: d.status || 'scheduled'
+          status: d.status || 'pending'
         }));
     }
     // Fallback to legacy per-day fields only when scheduleDates is absent
@@ -461,14 +461,14 @@ const SuperAdminVaccinationSchedule = () => {
       .map(d => ({
         label: d.day,
         date: toLocalDateOnlyString(d.date),
-        status: d.status || 'scheduled'
+        status: d.status || 'pending'
       }));
   };
 
   // Format date for display without timezone shifts; preserve YYYY-MM-DD when provided
   const formatScheduleDate = (raw) => {
     try {
-      if (!raw) return 'Not scheduled';
+      if (!raw) return 'Not pending';
       if (typeof raw === 'string') {
         if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
         const d = new Date(raw);
@@ -579,12 +579,12 @@ const SuperAdminVaccinationSchedule = () => {
           const idx = labels.indexOf(item.label);
           if (idx < 0) return item;
           if (idx === idxBase) {
-            return { ...item, date: toLocalDateOnlyString(baseDate), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+            return { ...item, date: toLocalDateOnlyString(baseDate), status: (item.status === 'completed' ? 'completed' : 'pending') };
           }
           if (idx > idxBase) {
             const nd = new Date(baseDate);
             nd.setDate(nd.getDate() + (addDays[idx] - addDays[idxBase]));
-            return { ...item, date: toLocalDateOnlyString(nd), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+            return { ...item, date: toLocalDateOnlyString(nd), status: (item.status === 'completed' ? 'completed' : 'pending') };
           }
           return item;
         });
@@ -593,14 +593,14 @@ const SuperAdminVaccinationSchedule = () => {
 
       setVaccinations(prev => prev.map(v => {
         if (v.vaccinationDay === dayLabel && toLocalDateOnlyString(v.scheduledDate) !== newDateStr) {
-          return { ...v, scheduledDate: newDateStr, status: 'scheduled' };
+          return { ...v, scheduledDate: newDateStr, status: 'pending' };
         }
         const idxV = labels.indexOf(v.vaccinationDay);
         const idxBase = labels.indexOf(dayLabel);
         if (v.patient?.patientId === (selectedPatientDetail?.patient?.patientId || scheduleModalData?.patient?.patientId) && idxV > idxBase) {
           const d = new Date(newDateStr);
           d.setDate(d.getDate() + (addDays[idxV] - addDays[idxBase]));
-          return { ...v, scheduledDate: toLocalDateOnlyString(d), status: 'scheduled' };
+          return { ...v, scheduledDate: toLocalDateOnlyString(d), status: 'pending' };
         }
         return v;
       }));
@@ -648,12 +648,12 @@ const SuperAdminVaccinationSchedule = () => {
           const idx = labels.indexOf(item.label);
           if (idx < 0) return item;
           if (idx === idxBase) {
-            return { ...item, date: toLocalDateOnlyString(baseDate), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+            return { ...item, date: toLocalDateOnlyString(baseDate), status: (item.status === 'completed' ? 'completed' : 'pending') };
           }
           if (idx > idxBase) {
             const nd = new Date(baseDate);
             nd.setDate(nd.getDate() + (addDays[idx] - addDays[idxBase]));
-            return { ...item, date: toLocalDateOnlyString(nd), status: (item.status === 'completed' ? 'completed' : 'scheduled') };
+            return { ...item, date: toLocalDateOnlyString(nd), status: (item.status === 'completed' ? 'completed' : 'pending') };
           }
           // earlier days unchanged
           return item;
@@ -707,7 +707,7 @@ const SuperAdminVaccinationSchedule = () => {
       } else if (missedCount > 0 && completedCount === 0) {
         overallStatus = 'missed';
       } else if (completedCount === 0 && missedCount === 0) {
-        overallStatus = 'scheduled';
+        overallStatus = 'pending';
       }
       
       // Update the bite case status if it has changed
@@ -1716,7 +1716,7 @@ const SuperAdminVaccinationSchedule = () => {
               scheduleList = buildVaccinationsForBiteCase(biteCase).map(d => ({
                 label: d.day,
                 date: d.date,
-                status: d.status || 'scheduled'
+                status: d.status || 'pending'
               }));
               console.log('🔍 Built schedule from bite case (fallback):', scheduleList);
               
@@ -1852,7 +1852,7 @@ const SuperAdminVaccinationSchedule = () => {
           } else if (missedCount > 0 && completedCount === 0) {
             displayStatus = 'missed';
           } else if (completedCount === 0 && missedCount === 0) {
-            displayStatus = 'scheduled';
+            displayStatus = 'pending';
           }
           
           console.log('🔍 CASE HISTORY STATUS DETERMINATION:', {
@@ -1981,9 +1981,9 @@ const SuperAdminVaccinationSchedule = () => {
         const dateOnly = toLocalDateOnlyString(normalizeDate(e.raw));
         let status = (typeof e.status === 'string' && e.status) ? e.status : '';
         if (!status) {
-          if (!dateOnly) status = 'scheduled';
+          if (!dateOnly) status = 'pending';
           else if (isPastByLocalDay(dateOnly)) status = 'missed';
-          else status = 'scheduled';
+          else status = 'pending';
         }
         return { label: e.label, date: dateOnly, status };
       })
@@ -2024,17 +2024,17 @@ const SuperAdminVaccinationSchedule = () => {
     };
     
     const entries = [
-      { label: 'Day 0',  raw: scheduleDates[0] || baseDate,  status: 'scheduled' },
-      { label: 'Day 3',  raw: scheduleDates[1] || auto(3),  status: 'scheduled' },
-      { label: 'Day 7',  raw: scheduleDates[2] || auto(7),  status: 'scheduled' },
-      { label: 'Day 14', raw: scheduleDates[3] || auto(14), status: 'scheduled' },
-      { label: 'Day 28', raw: scheduleDates[4] || auto(28), status: 'scheduled' }
+      { label: 'Day 0',  raw: scheduleDates[0] || baseDate,  status: 'pending' },
+      { label: 'Day 3',  raw: scheduleDates[1] || auto(3),  status: 'pending' },
+      { label: 'Day 7',  raw: scheduleDates[2] || auto(7),  status: 'pending' },
+      { label: 'Day 14', raw: scheduleDates[3] || auto(14), status: 'pending' },
+      { label: 'Day 28', raw: scheduleDates[4] || auto(28), status: 'pending' }
     ];
     
     return entries
       .map(e => {
         const dateOnly = toLocalDateOnlyString(normalizeDate(e.raw));
-        let status = 'scheduled';
+        let status = 'pending';
         if (dateOnly && isPastByLocalDay(dateOnly)) {
           status = 'missed';
         }
@@ -2086,7 +2086,7 @@ const SuperAdminVaccinationSchedule = () => {
     patientId: '',
     vaccinationDay: '',
     scheduledDate: '',
-    status: 'scheduled',
+    status: 'pending',
     notes: ''
   });
   const [formErrors, setFormErrors] = useState({});
@@ -2315,7 +2315,7 @@ const SuperAdminVaccinationSchedule = () => {
               day: label,
               date: biteCase.scheduleDates[idx],
               // Fall back: if whole case completed, mark completed; else scheduled
-              status: biteCase.status === 'completed' ? 'completed' : 'scheduled'
+              status: biteCase.status === 'completed' ? 'completed' : 'pending'
             }));
           }
           
@@ -2347,7 +2347,7 @@ const SuperAdminVaccinationSchedule = () => {
               }
               
               // Default to scheduled if still no status
-              actualStatus = actualStatus || 'scheduled';
+              actualStatus = actualStatus || 'pending';
               
               // Debug: Log what status is being used for each vaccination
               console.log('🔍 CREATING VACCINATION ENTRY:', {
@@ -2547,7 +2547,7 @@ const SuperAdminVaccinationSchedule = () => {
     if (statusFilter) {
       filtered = filtered.filter(v => {
         if (statusFilter === 'missed') {
-          return v.status === 'missed' || (v.status === 'scheduled' && isPastByLocalDay(v.scheduledDate));
+          return v.status === 'missed' || (v.status === 'pending' && isPastByLocalDay(v.scheduledDate));
         }
         if (statusFilter === 'today') {
           const today = new Date(); today.setHours(0,0,0,0);
@@ -2555,8 +2555,8 @@ const SuperAdminVaccinationSchedule = () => {
           // Only show today's appointments that are NOT completed
           return vaccinationDate.getTime() === today.getTime() && v.status !== 'completed';
         }
-        if (statusFilter === 'scheduled') {
-          return v.status === 'scheduled' && !isPastByLocalDay(v.scheduledDate);
+        if (statusFilter === 'pending') {
+          return v.status === 'pending' && !isPastByLocalDay(v.scheduledDate);
         }
         return v.status === statusFilter;
       });
@@ -2997,11 +2997,11 @@ const SuperAdminVaccinationSchedule = () => {
             return item;
           }
           if (idx === dayIndex) {
-            return { ...item, date: new Date(base).toISOString(), status: 'scheduled' };
+            return { ...item, date: new Date(base).toISOString(), status: 'pending' };
           }
           const d = new Date(base);
           d.setDate(d.getDate() + (addDays[idx] - addDays[dayIndex]));
-          return { ...item, date: d.toISOString(), status: 'scheduled' };
+          return { ...item, date: d.toISOString(), status: 'pending' };
         });
         return { ...prev, schedule: nextSchedule };
       });
@@ -3009,7 +3009,7 @@ const SuperAdminVaccinationSchedule = () => {
       // After changing the plan, mark any previously scheduled past dates as missed locally
       setVaccinations(prev => prev.map(v => {
         if (v.vaccinationDay === dayLabel && new Date(v.scheduledDate).toISOString().slice(0,10) !== newDateStr) {
-          return { ...v, scheduledDate: new Date(newDateStr).toISOString(), status: 'scheduled' };
+          return { ...v, scheduledDate: new Date(newDateStr).toISOString(), status: 'pending' };
         }
         // For downstream days for same patient, recompute relative if they were scheduled
         const labels = ['Day 0','Day 3','Day 7','Day 14','Day 28'];
@@ -3019,10 +3019,10 @@ const SuperAdminVaccinationSchedule = () => {
         if (v.patient?.patientId === anyEntry.patient?.patientId && idxV > idxBase) {
           const d = new Date(newDateStr);
           d.setDate(d.getDate() + (addDays[idxV] - addDays[idxBase]));
-          return { ...v, scheduledDate: d.toISOString(), status: 'scheduled' };
+          return { ...v, scheduledDate: d.toISOString(), status: 'pending' };
         }
         // If a scheduled date is already in the past, mark as missed
-        if (v.status === 'scheduled' && new Date(v.scheduledDate) < new Date()) {
+        if (v.status === 'pending' && new Date(v.scheduledDate) < new Date()) {
           return { ...v, status: 'missed' };
         }
         return v;
@@ -3067,7 +3067,7 @@ const SuperAdminVaccinationSchedule = () => {
 
   // Handle edit vaccination
   const handleEditVaccination = (vaccination) => {
-    if (vaccination?.status && vaccination.status !== 'scheduled') {
+    if (vaccination?.status && vaccination.status !== 'pending') {
       showNotification('This dose is view-only because it is already ' + vaccination.status + '.', 'info');
       return;
     }
@@ -3077,7 +3077,7 @@ const SuperAdminVaccinationSchedule = () => {
       vaccinationDay: vaccination.vaccinationDay || '',
       scheduledDate: vaccination.scheduledDate ? new Date(vaccination.scheduledDate).toISOString().split('T')[0] : '',
       notes: vaccination.notes || '',
-      status: vaccination.status || 'scheduled'
+      status: vaccination.status || 'pending'
     });
     setShowEditModal(true);
   };
@@ -3196,7 +3196,7 @@ const SuperAdminVaccinationSchedule = () => {
           vaccinationDay: '',
           scheduledDate: '',
           notes: '',
-          status: 'scheduled'
+          status: 'pending'
         });
       } else {
         throw new Error(responseData.message || 'Failed to update vaccination');
@@ -3247,7 +3247,7 @@ const SuperAdminVaccinationSchedule = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (!isNaN(selectedDate.getTime()) && selectedDate >= today) {
-          next.status = 'scheduled';
+          next.status = 'pending';
         }
       }
       return next;
@@ -3278,7 +3278,7 @@ const SuperAdminVaccinationSchedule = () => {
         patientId: '',
         vaccinationDay: '',
         scheduledDate: '',
-        status: 'scheduled',
+        status: 'pending',
         notes: ''
       });
       setFormErrors({});
@@ -3299,7 +3299,7 @@ const SuperAdminVaccinationSchedule = () => {
       patientId: '',
       vaccinationDay: '',
       scheduledDate: '',
-      status: 'scheduled',
+      status: 'pending',
       notes: ''
     });
     setFormErrors({});
@@ -3407,7 +3407,7 @@ const SuperAdminVaccinationSchedule = () => {
           vaccinationDays = mapIndexToDay.map((label, idx) => ({
             day: label,
             date: biteCase.scheduleDates[idx],
-            status: biteCase.status === 'completed' ? 'completed' : 'scheduled'
+            status: biteCase.status === 'completed' ? 'completed' : 'pending'
           }));
         }
 
@@ -3439,7 +3439,7 @@ const SuperAdminVaccinationSchedule = () => {
             }
             
             // Default to scheduled if still no status
-            actualStatus = actualStatus || 'scheduled';
+            actualStatus = actualStatus || 'pending';
             
             console.log('Creating refreshed vaccination entry:', {
               day: vaccinationDay.day,
@@ -3587,7 +3587,7 @@ const SuperAdminVaccinationSchedule = () => {
       if (statusFilter) {
         const hasMatchingStatus = patientData.vaccinations.some(v => {
           if (statusFilter === 'missed') {
-            return v.status === 'missed' || (v.status === 'scheduled' && new Date(v.scheduledDate) < new Date());
+            return v.status === 'missed' || (v.status === 'pending' && new Date(v.scheduledDate) < new Date());
           }
           if (statusFilter === 'today') {
             const today = new Date();
@@ -3595,8 +3595,8 @@ const SuperAdminVaccinationSchedule = () => {
             // Only show today's appointments that are NOT completed
             return vaccinationDate.toDateString() === today.toDateString() && v.status !== 'completed';
           }
-          if (statusFilter === 'scheduled') {
-            return v.status === 'scheduled' && new Date(v.scheduledDate) > new Date();
+          if (statusFilter === 'pending') {
+            return v.status === 'pending' && new Date(v.scheduledDate) > new Date();
           }
           return v.status === statusFilter;
         });
@@ -3656,25 +3656,25 @@ const SuperAdminVaccinationSchedule = () => {
       return 'status-missed';
     }
     
-    // Only calculate overdue if status is still 'scheduled' and date has passed
-    if (normalizedStatus === 'scheduled' && vaccinationDate < today) {
+    // Only calculate overdue if status is still 'pending' and date has passed
+    if (normalizedStatus === 'pending' && vaccinationDate < today) {
       console.log('⏰ BADGE: SCHEDULED + PAST DATE - Returning status-missed');
       return 'status-missed';
     }
-    if (normalizedStatus === 'scheduled' && vaccinationDate === today) {
+    if (normalizedStatus === 'pending' && vaccinationDate === today) {
       console.log('📅 BADGE: SCHEDULED + TODAY - Returning status-today');
       return 'status-today';
     }
-    if (normalizedStatus === 'scheduled') {
-      console.log('📋 BADGE: SCHEDULED - Returning status-scheduled');
-      return 'status-scheduled';
+    if (normalizedStatus === 'pending') {
+      console.log('📋 BADGE: SCHEDULED - Returning status-pending');
+      return 'status-pending';
     }
     
     // Handle unexpected status values
     console.log('⚠️ BADGE UNEXPECTED STATUS:', { status, normalizedStatus, vaccinationDate, today });
     
     // Default fallback
-    return 'status-scheduled';
+    return 'status-pending';
   };
 
   // Get status text
@@ -3708,25 +3708,25 @@ const SuperAdminVaccinationSchedule = () => {
       return 'Missed';
     }
     
-    // Only calculate overdue if status is still 'scheduled' and date has passed
-    if (normalizedStatus === 'scheduled' && vaccinationDate < today) {
+    // Only calculate overdue if status is still 'pending' and date has passed
+    if (normalizedStatus === 'pending' && vaccinationDate < today) {
       console.log('⏰ STATUS: SCHEDULED + PAST DATE - Returning Missed');
       return 'Missed';
     }
-    if (normalizedStatus === 'scheduled' && vaccinationDate === today) {
+    if (normalizedStatus === 'pending' && vaccinationDate === today) {
       console.log('📅 STATUS: SCHEDULED + TODAY - Returning Today');
       return 'Today';
     }
-    if (normalizedStatus === 'scheduled') {
+    if (normalizedStatus === 'pending') {
       console.log('📋 STATUS: SCHEDULED - Returning Scheduled');
-      return 'Scheduled';
+      return 'Pending';
     }
     
     // Handle unexpected status values
     console.log('⚠️ UNEXPECTED STATUS:', { status, normalizedStatus, vaccinationDate, today });
     
     // Default fallback
-    return 'Scheduled';
+    return 'Pending';
   };
 
   // Calendar view helpers
@@ -3736,7 +3736,7 @@ const SuperAdminVaccinationSchedule = () => {
     
     return filteredVaccinations.filter(v => {
       const vaccinationDate = new Date(v.scheduledDate);
-      return vaccinationDate >= today && vaccinationDate <= nextWeek && v.status === 'scheduled';
+      return vaccinationDate >= today && vaccinationDate <= nextWeek && v.status === 'pending';
     });
   };
 
@@ -3859,7 +3859,7 @@ const SuperAdminVaccinationSchedule = () => {
               >
                 <option value="">All Status</option>
                 <option value="today">Today</option>
-                <option value="scheduled">Scheduled</option>
+                <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
                 <option value="missed">Missed</option>
               </select>
@@ -4210,18 +4210,18 @@ const SuperAdminVaccinationSchedule = () => {
                             let derivedStatus = scheduleItem.status;
                             if (derivedStatus !== 'completed') {
                               if (!itemDateStr) {
-                                derivedStatus = 'scheduled';
+                                derivedStatus = 'pending';
                               } else if (itemDateStr < todayStr) {
                                 derivedStatus = 'missed';
                               } else if (itemDateStr === todayStr) {
                                 derivedStatus = 'today';
                               } else {
-                                derivedStatus = 'scheduled';
+                                derivedStatus = 'pending';
                               }
                             }
                             const isCompleted = derivedStatus === 'completed';
                             const isMissed = derivedStatus === 'missed';
-                            const isScheduled = derivedStatus === 'scheduled';
+                            const isPending = derivedStatus === 'pending';
                             const isToday = derivedStatus === 'today';
                             
                             return (
@@ -4230,14 +4230,14 @@ const SuperAdminVaccinationSchedule = () => {
                                 className={`schedule-item ${
                                   isCompleted ? 'completed' : 
                                   isMissed ? 'missed' : 
-                                  isScheduled ? 'scheduled' : 'pending'
+                                  isPending ? 'pending' : 'pending'
                                 }`}
                               >
                                 {/* Status Indicator */}
                                 <div className={`schedule-status-indicator ${
                                   isCompleted ? 'completed' : 
                                   isMissed ? 'missed' : 
-                                  isScheduled ? 'scheduled' : 'pending'
+                                  isPending ? 'pending' : 'pending'
                                 }`}></div>
 
                                 <div className="schedule-item-content">
@@ -4245,7 +4245,7 @@ const SuperAdminVaccinationSchedule = () => {
                                   <div className={`schedule-day-badge ${
                                     isCompleted ? 'completed' : 
                                     isMissed ? 'missed' : 
-                                    isScheduled ? 'scheduled' : 'pending'
+                                    isPending ? 'pending' : 'pending'
                                   }`}>
                                     {(() => {
                                       const label = scheduleItem.label || '';
@@ -4267,12 +4267,12 @@ const SuperAdminVaccinationSchedule = () => {
                                         isCompleted ? 'completed' : 
                                         isMissed ? 'missed' : 
                                         isToday ? 'today' :
-                                        isScheduled ? 'scheduled' : 'pending'
+                                        isPending ? 'pending' : 'pending'
                                       }`}>
                                         {isCompleted ? 'Completed' : 
                                          isMissed ? 'Missed' : 
                                          isToday ? 'Today' :
-                                         isScheduled ? 'Scheduled' : 'Pending'}
+                                         isPending ? 'Pending' : 'Pending'}
                                       </span>
                                     </div>
 
@@ -4280,7 +4280,7 @@ const SuperAdminVaccinationSchedule = () => {
                                       <div className="schedule-info-item">
                                         <p className="schedule-info-label">Scheduled Date</p>
                                         <p className="schedule-info-value">
-                                          {scheduleItem.date ? formatScheduleDate(scheduleItem.date) : 'Not scheduled'}
+                                          {scheduleItem.date ? formatScheduleDate(scheduleItem.date) : 'Not pending'}
                                         </p>
                                       </div>
                                       {/* Removed vaccine type display per request */}
@@ -4324,7 +4324,7 @@ const SuperAdminVaccinationSchedule = () => {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    {((isScheduled || isToday) && (scheduleItem.date && scheduleItem.date === todayLocalStr())) && (
+                                    {((isPending || isToday) && (scheduleItem.date && scheduleItem.date === todayLocalStr())) && (
                                       <div className="schedule-actions">
                                         <button
                                           onClick={() => openVaccinationUpdateModal(scheduleItem)}

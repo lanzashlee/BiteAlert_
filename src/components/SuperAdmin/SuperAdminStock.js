@@ -43,15 +43,7 @@ const SuperAdminStock = () => {
     setTimeout(() => setToast({ show:false, message:'', type:'info' }), 2500);
   };
 
-  const toInputDate = (val) => {
-    if (!val) return '';
-    const d = new Date(val);
-    if (isNaN(d.getTime())) return '';
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const dd = String(d.getDate()).padStart(2,'0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
+
 
   const updateQuickAdd = (key, field, value) => {
     setQuickAdd(prev => ({
@@ -1147,7 +1139,7 @@ const SuperAdminStock = () => {
                                                 e.stopPropagation(); 
                                                 const firstEntry = vaccine.stockEntries?.[0];
                                                 const initialBatch = firstEntry?.branchNo || '';
-                                                const initialExpiry = firstEntry?.expirationDate ? toInputDate(firstEntry.expirationDate) : '';
+                                                const initialExpiry = firstEntry?.expirationDate || '';
                                                 setQuickModal({ 
                                                   open:true, 
                                                   centerName:center.centerName, 
@@ -1405,12 +1397,13 @@ const SuperAdminStock = () => {
                 <div className="form-group">
                   <label htmlFor="expiryDate">Expiry Date</label>
                   <input
-                    type="date"
+                    type="text"
                     id="expiryDate"
                     name="expiryDate"
                     value={formData.expiryDate}
                     onChange={handleInputChange}
                     className="form-control"
+                    placeholder="MM/DD/YYYY"
                   />
                 </div>
               </div>
@@ -1529,16 +1522,7 @@ const SuperAdminStock = () => {
                     const inputVal = e.target.value;
                     const entries = quickModal.vaccine?.stockEntries || [];
                     const match = entries.find(en => String(en.branchNo || '').trim().toLowerCase() === String(inputVal || '').trim().toLowerCase());
-                    const toInputDate = (val) => {
-                      if (!val) return '';
-                      const d = new Date(val);
-                      if (isNaN(d.getTime())) return '';
-                      const yyyy = d.getFullYear();
-                      const mm = String(d.getMonth()+1).padStart(2,'0');
-                      const dd = String(d.getDate()).padStart(2,'0');
-                      return `${yyyy}-${mm}-${dd}`;
-                    };
-                    setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: toInputDate(match?.expirationDate) }));
+                    setQuickModal(m => ({ ...m, batchNumber: inputVal, expiryDate: match?.expirationDate || '' }));
                   }}
                   placeholder="Enter branch number"
                 />
@@ -1547,10 +1531,11 @@ const SuperAdminStock = () => {
               <div className="vax-form-group">
                 <label className="vax-label-main">Expiration Date:</label>
                 <input
-                  type="date"
+                  type="text"
                   className="vax-input"
                   value={quickModal.expiryDate}
                   onChange={e=>setQuickModal(m=>({ ...m, expiryDate:e.target.value }))}
+                  placeholder="MM/DD/YYYY"
                 />
               </div>
             </div>

@@ -217,7 +217,7 @@
   white-space: nowrap;
 }
 
-.status-badge.scheduled {
+.status-badge.pending {
   background: #dbeafe;
   color: #1e40af;
   border: 1px solid #3b82f6;
@@ -776,7 +776,7 @@
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #dc2626;
+  color: #1a1a1a;
   letter-spacing: -0.02em;
 }
 
@@ -826,7 +826,7 @@
   flex: 1;
 }
 
-.not-scheduled-text {
+.not-pending-text {
   color: #9ca3af;
   font-size: 0.875rem;
   font-style: italic;
@@ -1482,7 +1482,7 @@
   border-color: #ef4444;
 }
 
-.schedule-item.scheduled {
+.schedule-item.pending {
   background: #eff6ff;
   border-color: #3b82f6;
 }
@@ -1509,7 +1509,7 @@
   background: #ef4444;
 }
 
-.schedule-status-indicator.scheduled {
+.schedule-status-indicator.pending {
   background: #3b82f6;
 }
 
@@ -1544,7 +1544,7 @@
   background: #ef4444;
 }
 
-.schedule-day-badge.scheduled {
+.schedule-day-badge.pending {
   background: #3b82f6;
 }
 
@@ -1587,7 +1587,7 @@
   color: #991b1b;
 }
 
-.schedule-status-badge.scheduled {
+.schedule-status-badge.pending {
   background: #dbeafe;
   color: #1e40af;
 }
@@ -1907,7 +1907,7 @@
   transition: all 0.2s ease;
 }
 
-.schedule-detail-card.scheduled {
+.schedule-detail-card.pending {
   border-color: #3b82f6;
   background: #eff6ff;
 }
@@ -1966,7 +1966,7 @@
   padding: 2rem;
 }
 
-.not-scheduled-text {
+.not-pending-text {
   color: #9ca3af;
   font-size: 1rem;
   font-style: italic;

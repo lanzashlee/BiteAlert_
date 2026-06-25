@@ -75,6 +75,33 @@ function TextArea({ name, label, rows = 3, disabled = false }) {
   );
 }
 
+function Select({ name, label, options, disabled = false }) {
+  const { form, errors, handleChange, rememberFieldActivity } = useContext(BiteCaseFormContext);
+  return (
+    <div className="w-full">
+      <label className="form-label">{label}</label>
+      <select
+        id={name}
+        value={form[name] ?? ''}
+        disabled={disabled}
+        onFocus={() => rememberFieldActivity(name)}
+        onChange={(e) => {
+          rememberFieldActivity(name);
+          handleChange(name, e.target.value);
+        }}
+        className="form-input"
+        aria-invalid={!!errors[name]}
+      >
+        <option value="">Select...</option>
+        {options.map((opt, i) => (
+          <option key={i} value={opt.value || opt}>{opt.label || opt}</option>
+        ))}
+      </select>
+      {errors[name] && <div style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 4 }}>{errors[name]}</div>}
+    </div>
+  );
+}
+
 function Check({ name, label, onChange }) {
   const { form, handleChange } = useContext(BiteCaseFormContext);
   return (
@@ -112,6 +139,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     houseNo: '',
     street: '',
     barangay: '',
+    subdivision: '',
     municipality: '',
     city: '',
     province: '',
@@ -121,6 +149,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     timeOfInjury: '',
     placeOfOccurrence: '',
     placeOthers: '',
+    burnDegree: '',
+    burnSite: '',
     externalCauseBiteSting: false,
     externalCauseChemical: false,
     treatedHome: false,
@@ -149,6 +179,13 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     allergy: '',
     maintenance: '',
     management: '',
+    initiallyAssessedBy: '',
+    finalAssessedBy: '',
+    dptComplete: false,
+    dptIncomplete: false,
+    dptNone: false,
+    dptYearGiven: '',
+    dptDosesGiven: '',
     vacVaxirab: false,
     routeIM: false,
     localInfiltration: false,
@@ -166,7 +203,16 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
     immSkinDateGiven: '',
     immTig: false,
     immTigDose: '',
-    immTigDateGiven: ''
+    immTigDateGiven: '',
+    erigCheckbox: false,
+    erigDateTaken: '',
+    erigMedicineUsed: '',
+    erigBranchNo: '',
+    dose0: '', doseMed0: '', doseBranch0: '',
+    dose3: '', doseMed3: '', doseBranch3: '',
+    dose7: '', doseMed7: '', doseBranch7: '',
+    dose14: '', doseMed14: '', doseBranch14: '',
+    dose28: '', doseMed28: '', doseBranch28: ''
   });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -683,34 +729,76 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
 
   const validate = () => {
     const nextErrors = {};
-    // Only validate essential fields - make form less strict
     const req = (key, label) => { if (!String(form[key] || '').trim()) nextErrors[key] = `${label} is required.`; };
-    [
-      ['registrationNumber','Registration Number'],
-      ['firstName','First Name'],
-      ['lastName','Last Name'],
-      ['barangay','Barangay'],
-    ].forEach(([k,l])=>req(k,l));
     
-    // Exposure required exactly one
+    // Step 0
+    req('registrationNumber', 'Registration Number');
+    req('dateRegistered', 'Date Registered');
+    req('centerName', 'Center Name');
+    
+    // Step 1
+    req('firstName', 'First Name');
+    req('lastName', 'Last Name');
+    req('birthdate', 'Birthdate');
+    req('age', 'Age');
+    
+    // Step 2
+    req('barangay', 'Barangay');
+    
+    // Step 3
     const exposureCount = (form.bite ? 1 : 0) + (form.nonBite ? 1 : 0);
     if (exposureCount !== 1) nextErrors.exposure = 'Please select type of exposure';
-
-    // Site of bite: required only when BITE is selected
     const hasSite = siteKeys.some((_, i) => !!form[`site_${i}`]);
     if (form.bite && !hasSite) nextErrors.site = 'Please select at least one site of bite';
-
-    // Simple radio button validations
-    const oneTrue = (keys) => keys.some(k => !!form[k]);
-    if (!oneTrue(['woundWashYes','woundWashNo'])) nextErrors.washingWound = 'Please indicate wound washing';
-    if (!oneTrue(['cat1','cat2','cat3'])) nextErrors.category = 'Please select a category';
-    if (!oneTrue(['spDog','spCat']) && !String(form.spOthers || '').trim()) nextErrors.species = 'Please select species or specify others';
-    if (!oneTrue(['owner_0','owner_1','owner_2'])) nextErrors.ownership = 'Please select ownership';
-    if (!oneTrue(['cs_0','cs_1','cs_2','cs_3'])) nextErrors.clinicalStatus = 'Please select clinical status';
+    if (!String(form.dateOfInquiry || '').trim()) nextErrors.dateOfInquiry = 'Date of Inquiry is required.';
+    if (!String(form.timeOfInjury || '').trim()) nextErrors.timeOfInjury = 'Time of Injury is required.';
+    
+    // Step 4
+    const speciesOk = form.spDog || form.spCat || String(form.spOthers || '').trim();
+    if (!speciesOk) nextErrors.species = 'Please select species or specify others';
+    const ownershipOk = form.owner_0 || form.owner_1 || form.owner_2;
+    if (!ownershipOk) nextErrors.ownership = 'Please select ownership';
+    const clinicalOk = ['cs_0','cs_1','cs_2','cs_3'].some(k => !!form[k]);
+    if (!clinicalOk) nextErrors.clinicalStatus = 'Please select clinical status';
+    const categoryOk = form.cat1 || form.cat2 || form.cat3;
+    if (!categoryOk) nextErrors.category = 'Please select a category';
+    const washOk = form.woundWashYes || form.woundWashNo;
+    if (!washOk) nextErrors.washingWound = 'Please indicate wound washing';
 
     setErrors(nextErrors);
-    focusFirstError(nextErrors, ['registrationNumber', 'firstName', 'lastName', 'barangay', 'exposure', 'site', 'washingWound', 'category', 'species', 'ownership', 'clinicalStatus']);
-    return Object.keys(nextErrors).length === 0;
+
+    if (Object.keys(nextErrors).length > 0) {
+      const step0Fields = ['registrationNumber', 'dateRegistered', 'centerName'];
+      const step1Fields = ['firstName', 'lastName', 'birthdate', 'age'];
+      const step2Fields = ['barangay'];
+      const step3Fields = ['exposure', 'site', 'dateOfInquiry', 'timeOfInjury'];
+      const step4Fields = ['species', 'clinicalStatus', 'ownership', 'category', 'washingWound'];
+
+      let errorStep = 4;
+      if (step0Fields.some(f => nextErrors[f])) errorStep = 0;
+      else if (step1Fields.some(f => nextErrors[f])) errorStep = 1;
+      else if (step2Fields.some(f => nextErrors[f])) errorStep = 2;
+      else if (step3Fields.some(f => nextErrors[f])) errorStep = 3;
+
+      setStep(errorStep);
+
+      const orderedFields = [
+        ...step0Fields,
+        ...step1Fields,
+        ...step2Fields,
+        ...step3Fields,
+        ...step4Fields
+      ];
+      const firstKey = orderedFields.find((key) => nextErrors[key]);
+      if (firstKey) {
+        showToast(`Please fill out all required fields.`, 'error');
+        setTimeout(() => {
+          focusField(firstKey);
+        }, 100);
+      }
+      return false;
+    }
+    return true;
   };
 
   // Validate only fields relevant to the current step (partial validation)
@@ -799,7 +887,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       const y = d.getFullYear();
       const m = String(d.getMonth()+1).padStart(2,'0');
       const day = String(d.getDate()).padStart(2,'0');
-      return `${y}-${m}-${day}`;
+      return `${y}-${m}-${day}T12:00:00.000Z`;
     } catch { return ''; }
   };
 
@@ -874,9 +962,18 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         registrationNumber: form.registrationNumber || '',
         philhealthNo: form.philhealthNo || '',
         dateRegistered: toDateOnly(form.dateRegistered),
-        arrivalDate: toDateOnly(form.dateOfInquiry),
-        arrivalTime: form.timeOfInjury || '',
         center: form.centerName || '',
+        arrivalDate: toLongDate(form.dateOfInquiry),
+        arrivalTime: (() => {
+          const d = new Date();
+          let hours = d.getHours();
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          const strHours = String(hours).padStart(2, '0');
+          return `${strHours}:${minutes} ${ampm}`;
+        })(),
 
         // patient linkage
         patientId: selectedPatient?.patientId || selectedPatient?._id || '',
@@ -908,10 +1005,11 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         // history of bite
         typeOfExposure,
         siteOfBite: selectedSites,
+        othersBiteSpecify: form.othersBiteSpecify || '',
         dateOfInquiry: toLongDate(form.dateOfInquiry),
         timeOfInjury: form.timeOfInjury || '',
         natureOfInjury,
-        burnDegree: 1,
+        burnDegree: form.burnDegree ? Number(form.burnDegree) : 0,
         burnSite: form.burnSite || '',
         othersInjuryDetails: form.injOthers || '',
         externalCause: [
@@ -957,11 +1055,18 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         },
 
         patientImmunization: {
-          active: !!form.immActive,
-          toxoid: !!form.immToxoid,
-          tt1: form.immTT1 || '',
-          tt2: form.immTT2 || '',
-          tt3: form.immTT3 || '',
+          dpt: patientDpt,
+          dptYearGiven: form.dptYearGiven || '',
+          dptDosesGiven: form.dptDosesGiven || '',
+          tt: [
+            ...(form.immActive ? ['Active'] : []),
+            ...(form.immPassive ? ['Passive'] : [])
+          ],
+          ttDates: [
+            form.immTT1 || '',
+            form.immTT2 || '',
+            form.immTT3 || ''
+          ].filter(Boolean),
           passive: !!form.immPassive,
           skinTest: !!form.immSkinTest,
           skinTestTime: form.immSkinTimeTested || '',
@@ -975,25 +1080,37 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
         },
 
         currentImmunization: {
-          erig: { dateTaken: '', medicineUsed: '', branchNo: '' },
+          erig: { 
+            dateTaken: form.erigCheckbox ? toDateOnly(form.erigDateTaken) : '', 
+            medicineUsed: form.erigCheckbox ? form.erigMedicineUsed || '' : '', 
+            branchNo: form.erigCheckbox ? form.erigBranchNo || '' : '' 
+          },
           type: currentTypes.length ? currentTypes : ['Active'],
           vaccine: form.vacVaxirab ? ['PCEC'] : ['PVRV'],
           route: form.routeIM ? ['IM'] : ['ID'],
           passive: hasHrig,
           skinTest: hasSkinTest,
-          skinTestTime: form.skinTimeTested || '',
-          skinTestReadTime: form.skinTimeRead || '',
-          skinTestResult: form.skinResult || '',
-          skinTestDate: toDateOnly(form.skinDateGiven),
+          skinTestTime: form.immSkinTimeTested || '',
+          skinTestReadTime: form.immSkinTimeRead || '',
+          skinTestResult: form.immSkinResult || '',
+          skinTestDate: toDateOnly(form.immSkinDateGiven),
           hrig: hasHrig,
-          hrigDose: form.hrigDose || '',
-          hrigDate: toDateOnly(form.hrigDate),
+          hrigDose: form.immTigDose || '',
+          hrigDate: toDateOnly(form.immTigDateGiven),
           localInfiltration: !!form.localInfiltration,
-          schedule: currentSchedule,
-          doseMedicines: [],
+          schedule: currentSchedule.length ? currentSchedule : ['Structured'],
+          doseMedicines: [
+            { dose: 'D0', medicineUsed: form.doseMed0 || '', branchNo: form.doseBranch0 || '' },
+            { dose: 'D3', medicineUsed: form.doseMed3 || '', branchNo: form.doseBranch3 || '' },
+            { dose: 'D7', medicineUsed: form.doseMed7 || '', branchNo: form.doseBranch7 || '' },
+            { dose: 'D14', medicineUsed: form.doseMed14 || '', branchNo: form.doseBranch14 || '' },
+            { dose: 'D28', medicineUsed: form.doseMed28 || '', branchNo: form.doseBranch28 || '' },
+          ]
         },
 
         status: 'in_progress',
+        initiallyAssessedBy: form.initiallyAssessedBy || '',
+        finalAssessedBy: form.finalAssessedBy || '',
         // explicit day fields like in sample
         d0Date: scheduleDates[0] || null,
         d3Date: scheduleDates[1] || null,
@@ -1009,7 +1126,17 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
 
       const res = await apiFetch('/api/bitecases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || 'Failed to save bite case');
+      if (!res.ok) {
+        console.error('❌ Server error response:', data);
+        // Handle duplicate registration number: auto-regenerate and tell the user
+        if (res.status === 409 || (data?.message || '').toLowerCase().includes('registration number')) {
+          const yy = String(new Date().getFullYear()).slice(2);
+          const newReg = `${yy}-${Math.floor(100000 + Math.random() * 900000)}`;
+          handleChange('registrationNumber', newReg);
+          throw new Error((data?.message || 'Duplicate registration number') + ` A new number (${newReg}) has been generated — please click Save Case again.`);
+        }
+        throw new Error(data?.message || data?.error || 'Failed to save bite case');
+      }
 
       // Create vaccinationdates record so it shows up in scheduler
       try {
@@ -1074,8 +1201,10 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
       try { localStorage.removeItem('newBiteCaseDraft'); } catch {}
       if (onClose) onClose();
     } catch (err) {
-      showToast(`Error: ${err.message || 'Failed to create bite case'}`, 'error');
-      setError('submit', String(err.message || err));
+      const errMsg = err.message || 'Failed to create bite case';
+      console.error('❌ Save case error:', errMsg);
+      showToast(`Error: ${errMsg}`, 'error');
+      setError('submit', errMsg);
     } finally {
       setSaving(false);
     }
@@ -1163,6 +1292,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                   <Input name="philhealthNo" label="Philhealth No." />
                   <Input name="dateRegistered" type="date" label="Date Registered *" />
                   <Input name="centerName" label="Center Name *" />
+                  <Input name="initiallyAssessedBy" label="Initially Assessed By" />
                 </div>
               </section>
             )}
@@ -1237,7 +1367,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">History of Bite</div>
               <div className="form-label">Type of Exposure</div>
-              <div className="checkbox-row">
+              <div className="checkbox-row" id="exposure">
                 <Check name="nonBite" label="NON-BITE" onChange={() => toggleExposure('nonBite')} />
                 <Check name="bite" label="BITE" onChange={() => toggleExposure('bite')} />
               </div>
@@ -1246,7 +1376,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               {form.bite && (
                 <>
                   <div className="form-label" style={{marginTop: '10px'}}>Site of Bite</div>
-                  <div className="checkbox-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="checkbox-row" id="site" style={{ flexWrap: 'wrap' }}>
                     {siteKeys.map((lbl,i)=> (
                       <Check key={i} name={`site_${i}`} label={lbl} onChange={() => toggleSite(i)} />
                     ))}
@@ -1256,8 +1386,8 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               )}
 
               <div className="form-grid grid-2" style={{marginTop: '10px'}}>
-                <Input name="dateOfInquiry" type="date" label="Date of Injury *" />
-                <Input name="timeOfInjury" type="time" label="Time of Injury *" />
+                <Input name="dateOfInquiry" type="date" label="Date of Inquiry *" />
+                <Select name="timeOfInjury" label="Time of Injury *" options={['AM', 'PM']} />
               </div>
             </section>
 
@@ -1283,6 +1413,12 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                   <TextArea name="injOthers" label="" disabled={!form.injOthersCheckbox} />
                 </div>
               </div>
+              {form.inj_2 && (
+                <div className="form-grid grid-2" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px dashed #ccc' }}>
+                  <Input name="burnDegree" type="number" label="Burn Degree (if Burn selected)" />
+                  <Input name="burnSite" label="Burn Site" />
+                </div>
+              )}
             </section>
 
             {/* External Causes & Place of Occurrence */}
@@ -1342,14 +1478,14 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">Animal Profile</div>
               <div className="form-label">Species</div>
-              <div className="checkbox-row">
+              <div className="checkbox-row" id="species">
                 <Check name="spDog" label="Dog" onChange={() => toggleRadio('species', 'dog')} />
                 <Check name="spCat" label="Cat" onChange={() => toggleRadio('species', 'cat')} />
               </div>
               <Input name="spOthers" label="Others (specify)" />
               {errors.species && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.species}</div>}
               <div className="form-label" style={{marginTop: '10px'}}>Clinical Status</div>
-              <div className="checkbox-row">
+              <div className="checkbox-row" id="clinicalStatus">
                 {['Healthy','Sick','Died','Killed'].map((lbl,i)=> (<Check key={i} name={`cs_${i}`} label={lbl} onChange={() => toggleRadio('clinicalStatus', i)} />))}
               </div>
               {errors.clinicalStatus && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.clinicalStatus}</div>}
@@ -1362,7 +1498,7 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <Input name="animalImmunizedYear" label="Year" disabled={!form.animalImmunized} />
               <Check name="animalNone" label="None" onChange={(e) => toggleAnimalImmunization('animalNone', e.target.checked)} />
               <div className="form-label" style={{marginTop: '10px'}}>Ownership Status</div>
-              <div className="checkbox-row">
+              <div className="checkbox-row" id="ownership">
                 {['Pet','Neighbor','Stray'].map((lbl,i)=> (<Check key={i} name={`owner_${i}`} label={lbl} onChange={() => toggleRadio('ownership', ['pet', 'neighbor', 'stray'][i])} />))}
             </div>
             {errors.ownership && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.ownership}</div>}
@@ -1371,6 +1507,20 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             {/* Patient Immunization */}
             <section className="section">
               <div className="section-title">Patient Immunization</div>
+              
+              {/* DPT Section */}
+              <div style={{ marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px dashed #ccc' }}>
+                <div className="form-label">DPT</div>
+                <div className="checkbox-row">
+                  <Check name="dptComplete" label="Complete" onChange={(e) => handleChange('dptComplete', e.target.checked)} />
+                  <Check name="dptIncomplete" label="Incomplete" onChange={(e) => handleChange('dptIncomplete', e.target.checked)} />
+                  <Check name="dptNone" label="None" onChange={(e) => handleChange('dptNone', e.target.checked)} />
+                </div>
+                <div className="form-grid grid-2" style={{ marginTop: '10px' }}>
+                  <Input name="dptYearGiven" label="Year Given" />
+                  <Input name="dptDosesGiven" label="Doses Given" />
+                </div>
+              </div>
               
               {/* Active Section */}
               <div style={{ marginBottom: '20px' }}>
@@ -1549,17 +1699,30 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
                 <Check name="routeID" label="Intradermal (ID)" onChange={(e) => toggleRoute('routeID', e.target.checked)} />
                 <Check name="routeIM" label="Intramuscular (IM)" onChange={(e) => toggleRoute('routeIM', e.target.checked)} />
               </div>
-              <div className="form-label" style={{marginTop: '10px'}}>Schedule Dates of Immunization</div>
+              <div className="form-label" style={{marginTop: '10px'}}>Schedule Dates of Immunization & Medicines</div>
               {['D0','D3','D7','D14','D28'].map((d, i)=> (
-                <div key={d} className="flex items-center gap-8 mb-2">
-                  <span className="w-10" style={{color:'#374151'}}>{d}</span>
-                  {i === 0 ? (
-                    <Input name={`sched_${i}`} type="date" label="" onChange={(e)=> setScheduleFromD0(e.target.value)} />
-                  ) : (
-                    <Input name={`sched_${i}`} type="date" label="" />
-                  )}
+                <div key={d} style={{ marginBottom: '15px', padding: '10px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <div className="flex items-center gap-8 mb-2">
+                    <span className="w-10 font-bold" style={{color:'#374151'}}>{d}</span>
+                    {i === 0 ? (
+                      <Input name={`sched_${i}`} type="date" label="Date" onChange={(e)=> { handleChange(`sched_${i}`, e.target.value); setScheduleFromD0(e.target.value); }} />
+                    ) : (
+                      <Input name={`sched_${i}`} type="date" label="Date" />
+                    )}
+                  </div>
                 </div>
               ))}
+              
+              <div style={{ marginTop: '15px' }}>
+                <Check name="erigCheckbox" label="ERIG" />
+                {form.erigCheckbox && (
+                  <div className="form-grid grid-3" style={{ marginTop: '10px' }}>
+                    <Input name="erigDateTaken" type="date" label="Date Taken" />
+                    <Input name="erigMedicineUsed" label="Medicine Used" />
+                    <Input name="erigBranchNo" label="Branch No." />
+                  </div>
+                )}
+              </div>
             </section>
 
 
@@ -1568,13 +1731,13 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
             <section className="section">
               <div className="section-title">Management</div>
               <div className="form-label">Washing of wound</div>
-              <div className="checkbox-row">
+              <div className="checkbox-row" id="washingWound">
                 <Check name="woundWashYes" label="Yes" onChange={() => toggleRadio('woundWash', 'yes')} />
                 <Check name="woundWashNo" label="No" onChange={() => toggleRadio('woundWash', 'no')} />
               </div>
               {errors.washingWound && <div style={{ color:'#b91c1c', fontSize:'0.8rem', marginTop:4 }}>{errors.washingWound}</div>}
               <Input name="diagnosis" label="Diagnosis" />
-              <div className="checkbox-row" style={{marginTop: '10px'}}>
+              <div className="checkbox-row" id="category" style={{marginTop: '10px'}}>
                 <Check name="cat1" label="Category 1" onChange={() => toggleRadio('category', 'cat1')} />
                 <Check name="cat2" label="Category 2" onChange={() => toggleRadio('category', 'cat2')} />
                 <Check name="cat3" label="Category 3" onChange={() => toggleRadio('category', 'cat3')} />
@@ -1583,6 +1746,9 @@ const NewBiteCaseForm = ({ onClose, onCancel, selectedPatient, onSaved }) => {
               <Input name="allergy" label="Any History of Allergy" />
               <Input name="maintenance" label="Maintenance Medications" />
               <TextArea name="management" label="Management:" rows={4} />
+              <div className="form-grid grid-1" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px dashed #ccc' }}>
+                <Input name="finalAssessedBy" label="Final Assessed By" />
+              </div>
             </section>
             </>
             )}

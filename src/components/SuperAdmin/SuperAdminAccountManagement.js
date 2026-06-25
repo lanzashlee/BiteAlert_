@@ -83,9 +83,14 @@ const SuperAdminAccountManagement = () => {
         ? payload
         : (payload?.data || payload?.accounts || payload?.value || []);
       // Filter out superadmin accounts - only show regular admin accounts
-      const adminOnlyAccounts = accounts.filter(account => 
-        account.role.toLowerCase() !== 'superadmin'
-      );
+      const adminOnlyAccounts = accounts
+        .filter(account => account.role.toLowerCase() !== 'superadmin')
+        .map(account => {
+          if (!account.fullName) {
+            account.fullName = `${account.firstName || ''} ${account.middleName || ''} ${account.lastName || ''}`.replace(/\s+/g, ' ').trim();
+          }
+          return account;
+        });
       setAdminAccounts(adminOnlyAccounts);
       setFilteredAccounts(adminOnlyAccounts);
     } catch (error) {
@@ -486,6 +491,8 @@ const SuperAdminAccountManagement = () => {
                 <tr>
                   <th>Admin ID</th>
                   <th>Email Address</th>
+                  <th>Full Name</th>
+                  <th>Center</th>
                   <th>Role</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -509,6 +516,8 @@ const SuperAdminAccountManagement = () => {
                     <tr key={account.id || account.adminID}>
                       <td>{account.adminID || account.id || 'N/A'}</td>
                       <td>{account.email || account.username || 'N/A'}</td>
+                      <td>{account.fullName || 'N/A'}</td>
+                      <td>{account.centerName || account.center || 'N/A'}</td>
                       <td>
                         <span className="role-badge">{account.role || 'ADMIN'}</span>
                       </td>
